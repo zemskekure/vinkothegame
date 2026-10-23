@@ -187,8 +187,8 @@ const walls = new Float32Array( wallsBuf );
 const ws = data.wallStride;
 const wallGeo = new THREE.BufferGeometry();
 const wib = new THREE.InterleavedBuffer( walls, ws );
-[ [ 'position', 3, 0 ], [ 'wallU', 1, 3 ], [ 'wallW', 1, 4 ], [ 'wallBase', 1, 5 ], [ 'wallTop', 1, 6 ],
-	[ 'floorH', 1, 7 ], [ 'seed', 1, 8 ], [ 'kind', 1, 9 ], [ 'realBay', 1, 13 ], [ 'realWindow', 1, 14 ], [ 'realShop', 1, 15 ], [ 'style', 1, 16 ] ].forEach( ( [ name, size, offset ] ) => {
+// Packed into vec4s: WebGPU allows at most 16 values passed from vertex to fragment shader.
+[ [ 'position', 3, 0 ], [ 'wallA', 4, 3 ], [ 'wallB', 4, 7 ], [ 'wallC', 4, 13 ] ].forEach( ( [ name, size, offset ] ) => {
 
 	wallGeo.setAttribute( name, new THREE.InterleavedBufferAttribute( wib, size, offset ) );
 

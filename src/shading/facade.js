@@ -3,8 +3,9 @@
 // window caps, quoins at the corners and a main cornice under the eaves. Courtyard walls are plainer; party walls
 // are blank. Layout and filtering follow Slop New York's pre-war facade material (see common.js).
 //
-// Per-vertex attributes (see tools/build-scene.mjs): wallU (m from the wall's left corner), wallW (wall width),
-// wallBase / wallTop (ground and eave height), floorH, seed, kind (0 street, 2 courtyard, 3 party), plaster (rgb).
+// Per-vertex attributes (see tools/build-scene.mjs, packed in src/main.js): u (m from the wall's left corner), wall
+// width, base / top (ground and eave height), floor height, seed, kind (0 street, 2 courtyard, 3 party), measured
+// bay / window / shop, landmark style, plaster (rgb).
 
 import * as THREE from 'three/webgpu';
 import {
@@ -23,19 +24,22 @@ export function createFacadeMaterial() {
 
 	const mat = new THREE.MeshStandardNodeMaterial( { roughness: 0.85, metalness: 0 } );
 
-	const u = attribute( 'wallU', 'float' );
-	const W = attribute( 'wallW', 'float' );
-	const base = attribute( 'wallBase', 'float' );
-	const top = attribute( 'wallTop', 'float' );
-	const fH = attribute( 'floorH', 'float' );
-	const seed = attribute( 'seed', 'float' );
-	const kind = attribute( 'kind', 'float' );
-	const realBay = attribute( 'realBay', 'float' ); // measured from street photos, 0 = unknown
-	const realWindow = attribute( 'realWindow', 'float' );
-	const realShop = attribute( 'realShop', 'float' ); // 1 / 0, -1 = unknown
+	// Packed wall attributes (see src/main.js): A = u, width, base, top; B = floor height, seed, kind, (red);
+	// C = measured bay, measured window width, measured shop flag, landmark style.
+	const wallA = attribute( 'wallA', 'vec4' ), wallB = attribute( 'wallB', 'vec4' ), wallC = attribute( 'wallC', 'vec4' );
+	const u = wallA.x;
+	const W = wallA.y;
+	const base = wallA.z;
+	const top = wallA.w;
+	const fH = wallB.x;
+	const seed = wallB.y;
+	const kind = wallB.z;
+	const realBay = wallC.x; // measured from street photos, 0 = unknown
+	const realWindow = wallC.y;
+	const realShop = wallC.z; // 1 / 0, -1 = unknown
 	const plaster = attribute( 'plaster', 'vec3' );
 	// Hand-modelled landmarks (tools/build-scene.mjs LANDMARKS): 1 Národní divadlo, 2 Máj, 3 Betlémská kaple.
-	const style = attribute( 'style', 'float' );
+	const style = wallC.w;
 	const sTheatre = step( abs( style.sub( 1 ) ), 0.5 );
 	const sMaj = step( abs( style.sub( 2 ) ), 0.5 );
 	const sChapel = step( abs( style.sub( 3 ) ), 0.5 );
