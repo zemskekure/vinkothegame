@@ -40,6 +40,25 @@ export class Walker {
 
 	teleport( x, z, yaw ) {
 
+		// Nearest open spot to the requested one (spiral search on a 1 m grid).
+		search: for ( let r = 0; r < 60; r ++ ) {
+
+			for ( let a = 0; a < Math.max( 1, r * 8 ); a ++ ) {
+
+				const t = a / Math.max( 1, r * 8 ) * Math.PI * 2;
+				const px = x + Math.cos( t ) * r, pz = z + Math.sin( t ) * r;
+				const clear = [ 0, 1, 2, 3, 4, 5, 6, 7 ].every( k => ! this.blocked( px + Math.cos( k * Math.PI / 4 ) * 2.5, pz + Math.sin( k * Math.PI / 4 ) * 2.5 ) );
+				if ( clear && ! this.blocked( px, pz ) ) {
+
+					x = px; z = pz;
+					break search;
+
+				}
+
+			}
+
+		}
+
 		this.camera.position.set( x, 0, z );
 		this.yaw = yaw;
 		this.pitch = 0.05;
@@ -75,8 +94,8 @@ export class Walker {
 			const dz = ( - cos * forward - sin * strafe ) / len * speed * dt;
 			const p = this.camera.position;
 
-			// Slide along walls: try the full move, then each axis alone.
-			if ( ! this.blocked( p.x + dx, p.z + dz ) ) p.x += dx, p.z += dz;
+			// Slide along walls: try the full move, then each axis alone. Stuck inside a footprint: walk out freely.
+			if ( this.blocked( p.x, p.z ) || ! this.blocked( p.x + dx, p.z + dz ) ) p.x += dx, p.z += dz;
 			else if ( ! this.blocked( p.x + dx, p.z ) ) p.x += dx;
 			else if ( ! this.blocked( p.x, p.z + dz ) ) p.z += dz;
 

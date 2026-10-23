@@ -258,7 +258,7 @@ function setMode( walk ) {
 
 	if ( walk ) {
 
-		const [ x, z, yaw ] = ( params.get( 'at' ) || '0,0,2.35' ).split( ',' ).map( Number );
+		const [ x, z, yaw ] = ( params.get( 'at' ) || '-20,40,0.6' ).split( ',' ).map( Number );
 		walker.teleport( x, z, yaw );
 
 	} else if ( wasWalking ) {
@@ -350,4 +350,5 @@ renderer.setAnimationLoop( () => {
 } );
 
 document.getElementById( 'loading' ).remove();
+window.__debug = { camera, isBlocked, groundHeight };
 window.__ready = true;
