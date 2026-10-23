@@ -81,7 +81,7 @@ export function createRoofMaterial() {
  * roads that have them; pedestrian streets and squares in their own surface; grass in parks; dressed-stone
  * embankment walls on steep ground. Also used for the raised pavement mesh.
  */
-export function createGroundMaterial( surfaceTex, surface2Tex, bounds ) {
+export function createGroundMaterial( surfaceTex, surface2Tex, bounds, detailTex ) {
 
 	const mat = new THREE.MeshStandardNodeMaterial( { roughness: 0.9 } );
 	const wx = positionWorld.x, wz = positionWorld.z;
@@ -161,6 +161,14 @@ export function createGroundMaterial( surfaceTex, surface2Tex, bounds ) {
 	col = mix( col, grass, park.mul( float( 1 ).sub( pavement ) ) );
 	col = mix( col, ashlar, steep );
 	col = mix( col, kerbCol, max( kerbTop, kerbFace ) );
+
+	// Real ground detail from the aerial photo (shadow-free, see tools/build-scene.mjs): markings, mosaic patterns,
+	// kerb lines, stains. On carriageways, near-white detail is road paint.
+	const detail = float( 1 ).add( texture( detailTex, suv ).r.mul( 255 ).sub( 128 ).div( 160 ) );
+	const flat = float( 1 ).sub( steep );
+	const paint = smoothstep( 1.2, 1.45, detail ).mul( road ).mul( flat );
+	col = col.mul( mix( float( 1 ), detail.clamp( 0.55, 1.5 ), mix( float( 0.85 ), float( 0.5 ), pavement ).mul( flat ) ) );
+	col = mix( col, color( 0xe6e5df ), paint.mul( 0.85 ) );
 
 	// Soft contact shadow at the foot of the houses.
 	col = col.mul( mix( float( 0.6 ), float( 1 ), smoothstep( 0.0, 0.9, buildingDist ) ) );

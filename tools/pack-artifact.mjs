@@ -1,5 +1,5 @@
 // Packs the built app (dist/) for hosting as a claude.ai artifact, which serves no raw binary files:
-// every data file is gzipped and base64-encoded into artifact/data/<name>.gz.txt; the page sets
+// every binary data file is gzipped and base64-encoded (images are copied as they are) into artifact/data/<name>.gz.txt; the page sets
 // window.PACKED_DATA so src/main.js unpacks them in the browser.
 
 import { readdir, readFile, writeFile, mkdir, copyFile } from 'node:fs/promises';
@@ -13,6 +13,14 @@ await mkdir( new URL( 'assets/', OUT ), { recursive: true } );
 await copyFile( new URL( 'assets/app.js', DIST ), new URL( 'assets/app.js', OUT ) );
 
 for ( const name of await readdir( new URL( 'data/', DIST ) ) ) {
+
+	if ( name.endsWith( '.jpg' ) ) {
+
+		// Images are served as they are.
+		await copyFile( new URL( `data/${name}`, DIST ), new URL( `data/${name}`, OUT ) );
+		continue;
+
+	}
 
 	const raw = await readFile( new URL( `data/${name}`, DIST ) );
 	const packed = gzipSync( raw, { level: 9 } ).toString( 'base64' );

@@ -110,6 +110,26 @@ async function exportOrtho( cellSize ) {
 
 }
 
+// High-resolution orthophoto (12.5 cm) for ground detail, in 2 × 2 tiles (the service caps images at 4096 px).
+async function exportOrthoTiles( cellSize ) {
+
+	const nx = 2, ny = 2;
+	const tw = ( xmax - xmin ) / nx, th = ( ymax - ymin ) / ny;
+	for ( let i = 0; i < nx; i ++ ) for ( let j = 0; j < ny; j ++ ) {
+
+		const bbox = [ xmin + i * tw, ymax - ( j + 1 ) * th, xmin + ( i + 1 ) * tw, ymax - j * th ];
+		const buf = await get( `${AGS1}/ORTOFOTO/MapServer/export`, {
+			bbox: bbox.join( ',' ), bboxSR: 5514, imageSR: 5514,
+			size: `${Math.round( tw / cellSize )},${Math.round( th / cellSize )}`,
+			format: 'jpg', f: 'image'
+		} );
+		await writeFile( new URL( `ortho-hi-${i}-${j}.jpg`, OUT ), buf );
+		console.log( `ortho tile ${i},${j}: ${( buf.length / 1e6 ).toFixed( 1 )} MB` );
+
+	}
+
+}
+
 await mkdir( OUT, { recursive: true } );
 
 await Promise.all( [
@@ -123,5 +143,6 @@ await Promise.all( [
 	queryLayer( 'ZABAGED_POLOHOPIS', 73, 'bridges' ),
 	exportRaster( '3D/dmp', 'dsm', 0.5 ),
 	exportRaster( '3D/dmr5g', 'dtm', 1 ),
-	exportOrtho( 0.25 )
+	exportOrtho( 0.25 ),
+	exportOrthoTiles( 0.125 )
 ] );

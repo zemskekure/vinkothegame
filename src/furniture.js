@@ -1,6 +1,5 @@
 // Street furniture from OpenStreetMap positions (see tools/streets.mjs), as instanced procedural models:
-// historic Prague lamp posts, benches, bins, bollards, bike stands, fountains, statues on pedestals,
-// trees and zebra crossings. Each entry in data.furniture[type] is [ x, y, z, rotation, scale ].
+// historic Prague lamp posts, benches, bins, bollards, bike stands, fountains, statues on pedestals and trees. Each entry in data.furniture[type] is [ x, y, z, rotation, scale ].
 
 import * as THREE from 'three/webgpu';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
@@ -11,7 +10,6 @@ const iron = new THREE.MeshStandardNodeMaterial( { color: 0x262b28, metalness: 0
 const stone = new THREE.MeshStandardNodeMaterial( { color: 0xa39a8a, roughness: 0.85 } );
 const wood = new THREE.MeshStandardNodeMaterial( { color: 0x7b5434, roughness: 0.7 } );
 const bronze = new THREE.MeshStandardNodeMaterial( { color: 0x4f6a5a, metalness: 0.7, roughness: 0.5 } );
-const paint = new THREE.MeshStandardNodeMaterial( { color: 0xeeeeea, roughness: 0.6 } );
 const water = new THREE.MeshStandardNodeMaterial( { color: 0x29404a, roughness: 0.05, metalness: 0.1 } );
 const lampGlass = new THREE.MeshStandardNodeMaterial( { color: 0xfff2d6, emissive: 0xffd9a0, emissiveIntensity: 0.4, roughness: 0.2 } );
 const bark = new THREE.MeshStandardNodeMaterial( { color: 0x4a3b2c, roughness: 1 } );
@@ -135,23 +133,6 @@ export function addFurniture( scene, furniture ) {
 	instance( scene, 'trunk', [ [ cyl( 0.14, 0.24, 1, 0, 7 ), bark ] ], trees,
 		( [ x, y, z, , h ], m ) => m.compose( p.set( x, y, z ), q.identity(), s.set( 1, h * 0.62, 1 ) ) );
 
-	// Zebra crossings: white stripes 0.5 m wide, 3 m long along the road, every metre across it.
-	const stripes = [];
-	const zebras = furniture.zebra || [];
-	for ( let i = 0; i < zebras.length; i += 5 ) {
-
-		const [ x, y, z, rot, width ] = zebras.slice( i, i + 5 );
-		const n = Math.max( 2, Math.floor( width / 1.0 ) );
-		const ax = Math.sin( rot ), az = Math.cos( rot ); // across the road (perpendicular to its direction)
-		for ( let k = 0; k < n; k ++ ) {
-
-			const o = ( k - ( n - 1 ) / 2 ) * 1.0;
-			stripes.push( x + ax * o, y + 0.01, z + az * o, rot, 1 );
-
-		}
-
-	}
-
-	instance( scene, 'zebra', [ [ new THREE.BoxGeometry( 3, 0.012, 0.5 ), paint ] ], stripes, place );
+	// Zebra crossings are painted from the aerial photo (ground detail in src/shading/surfaces.js).
 
 }

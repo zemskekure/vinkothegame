@@ -780,6 +780,56 @@ for ( let r = 0; r < th; r ++ ) {
 
 }
 
+// Smooth the terrain over a few metres: the survey surface is slightly noisy at street scale, and Old Town streets
+// are smooth slopes. Two passes of a 5 × 5 box blur on the 2 m grid.
+for ( let pass = 0; pass < 2; pass ++ ) {
+
+	const src = terrain.slice();
+	for ( let r = 0; r < th; r ++ ) for ( let c = 0; c < tw; c ++ ) {
+
+		let sum = 0, n = 0;
+		for ( let dr = - 2; dr <= 2; dr ++ ) for ( let dc = - 2; dc <= 2; dc ++ ) {
+
+			const rr = r + dr, cc = c + dc;
+			if ( rr < 0 || cc < 0 || rr >= th || cc >= tw ) continue;
+			sum += src[ rr * tw + cc ];
+			n ++;
+
+		}
+
+		terrain[ r * tw + c ] = sum / n;
+
+	}
+
+}
+
+// The Vltava: the terrain model interpolates across the water, so cut the river (ZABAGED water outline, islands
+// excluded) down to a bed below the water surface; the embankments become walls. Water level: the lowest
+// terrain height along the river.
+const riverRings = JSON.parse( await readFile( new URL( 'water.json', RAW ) ) ).flatMap( f => f.geometry?.rings || [] );
+const inRiver = ( X, Y ) => pointInRings( riverRings, X, Y );
+const riverMask = new Uint8Array( tw * th );
+let waterLevel = Infinity;
+for ( let r = 0; r < th; r ++ ) for ( let c = 0; c < tw; c ++ ) {
+
+	if ( ! inRiver( AREA.xmin + c * TERRAIN_CELL, AREA.ymax - r * TERRAIN_CELL ) ) continue;
+	riverMask[ r * tw + c ] = 1;
+	waterLevel = Math.min( waterLevel, terrain[ r * tw + c ] );
+
+}
+
+const riverAt = ( X, Y ) => riverMask[ Math.round( ( AREA.ymax - Y ) / TERRAIN_CELL ) * tw + Math.round( ( X - AREA.xmin ) / TERRAIN_CELL ) ] === 1;
+
+if ( ! Number.isFinite( waterLevel ) ) waterLevel = terrain.reduce( ( m, v ) => Math.min( m, v ), Infinity );
+waterLevel += 0.1;
+for ( let r = 0; r < th; r ++ ) for ( let c = 0; c < tw; c ++ ) {
+
+	if ( riverMask[ r * tw + c ] ) terrain[ r * tw + c ] = waterLevel - 2.5;
+
+}
+
+console.log( `river: water level ${( waterLevel + BASE_HEIGHT ).toFixed( 2 )} m` );
+
 // Canopy peaks only count as trees where the aerial photo is green (not a boat or a sculpture).
 function isGreen( X, Y ) {
 
@@ -1027,6 +1077,57 @@ for ( let r = 0; r < sh; r ++ ) {
 }
 
 // ---------------------------------------------------------------------------
+// Ground detail from the aerial photo (25 cm): luminance divided by its local average over ~2 m, which keeps
+// markings, mosaic patterns, kerb lines and wear but cancels the building shadows. 128 = neutral; neutral on
+// roofs (inside footprints) and in the river. Row 0 = north, same frame as the photo.
+{
+
+	const W = photo.width, H = photo.height, cell = ( AREA.xmax - AREA.xmin ) / W;
+	const lum = new Float32Array( W * H );
+	for ( let i = 0; i < W * H; i ++ ) lum[ i ] = 0.3 * photo.data[ i * 4 ] + 0.59 * photo.data[ i * 4 + 1 ] + 0.11 * photo.data[ i * 4 + 2 ] + 4;
+
+	// Box average through an integral image.
+	const R = 4; // 9 × 9 px ≈ 2.25 m
+	const integral = new Float64Array( ( W + 1 ) * ( H + 1 ) );
+	for ( let y = 0; y < H; y ++ ) {
+
+		let row = 0;
+		for ( let x = 0; x < W; x ++ ) {
+
+			row += lum[ y * W + x ];
+			integral[ ( y + 1 ) * ( W + 1 ) + x + 1 ] = integral[ y * ( W + 1 ) + x + 1 ] + row;
+
+		}
+
+	}
+
+	const detail = Buffer.alloc( W * H * 4 );
+	for ( let y = 0; y < H; y ++ ) {
+
+		const y0 = Math.max( 0, y - R ), y1 = Math.min( H, y + R + 1 );
+		const Y = AREA.ymax - ( y + 0.5 ) * cell;
+		for ( let x = 0; x < W; x ++ ) {
+
+			const x0 = Math.max( 0, x - R ), x1 = Math.min( W, x + R + 1 );
+			const sum = integral[ y1 * ( W + 1 ) + x1 ] - integral[ y0 * ( W + 1 ) + x1 ] - integral[ y1 * ( W + 1 ) + x0 ] + integral[ y0 * ( W + 1 ) + x0 ];
+			const mean = sum / ( ( x1 - x0 ) * ( y1 - y0 ) );
+			const X = AREA.xmin + ( x + 0.5 ) * cell;
+			const masked = keptIds.has( buildingAt( X, Y ) ) || riverAt( X, Y );
+			const v = masked ? 128 : Math.max( 0, Math.min( 255, Math.round( 128 + ( lum[ y * W + x ] / mean - 1 ) * 160 ) ) );
+			detail[ y * W * 4 + x * 4 ] = detail[ y * W * 4 + x * 4 + 1 ] = detail[ y * W * 4 + x * 4 + 2 ] = v;
+			detail[ y * W * 4 + x * 4 + 3 ] = 255;
+
+		}
+
+	}
+
+	await mkdir( OUT, { recursive: true } );
+	await writeFile( new URL( 'ground-detail.jpg', OUT ), jpeg.encode( { data: detail, width: W, height: H }, 88 ).data );
+	console.log( `ground detail: ${W}x${H}` );
+
+}
+
+// ---------------------------------------------------------------------------
 // Raised pavements and street furniture
 
 // Street-level ground height in the scene frame: the same 2 m grid the terrain mesh is built from.
@@ -1098,7 +1199,6 @@ await mkdir( OUT, { recursive: true } );
 const [ ax0, , az1 ] = toLocal( AREA.xmin, AREA.ymin, 0 );
 const [ ax1, , az0 ] = toLocal( AREA.xmax, AREA.ymax, 0 );
 
-const waterLevel = terrain.reduce( ( m, v ) => Math.min( m, v ), Infinity ) + 0.25;
 
 await writeFile( new URL( 'walls.bin', OUT ), new Float32Array( wallData ) );
 await writeFile( new URL( 'walls-index.bin', OUT ), new Uint32Array( wallIdx ) );

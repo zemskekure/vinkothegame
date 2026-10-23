@@ -109,7 +109,10 @@ const surfaceTexture = buf => {
 };
 
 const surface2 = new Uint8Array( surface2Buf );
-const groundMaterial = createGroundMaterial( surfaceTexture( surfaceBuf ), surfaceTexture( surface2Buf ), bounds );
+const groundDetail = await new THREE.TextureLoader().loadAsync( 'data/ground-detail.jpg' );
+groundDetail.flipY = false; // row 0 = north, like the surface maps
+groundDetail.anisotropy = renderer.getMaxAnisotropy();
+const groundMaterial = createGroundMaterial( surfaceTexture( surfaceBuf ), surfaceTexture( surface2Buf ), bounds, groundDetail );
 const terrain = new THREE.Mesh( terrainGeo, groundMaterial );
 terrain.receiveShadow = true;
 scene.add( terrain );
@@ -119,7 +122,7 @@ const pavementGeo = new THREE.BufferGeometry();
 pavementGeo.setAttribute( 'position', new THREE.BufferAttribute( new Float32Array( pavementBuf ), 3 ) );
 pavementGeo.setIndex( new THREE.BufferAttribute( new Uint32Array( pavementIdxBuf ), 1 ) );
 pavementGeo.computeVertexNormals();
-const pavementMaterial = createGroundMaterial( surfaceTexture( surfaceBuf ), surfaceTexture( surface2Buf ), bounds );
+const pavementMaterial = createGroundMaterial( surfaceTexture( surfaceBuf ), surfaceTexture( surface2Buf ), bounds, groundDetail );
 pavementMaterial.side = THREE.DoubleSide;
 const pavement = new THREE.Mesh( pavementGeo, pavementMaterial );
 pavement.receiveShadow = true;
