@@ -70,27 +70,31 @@ export function createRoofMaterial() {
 }
 
 /**
- * Streets from the surface map (see tools/build-scene.mjs): granite setts ("kočičí hlavy") by default, Prague
- * mosaic sidewalks with granite kerbs along the houses, asphalt with tram rails on the main roads, grass in parks,
- * dressed-stone embankment walls on steep ground.
+ * Streets from the surface maps (see tools/build-scene.mjs and tools/streets.mjs, after OpenStreetMap): carriageways
+ * in asphalt (with tram rails), granite setts or paving stones; Prague mosaic pavements with granite kerbs along
+ * roads that have them; pedestrian streets and squares in their own surface; grass in parks; dressed-stone
+ * embankment walls on steep ground. Also used for the raised pavement mesh.
  */
-export function createGroundMaterial( surfaceTex, bounds ) {
+export function createGroundMaterial( surfaceTex, surface2Tex, bounds ) {
 
 	const mat = new THREE.MeshStandardNodeMaterial( { roughness: 0.9 } );
 	const wx = positionWorld.x, wz = positionWorld.z;
 	const suv = vec2( wx.sub( bounds.minX ).div( bounds.maxX - bounds.minX ), wz.sub( bounds.minZ ).div( bounds.maxZ - bounds.minZ ) );
 	const s = texture( surfaceTex, suv );
+	const s2 = texture( surface2Tex, suv );
 
 	const buildingDist = s.r.mul( 255 / 40 );
 	const park = s.g;
-	const asphalt = smoothstep( 0.5, 0.56, s.b );
+	const F = float( 128 / 255 ).sub( s.b ).mul( 255 / 25 ); // signed distance to a carriageway edge, < 0 on the road
+	const Fk = float( 128 / 255 ).sub( s2.b ).mul( 255 / 25 ); // same for kerbed carriageways, > 0 on the pavement
 	const tramDist = s.a.mul( 255 / 50 );
 
-	const SIDEWALK = 1.7, KERB = 0.22;
-	const sidewalk = float( 1 ).sub( smoothstep( SIDEWALK - 0.02, SIDEWALK + 0.02, buildingDist ) ).mul( float( 1 ).sub( park ) );
-	const kerb = smoothstep( SIDEWALK - 0.02, SIDEWALK + 0.02, buildingDist ).mul( float( 1 ).sub( smoothstep( SIDEWALK + KERB - 0.02, SIDEWALK + KERB + 0.02, buildingDist ) ) ).mul( asphalt.max( 0.0 ) );
-	const road = asphalt.mul( float( 1 ).sub( sidewalk ) ).mul( float( 1 ).sub( kerb ) );
+	const KERB = 0.22;
+	const road = smoothstep( 0.06, - 0.06, F );
+	const kerbTop = smoothstep( - 0.02, 0.02, Fk ).mul( smoothstep( KERB + 0.02, KERB - 0.02, Fk ) );
+	const pavement = smoothstep( KERB - 0.02, KERB + 0.02, Fk ).mul( smoothstep( 4.2, 3.8, Fk ) ).mul( float( 1 ).sub( park ) );
 	const steep = smoothstep( 0.8, 0.6, normalWorldGeometry.y );
+	const kerbFace = steep.mul( smoothstep( 0.5, 0.3, abs( Fk ) ) );
 
 	// Granite setts in staggered rows.
 	const setRow = wz.div( 0.13 );
@@ -116,7 +120,15 @@ export function createGroundMaterial( surfaceTex, bounds ) {
 	const mosJoint = max( gridLine( wx, 0.055, 0.004 ), gridLine( wz, 0.055, 0.004 ) );
 	const mosaic = mix( mix( color( 0xb5ad9f ), color( 0x9c958c ), pattern.mul( 0.3 ) ), mosaicStone.mul( float( 1 ).sub( mosJoint.mul( 0.4 ) ) ), mosFade );
 
-	const kerbCol = mix( color( 0xa8a59e ), color( 0x96938b ), noise2D( vec2( wx, wz ).mul( 4 ) ) );
+	const kerbCol = mix( color( 0xa8a59e ), color( 0x96938b ), noise2D( vec2( wx, wz ).mul( 4 ) ) )
+		.mul( float( 1 ).sub( gridLine( wx.add( wz ), 1.0, 0.008 ).mul( 0.35 ) ) );
+
+	// Paving stones: larger rectangular slabs in running bond.
+	const slabRow = wz.div( 0.3 );
+	const slabCol = wx.div( 0.45 ).add( mod( floor( slabRow ), 2 ).mul( 0.5 ) );
+	const slabFade = float( 1 ).sub( smoothstep( 0.35, 0.9, fwidth( slabRow ) ) );
+	const slab = mix( color( 0x9d968b ), color( 0xb2ab9e ), hash2D( vec2( floor( slabCol ), floor( slabRow ) ).add( 3.3 ) ) );
+	const paving = mix( slab.mul( 0.92 ), slab.mul( float( 1 ).sub( max( gridLine( slabCol, 1, 0.012 ), gridLine( slabRow, 1, 0.02 ) ).mul( 0.4 ) ) ), slabFade );
 
 	// Asphalt with tram rails (standard gauge: rails 0.72 m either side of the track centreline).
 	const asphaltCol = mix( color( 0x3d3e40 ), color( 0x4c4c4c ), noise2D( vec2( wx, wz ).mul( 2.5 ) ) ).mul( mix( float( 0.9 ), float( 1.05 ), noise2D( vec2( wx, wz ).mul( 0.2 ) ) ) );
@@ -129,22 +141,27 @@ export function createGroundMaterial( surfaceTex, bounds ) {
 	const ashlar = mix( color( 0x8b8170 ), color( 0x9c927e ), hash2D( floor( vec2( wx.add( wz ).div( 0.9 ), positionWorld.y.div( 0.45 ) ) ) ) )
 		.mul( float( 1 ).sub( max( gridLine( positionWorld.y, 0.45, 0.02 ), gridLine( wx.add( wz ), 0.9, 0.02 ) ).mul( 0.4 ) ) );
 
-	let col = cobbles;
-	col = mix( col, mix( asphaltCol, railCol, rail ), road );
-	col = mix( col, mosaic, sidewalk );
-	col = mix( col, kerbCol, kerb );
-	col = mix( col, grass, park.mul( float( 1 ).sub( sidewalk ) ) );
+	// Surface codes: 0 setts, 0.5 paving stones, 1 asphalt.
+	const surfaceColour = code => mix( mix( cobbles, paving, step( 0.25, code ) ), asphaltCol, step( 0.75, code ) );
+	const roadSurface = s2.r, openSurface = s2.g;
+
+	let col = surfaceColour( openSurface );
+	col = mix( col, mix( surfaceColour( roadSurface ), railCol, rail ), road );
+	col = mix( col, mosaic, pavement );
+	col = mix( col, grass, park.mul( float( 1 ).sub( pavement ) ) );
 	col = mix( col, ashlar, steep );
+	col = mix( col, kerbCol, max( kerbTop, kerbFace ) );
 
 	// Soft contact shadow at the foot of the houses.
 	col = col.mul( mix( float( 0.6 ), float( 1 ), smoothstep( 0.0, 0.9, buildingDist ) ) );
 	mat.colorNode = col;
 	mat.roughnessNode = mix( mix( float( 0.85 ), float( 0.55 ), rail.mul( road ) ), float( 1.0 ), park );
+	const isSetts = float( 1 ).sub( step( 0.25, mix( openSurface, roadSurface, road ) ) ).mul( float( 1 ).sub( pavement ) );
 
 	mat.normalNode = Fn( () => {
 
-		const relief = setDome.mul( 0.012 ).mul( setFade ).mul( float( 1 ).sub( sidewalk ).mul( float( 1 ).sub( road ) ) )
-			.add( sidewalk.mul( 0.004 ).mul( float( 1 ).sub( mosJoint ) ).mul( mosFade ) );
+		const relief = setDome.mul( 0.012 ).mul( setFade ).mul( isSetts ).mul( float( 1 ).sub( steep ) )
+			.add( pavement.mul( 0.004 ).mul( float( 1 ).sub( mosJoint ) ).mul( mosFade ) );
 		return bumpNormal( relief.mul( distFade( 12, 60 ) ) );
 
 	} )();

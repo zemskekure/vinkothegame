@@ -16,6 +16,7 @@ import { fromFile } from 'geotiff';
 import poly2tri from 'poly2tri';
 import { ShapeUtils, Vector2, Color, SRGBColorSpace } from 'three';
 import { AREA, ORIGIN } from './area.mjs';
+import { loadStreets, buildPavementMesh, collectFurniture } from './streets.mjs';
 
 const RAW = new URL( '../data/raw/', import.meta.url );
 const OUT = new URL( '../public/data/', import.meta.url );
@@ -777,11 +778,14 @@ const streets = JSON.parse( await readFile( new URL( 'streets.json', RAW ) ) )
 	} ) );
 
 // ---------------------------------------------------------------------------
-// Street-surface map (1 m cells, row 0 = north), RGBA:
-//   R  distance to the nearest building × 40   (sidewalks along the houses)
-//   G  park / maintained greenery mask
-//   B  128 + (half width − distance to a carriageway centreline) × 32   (> 128 = asphalt)
-//   A  distance to a tram track centreline × 50   (rails)
+// Street-surface maps (1 m cells, row 0 = north), from OpenStreetMap (see streets.mjs):
+// surface.bin   R  distance to the nearest building × 40
+//               G  park / maintained greenery mask
+//               B  128 − F × 25, F = signed distance to a carriageway edge (< 0 on the road)
+//               A  distance to a tram track centreline × 50   (rails)
+// surface2.bin  R  carriageway surface: 255 asphalt, 128 paving stones, 0 setts
+//               G  pedestrian / open area surface, same coding
+//               B  128 − Fk × 25, Fk = signed distance to a kerbed carriageway edge (> 0 on raised pavement)
 
 const SURF_CELL = 1;
 const sw = Math.round( ( AREA.xmax - AREA.xmin ) / SURF_CELL ), sh = Math.round( ( AREA.ymax - AREA.ymin ) / SURF_CELL );
@@ -887,11 +891,8 @@ function polylineDistance( paths, range ) {
 
 }
 
-// Asphalt carriageways: the tram streets and embankments; the rest of the Old Town is cobbled.
-const ASPHALT = new Set( [ 'Národní', 'Smetanovo nábřeží', 'Masarykovo nábřeží', 'Most legií', 'Spálená', 'Vladislavova', '28. října', 'Křižovnické náměstí', 'nábřeží Karla Schwarzenberga' ] );
-const ROAD_HALF_WIDTH = 4.5;
-const rawStreets = JSON.parse( await readFile( new URL( 'streets.json', RAW ) ) );
-const roadDist = polylineDistance( rawStreets.filter( f => ASPHALT.has( f.attributes.nazev ) ).flatMap( f => f.geometry.paths ), 8 );
+const streetData = await loadStreets( { AREA, buildingDist } );
+const surface2 = new Uint8Array( sw * sh * 4 );
 const tramDist = polylineDistance( JSON.parse( await readFile( new URL( 'tram.json', RAW ) ) ).flatMap( f => f.geometry?.paths || [] ), 6 );
 const parks = JSON.parse( await readFile( new URL( 'greenery.json', RAW ) ) ).flatMap( f => f.geometry?.rings ? [ f.geometry.rings ] : [] );
 
@@ -905,12 +906,50 @@ for ( let r = 0; r < sh; r ++ ) {
 		const clamp = v => Math.max( 0, Math.min( 255, Math.round( v ) ) );
 		surface[ i ] = clamp( buildingDist( X, Y ) * 40 );
 		surface[ i + 1 ] = parks.some( rings => pointInRings( rings, X, Y ) ) ? 255 : 0;
-		surface[ i + 2 ] = clamp( 128 + ( ROAD_HALF_WIDTH - roadDist[ r * sw + c ] ) * 32 );
+		const st = streetData.at( X, Y );
+		surface[ i + 2 ] = clamp( 128 - st.F * 25 );
 		surface[ i + 3 ] = clamp( tramDist[ r * sw + c ] * 50 );
+		surface2[ i ] = clamp( st.roadAsphalt * 255 );
+		surface2[ i + 1 ] = clamp( st.openSurface * 255 );
+		surface2[ i + 2 ] = clamp( 128 - st.Fk * 25 );
+		surface2[ i + 3 ] = 255;
 
 	}
 
 }
+
+// ---------------------------------------------------------------------------
+// Raised pavements and street furniture
+
+// Street-level ground height in the scene frame: the same 2 m grid the terrain mesh is built from.
+function terrainAt( X, Y ) {
+
+	const fx = Math.min( Math.max( ( X - AREA.xmin ) / TERRAIN_CELL, 0 ), tw - 1.001 );
+	const fy = Math.min( Math.max( ( AREA.ymax - Y ) / TERRAIN_CELL, 0 ), th - 1.001 );
+	const x0 = Math.floor( fx ), y0 = Math.floor( fy ), tx = fx - x0, ty = fy - y0;
+	const i = y0 * tw + x0;
+	return ( terrain[ i ] * ( 1 - tx ) + terrain[ i + 1 ] * tx ) * ( 1 - ty ) + ( terrain[ i + tw ] * ( 1 - tx ) + terrain[ i + tw + 1 ] * tx ) * ty;
+
+}
+
+const inKeptBuilding = ( X, Y ) => keptIds.has( buildingAt( X, Y ) );
+const pavement = buildPavementMesh( streetData, { AREA, toLocal, heightAt: terrainAt, inBuilding: inKeptBuilding } );
+console.log( `pavements: ${pavement.positions.length / 3} vertices, ${( pavement.kerbLength / 1000 ).toFixed( 1 )} km of kerb` );
+
+const furniture = collectFurniture( streetData, {
+	toLocal,
+	heightAt: ( X, Y ) => terrainAt( X, Y ) + 0.03 + streetData.raise( streetData.at( X, Y ).Fk ),
+	dsmTrees: trees,
+	treeHeightAt: ( X, Y ) => {
+
+		// Mapped trees: height from the surface model where it shows a canopy, else a typical street tree.
+		let h = 0;
+		for ( let dy = - 2; dy <= 2; dy += 1 ) for ( let dx = - 2; dx <= 2; dx += 1 ) h = Math.max( h, sample( dsmRaw, X + dx, Y + dy ) - sample( dtm, X + dx, Y + dy ) );
+		return h > 4 && h < 30 ? h : 9;
+
+	}
+} );
+console.log( 'furniture:', Object.entries( furniture ).map( ( [ k, v ] ) => `${k} ${v.length / 5}` ).join( ', ' ) );
 
 // ---------------------------------------------------------------------------
 
@@ -927,6 +966,9 @@ await writeFile( new URL( 'roofs.bin', OUT ), new Float32Array( roofData ) );
 await writeFile( new URL( 'roofs-index.bin', OUT ), new Uint32Array( roofIdx ) );
 await writeFile( new URL( 'terrain.bin', OUT ), terrain );
 await writeFile( new URL( 'surface.bin', OUT ), surface );
+await writeFile( new URL( 'surface2.bin', OUT ), surface2 );
+await writeFile( new URL( 'pavement.bin', OUT ), pavement.positions );
+await writeFile( new URL( 'pavement-index.bin', OUT ), pavement.index );
 await writeFile( new URL( 'street-facades.json', RAW ), JSON.stringify( streetFacades ) );
 
 // Footprint mask on the DSM grid (1 bit per cell, row 0 = north) for walking collisions.
@@ -935,7 +977,7 @@ for ( let i = 0; i < idGrid.length; i ++ ) if ( keptIds.has( idGrid[ i ] ) ) mas
 await writeFile( new URL( 'footprints.bin', OUT ), mask );
 
 await writeFile( new URL( 'scene.json', OUT ), JSON.stringify( {
-	attribution: 'Data © ČÚZK (RÚIAN, ZABAGED®, DMR 5G, DMP 1G)',
+	attribution: 'Data © ČÚZK (RÚIAN, ZABAGED®, DMR 5G, DMP 1G) · © OpenStreetMap contributors (ODbL)',
 	baseHeight: BASE_HEIGHT,
 	bounds: { minX: ax0, maxX: ax1, minZ: az0, maxZ: az1 },
 	waterLevel,
@@ -945,7 +987,8 @@ await writeFile( new URL( 'scene.json', OUT ), JSON.stringify( {
 	wallStride: WALL_STRIDE,
 	roofStride: ROOF_STRIDE,
 	buildings: meta,
-	trees,
+	furniture,
+	kerbHeight: streetData.KERB_HEIGHT,
 	streets
 } ) );
 

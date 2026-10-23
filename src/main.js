@@ -4,6 +4,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { createFacadeMaterial, PLASTER } from './shading/facade.js';
 import { createRoofMaterial, createGroundMaterial, createWaterMaterial } from './shading/surfaces.js';
 import { Walker } from './walker.js';
+import { addFurniture } from './furniture.js';
 
 async function load( name, type = 'arrayBuffer' ) {
 
@@ -17,7 +18,7 @@ async function load( name, type = 'arrayBuffer' ) {
 
 }
 
-const [ data, wallsBuf, wallIdxBuf, roofsBuf, roofIdxBuf, terrainBuf, surfaceBuf, footprintBuf ] = await Promise.all( [
+const [ data, wallsBuf, wallIdxBuf, roofsBuf, roofIdxBuf, terrainBuf, surfaceBuf, surface2Buf, pavementBuf, pavementIdxBuf, footprintBuf ] = await Promise.all( [
 	load( 'scene.json', 'json' ),
 	load( 'walls.bin' ),
 	load( 'walls-index.bin' ),
@@ -25,6 +26,9 @@ const [ data, wallsBuf, wallIdxBuf, roofsBuf, roofIdxBuf, terrainBuf, surfaceBuf
 	load( 'roofs-index.bin' ),
 	load( 'terrain.bin' ),
 	load( 'surface.bin' ),
+	load( 'surface2.bin' ),
+	load( 'pavement.bin' ),
+	load( 'pavement-index.bin' ),
 	load( 'footprints.bin' )
 ] );
 
@@ -94,15 +98,33 @@ for ( let i = 0; i < tp.count; i ++ ) tp.setY( i, heights[ i ] );
 terrainGeo.computeVertexNormals();
 
 const S = data.surface;
-const surfaceTex = new THREE.DataTexture( new Uint8Array( surfaceBuf ), S.width, S.height, THREE.RGBAFormat );
-surfaceTex.magFilter = surfaceTex.minFilter = THREE.LinearFilter;
-surfaceTex.needsUpdate = true;
+const surfaceTexture = buf => {
 
-const terrain = new THREE.Mesh( terrainGeo, createGroundMaterial( surfaceTex, bounds ) );
+	const tex = new THREE.DataTexture( new Uint8Array( buf ), S.width, S.height, THREE.RGBAFormat );
+	tex.magFilter = tex.minFilter = THREE.LinearFilter;
+	tex.needsUpdate = true;
+	return tex;
+
+};
+
+const surface2 = new Uint8Array( surface2Buf );
+const groundMaterial = createGroundMaterial( surfaceTexture( surfaceBuf ), surfaceTexture( surface2Buf ), bounds );
+const terrain = new THREE.Mesh( terrainGeo, groundMaterial );
 terrain.receiveShadow = true;
 scene.add( terrain );
 
-function groundHeight( x, z ) {
+// Raised pavements with their kerbs (double-sided: the kerb faces are only wound one way).
+const pavementGeo = new THREE.BufferGeometry();
+pavementGeo.setAttribute( 'position', new THREE.BufferAttribute( new Float32Array( pavementBuf ), 3 ) );
+pavementGeo.setIndex( new THREE.BufferAttribute( new Uint32Array( pavementIdxBuf ), 1 ) );
+pavementGeo.computeVertexNormals();
+const pavementMaterial = createGroundMaterial( surfaceTexture( surfaceBuf ), surfaceTexture( surface2Buf ), bounds );
+pavementMaterial.side = THREE.DoubleSide;
+const pavement = new THREE.Mesh( pavementGeo, pavementMaterial );
+pavement.receiveShadow = true;
+scene.add( pavement );
+
+function terrainHeight( x, z ) {
 
 	const fx = THREE.MathUtils.clamp( ( x - bounds.minX ) / T.cell, 0, T.width - 1.001 );
 	const fz = THREE.MathUtils.clamp( ( z - bounds.minZ ) / T.cell, 0, T.height - 1.001 );
@@ -110,6 +132,17 @@ function groundHeight( x, z ) {
 	const i = z0 * T.width + x0;
 	return ( heights[ i ] * ( 1 - tx ) + heights[ i + 1 ] * tx ) * ( 1 - tz ) +
 		( heights[ i + T.width ] * ( 1 - tx ) + heights[ i + T.width + 1 ] * tx ) * tz;
+
+}
+
+// Walking surface: street level plus the raised pavement (kerb field in surface2's blue channel).
+function groundHeight( x, z ) {
+
+	const col = Math.min( S.width - 1, Math.max( 0, Math.floor( ( x - bounds.minX ) / S.cell ) ) );
+	const row = Math.min( S.height - 1, Math.max( 0, Math.floor( ( z - bounds.minZ ) / S.cell ) ) );
+	const Fk = ( 128 - surface2[ ( row * S.width + col ) * 4 + 2 ] ) / 25;
+	const raise = Fk <= 0 ? 0 : Fk < 6 ? data.kerbHeight : Fk < 8.5 ? data.kerbHeight * ( 8.5 - Fk ) / 2.5 : 0;
+	return terrainHeight( x, z ) + raise;
 
 }
 
@@ -180,37 +213,9 @@ wallMesh.castShadow = wallMesh.receiveShadow = true;
 scene.add( wallMesh );
 
 // ---------------------------------------------------------------------------
-// Trees (canopy peaks found in the surface model)
+// Street furniture and trees (OpenStreetMap, plus canopy peaks found in the surface model)
 
-const tree = data.trees;
-const treeCount = tree.length / 5;
-const crowns = new THREE.InstancedMesh( new THREE.IcosahedronGeometry( 1, 1 ),
-	new THREE.MeshStandardNodeMaterial( { roughness: 0.95, flatShading: true } ), treeCount * 3 );
-const trunks = new THREE.InstancedMesh( new THREE.CylinderGeometry( 0.16, 0.26, 1, 7 ).translate( 0, 0.5, 0 ),
-	new THREE.MeshStandardNodeMaterial( { color: 0x4a3b2c, roughness: 1 } ), treeCount );
-const m = new THREE.Matrix4(), q = new THREE.Quaternion(), s = new THREE.Vector3(), p = new THREE.Vector3();
-for ( let i = 0; i < treeCount; i ++ ) {
-
-	const [ x, y, z, h, r ] = tree.slice( i * 5, i * 5 + 5 );
-	const crownH = h * 0.4;
-	// Three overlapping blobs per crown.
-	for ( let k = 0; k < 3; k ++ ) {
-
-		const a = i * 2.4 + k * 2.1, o = r * 0.35;
-		q.setFromAxisAngle( THREE.Object3D.DEFAULT_UP, a );
-		m.compose( p.set( x + Math.cos( a ) * o, y + h - crownH * ( 0.9 + 0.15 * k ), z + Math.sin( a ) * o ), q, s.set( r * 0.75, crownH * 0.8, r * 0.75 ) );
-		crowns.setMatrixAt( i * 3 + k, m );
-		crowns.setColorAt( i * 3 + k, c.setHSL( 0.23 + ( ( i * 0.37 + k * 0.11 ) % 0.05 ), 0.42, 0.24 + ( ( i * 0.61 + k * 0.2 ) % 0.07 ) ) );
-
-	}
-
-	m.compose( p.set( x, y, z ), q.identity(), s.set( 1, h - crownH * 1.2, 1 ) );
-	trunks.setMatrixAt( i, m );
-
-}
-
-crowns.castShadow = crowns.receiveShadow = trunks.castShadow = true;
-scene.add( crowns, trunks );
+addFurniture( scene, data.furniture );
 
 // ---------------------------------------------------------------------------
 // Controls: orbit (overview) and walking at street level
