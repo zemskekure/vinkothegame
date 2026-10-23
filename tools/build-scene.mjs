@@ -14,7 +14,7 @@ import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import jpeg from 'jpeg-js';
 import { fromFile } from 'geotiff';
 import poly2tri from 'poly2tri';
-import { ShapeUtils, Vector2 } from 'three';
+import { ShapeUtils, Vector2, Color, SRGBColorSpace } from 'three';
 import { AREA, ORIGIN } from './area.mjs';
 
 const RAW = new URL( '../data/raw/', import.meta.url );
@@ -324,7 +324,9 @@ for ( const z of zabaged ) {
 // Geometry: clean extruded walls up to the measured eave, hipped roofs generated
 // from the footprint (constant slope from every edge, capped at the measured ridge).
 
-const WALL_STRIDE = 10; // x y z  u  wallWidth  base  top  floorH  seed  kind
+const WALL_STRIDE = 16; // x y z  u  wallWidth  base  top  floorH  seed  kind  r g b  bay  window  shop
+// r g b: measured plaster colour (sRGB, -1 when unknown); bay (m) / window (fraction of bay): measured window
+// rhythm, 0 when unknown; shop: 1 shops, 0 none, -1 unknown. See tools/facades.mjs and tools/facade-params.mjs.
 const WALL_KIND = { street: 0, rear: 2, party: 3 };
 const ROOF_STRIDE = 8; // x y z  kind  seed  r g b (roof colour from the aerial photo, sRGB)
 const ROOF_SLOPE = Math.tan( THREE_DEG( 40 ) );
@@ -388,6 +390,47 @@ function streetDistance( X, Y ) {
 
 }
 
+// Facade measurements from street-level photos (optional; see tools/facade-params.mjs).
+const facadeParams = await ( async () => {
+
+	let all = {};
+	try {
+
+		all = JSON.parse( await readFile( new URL( 'facade-params.json', RAW ) ) );
+
+	} catch {
+
+		console.log( 'no facade-params.json: facades stay procedural' );
+
+	}
+
+	// Photo colours vary with exposure and shade: keep hue and saturation, settle the lightness.
+	const normalise = ( [ r, g, b ] ) => {
+
+		const c = new Color().setRGB( r / 255, g / 255, b / 255, SRGBColorSpace );
+		const hsl = c.getHSL( {}, SRGBColorSpace );
+		c.setHSL( hsl.h, Math.min( 0.6, hsl.s * 1.25 ), Math.min( 0.84, Math.max( 0.5, hsl.l * 1.12 ) ), SRGBColorSpace );
+		const out = { r: 0, g: 0, b: 0 };
+		c.getRGB( out, SRGBColorSpace );
+		return [ out.r, out.g, out.b ];
+
+	};
+
+	return {
+		forWall: ( code, edge ) => all[ `${code}_${edge}` ] || null,
+		forBuilding( code ) {
+
+			const own = Object.entries( all ).filter( ( [ k ] ) => k.startsWith( `${code}_` ) ).map( ( [ , v ] ) => v );
+			if ( ! own.length ) return {};
+			const med = ch => own.map( v => v.colour[ ch ] ).sort( ( x, y ) => x - y )[ own.length >> 1 ];
+			return { colour: normalise( [ med( 0 ), med( 1 ), med( 2 ) ] ) };
+
+		}
+	};
+
+} )();
+
+const streetFacades = [];
 const wallData = [];
 const roofData = [];
 const roofIdx = [];
@@ -472,6 +515,7 @@ for ( const b of buildings ) {
 	const floors = b.floors > 0 ? b.floors : Math.max( 1, Math.round( eave / 3.4 ) );
 	const floorH = Math.min( 5.5, Math.max( 2.7, eave / floors ) );
 	const seed = hash01( b.code | 0 );
+	const measured = facadeParams.forBuilding( b.code );
 
 
 	// Roof material from its real colour: green = copper, grey = slate (or tar on flat roofs), else clay tiles.
@@ -528,7 +572,7 @@ for ( const b of buildings ) {
 
 	// --- walls: one quad per boundary chunk. u runs left to right for someone facing the wall and restarts
 	// at every footprint corner, so the facade shader can fit whole window bays between the corners.
-	for ( const ring of edges ) {
+	for ( const [ ringIndex, ring ] of edges.entries() ) {
 
 		for ( let i = 0; i < ring.length; i ++ ) {
 
@@ -560,10 +604,39 @@ for ( const b of buildings ) {
 			const sA = a.along, sC = c.edge === a.edge ? c.along : a.edgeLen;
 			const uA = readsAtoC ? sA : a.edgeLen - sA, uC = readsAtoC ? sC : a.edgeLen - sC;
 
-			const v = ( P, uu ) => wallData.push( P[ 0 ], P[ 1 ], P[ 2 ], uu, a.edgeLen, ground - BASE_HEIGHT, eaveY - BASE_HEIGHT, floorH, seed, kind );
+			const wallParams = ringIndex === 0 ? facadeParams.forWall( b.code, a.edge ) : null;
+			const [ cr, cg, cb ] = measured.colour || [ - 1, - 1, - 1 ];
+			const bay = wallParams?.bay || 0, win = wallParams?.window || 0;
+			const shop = wallParams ? ( wallParams.shop ? 1 : 0 ) : - 1;
+			const v = ( P, uu ) => wallData.push( P[ 0 ], P[ 1 ], P[ 2 ], uu, a.edgeLen, ground - BASE_HEIGHT, eaveY - BASE_HEIGHT, floorH, seed, kind, cr, cg, cb, bay, win, shop );
 			const quad = frontIsCCW ? [ [ A0, uA ], [ C0, uC ], [ C1, uC ], [ A0, uA ], [ C1, uC ], [ A1, uA ] ]
 				: [ [ A0, uA ], [ C1, uC ], [ C0, uC ], [ A0, uA ], [ A1, uA ], [ C1, uC ] ];
 			for ( const [ P, uu ] of quad ) v( P, uu );
+
+		}
+
+	}
+
+	// Whole street-facing footprint edges, for matching against street-level photos (tools/facades.mjs).
+	for ( const ring of [ b.poly.outer ] ) {
+
+		for ( let i = 0; i < ring.length; i ++ ) {
+
+			const [ ax, ay ] = ring[ i ], [ bx, by ] = ring[ ( i + 1 ) % ring.length ];
+			const len = Math.hypot( bx - ax, by - ay );
+			if ( len < 3 ) continue;
+			const mx = ( ax + bx ) / 2, my = ( ay + by ) / 2;
+			let nx = ( by - ay ) / len, ny = - ( bx - ax ) / len;
+			if ( pointInRings( rings, mx + nx * 0.3, my + ny * 0.3 ) ) {
+
+				nx = - nx; ny = - ny;
+
+			}
+
+			const other = buildingAt( mx + nx * 0.75, my + ny * 0.75 );
+			if ( other >= 0 && other !== b.id ) continue;
+			if ( streetDistance( mx + nx * 3, my + ny * 3 ) >= 9 ) continue;
+			streetFacades.push( { code: b.code, edge: i, a: [ ax, ay ], b: [ bx, by ], n: [ nx, ny ], ground, eave: eaveY, floors } );
 
 		}
 
@@ -850,6 +923,7 @@ await writeFile( new URL( 'roofs.bin', OUT ), new Float32Array( roofData ) );
 await writeFile( new URL( 'roofs-index.bin', OUT ), new Uint32Array( roofIdx ) );
 await writeFile( new URL( 'terrain.bin', OUT ), terrain );
 await writeFile( new URL( 'surface.bin', OUT ), surface );
+await writeFile( new URL( 'street-facades.json', RAW ), JSON.stringify( streetFacades ) );
 
 // Footprint mask on the DSM grid (1 bit per cell, row 0 = north) for walking collisions.
 const mask = new Uint8Array( Math.ceil( idGrid.length / 8 ) );

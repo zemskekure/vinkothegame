@@ -143,7 +143,7 @@ const ws = data.wallStride;
 const wallGeo = new THREE.BufferGeometry();
 const wib = new THREE.InterleavedBuffer( walls, ws );
 [ [ 'position', 3, 0 ], [ 'wallU', 1, 3 ], [ 'wallW', 1, 4 ], [ 'wallBase', 1, 5 ], [ 'wallTop', 1, 6 ],
-	[ 'floorH', 1, 7 ], [ 'seed', 1, 8 ], [ 'kind', 1, 9 ] ].forEach( ( [ name, size, offset ] ) => {
+	[ 'floorH', 1, 7 ], [ 'seed', 1, 8 ], [ 'kind', 1, 9 ], [ 'realBay', 1, 13 ], [ 'realWindow', 1, 14 ], [ 'realShop', 1, 15 ] ].forEach( ( [ name, size, offset ] ) => {
 
 	wallGeo.setAttribute( name, new THREE.InterleavedBufferAttribute( wib, size, offset ) );
 
@@ -153,7 +153,10 @@ const plaster = new Float32Array( walls.length / ws * 3 );
 const c = new THREE.Color();
 for ( let i = 0, n = walls.length / ws; i < n; i ++ ) {
 
-	c.setHex( PLASTER[ Math.floor( walls[ i * ws + 8 ] * PLASTER.length ) ] );
+	// Measured colour from street photos when there is one, else a typical Prague plaster.
+	const r = walls[ i * ws + 10 ];
+	if ( r >= 0 ) c.setRGB( r, walls[ i * ws + 11 ], walls[ i * ws + 12 ], THREE.SRGBColorSpace );
+	else c.setHex( PLASTER[ Math.floor( walls[ i * ws + 8 ] * PLASTER.length ) ] );
 	plaster.set( [ c.r, c.g, c.b ], i * 3 );
 
 }

@@ -30,6 +30,9 @@ export function createFacadeMaterial() {
 	const fH = attribute( 'floorH', 'float' );
 	const seed = attribute( 'seed', 'float' );
 	const kind = attribute( 'kind', 'float' );
+	const realBay = attribute( 'realBay', 'float' ); // measured from street photos, 0 = unknown
+	const realWindow = attribute( 'realWindow', 'float' );
+	const realShop = attribute( 'realShop', 'float' ); // 1 / 0, -1 = unknown
 	const plaster = attribute( 'plaster', 'vec3' );
 
 	const n = normalWorldGeometry;
@@ -48,7 +51,7 @@ export function createFacadeMaterial() {
 
 	const pier = min( float( 0.95 ), W.mul( 0.16 ) );
 	const inner = W.sub( pier.mul( 2 ) );
-	const bayTarget = float( 2.7 ).add( fract( seed.mul( 13.1 ) ).mul( 0.7 ) );
+	const bayTarget = mix( float( 2.7 ).add( fract( seed.mul( 13.1 ) ).mul( 0.7 ) ), realBay, step( 0.5, realBay ) );
 	const bays = max( floor( inner.div( bayTarget ).add( 0.5 ) ), 1 );
 	const bayW = inner.div( bays );
 	const gridU = u.sub( pier ).div( bayW );
@@ -66,13 +69,14 @@ export function createFacadeMaterial() {
 	const solid = max( max( max( inPier, tooNarrow ), isParty ), underCornice );
 
 	// Ground floor of street fronts: shops in most houses, one door bay per wall.
-	const hasShops = step( 0.3, fract( seed.mul( 7.7 ) ) ).mul( isStreet );
+	const hasShops = mix( step( 0.3, fract( seed.mul( 7.7 ) ) ), step( 0.5, realShop ), step( - 0.5, realShop ) ).mul( isStreet );
 	const doorBay = min( floor( fract( seed.mul( 3.3 ) ).mul( bays ) ), bays.sub( 1 ) );
 	const door = ground.mul( isStreet ).mul( step( abs( bayIdx.sub( doorBay ) ), 0.5 ) ).mul( float( 1 ).sub( solid ) );
 	const shop = ground.mul( hasShops ).mul( float( 1 ).sub( door ) ).mul( float( 1 ).sub( solid ) );
 
 	// Window opening in the cell.
-	const wx0 = mix( float( 0.3 ), float( 0.15 ), shop );
+	const upperX0 = mix( float( 0.3 ), float( 1 ).sub( realWindow ).mul( 0.5 ).clamp( 0.18, 0.38 ), step( 0.1, realWindow ) );
+	const wx0 = mix( upperX0, float( 0.15 ), shop );
 	const wy0 = mix( float( 0.25 ), float( 0.1 ), shop );
 	const wy1 = mix( float( 0.8 ), float( 0.74 ), shop );
 	const open = float( 1 ).sub( solid ).mul( float( 1 ).sub( door ) ).mul( max( upper, max( shop, isRear.mul( ground ) ) ) );
