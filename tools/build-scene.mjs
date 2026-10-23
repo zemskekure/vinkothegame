@@ -432,6 +432,7 @@ const facadeParams = await ( async () => {
 
 const streetFacades = [];
 const wallData = [];
+const wallIdx = [];
 const roofData = [];
 const roofIdx = [];
 const meta = [];
@@ -609,9 +610,11 @@ for ( const b of buildings ) {
 			const bay = wallParams?.bay || 0, win = wallParams?.window || 0;
 			const shop = wallParams ? ( wallParams.shop ? 1 : 0 ) : - 1;
 			const v = ( P, uu ) => wallData.push( P[ 0 ], P[ 1 ], P[ 2 ], uu, a.edgeLen, ground - BASE_HEIGHT, eaveY - BASE_HEIGHT, floorH, seed, kind, cr, cg, cb, bay, win, shop );
-			const quad = frontIsCCW ? [ [ A0, uA ], [ C0, uC ], [ C1, uC ], [ A0, uA ], [ C1, uC ], [ A1, uA ] ]
-				: [ [ A0, uA ], [ C1, uC ], [ C0, uC ], [ A0, uA ], [ A1, uA ], [ C1, uC ] ];
-			for ( const [ P, uu ] of quad ) v( P, uu );
+			// Four corners per quad, two indexed triangles facing outwards.
+			const q = wallData.length / WALL_STRIDE;
+			v( A0, uA ); v( C0, uC ); v( C1, uC ); v( A1, uA );
+			if ( frontIsCCW ) wallIdx.push( q, q + 1, q + 2, q, q + 2, q + 3 );
+			else wallIdx.push( q, q + 2, q + 1, q, q + 3, q + 2 );
 
 		}
 
@@ -919,6 +922,7 @@ const [ ax1, , az0 ] = toLocal( AREA.xmax, AREA.ymax, 0 );
 const waterLevel = terrain.reduce( ( m, v ) => Math.min( m, v ), Infinity ) + 0.25;
 
 await writeFile( new URL( 'walls.bin', OUT ), new Float32Array( wallData ) );
+await writeFile( new URL( 'walls-index.bin', OUT ), new Uint32Array( wallIdx ) );
 await writeFile( new URL( 'roofs.bin', OUT ), new Float32Array( roofData ) );
 await writeFile( new URL( 'roofs-index.bin', OUT ), new Uint32Array( roofIdx ) );
 await writeFile( new URL( 'terrain.bin', OUT ), terrain );

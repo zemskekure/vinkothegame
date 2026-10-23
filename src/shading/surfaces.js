@@ -112,9 +112,9 @@ export function createGroundMaterial( surfaceTex, bounds ) {
 	// Sparse dark diamonds, as in the classic Prague mosaic.
 	const pattern = step( 0.5, fract( floor( mos.x.add( mos.y ).div( 9 ) ).mul( 0.5 ) ) ).mul( step( 0.5, fract( floor( mos.x.sub( mos.y ).div( 9 ) ).mul( 0.5 ) ) ) )
 		.mul( step( 0.75, hash2D( floor( mos.add( vec2( mos.y, mos.x.negate() ) ).div( 36 ) ) ) ) );
-	const mosaicStone = mix( mix( color( 0xcfc8bb ), color( 0xb9b1a3 ), mosRnd ), color( 0x4a4541 ), pattern.mul( 0.8 ) );
+	const mosaicStone = mix( mix( color( 0xcfc8bb ), color( 0xb9b1a3 ), mosRnd ), color( 0x6e6760 ), pattern.mul( 0.5 ) );
 	const mosJoint = max( gridLine( wx, 0.055, 0.004 ), gridLine( wz, 0.055, 0.004 ) );
-	const mosaic = mix( mix( color( 0xb5ad9f ), color( 0x8a8580 ), pattern.mul( 0.4 ) ), mosaicStone.mul( float( 1 ).sub( mosJoint.mul( 0.4 ) ) ), mosFade );
+	const mosaic = mix( mix( color( 0xb5ad9f ), color( 0x9c958c ), pattern.mul( 0.3 ) ), mosaicStone.mul( float( 1 ).sub( mosJoint.mul( 0.4 ) ) ), mosFade );
 
 	const kerbCol = mix( color( 0xa8a59e ), color( 0x96938b ), noise2D( vec2( wx, wz ).mul( 4 ) ) );
 

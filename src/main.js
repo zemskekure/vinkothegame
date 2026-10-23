@@ -5,11 +5,22 @@ import { createFacadeMaterial, PLASTER } from './shading/facade.js';
 import { createRoofMaterial, createGroundMaterial, createWaterMaterial } from './shading/surfaces.js';
 import { Walker } from './walker.js';
 
-const load = async ( name, type = 'arrayBuffer' ) => ( await fetch( `data/${name}` ) )[ type ]();
+async function load( name, type = 'arrayBuffer' ) {
 
-const [ data, wallsBuf, roofsBuf, roofIdxBuf, terrainBuf, surfaceBuf, footprintBuf ] = await Promise.all( [
+	if ( ! window.PACKED_DATA ) return ( await fetch( `data/${name}` ) )[ type ]();
+
+	// Hosted build: gzipped, base64-encoded text files (see tools/pack-artifact.mjs).
+	const text = await ( await fetch( `data/${name}.gz.txt` ) ).text();
+	const bytes = Uint8Array.from( atob( text ), c => c.charCodeAt( 0 ) );
+	const unpacked = new Response( new Blob( [ bytes ] ).stream().pipeThrough( new DecompressionStream( 'gzip' ) ) );
+	return unpacked[ type ]();
+
+}
+
+const [ data, wallsBuf, wallIdxBuf, roofsBuf, roofIdxBuf, terrainBuf, surfaceBuf, footprintBuf ] = await Promise.all( [
 	load( 'scene.json', 'json' ),
 	load( 'walls.bin' ),
+	load( 'walls-index.bin' ),
 	load( 'roofs.bin' ),
 	load( 'roofs-index.bin' ),
 	load( 'terrain.bin' ),
@@ -53,7 +64,7 @@ const pmrem = new THREE.PMREMGenerator( renderer );
 const envScene = new THREE.Scene();
 envScene.add( sky.clone() );
 scene.environment = pmrem.fromScene( envScene ).texture;
-scene.environmentIntensity = 0.3;
+scene.environmentIntensity = 0.18;
 
 scene.fog = new THREE.Fog( 0xc9d6e2, 350, 1600 );
 
@@ -68,7 +79,7 @@ sun.shadow.bias = - 0.0003;
 sun.shadow.normalBias = 0.3;
 sun.position.copy( sunDir ).multiplyScalar( 700 ).add( centre );
 sun.target.position.copy( centre );
-scene.add( sun, sun.target, new THREE.HemisphereLight( 0xd6e2ee, 0x8a7a66, 0.35 ) );
+scene.add( sun, sun.target, new THREE.HemisphereLight( 0xdfe6ee, 0xc49a6c, 0.75 ) );
 
 // ---------------------------------------------------------------------------
 // Terrain and street surfaces
@@ -162,6 +173,7 @@ for ( let i = 0, n = walls.length / ws; i < n; i ++ ) {
 }
 
 wallGeo.setAttribute( 'plaster', new THREE.BufferAttribute( plaster, 3 ) );
+wallGeo.setIndex( new THREE.BufferAttribute( new Uint32Array( wallIdxBuf ), 1 ) );
 wallGeo.computeVertexNormals();
 const wallMesh = new THREE.Mesh( wallGeo, createFacadeMaterial() );
 wallMesh.castShadow = wallMesh.receiveShadow = true;
@@ -296,7 +308,7 @@ function nearestStreet( x, z ) {
 
 }
 
-document.getElementById( 'credit' ).textContent = data.attribution + ' · rendering after Slop New York (MIT, Mr.doob)';
+document.getElementById( 'credit' ).textContent = data.attribution + ' · fasády podle fotek © Mapillary (CC BY-SA) · rendering after Slop New York (MIT, Mr.doob)';
 
 // ---------------------------------------------------------------------------
 

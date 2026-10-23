@@ -1,0 +1,25 @@
+<title>Praha Betlémská</title>
+<style>
+	/* Single look: a dark loading screen and translucent dark HUD panels over the 3D city. */
+	:root { --bg: #1d232b; --panel: rgba(20, 24, 30, 0.62); --fg: #f3efe6; --muted: rgba(243, 239, 230, 0.8); --accent: #e8d9b5; --accent-fg: #221d14; color-scheme: dark; }
+	html, body { height: 100%; margin: 0; overflow: hidden; background: var(--bg); color: var(--fg); font: 14px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; }
+	canvas { display: block; touch-action: none; }
+	#hud { position: fixed; left: calc(12px + env(safe-area-inset-left, 0px)); top: calc(12px + env(safe-area-inset-top, 0px)); max-width: min(320px, calc(100vw - 24px)); padding: 10px 14px; background: var(--panel); border-radius: 8px; user-select: none; }
+	#hud h1 { margin: 0 0 4px; font-size: 15px; }
+	#hud p { margin: 2px 0; color: var(--muted); }
+	#hud button { margin-top: 6px; padding: 6px 10px; border: 0; border-radius: 5px; background: var(--accent); color: var(--accent-fg); font: inherit; cursor: pointer; }
+	#hud button:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+	#place { position: fixed; left: 50%; bottom: calc(28px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); padding: 6px 14px; background: var(--panel); border-radius: 6px; font-size: 16px; display: none; white-space: nowrap; }
+	#credit { position: fixed; right: calc(10px + env(safe-area-inset-right, 0px)); bottom: calc(6px + env(safe-area-inset-bottom, 0px)); left: 10px; text-align: right; font-size: 11px; color: var(--muted); text-shadow: 0 1px 2px #000; pointer-events: none; }
+	#loading { position: fixed; inset: 0; display: grid; place-items: center; background: var(--bg); font-size: 18px; }
+</style>
+<div id="loading">Načítám Prahu… (≈ 8 MB)</div>
+<div id="hud">
+	<h1>Praha · Betlémská čtvrť</h1>
+	<p id="help"></p>
+	<button id="mode" type="button"></button>
+</div>
+<div id="place"></div>
+<div id="credit"></div>
+<script>window.PACKED_DATA = true;</script>
+<script type="module" src="assets/app.js"></script>
