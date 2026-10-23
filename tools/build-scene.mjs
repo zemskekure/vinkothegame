@@ -207,7 +207,8 @@ function densify( ring, step ) {
 		const n = Math.max( 1, Math.ceil( len / step ) );
 		for ( let k = 0; k < n; k ++ ) {
 
-			out.push( [ a[ 0 ] + ( b[ 0 ] - a[ 0 ] ) * k / n, a[ 1 ] + ( b[ 1 ] - a[ 1 ] ) * k / n ] );
+			// x, y, source edge index, distance along that edge, edge length
+			out.push( [ a[ 0 ] + ( b[ 0 ] - a[ 0 ] ) * k / n, a[ 1 ] + ( b[ 1 ] - a[ 1 ] ) * k / n, i, len * k / n, len ] );
 
 		}
 
@@ -323,14 +324,37 @@ for ( const z of zabaged ) {
 // Geometry: clean extruded walls up to the measured eave, hipped roofs generated
 // from the footprint (constant slope from every edge, capped at the measured ridge).
 
-const WALL_STRIDE = 9; // x y z  u  base  floorH  seed  party  top
+const WALL_STRIDE = 11; // x y z  u  wallWidth  base  top  floorH  seed  kind  style
+const STYLE = { gothic: 0, baroque: 1, classicist: 2, historicist: 3, nouveau: 4, modern: 5 };
+const WALL_KIND = { street: 0, rear: 2, party: 3 };
 const ROOF_STRIDE = 5; // x y z  kind  seed
 const ROOF_SLOPE = Math.tan( THREE_DEG( 40 ) );
-const ROOF_KIND = { tiles: 0, copper: 1, flat: 2 };
+const ROOF_KIND = { tiles: 0, copper: 1, flat: 2, slate: 3 };
 
 function THREE_DEG( d ) {
 
 	return d * Math.PI / 180;
+
+}
+
+// Distance to the nearest named street centreline (classifies street fronts vs courtyard walls).
+const streetSegments = JSON.parse( await readFile( new URL( 'streets.json', RAW ) ) )
+	.flatMap( f => f.geometry?.paths || [] )
+	.flatMap( p => p.slice( 1 ).map( ( b, i ) => [ p[ i ], b ] ) );
+
+function streetDistance( X, Y ) {
+
+	let best = Infinity;
+	for ( const [ [ ax, ay ], [ bx, by ] ] of streetSegments ) {
+
+		if ( Math.min( ax, bx ) - X > best || X - Math.max( ax, bx ) > best || Math.min( ay, by ) - Y > best || Y - Math.max( ay, by ) > best ) continue;
+		const dx = bx - ax, dy = by - ay;
+		const t = Math.max( 0, Math.min( 1, ( ( X - ax ) * dx + ( Y - ay ) * dy ) / ( dx * dx + dy * dy || 1 ) ) );
+		best = Math.min( best, Math.hypot( X - ax - t * dx, Y - ay - t * dy ) );
+
+	}
+
+	return best;
 
 }
 
@@ -374,12 +398,12 @@ for ( const b of buildings ) {
 	let ground = Infinity;
 	for ( const ring of rings ) for ( const [ X, Y ] of ring ) ground = Math.min( ground, sample( dtm, X, Y ) );
 
-	const edges = rings.map( ring => densify( ring, EDGE_STEP ).map( ( [ X, Y ], i, arr ) => {
+	const edges = rings.map( ring => densify( ring, EDGE_STEP ).map( ( [ X, Y, edge, along, edgeLen ], i, arr ) => {
 
 		const prev = arr[ ( i + arr.length - 1 ) % arr.length ], next = arr[ ( i + 1 ) % arr.length ];
 		let nx = - ( next[ 1 ] - prev[ 1 ] ), ny = next[ 0 ] - prev[ 0 ];
 		const l = Math.hypot( nx, ny ) || 1;
-		return { X, Y, measured: insetHeight( rings, X, Y, nx / l, ny / l ) };
+		return { X, Y, edge, along, edgeLen, measured: insetHeight( rings, X, Y, nx / l, ny / l ) };
 
 	} ) );
 
@@ -418,7 +442,20 @@ for ( const b of buildings ) {
 	const floors = b.floors > 0 ? b.floors : Math.max( 1, Math.round( eave / 3.4 ) );
 	const floorH = Math.min( 5.5, Math.max( 2.7, eave / floors ) );
 	const seed = hash01( b.code | 0 );
-	const kind = flat ? ROOF_KIND.flat : SACRED.test( b.name || '' ) && seed < 0.7 ? ROOF_KIND.copper : ROOF_KIND.tiles;
+
+	// Architectural style, from size and roof: small old houses are gothic / renaissance or baroque, big
+	// 19th-century blocks historicist or art nouveau, flat-roofed ones modern.
+	const r = hash01( ( b.code | 0 ) ^ 0x5bd1e995 );
+	let style;
+	if ( flat && eave > 9 ) style = r < 0.8 ? STYLE.modern : STYLE.historicist;
+	else if ( floors <= 3 && eave < 13 ) style = r < 0.5 ? STYLE.gothic : r < 0.85 ? STYLE.baroque : STYLE.classicist;
+	else if ( floors >= 5 || eave > 17 ) style = r < 0.45 ? STYLE.historicist : r < 0.75 ? STYLE.nouveau : r < 0.9 ? STYLE.classicist : STYLE.baroque;
+	else style = r < 0.35 ? STYLE.baroque : r < 0.6 ? STYLE.classicist : r < 0.8 ? STYLE.historicist : r < 0.9 ? STYLE.gothic : STYLE.nouveau;
+
+	let kind = ROOF_KIND.tiles;
+	if ( flat ) kind = ROOF_KIND.flat;
+	else if ( SACRED.test( b.name || '' ) && seed < 0.7 ) kind = ROOF_KIND.copper;
+	else if ( ( style === STYLE.historicist || style === STYLE.nouveau ) && r > 0.6 ) kind = ROOF_KIND.slate;
 
 	const eaveY = ground + eave;
 	const roofHeight = d => eaveY + ( flat ? 0 : Math.min( d * ROOF_SLOPE, roofRise ) );
@@ -462,11 +499,10 @@ for ( const b of buildings ) {
 
 	}
 
-	// --- walls
-	const g = ground - BASE_HEIGHT;
+	// --- walls: one quad per boundary chunk. u runs left to right for someone facing the wall and restarts
+	// at every footprint corner, so the facade shader can fit whole window bays between the corners.
 	for ( const ring of edges ) {
 
-		let u = 0;
 		for ( let i = 0; i < ring.length; i ++ ) {
 
 			const a = ring[ i ], c = ring[ ( i + 1 ) % ring.length ];
@@ -480,21 +516,27 @@ for ( const b of buildings ) {
 
 			}
 
+			// Party wall: another building directly behind this face. Street front: a street centreline ahead.
 			const other = buildingAt( mx + nx * 0.75, my + ny * 0.75 );
-			const party = other >= 0 && other !== b.id ? 1 : 0;
+			let kind = WALL_KIND.rear;
+			if ( other >= 0 && other !== b.id ) kind = WALL_KIND.party;
+			else if ( streetDistance( mx + nx * 3, my + ny * 3 ) < 9 ) kind = WALL_KIND.street;
 
 			const A0 = toLocal( a.X, a.Y, sample( dtm, a.X, a.Y ) - 1.0 ), A1 = toLocal( a.X, a.Y, eaveY );
 			const C0 = toLocal( c.X, c.Y, sample( dtm, c.X, c.Y ) - 1.0 ), C1 = toLocal( c.X, c.Y, eaveY );
 
+			// Scene frame: outward normal n = (nx, -ny); reading direction t = (n.z, -n.x).
 			const ex = C0[ 0 ] - A0[ 0 ], ez = C0[ 2 ] - A0[ 2 ];
 			const frontIsCCW = ex * - ny - ez * nx > 0;
+			const readsAtoC = ex * - ny + ez * - nx > 0;
 
-			const v = ( P, uu ) => wallData.push( P[ 0 ], P[ 1 ], P[ 2 ], uu, g, floorH, seed, party, eaveY - BASE_HEIGHT );
-			const quad = frontIsCCW ? [ [ A0, u ], [ C0, u + len ], [ C1, u + len ], [ A0, u ], [ C1, u + len ], [ A1, u ] ]
-				: [ [ A0, u ], [ C1, u + len ], [ C0, u + len ], [ A0, u ], [ A1, u ], [ C1, u + len ] ];
+			const sA = a.along, sC = c.edge === a.edge ? c.along : a.edgeLen;
+			const uA = readsAtoC ? sA : a.edgeLen - sA, uC = readsAtoC ? sC : a.edgeLen - sC;
+
+			const v = ( P, uu ) => wallData.push( P[ 0 ], P[ 1 ], P[ 2 ], uu, a.edgeLen, ground - BASE_HEIGHT, eaveY - BASE_HEIGHT, floorH, seed, kind, style );
+			const quad = frontIsCCW ? [ [ A0, uA ], [ C0, uC ], [ C1, uC ], [ A0, uA ], [ C1, uC ], [ A1, uA ] ]
+				: [ [ A0, uA ], [ C1, uC ], [ C0, uC ], [ A0, uA ], [ A1, uA ], [ C1, uC ] ];
 			for ( const [ P, uu ] of quad ) v( P, uu );
-
-			u += len;
 
 		}
 
