@@ -6,13 +6,13 @@
 // Usage: node tools/facades.mjs [max facades] [building code filter, comma separated]
 // Imagery © Mapillary contributors, CC BY-SA 4.0.
 
-import { readFile, writeFile, mkdir, access } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, rm } from 'node:fs/promises';
 import jpeg from 'jpeg-js';
 import { fromFile } from 'geotiff';
 import { AREA } from './area.mjs';
 
 const RAW = new URL( '../data/raw/', import.meta.url );
-const CROPS = new URL( 'facades/', RAW );
+const CROPS = new URL( process.env.FACADE_OUT || 'facades/', RAW );
 const TOKEN = process.env.MAPILLARY_TOKEN;
 if ( ! TOKEN ) throw new Error( 'MAPILLARY_TOKEN is not set' );
 
@@ -210,7 +210,9 @@ function candidates( f ) {
 
 		const vx = im.X - mx, vy = im.Y - my;
 		const dn = vx * nx + vy * ny, dt = vx * tx + vy * ty;
-		if ( dn < 2.5 || dn > 35 || Math.abs( dt ) > len / 2 + 10 ) continue;
+		if ( dn < 4 || dn > 35 || Math.abs( dt ) > len / 2 + 10 ) continue;
+		// Cameras under arcades and in passages stand inside a footprint: their view of this wall is meaningless.
+		if ( blocked( im.X, im.Y ) || blocked( im.X + 1, im.Y ) || blocked( im.X - 1, im.Y ) || blocked( im.X, im.Y + 1 ) || blocked( im.X, im.Y - 1 ) ) continue;
 		const angle = Math.atan2( Math.abs( dt ), dn );
 		if ( angle > 1.1 ) continue;
 
@@ -367,26 +369,32 @@ async function processFacade( f ) {
 
 	const name = `${f.code}_${f.edge}`;
 	const sidecar = new URL( `${name}.json`, CROPS );
+	const cands = candidates( f );
+
+	// Resume: keep an earlier result while its photo still passes the selection rules.
 	try {
 
-		return JSON.parse( await readFile( sidecar ) );
+		const prev = JSON.parse( await readFile( sidecar ) );
+		if ( prev.photo === null ? ! cands.length : cands.some( c => c.im.id === prev.photo ) ) return prev;
 
 	} catch { /* not done yet */ }
 
-	let result = { name, code: f.code, edge: f.edge, photo: null };
-	const cands = candidates( f );
-	if ( cands.length ) {
+	let result = { name, code: f.code, edge: f.edge, photo: null, candidates: cands.length };
+
+	// Best photo whose view covers (nearly) the whole wall.
+	for ( const { im } of cands.slice( 0, 4 ) ) {
 
 		try {
 
-			const best = cands[ 0 ].im;
-			const det = await details( best.id );
-			const cam = { ...best, ...det };
+			const det = await details( im.id );
+			const cam = { ...im, ...det };
 			const img = await photo( det.thumb_2048_url );
 			const crop = rectify( f, cam, img );
+			if ( crop.coverage < 0.9 ) continue;
 			await writeFile( new URL( `${name}.jpg`, CROPS ), crop.jpg );
 			if ( crop.debug ) await writeFile( new URL( `${name}.debug.jpg`, CROPS ), crop.debug );
-			result = { ...result, photo: best.id, captured: best.captured_at, type: cam.camera_type, coverage: + crop.coverage.toFixed( 2 ), candidates: cands.length };
+			result = { ...result, photo: im.id, captured: im.captured_at, type: cam.camera_type, coverage: + crop.coverage.toFixed( 2 ) };
+			break;
 
 		} catch ( e ) {
 
@@ -395,6 +403,9 @@ async function processFacade( f ) {
 		}
 
 	}
+
+	if ( result.photo ) delete result.error;
+	else await rm( new URL( `${name}.jpg`, CROPS ), { force: true } );
 
 	if ( ! result.error ) await writeFile( sidecar, JSON.stringify( result ) );
 	if ( ++ done % 50 === 0 ) console.log( `${done}/${facades.length}` );
