@@ -17,6 +17,7 @@ import poly2tri from 'poly2tri';
 import { ShapeUtils, Vector2, Color, SRGBColorSpace } from 'three';
 import { AREA, ORIGIN } from './area.mjs';
 import { loadStreets, buildPavementMesh, collectFurniture } from './streets.mjs';
+import { lonLatToSJTSK } from './geo.mjs';
 
 const RAW = new URL( '../data/raw/', import.meta.url );
 const OUT = new URL( '../public/data/', import.meta.url );
@@ -325,13 +326,21 @@ for ( const z of zabaged ) {
 // Geometry: clean extruded walls up to the measured eave, hipped roofs generated
 // from the footprint (constant slope from every edge, capped at the measured ridge).
 
-const WALL_STRIDE = 16; // x y z  u  wallWidth  base  top  floorH  seed  kind  r g b  bay  window  shop
+const WALL_STRIDE = 17; // x y z  u  wallWidth  base  top  floorH  seed  kind  r g b  bay  window  shop  style
 // r g b: measured plaster colour (sRGB, -1 when unknown); bay (m) / window (fraction of bay): measured window
 // rhythm, 0 when unknown; shop: 1 shops, 0 none, -1 unknown. See tools/facades.mjs and tools/facade-params.mjs.
 const WALL_KIND = { street: 0, rear: 2, party: 3 };
 const ROOF_STRIDE = 8; // x y z  kind  seed  r g b (roof colour from the aerial photo, sRGB)
 const ROOF_SLOPE = Math.tan( THREE_DEG( 40 ) );
-const ROOF_KIND = { tiles: 0, copper: 1, flat: 2, slate: 3 };
+const ROOF_KIND = { tiles: 0, copper: 1, flat: 2, slate: 3, theatre: 4 };
+
+// Hand-modelled landmarks, by OpenStreetMap way id. style: facade style in src/shading/facade.js.
+const STYLE = { default: 0, theatre: 1, maj: 2, chapel: 3 };
+const LANDMARKS = {
+	7649971: { name: 'Národní divadlo', style: STYLE.theatre, roof: ROOF_KIND.theatre, statues: true },
+	25921716: { name: 'Máj', style: STYLE.maj, roof: ROOF_KIND.flat },
+	173149696: { name: 'Betlémská kaple', style: STYLE.chapel, twinGables: true }
+};
 
 function THREE_DEG( d ) {
 
@@ -431,6 +440,66 @@ const facadeParams = await ( async () => {
 
 } )();
 
+// Which landmark (if any) a point lies in, from the OSM outlines.
+const landmarkAt = await ( async () => {
+
+	const project = await lonLatToSJTSK();
+	const osm = JSON.parse( await readFile( new URL( 'osm.json', RAW ) ) );
+	const nodes = new Map( osm.filter( e => e.type === 'node' ).map( n => [ n.id, n ] ) );
+	const polys = osm.filter( e => e.type === 'way' && LANDMARKS[ e.id ] ).map( w => ( {
+		landmark: LANDMARKS[ w.id ],
+		ring: w.nodes.map( id => nodes.get( id ) ).filter( Boolean ).map( n => project( n.lon, n.lat ) )
+	} ) );
+	return ( X, Y ) => polys.find( p => pointInRings( [ p.ring ], X, Y ) )?.landmark || null;
+
+} )();
+const landmarkStatues = [];
+
+// Real shopfronts: every named shop / café / restaurant… in OSM is pinned to the nearest building wall,
+// whose ground floor then becomes a shop front, with a name board above it (placed after the geometry pass).
+const SIGN_AMENITIES = new Set( [ 'cafe', 'restaurant', 'bar', 'pub', 'fast_food', 'ice_cream', 'pharmacy', 'bank', 'bureau_de_change', 'theatre', 'cinema', 'nightclub' ] );
+const shopEdges = new Set();
+const pendingSigns = [];
+{
+
+	const project = await lonLatToSJTSK();
+	const osm = JSON.parse( await readFile( new URL( 'osm.json', RAW ) ) );
+	for ( const n of osm ) {
+
+		const t = n.tags || {};
+		if ( n.type !== 'node' || ! t.name || ! ( t.shop || SIGN_AMENITIES.has( t.amenity ) || t.tourism === 'hotel' ) ) continue;
+		const [ X, Y ] = project( n.lon, n.lat );
+		if ( X < AREA.xmin || X > AREA.xmax || Y < AREA.ymin || Y > AREA.ymax ) continue;
+
+		let best = null;
+		for ( const b of buildings ) {
+
+			if ( X < b.bbox[ 0 ] - 10 || X > b.bbox[ 2 ] + 10 || Y < b.bbox[ 1 ] - 10 || Y > b.bbox[ 3 ] + 10 ) continue;
+			const ring = b.poly.outer;
+			for ( let i = 0; i < ring.length; i ++ ) {
+
+				const [ ax, ay ] = ring[ i ], [ bx, by ] = ring[ ( i + 1 ) % ring.length ];
+				const dx = bx - ax, dy = by - ay, l2 = dx * dx + dy * dy;
+				if ( l2 < 4 ) continue;
+				const tt = Math.max( 0.1, Math.min( 0.9, ( ( X - ax ) * dx + ( Y - ay ) * dy ) / l2 ) );
+				const d = Math.hypot( X - ax - tt * dx, Y - ay - tt * dy );
+				// Prefer walls facing a street: a node inside the building snaps to its street front.
+				const facing = streetDistance( ax + tt * dx, ay + tt * dy ) < 12 ? 0 : 6;
+				if ( ! best || d + facing < best.score ) best = { b, i, t: tt, score: d + facing };
+
+			}
+
+		}
+
+		if ( ! best || best.score > 14 ) continue;
+		shopEdges.add( `${best.b.code}_${best.i}` );
+		pendingSigns.push( { ...best, name: t.name, kind: t.shop ? 'shop' : t.amenity || t.tourism } );
+
+	}
+
+}
+const buildingInfo = new Map();
+
 const streetFacades = [];
 const wallData = [];
 const wallIdx = [];
@@ -484,13 +553,15 @@ for ( const b of buildings ) {
 
 	const interior = [];
 	const [ x0, y0, x1, y1 ] = b.bbox;
-	for ( let X = Math.ceil( x0 / ROOF_GRID ) * ROOF_GRID; X < x1; X += ROOF_GRID ) {
+	const landmark = landmarkAt( ( x0 + x1 ) / 2, ( y0 + y1 ) / 2 );
+	const grid = landmark ? ROOF_GRID / 2 : ROOF_GRID; // landmark roofs get a finer mesh: crisper hips and ridges
+	for ( let X = Math.ceil( x0 / grid ) * grid; X < x1; X += grid ) {
 
-		for ( let Y = Math.ceil( y0 / ROOF_GRID ) * ROOF_GRID; Y < y1; Y += ROOF_GRID ) {
+		for ( let Y = Math.ceil( y0 / grid ) * grid; Y < y1; Y += grid ) {
 
 			if ( ! pointInRings( rings, X, Y ) ) continue;
 			const d = distToRings( rings, X, Y );
-			if ( d > ROOF_GRID * 0.45 ) interior.push( { X, Y, d, measured: sample( dsm, X, Y ) } );
+			if ( d > grid * 0.45 ) interior.push( { X, Y, d, measured: sample( dsm, X, Y ) } );
 
 		}
 
@@ -530,8 +601,36 @@ for ( const b of buildings ) {
 	else if ( rg > rr * 1.02 && rg >= rb * 0.95 ) kind = ROOF_KIND.copper;
 	else if ( sat < 0.07 ) kind = ROOF_KIND.slate;
 
+	const style = landmark?.style ?? STYLE.default;
+	if ( landmark?.roof !== undefined ) kind = landmark.roof;
+
 	const eaveY = ground + eave;
-	const roofHeight = d => eaveY + ( flat ? 0 : Math.min( d * ROOF_SLOPE, roofRise ) );
+	let roofAt = ( X, Y, d ) => d === undefined ? eaveY : eaveY + ( flat ? 0 : Math.min( d * ROOF_SLOPE, roofRise ) );
+
+	if ( landmark?.twinGables ) {
+
+		// Two steep parallel gable roofs whose gables face the longest street front (Betlémská kaple).
+		const fronts = edges[ 0 ].map( ( p, i, arr ) => [ p, arr[ ( i + 1 ) % arr.length ] ] )
+			.filter( ( [ p, q ] ) => streetDistance( ( p.X + q.X ) / 2, ( p.Y + q.Y ) / 2 ) < 25 );
+		const [ fa, fb ] = ( fronts.length ? fronts : [ [ edges[ 0 ][ 0 ], edges[ 0 ][ 1 ] ] ] ).reduce( ( best, e ) => {
+
+			return e[ 1 ].edgeLen > best[ 1 ].edgeLen ? e : best;
+
+		} );
+		const len = Math.hypot( fb.X - fa.X, fb.Y - fa.Y ) || 1;
+		const tx = ( fb.X - fa.X ) / len, ty = ( fb.Y - fa.Y ) / len;
+		const vs = edges[ 0 ].map( p => p.X * tx + p.Y * ty );
+		const vmin = Math.min( ...vs ), half = ( Math.max( ...vs ) - vmin ) / 2;
+		const slope = Math.tan( 55 * Math.PI / 180 );
+		roofAt = ( X, Y ) => {
+
+			const v = ( ( X * tx + Y * ty - vmin ) % half + half ) % half;
+			return eaveY + slope * Math.min( v, half - v );
+
+		};
+		kind = ROOF_KIND.tiles;
+
+	}
 
 	// --- roof
 	const base = roofData.length / ROOF_STRIDE;
@@ -560,7 +659,7 @@ for ( const b of buildings ) {
 
 	}
 
-	for ( const p of points ) push( p.X, p.Y, p.d === undefined ? eaveY : roofHeight( p.d ) );
+	for ( const p of points ) push( p.X, p.Y, roofAt( p.X, p.Y, p.d ) );
 
 	for ( const [ a, c, d ] of tris ) {
 
@@ -595,8 +694,16 @@ for ( const b of buildings ) {
 			if ( other >= 0 && other !== b.id ) kind = WALL_KIND.party;
 			else if ( streetDistance( mx + nx * 3, my + ny * 3 ) < 9 ) kind = WALL_KIND.street;
 
-			const A0 = toLocal( a.X, a.Y, sample( dtm, a.X, a.Y ) - 1.0 ), A1 = toLocal( a.X, a.Y, eaveY );
-			const C0 = toLocal( c.X, c.Y, sample( dtm, c.X, c.Y ) - 1.0 ), C1 = toLocal( c.X, c.Y, eaveY );
+			// Statues standing on the attic balustrade, about every 7 m along the street fronts.
+			if ( landmark?.statues && kind === WALL_KIND.street && ringIndex === 0 && Math.floor( a.along / 7 ) !== Math.floor( ( a.along + len ) / 7 ) ) {
+
+				const [ x, y, z ] = toLocal( mx - nx * 0.6, my - ny * 0.6, eaveY );
+				landmarkStatues.push( + x.toFixed( 2 ), + ( y - 2.1 ).toFixed( 2 ), + z.toFixed( 2 ), + Math.atan2( - ny, nx ).toFixed( 3 ), 0.8 );
+
+			}
+
+			const A0 = toLocal( a.X, a.Y, sample( dtm, a.X, a.Y ) - 1.0 ), A1 = toLocal( a.X, a.Y, roofAt( a.X, a.Y ) );
+			const C0 = toLocal( c.X, c.Y, sample( dtm, c.X, c.Y ) - 1.0 ), C1 = toLocal( c.X, c.Y, roofAt( c.X, c.Y ) );
 
 			// Scene frame: outward normal n = (nx, -ny); reading direction t = (n.z, -n.x).
 			const ex = C0[ 0 ] - A0[ 0 ], ez = C0[ 2 ] - A0[ 2 ];
@@ -609,8 +716,8 @@ for ( const b of buildings ) {
 			const wallParams = ringIndex === 0 ? facadeParams.forWall( b.code, a.edge ) : null;
 			const [ cr, cg, cb ] = measured.colour || [ - 1, - 1, - 1 ];
 			const bay = wallParams?.bay || 0, win = wallParams?.window || 0;
-			const shop = wallParams ? ( wallParams.shop ? 1 : 0 ) : - 1;
-			const v = ( P, uu ) => wallData.push( P[ 0 ], P[ 1 ], P[ 2 ], uu, a.edgeLen, ground - BASE_HEIGHT, eaveY - BASE_HEIGHT, floorH, seed, kind, cr, cg, cb, bay, win, shop );
+			const shop = ringIndex === 0 && shopEdges.has( `${b.code}_${a.edge}` ) ? 1 : wallParams ? ( wallParams.shop ? 1 : 0 ) : - 1;
+			const v = ( P, uu ) => wallData.push( P[ 0 ], P[ 1 ], P[ 2 ], uu, a.edgeLen, ground - BASE_HEIGHT, eaveY - BASE_HEIGHT, floorH, seed, kind, cr, cg, cb, bay, win, shop, style );
 			// Four corners per quad, two indexed triangles facing outwards.
 			const q = wallData.length / WALL_STRIDE;
 			v( A0, uA ); v( C0, uC ); v( C1, uC ); v( A1, uA );
@@ -647,6 +754,7 @@ for ( const b of buildings ) {
 	}
 
 	b.kept = true;
+	buildingInfo.set( b.code, { ground, floorH, eaveY } );
 	const [ lx, , lz ] = toLocal( ( x0 + x1 ) / 2, ( y0 + y1 ) / 2, 0 );
 	meta.push( { id: b.id, x: + lx.toFixed( 1 ), z: + lz.toFixed( 1 ), eave: + eave.toFixed( 1 ), rise: + roofRise.toFixed( 1 ), floors, name: b.name } );
 
@@ -949,6 +1057,38 @@ const furniture = collectFurniture( streetData, {
 
 	}
 } );
+furniture.statue.push( ...landmarkStatues );
+
+// Name boards over the shop windows, one per wall position (several shops on one spot are spread along the wall).
+const signs = [];
+const used = new Map();
+for ( const sg of pendingSigns ) {
+
+	const info = buildingInfo.get( sg.b.code );
+	if ( ! info ) continue;
+	const ring = sg.b.poly.outer;
+	const [ ax, ay ] = ring[ sg.i ], [ bx, by ] = ring[ ( sg.i + 1 ) % ring.length ];
+	const len = Math.hypot( bx - ax, by - ay );
+	const key = `${sg.b.code}_${sg.i}`;
+	const slot = used.get( key ) || 0;
+	used.set( key, slot + 1 );
+	const width = Math.min( 4.2, Math.max( 1.6, sg.name.length * 0.24 + 0.6 ), len * 0.8 );
+	const t = Math.min( 1 - width / 2 / len, Math.max( width / 2 / len, sg.t + slot * ( width + 0.6 ) / len * ( slot % 2 ? 1 : - 1 ) ) );
+	let nx = ( by - ay ) / len, ny = - ( bx - ax ) / len;
+	const px = ax + ( bx - ax ) * t, py = ay + ( by - ay ) * t;
+	if ( pointInRings( [ ring ], px + nx * 0.3, py + ny * 0.3 ) ) {
+
+		nx = - nx; ny = - ny;
+
+	}
+
+	const h = info.ground + Math.min( 3.9, Math.max( 3.0, info.floorH * 0.88 ) );
+	const [ x, y, z ] = toLocal( px + nx * 0.07, py + ny * 0.07, h );
+	signs.push( { x: + x.toFixed( 2 ), y: + y.toFixed( 2 ), z: + z.toFixed( 2 ), rot: + Math.atan2( nx, - ny ).toFixed( 3 ), w: + width.toFixed( 2 ), name: sg.name, kind: sg.kind } );
+
+}
+
+console.log( `shop signs: ${signs.length}` );
 console.log( 'furniture:', Object.entries( furniture ).map( ( [ k, v ] ) => `${k} ${v.length / 5}` ).join( ', ' ) );
 
 // ---------------------------------------------------------------------------
@@ -988,6 +1128,7 @@ await writeFile( new URL( 'scene.json', OUT ), JSON.stringify( {
 	roofStride: ROOF_STRIDE,
 	buildings: meta,
 	furniture,
+	signs,
 	kerbHeight: streetData.KERB_HEIGHT,
 	streets
 } ) );

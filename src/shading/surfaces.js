@@ -30,7 +30,8 @@ export function createRoofMaterial() {
 	const isTiles = step( kind, 0.5 );
 	const isCopper = step( 0.5, kind ).mul( step( kind, 1.5 ) );
 	const isFlat = step( 1.5, kind ).mul( step( kind, 2.5 ) );
-	const isMetal = step( 2.5, kind );
+	const isMetal = step( 2.5, kind ).mul( step( kind, 3.5 ) );
+	const isTheatre = step( 3.5, kind ); // Národní divadlo: deep blue roof sown with gold stars
 
 	// Clay beaver-tail tiles
 	const row = positionWorld.y.div( 0.11 );
@@ -54,9 +55,14 @@ export function createRoofMaterial() {
 	// Flat roofs: gravel / tar.
 	const gravel = real.mul( mix( float( 0.85 ), float( 1.1 ), noise2D( positionWorld.xz.mul( 3.0 ) ) ) );
 
-	mat.colorNode = tiles.mul( isTiles ).add( sheets.mul( isCopper.add( isMetal ) ) ).add( gravel.mul( isFlat ) );
-	mat.roughnessNode = mix( float( 0.78 ), float( 0.45 ), isCopper.add( isMetal ) );
-	mat.metalnessNode = isMetal.mul( 0.3 );
+	const starCell = vec2( across.div( 0.9 ), positionWorld.y.div( 0.9 ) );
+	const starUV = fract( starCell.add( vec2( mod( floor( starCell.y ), 2 ).mul( 0.5 ), 0 ) ) ).sub( 0.5 );
+	const star = smoothstep( 0.13, 0.1, abs( starUV.x ).add( abs( starUV.y ) ) ).max( smoothstep( 0.05, 0.03, abs( starUV.x ).max( abs( starUV.y ) ) ) );
+	const theatreRoof = mix( color( 0x223a6b ).mul( float( 1 ).sub( seam.mul( 0.3 ) ) ), color( 0xd6a63c ), star );
+
+	mat.colorNode = tiles.mul( isTiles ).add( sheets.mul( isCopper.add( isMetal ) ) ).add( gravel.mul( isFlat ) ).add( theatreRoof.mul( isTheatre ) );
+	mat.roughnessNode = mix( mix( float( 0.78 ), float( 0.45 ), isCopper.add( isMetal ).add( isTheatre ).min( 1 ) ), float( 0.3 ), star.mul( isTheatre ) );
+	mat.metalnessNode = isMetal.mul( 0.3 ).add( star.mul( isTheatre ).mul( 0.9 ) );
 	mat.normalNode = Fn( () => {
 
 		const relief = isTiles.mul( cv.sub( arc ).clamp( 0, 1 ).mul( 0.02 ) ).mul( tileFade )
@@ -96,29 +102,33 @@ export function createGroundMaterial( surfaceTex, surface2Tex, bounds ) {
 	const steep = smoothstep( 0.8, 0.6, normalWorldGeometry.y );
 	const kerbFace = steep.mul( smoothstep( 0.5, 0.3, abs( Fk ) ) );
 
-	// Granite setts in staggered rows.
+	// Granite setts ("kostky") in staggered rows: grey granite, about 16 × 13 cm, domed, with dark joints.
 	const setRow = wz.div( 0.13 );
 	const setRowIdx = floor( setRow );
-	const setCol = wx.div( 0.13 ).add( hash2D( vec2( setRowIdx, 3.1 ) ) );
+	const setCol = wx.div( 0.16 ).add( hash2D( vec2( setRowIdx, 3.1 ) ) );
 	const setId = vec2( floor( setCol ), setRowIdx );
 	const setFade = float( 1 ).sub( smoothstep( 0.35, 0.9, fwidth( setRow ) ) );
 	const setRnd = hash2D( setId );
-	const sett = mix( mix( color( 0x7d7268 ), color( 0x948a7c ), setRnd ), color( 0x6a5a4c ), step( 0.85, setRnd ).mul( 0.6 ) );
-	const setDome = smoothstep( 0.0, 0.3, float( 0.5 ).sub( abs( fract( setCol ).sub( 0.5 ) ) ) )
-		.mul( smoothstep( 0.0, 0.3, float( 0.5 ).sub( abs( fract( setRow ).sub( 0.5 ) ) ) ) );
-	const cobbles = mix( sett.mul( 0.82 ), sett.mul( mix( float( 0.55 ), float( 1.0 ), setDome ) ), setFade );
+	const sett = mix( mix( color( 0x6c6a66 ), color( 0x858079 ), setRnd ), color( 0x8a7a68 ), step( 0.82, setRnd ).mul( 0.7 ) );
+	const setDome = smoothstep( 0.0, 0.32, float( 0.5 ).sub( abs( fract( setCol ).sub( 0.5 ) ) ) )
+		.mul( smoothstep( 0.0, 0.32, float( 0.5 ).sub( abs( fract( setRow ).sub( 0.5 ) ) ) ) );
+	const cobbles = mix( sett.mul( 0.75 ), sett.mul( mix( float( 0.35 ), float( 1.0 ), setDome ) ), setFade );
 
-	// Mosaic sidewalk: small limestone cubes, light with a dark diagonal-square pattern now and then.
+	// Prague mosaic pavement: 5 cm white limestone cubes laid in bold black basalt patterns. Each stretch of
+	// pavement (an 8 m cell) gets one of three classic patterns: a checkerboard of squares, a diagonal lattice,
+	// or plain white with a black border band.
 	const mos = vec2( wx, wz ).div( 0.055 );
 	const mosId = floor( mos );
 	const mosFade = float( 1 ).sub( smoothstep( 0.35, 0.9, fwidth( mos.x ) ) );
 	const mosRnd = hash2D( mosId.add( 7.7 ) );
-	// Sparse dark diamonds, as in the classic Prague mosaic.
-	const pattern = step( 0.5, fract( floor( mos.x.add( mos.y ).div( 9 ) ).mul( 0.5 ) ) ).mul( step( 0.5, fract( floor( mos.x.sub( mos.y ).div( 9 ) ).mul( 0.5 ) ) ) )
-		.mul( step( 0.75, hash2D( floor( mos.add( vec2( mos.y, mos.x.negate() ) ).div( 36 ) ) ) ) );
-	const mosaicStone = mix( mix( color( 0xcfc8bb ), color( 0xb9b1a3 ), mosRnd ), color( 0x6e6760 ), pattern.mul( 0.5 ) );
-	const mosJoint = max( gridLine( wx, 0.055, 0.004 ), gridLine( wz, 0.055, 0.004 ) );
-	const mosaic = mix( mix( color( 0xb5ad9f ), color( 0x9c958c ), pattern.mul( 0.3 ) ), mosaicStone.mul( float( 1 ).sub( mosJoint.mul( 0.4 ) ) ), mosFade );
+	const patternKind = hash2D( floor( vec2( wx, wz ).div( 8 ) ).add( 1.7 ) );
+	const checker = step( 0.5, fract( floor( mosId.x.div( 6 ) ).add( floor( mosId.y.div( 6 ) ) ).mul( 0.5 ) ) );
+	const lattice = step( mod( mosId.x.add( mosId.y ), 10 ), 0.5 ).add( step( mod( mosId.x.sub( mosId.y ), 10 ), 0.5 ) ).min( 1 );
+	const border = step( mod( mosId.x.add( 2 ), 24 ), 1.5 ).add( step( mod( mosId.y.add( 2 ), 24 ), 1.5 ) ).min( 1 );
+	const pattern = mix( mix( checker, lattice, step( 0.4, patternKind ) ), border, step( 0.75, patternKind ) );
+	const mosaicStone = mix( mix( color( 0xdcd7cd ), color( 0xc5beb1 ), mosRnd ), mix( color( 0x2c2b2a ), color( 0x3d3b39 ), mosRnd ), pattern );
+	const mosJoint = max( gridLine( wx, 0.055, 0.005 ), gridLine( wz, 0.055, 0.005 ) );
+	const mosaic = mix( mix( color( 0xc0bab0 ), color( 0x4a4846 ), pattern.mul( 0.9 ) ), mosaicStone.mul( float( 1 ).sub( mosJoint.mul( 0.45 ) ) ), mosFade );
 
 	const kerbCol = mix( color( 0xa8a59e ), color( 0x96938b ), noise2D( vec2( wx, wz ).mul( 4 ) ) )
 		.mul( float( 1 ).sub( gridLine( wx.add( wz ), 1.0, 0.008 ).mul( 0.35 ) ) );

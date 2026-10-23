@@ -9,7 +9,7 @@
 import * as THREE from 'three/webgpu';
 import {
 	Fn, float, vec2, vec3, color, uniform, attribute, positionWorld, normalWorldGeometry, cameraPosition,
-	floor, fract, min, max, clamp, mix, step, smoothstep, dot, normalize, pow, abs, length, fwidth
+	floor, fract, mod, min, max, clamp, mix, step, smoothstep, dot, normalize, pow, abs, length, fwidth
 } from 'three/tsl';
 import { hash2D, noise2D, bumpNormal, lineAA, gridLine, filteredPulse, evaluateApartmentInterior } from './common.js';
 
@@ -34,6 +34,12 @@ export function createFacadeMaterial() {
 	const realWindow = attribute( 'realWindow', 'float' );
 	const realShop = attribute( 'realShop', 'float' ); // 1 / 0, -1 = unknown
 	const plaster = attribute( 'plaster', 'vec3' );
+	// Hand-modelled landmarks (tools/build-scene.mjs LANDMARKS): 1 Národní divadlo, 2 Máj, 3 Betlémská kaple.
+	const style = attribute( 'style', 'float' );
+	const sTheatre = step( abs( style.sub( 1 ) ), 0.5 );
+	const sMaj = step( abs( style.sub( 2 ) ), 0.5 );
+	const sChapel = step( abs( style.sub( 3 ) ), 0.5 );
+	const plain = float( 1 ).sub( sMaj ).sub( sChapel ); // styles with classical dressings
 
 	const n = normalWorldGeometry;
 	const tangent = vec3( n.z, 0, n.x.negate() );
@@ -51,7 +57,8 @@ export function createFacadeMaterial() {
 
 	const pier = min( float( 0.95 ), W.mul( 0.16 ) );
 	const inner = W.sub( pier.mul( 2 ) );
-	const bayTarget = mix( float( 2.7 ).add( fract( seed.mul( 13.1 ) ).mul( 0.7 ) ), realBay, step( 0.5, realBay ) );
+	const bayTarget = mix( mix( mix( mix( float( 2.7 ).add( fract( seed.mul( 13.1 ) ).mul( 0.7 ) ), realBay, step( 0.5, realBay ) ),
+		float( 3.7 ), sTheatre ), float( 1.5 ), sMaj ), float( 4.6 ), sChapel );
 	const bays = max( floor( inner.div( bayTarget ).add( 0.5 ) ), 1 );
 	const bayW = inner.div( bays );
 	const gridU = u.sub( pier ).div( bayW );
@@ -65,8 +72,9 @@ export function createFacadeMaterial() {
 	const ground = float( 1 ).sub( step( 1, gridV ) );
 	const upper = float( 1 ).sub( ground );
 	const mainCornice = float( 1 ).sub( smoothstep( 0.55, 0.75, fromTop ) );
-	const underCornice = step( fromTop, 1.1 ); // no windows cut into the main cornice
-	const solid = max( max( max( inPier, tooNarrow ), isParty ), underCornice );
+	const underCornice = step( fromTop, mix( float( 1.1 ), float( 1.8 ), sTheatre ) ); // no windows cut into the cornice / attic
+	// Máj: blank panel walls above the shops (its glazing is drawn separately); the chapel only has its gothic windows.
+	const solid = max( max( max( max( inPier, tooNarrow ), isParty ), underCornice ), max( sMaj.mul( step( 1, gridV ) ), sChapel ) );
 
 	// Ground floor of street fronts: shops in most houses, one door bay per wall.
 	const hasShops = mix( step( 0.3, fract( seed.mul( 7.7 ) ) ), step( 0.5, realShop ), step( - 0.5, realShop ) ).mul( isStreet );
@@ -83,23 +91,54 @@ export function createFacadeMaterial() {
 	const inX = filteredPulse( cellU, wx0, float( 1 ).sub( wx0 ), fw.x ).mul( open );
 	const inY = filteredPulse( cellV, wy0, wy1, fw.y );
 	const opening = inX.mul( inY );
-	const winUV = clamp( vec2(
+	const winUVgrid = clamp( vec2(
 		cellU.sub( wx0 ).div( float( 1 ).sub( wx0.mul( 2 ) ) ),
 		cellV.sub( wy0 ).div( wy1.sub( wy0 ) )
 	), vec2( 0 ), vec2( 1 ) );
 
+	// Betlémská kaple: tall pointed gothic windows, one per bay, 2.6–9.2 m above the ground.
+	const gothicY0 = 2.6, gothicY1 = 9.2;
+	const chapelUV = clamp( vec2( cellU.sub( 0.36 ).div( 0.28 ), h.sub( gothicY0 ).div( gothicY1 - gothicY0 ) ), vec2( 0 ), vec2( 1 ) );
+	const chapelOpen = sChapel.mul( float( 1 ).sub( isParty ) ).mul( float( 1 ).sub( inPier ) ).mul( float( 1 ).sub( tooNarrow ) )
+		.mul( filteredPulse( cellU, 0.36, 0.64, fw.x ) ).mul( step( gothicY0, h ) ).mul( step( h, gothicY1 ) ).mul( step( gothicY1 + 0.8, fromTop.add( h ) ) );
+	const winUV = mix( winUVgrid, chapelUV, sChapel );
+
+	// Arched window heads: round arches on the theatre's ground floor and piano nobile, pointed ones on the chapel.
+	const ax = winUV.x.sub( 0.5 ).mul( 2 );
+	const roundArch = step( length( vec2( ax, winUV.y.sub( 0.78 ).div( 0.22 ) ) ), 1 ).max( step( winUV.y, 0.78 ) );
+	const pointedArch = step( abs( ax ).add( winUV.y.sub( 0.72 ).div( 0.28 ) ), 1.0 ).max( step( winUV.y, 0.72 ) );
+	const arched = sTheatre.mul( step( level, 0.5 ).add( step( abs( level.sub( 2 ) ), 0.5 ) ).min( 1 ) );
+	const archMask = mix( mix( float( 1 ), roundArch, arched ), pointedArch, sChapel );
+	const openingAll = opening.add( chapelOpen ).min( 1 ).mul( archMask );
+
 	// Stone surround, cap and sill (street fronts, upper floors).
-	const dressed = isStreet.mul( upper ).mul( float( 1 ).sub( solid ) );
-	const surround = filteredPulse( cellU, 0.25, 0.75, fw.x ).mul( filteredPulse( cellV, 0.21, 0.85, fw.y ) ).mul( dressed ).sub( opening ).max( 0 );
+	const dressed = isStreet.mul( upper ).mul( float( 1 ).sub( solid ) ).mul( plain );
+	const surround = filteredPulse( cellU, 0.25, 0.75, fw.x ).mul( filteredPulse( cellV, 0.21, 0.85, fw.y ) ).mul( dressed ).sub( openingAll ).max( 0 );
 	const cap = filteredPulse( cellU, 0.22, 0.78, fw.x ).mul( filteredPulse( cellV, 0.85, 0.92, fw.y ) ).mul( dressed );
-	const sill = filteredPulse( cellU, 0.26, 0.74, fw.x ).mul( filteredPulse( cellV, 0.205, 0.25, fw.y ) ).mul( upper ).mul( float( 1 ).sub( solid ) );
+	const sill = filteredPulse( cellU, 0.26, 0.74, fw.x ).mul( filteredPulse( cellV, 0.205, 0.25, fw.y ) ).mul( upper ).mul( float( 1 ).sub( solid ) ).mul( plain );
+	// Chapel: dressed sandstone frame around each gothic window.
+	const chapelFrame = sChapel.mul( float( 1 ).sub( isParty ) ).mul( float( 1 ).sub( inPier ) ).mul( filteredPulse( cellU, 0.33, 0.67, fw.x ) )
+		.mul( step( gothicY0 - 0.2, h ) ).mul( step( h, gothicY1 + 0.3 ) ).mul( step( gothicY1 + 0.8, fromTop.add( h ) ) ).sub( openingAll ).max( 0 );
 
 	// String course above the ground floor and the rusticated ground floor.
-	const stringCourse = isStreet.mul( filteredPulse( gridV, 0.9, 1.0, fw.y ) ).mul( step( gridV, 1.5 ) );
-	const rusticated = isStreet.mul( ground ).mul( float( 1 ).sub( stringCourse ) );
-	const rustGroove = gridLine( h, 0.45, 0.018 ).mul( rusticated ).mul( float( 1 ).sub( opening ) );
+	const stringCourse = max( isStreet, sTheatre.mul( float( 1 ).sub( isParty ) ) ).mul( filteredPulse( gridV, 0.9, 1.0, fw.y ) ).mul( step( gridV, mix( float( 1.5 ), float( 2.5 ), sTheatre ) ) ).mul( plain );
+	// Rusticated base: the ground floor of street fronts; the theatre's whole two-storey base, in ashlar blocks.
+	const rusticated = max( isStreet.mul( ground ), sTheatre.mul( step( h, fH.mul( 2 ) ) ).mul( float( 1 ).sub( isParty ) ) ).mul( float( 1 ).sub( stringCourse ) ).mul( plain );
+	const course = floor( h.div( 0.45 ) );
+	const blockJoint = gridLine( u.add( mod( course, 2 ).mul( 0.6 ) ), 1.2, 0.016 ).mul( sTheatre );
+	const rustGroove = max( gridLine( h, 0.45, 0.018 ), blockJoint ).mul( rusticated ).mul( float( 1 ).sub( openingAll ) );
 	const plinth = float( 1 ).sub( step( 0.55, h ) ).mul( float( 1 ).sub( isParty ) );
-	const quoin = inPier.mul( isStreet ).mul( upper ).mul( float( 1 ).sub( mainCornice ) );
+	const quoin = inPier.mul( isStreet ).mul( upper ).mul( float( 1 ).sub( mainCornice ) ).mul( plain );
+
+	// Theatre attic: a balustrade with balusters every 32 cm below the top cornice.
+	const attic = sTheatre.mul( float( 1 ).sub( isParty ) ).mul( step( 0.45, fromTop ) ).mul( step( fromTop, 1.45 ) );
+	const balusterGap = lineAA( fract( u.div( 0.32 ) ).sub( 0.5 ), 0.17 ).mul( step( 0.6, fromTop ) ).mul( step( fromTop, 1.25 ) ).mul( attic );
+
+	// Máj: large beige façade panels; a recessed glass shopfront along the street; a yellow-framed glazed band at the top.
+	const panelJoint = max( gridLine( u, 1.5, 0.012 ), gridLine( h, 1.25, 0.012 ) ).mul( sMaj );
+	const majShopfront = sMaj.mul( isStreet ).mul( step( h, 4.4 ) ).mul( step( 0.25, h ) );
+	const majBand = sMaj.mul( isStreet ).mul( step( 1.0, fromTop ) ).mul( step( fromTop, 3.8 ) );
+	const majFrame = max( max( lineAA( fromTop.sub( 1.05 ), 0.08 ), lineAA( fromTop.sub( 3.75 ), 0.08 ) ), lineAA( fract( u.div( 3.0 ) ).sub( 0.5 ), 0.012 ) ).mul( majBand );
 	const quoinGroove = gridLine( h, 0.6, 0.02 ).mul( quoin );
 
 	// --- colours
@@ -114,10 +153,12 @@ export function createFacadeMaterial() {
 	const streak = smoothstep( 0.45, 0.8, noise2D( vec2( u.mul( 2.1 ), h.mul( 0.08 ) ) ) ).mul( 0.06 ).mul( upper );
 
 	const stucco = wallPlaster.mul( float( 1 ).add( grain ).sub( patches ).sub( soot ).sub( streak ) );
-	const trimMix = max( max( max( stringCourse, mainCornice.mul( float( 1 ).sub( isParty ) ) ), max( surround, cap ) ), quoin.mul( 0.8 ) );
+	const trimMix = max( max( max( max( stringCourse, mainCornice.mul( float( 1 ).sub( isParty ) ).mul( plain ) ), max( surround, cap ) ), quoin.mul( 0.8 ) ), max( attic, chapelFrame ) );
 	let wall = mix( stucco, trim.mul( float( 1 ).sub( soot.mul( 0.6 ) ) ), trimMix );
 	wall = mix( wall, wall.mul( 0.88 ), rusticated.mul( 0.6 ) );
 	wall = mix( wall, wall.mul( 0.55 ), max( rustGroove, quoinGroove ) );
+	wall = mix( wall, trim.mul( 0.4 ), balusterGap );
+	wall = mix( wall, wall.mul( 0.7 ), panelJoint );
 	wall = mix( wall, vec3( 0.42, 0.41, 0.39 ), plinth );
 	wall = mix( wall, trim.mul( 1.05 ).min( 1 ), sill );
 
@@ -126,8 +167,10 @@ export function createFacadeMaterial() {
 	const casement = max( max( lineAA( winUV.x.sub( 0.5 ), 0.025 ), lineAA( winUV.y.sub( 0.68 ), 0.022 ) ),
 		max( lineAA( winUV.y.sub( 0.34 ), 0.012 ), lineAA( fract( winUV.x.mul( 2 ) ).sub( 0.5 ), 0.012 ).mul( step( winUV.y, 0.68 ) ) ) ).mul( upper );
 	const shopBars = max( lineAA( winUV.y.sub( 0.8 ), 0.015 ), lineAA( fract( winUV.x.mul( 2 ) ).sub( 0.5 ), 0.012 ) ).mul( shop );
-	const frame = max( max( frameBorder, casement ), shopBars ).min( 1 );
-	const frameColor = mix( vec3( 0.93, 0.92, 0.88 ), vec3( 0.2, 0.17, 0.14 ), shop.max( step( 0.82, fract( seed.mul( 2.9 ) ) ) ) );
+	// Chapel windows: leaded diamond panes.
+	const leaded = max( lineAA( fract( winUV.x.mul( 4 ).add( winUV.y.mul( 7 ) ) ).sub( 0.5 ), 0.04 ), lineAA( fract( winUV.x.mul( 4 ).sub( winUV.y.mul( 7 ) ) ).sub( 0.5 ), 0.04 ) );
+	const frame = mix( max( max( frameBorder, casement ), shopBars ).min( 1 ), max( frameBorder, leaded ), sChapel );
+	const frameColor = mix( vec3( 0.93, 0.92, 0.88 ), vec3( 0.2, 0.17, 0.14 ), shop.max( step( 0.82, fract( seed.mul( 2.9 ) ) ) ).max( sTheatre ).max( sChapel ) );
 
 	const room = evaluateApartmentInterior( gridU, h, winUV, cellId, bayW, fH, seed.mul( 97 ), float( 0.75 ), float( 0.3 ), fw, tangent, n );
 	const shopLit = step( 0.2, hash2D( cellId.add( vec2( seed.mul( 31 ), 4.1 ) ) ) );
@@ -148,30 +191,36 @@ export function createFacadeMaterial() {
 	const doorPanels = max( gridLine( doorUV.x, 0.5, 0.025 ), gridLine( doorUV.y, 0.27, 0.02 ) );
 	const doorColor = mix( doorPaint.mul( float( 1 ).sub( doorPanels.mul( 0.45 ) ) ), glass, fanlight );
 
-	let col = mix( wall, frameColor, opening.mul( frame ) );
-	col = mix( col, glass, opening.mul( float( 1 ).sub( frame ) ) );
+	// Máj glazing: dark glass, lit shop interiors along the street, the band's yellow frames.
+	const majGlass = mix( mix( color( 0x1c2228 ), color( 0xcbb48a ), step( 0.35, hash2D( vec2( floor( u.div( 3 ) ), seed ) ) ).mul( smoothstep( 4.4, 0.5, h ) ).mul( 0.55 ) ), sceneUniforms.skyHorizon, fresnel.mul( 0.5 ).add( 0.05 ) );
+	wall = mix( wall, majGlass, max( majShopfront, majBand ) );
+	wall = mix( wall, color( 0xe8b030 ), max( majFrame, lineAA( fract( u.div( 1.5 ) ).sub( 0.5 ), 0.01 ).mul( majShopfront ).mul( 0.6 ) ) );
+
+	let col = mix( wall, frameColor, openingAll.mul( frame ) );
+	col = mix( col, glass, openingAll.mul( float( 1 ).sub( frame ) ) );
 	col = mix( col, trim, doorFrame );
 	col = mix( col, doorColor, doorWay );
 	mat.colorNode = col;
 
-	const glassMask = opening.mul( float( 1 ).sub( frame ) ).add( doorWay.mul( fanlight ) );
+	const glassMask = openingAll.mul( float( 1 ).sub( frame ) ).add( doorWay.mul( fanlight ) ).add( max( majShopfront, majBand ) ).min( 1 );
 	mat.roughnessNode = mix( float( 0.88 ).add( grain ), float( 0.1 ), glassMask );
 
 	// Street-canyon sky occlusion: darker low down in narrow lanes.
 	mat.aoNode = mix( float( 0.55 ), float( 1.0 ), smoothstep( 0.0, 16.0, h ) );
 
-	mat.emissiveNode = room.xyz.mul( room.w ).mul( opening ).mul( float( 1 ).sub( frame ) ).mul( upper )
-		.add( color( 0xffd29a ).mul( shop ).mul( shopLit ).mul( opening ).mul( float( 1 ).sub( frame ) ).mul( 0.6 ) )
+	mat.emissiveNode = room.xyz.mul( room.w ).mul( openingAll ).mul( float( 1 ).sub( frame ) ).mul( upper )
+		.add( color( 0xffd29a ).mul( shop ).mul( shopLit ).mul( openingAll ).mul( float( 1 ).sub( frame ) ).mul( 0.6 ) )
 		.mul( sceneUniforms.interiorGlow );
 
-	// Relief: cornices, string course, caps and sills stand out; openings and grooves are recessed.
+	// Relief: cornices, string course, caps and sills stand out; openingAlls and grooves are recessed.
 	mat.normalNode = Fn( () => {
 
 		const fade = float( 1 ).sub( smoothstep( 25.0, 140.0, camDist ) );
-		const relief = mainCornice.mul( smoothstep( 0.75, 0.2, fromTop ) ).mul( 0.06 )
+		const relief = mainCornice.mul( smoothstep( 0.75, 0.2, fromTop ) ).mul( 0.06 ).mul( plain )
+			.add( attic.mul( 0.03 ) ).sub( balusterGap.mul( 0.03 ) ).add( chapelFrame.mul( 0.03 ) )
 			.add( stringCourse.mul( 0.035 ) )
 			.add( cap.mul( 0.04 ) ).add( sill.mul( 0.03 ) ).add( surround.mul( 0.015 ) ).add( quoin.mul( 0.015 ) )
-			.sub( opening.mul( float( 1 ).sub( frame ) ).mul( 0.03 ) )
+			.sub( openingAll.mul( float( 1 ).sub( frame ) ).mul( 0.03 ) )
 			.sub( doorWay.mul( 0.03 ) )
 			.sub( max( rustGroove, quoinGroove ).mul( 0.01 ) );
 		return bumpNormal( relief.mul( fade ) );

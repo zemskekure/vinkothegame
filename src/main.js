@@ -5,6 +5,7 @@ import { createFacadeMaterial, PLASTER } from './shading/facade.js';
 import { createRoofMaterial, createGroundMaterial, createWaterMaterial } from './shading/surfaces.js';
 import { Walker } from './walker.js';
 import { addFurniture } from './furniture.js';
+import { addSigns } from './signs.js';
 
 async function load( name, type = 'arrayBuffer' ) {
 
@@ -187,19 +188,23 @@ const ws = data.wallStride;
 const wallGeo = new THREE.BufferGeometry();
 const wib = new THREE.InterleavedBuffer( walls, ws );
 [ [ 'position', 3, 0 ], [ 'wallU', 1, 3 ], [ 'wallW', 1, 4 ], [ 'wallBase', 1, 5 ], [ 'wallTop', 1, 6 ],
-	[ 'floorH', 1, 7 ], [ 'seed', 1, 8 ], [ 'kind', 1, 9 ], [ 'realBay', 1, 13 ], [ 'realWindow', 1, 14 ], [ 'realShop', 1, 15 ] ].forEach( ( [ name, size, offset ] ) => {
+	[ 'floorH', 1, 7 ], [ 'seed', 1, 8 ], [ 'kind', 1, 9 ], [ 'realBay', 1, 13 ], [ 'realWindow', 1, 14 ], [ 'realShop', 1, 15 ], [ 'style', 1, 16 ] ].forEach( ( [ name, size, offset ] ) => {
 
 	wallGeo.setAttribute( name, new THREE.InterleavedBufferAttribute( wib, size, offset ) );
 
 } );
 
+// Landmark facades (style 1 Národní divadlo sandstone, 2 Máj beige panels, 3 Betlémská kaple white render).
+const LANDMARK_COLOURS = { 1: 0xb59a74, 2: 0xd8d1c2, 3: 0xf1ede5 };
 const plaster = new Float32Array( walls.length / ws * 3 );
 const c = new THREE.Color();
 for ( let i = 0, n = walls.length / ws; i < n; i ++ ) {
 
 	// Measured colour from street photos when there is one, else a typical Prague plaster.
 	const r = walls[ i * ws + 10 ];
-	if ( r >= 0 ) c.setRGB( r, walls[ i * ws + 11 ], walls[ i * ws + 12 ], THREE.SRGBColorSpace );
+	const landmark = LANDMARK_COLOURS[ walls[ i * ws + 16 ] ];
+	if ( landmark ) c.setHex( landmark );
+	else if ( r >= 0 ) c.setRGB( r, walls[ i * ws + 11 ], walls[ i * ws + 12 ], THREE.SRGBColorSpace );
 	else c.setHex( PLASTER[ Math.floor( walls[ i * ws + 8 ] * PLASTER.length ) ] );
 	plaster.set( [ c.r, c.g, c.b ], i * 3 );
 
@@ -216,6 +221,7 @@ scene.add( wallMesh );
 // Street furniture and trees (OpenStreetMap, plus canopy peaks found in the surface model)
 
 addFurniture( scene, data.furniture );
+addSigns( scene, data.signs || [], renderer );
 
 // ---------------------------------------------------------------------------
 // Controls: orbit (overview) and walking at street level
@@ -284,6 +290,15 @@ window.addEventListener( 'keydown', e => {
 
 } );
 setMode( params.has( 'walk' ) );
+
+// ?view=x,y,z,tx,ty,tz aims the overview camera (handy for sharing a viewpoint).
+if ( params.has( 'view' ) && ! walking ) {
+
+	const [ x, y, z, tx, ty, tz ] = params.get( 'view' ).split( ',' ).map( Number );
+	camera.position.set( x, y, z );
+	orbit.target.set( tx, ty, tz );
+
+}
 
 // Nearest street name for the walking HUD.
 const streetPts = data.streets.flatMap( st => st.paths.flatMap( path => {
