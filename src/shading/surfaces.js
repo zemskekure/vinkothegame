@@ -3,19 +3,25 @@
 import * as THREE from 'three/webgpu';
 import {
 	Fn, float, vec2, vec3, color, attribute, texture, positionWorld, normalWorldGeometry, cameraPosition,
-	floor, fract, mod, max, mix, step, smoothstep, abs, length, fwidth, time
+	floor, fract, mod, max, mix, step, smoothstep, abs, length, fwidth, time, dot
 } from 'three/tsl';
 import { hash2D, noise2D, bumpNormal, gridLine, lineAA } from './common.js';
 
 const distFade = ( near, far ) => float( 1 ).sub( smoothstep( near, far, length( positionWorld.sub( cameraPosition ) ) ) );
 
-// Roofs: beaver-tail clay tiles (most houses), green copper (churches), grey gravel (flat roofs).
+// Roofs in their real colour (median of the aerial photo over each roof): clay tiles, green copper, grey sheet
+// metal / slate, flat roofs. The pattern only modulates that colour, keeping its average.
 // Tile rows follow the roof's contour lines, so the pattern works on every face of a hipped roof.
 export function createRoofMaterial() {
 
 	const mat = new THREE.MeshStandardNodeMaterial( { roughness: 0.8 } );
 	const kind = attribute( 'roofKind', 'float' );
 	const seed = attribute( 'seed', 'float' );
+	const photo = attribute( 'roofColor', 'vec3' );
+	// The aerial photo is hazy: restore saturation and contrast before converting sRGB → linear.
+	const luma = dot( photo, vec3( 0.3, 0.59, 0.11 ) );
+	const graded = mix( vec3( luma ), photo, 1.7 ).sub( 0.5 ).mul( 1.15 ).add( 0.47 ).clamp( 0.02, 1 );
+	const real = graded.pow( vec3( 2.2 ) );
 
 	const n = normalWorldGeometry;
 	const slope2 = n.xz.div( max( length( n.xz ), 0.001 ) );
@@ -23,9 +29,10 @@ export function createRoofMaterial() {
 
 	const isTiles = step( kind, 0.5 );
 	const isCopper = step( 0.5, kind ).mul( step( kind, 1.5 ) );
-	const isFlat = step( 1.5, kind );
+	const isFlat = step( 1.5, kind ).mul( step( kind, 2.5 ) );
+	const isMetal = step( 2.5, kind );
 
-	// Clay tiles
+	// Clay beaver-tail tiles
 	const row = positionWorld.y.div( 0.11 );
 	const rowIdx = floor( row );
 	const col = across.div( 0.19 ).add( mod( rowIdx, 2 ).mul( 0.5 ) );
@@ -37,29 +44,23 @@ export function createRoofMaterial() {
 	const gap = gridLine( col, 1, 0.025 ).mul( 0.35 );
 	const tileFade = float( 1 ).sub( smoothstep( 0.4, 1.0, fwidth( row ) ) );
 	const tileRnd = hash2D( tileId.add( seed.mul( 17 ) ) ).sub( 0.5 );
-	const roofTone = fract( seed.mul( 9.1 ) );
-	const clay = mix( mix( color( 0xb4532e ), color( 0x9a4630 ), roofTone ), color( 0xc36d3e ), step( 0.75, roofTone ) );
-	const weathering = smoothstep( 0.35, 0.85, noise2D( positionWorld.xz.mul( 0.12 ).add( seed.mul( 50 ) ) ) );
-	const moss = smoothstep( 0.6, 0.9, noise2D( positionWorld.xz.mul( 0.5 ) ) ).mul( 0.25 );
-	const tiles = clay.mul( float( 1 ).add( tileRnd.mul( 0.22 ).mul( tileFade ) ) )
-		.mul( float( 1 ).sub( max( tailShadow, gap ).mul( tileFade ) ) )
-		.mul( float( 1 ).sub( weathering.mul( 0.22 ) ) );
-	const tilesCol = mix( tiles, vec3( 0.33, 0.32, 0.22 ), moss );
+	const tiles = real.mul( float( 1 ).add( tileRnd.mul( 0.25 ).mul( tileFade ) ) )
+		.mul( float( 1 ).sub( max( tailShadow, gap ).mul( tileFade ) ).add( tileFade.mul( 0.08 ) ) );
 
-	// Copper: green patina with standing seams down the slope.
+	// Standing seams down the slope (copper and sheet metal).
 	const seam = gridLine( across, 0.55, 0.02 );
-	const patina = mix( color( 0x6ea58c ), color( 0x4f7f6c ), noise2D( positionWorld.xz.mul( 0.3 ) ) );
-	const copperCol = patina.mul( float( 1 ).sub( seam.mul( 0.25 ) ) );
+	const sheets = real.mul( float( 1 ).sub( seam.mul( 0.3 ) ) ).mul( mix( float( 0.94 ), float( 1.06 ), noise2D( positionWorld.xz.mul( 0.4 ) ) ) );
 
-	// Flat roofs: grey gravel / tar.
-	const gravel = mix( color( 0x7b7a76 ), color( 0x8e8c86 ), noise2D( positionWorld.xz.mul( 3.0 ) ) );
+	// Flat roofs: gravel / tar.
+	const gravel = real.mul( mix( float( 0.85 ), float( 1.1 ), noise2D( positionWorld.xz.mul( 3.0 ) ) ) );
 
-	mat.colorNode = tilesCol.mul( isTiles ).add( copperCol.mul( isCopper ) ).add( gravel.mul( isFlat ) );
-	mat.roughnessNode = mix( float( 0.75 ), float( 0.45 ), isCopper );
+	mat.colorNode = tiles.mul( isTiles ).add( sheets.mul( isCopper.add( isMetal ) ) ).add( gravel.mul( isFlat ) );
+	mat.roughnessNode = mix( float( 0.78 ), float( 0.45 ), isCopper.add( isMetal ) );
+	mat.metalnessNode = isMetal.mul( 0.3 );
 	mat.normalNode = Fn( () => {
 
 		const relief = isTiles.mul( cv.sub( arc ).clamp( 0, 1 ).mul( 0.02 ) ).mul( tileFade )
-			.add( isCopper.mul( seam ).mul( 0.01 ) );
+			.add( isCopper.add( isMetal ).mul( seam ).mul( 0.01 ) );
 		return bumpNormal( relief.mul( distFade( 30, 160 ) ) );
 
 	} )();

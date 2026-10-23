@@ -324,16 +324,46 @@ for ( const z of zabaged ) {
 // Geometry: clean extruded walls up to the measured eave, hipped roofs generated
 // from the footprint (constant slope from every edge, capped at the measured ridge).
 
-const WALL_STRIDE = 11; // x y z  u  wallWidth  base  top  floorH  seed  kind  style
-const STYLE = { gothic: 0, baroque: 1, classicist: 2, historicist: 3, nouveau: 4, modern: 5 };
+const WALL_STRIDE = 10; // x y z  u  wallWidth  base  top  floorH  seed  kind
 const WALL_KIND = { street: 0, rear: 2, party: 3 };
-const ROOF_STRIDE = 5; // x y z  kind  seed
+const ROOF_STRIDE = 8; // x y z  kind  seed  r g b (roof colour from the aerial photo, sRGB)
 const ROOF_SLOPE = Math.tan( THREE_DEG( 40 ) );
 const ROOF_KIND = { tiles: 0, copper: 1, flat: 2, slate: 3 };
 
 function THREE_DEG( d ) {
 
 	return d * Math.PI / 180;
+
+}
+
+// Aerial photo (ČÚZK Ortofoto): real roof colours, and a check that tree candidates are green.
+const photo = jpeg.decode( await readFile( new URL( 'ortho.jpg', RAW ) ), { useTArray: true } );
+function photoAt( X, Y ) {
+
+	const c = Math.floor( ( X - AREA.xmin ) / ( AREA.xmax - AREA.xmin ) * photo.width );
+	const r = Math.floor( ( AREA.ymax - Y ) / ( AREA.ymax - AREA.ymin ) * photo.height );
+	if ( c < 0 || r < 0 || c >= photo.width || r >= photo.height ) return null;
+	const i = ( r * photo.width + c ) * 4;
+	return [ photo.data[ i ], photo.data[ i + 1 ], photo.data[ i + 2 ] ];
+
+}
+
+// Median colour of the sunlit roof pixels inside the footprint (shadows and glare left out).
+function roofColour( points ) {
+
+	const lit = [];
+	for ( const p of points ) {
+
+		const px = photoAt( p.X, p.Y );
+		if ( ! px ) continue;
+		const lum = 0.3 * px[ 0 ] + 0.59 * px[ 1 ] + 0.11 * px[ 2 ];
+		if ( lum > 55 && lum < 235 ) lit.push( px );
+
+	}
+
+	if ( lit.length < 3 ) return null;
+	const med = ch => lit.map( px => px[ ch ] ).sort( ( a, b ) => a - b )[ lit.length >> 1 ] / 255;
+	return [ med( 0 ), med( 1 ), med( 2 ) ];
 
 }
 
@@ -443,26 +473,23 @@ for ( const b of buildings ) {
 	const floorH = Math.min( 5.5, Math.max( 2.7, eave / floors ) );
 	const seed = hash01( b.code | 0 );
 
-	// Architectural style, from size and roof: small old houses are gothic / renaissance or baroque, big
-	// 19th-century blocks historicist or art nouveau, flat-roofed ones modern.
-	const r = hash01( ( b.code | 0 ) ^ 0x5bd1e995 );
-	let style;
-	if ( flat && eave > 9 ) style = r < 0.8 ? STYLE.modern : STYLE.historicist;
-	else if ( floors <= 3 && eave < 13 ) style = r < 0.5 ? STYLE.gothic : r < 0.85 ? STYLE.baroque : STYLE.classicist;
-	else if ( floors >= 5 || eave > 17 ) style = r < 0.45 ? STYLE.historicist : r < 0.75 ? STYLE.nouveau : r < 0.9 ? STYLE.classicist : STYLE.baroque;
-	else style = r < 0.35 ? STYLE.baroque : r < 0.6 ? STYLE.classicist : r < 0.8 ? STYLE.historicist : r < 0.9 ? STYLE.gothic : STYLE.nouveau;
 
+	// Roof material from its real colour: green = copper, grey = slate (or tar on flat roofs), else clay tiles.
+	const deep = interior.filter( p => p.d > 1.2 );
+	const rgb = roofColour( deep.length >= 6 ? deep : [ ...interior, ...edges.flat() ] ) || [ 0.62, 0.32, 0.22 ];
+	const [ rr, rg, rb ] = rgb;
+	const sat = Math.max( rr, rg, rb ) - Math.min( rr, rg, rb );
 	let kind = ROOF_KIND.tiles;
 	if ( flat ) kind = ROOF_KIND.flat;
-	else if ( SACRED.test( b.name || '' ) && seed < 0.7 ) kind = ROOF_KIND.copper;
-	else if ( ( style === STYLE.historicist || style === STYLE.nouveau ) && r > 0.6 ) kind = ROOF_KIND.slate;
+	else if ( rg > rr * 1.02 && rg >= rb * 0.95 ) kind = ROOF_KIND.copper;
+	else if ( sat < 0.07 ) kind = ROOF_KIND.slate;
 
 	const eaveY = ground + eave;
 	const roofHeight = d => eaveY + ( flat ? 0 : Math.min( d * ROOF_SLOPE, roofRise ) );
 
 	// --- roof
 	const base = roofData.length / ROOF_STRIDE;
-	const push = ( X, Y, H ) => roofData.push( ...toLocal( X, Y, H ), kind, seed );
+	const push = ( X, Y, H ) => roofData.push( ...toLocal( X, Y, H ), kind, seed, rr, rg, rb );
 	let tris;
 
 	const boundary = edges.flat();
@@ -533,7 +560,7 @@ for ( const b of buildings ) {
 			const sA = a.along, sC = c.edge === a.edge ? c.along : a.edgeLen;
 			const uA = readsAtoC ? sA : a.edgeLen - sA, uC = readsAtoC ? sC : a.edgeLen - sC;
 
-			const v = ( P, uu ) => wallData.push( P[ 0 ], P[ 1 ], P[ 2 ], uu, a.edgeLen, ground - BASE_HEIGHT, eaveY - BASE_HEIGHT, floorH, seed, kind, style );
+			const v = ( P, uu ) => wallData.push( P[ 0 ], P[ 1 ], P[ 2 ], uu, a.edgeLen, ground - BASE_HEIGHT, eaveY - BASE_HEIGHT, floorH, seed, kind );
 			const quad = frontIsCCW ? [ [ A0, uA ], [ C0, uC ], [ C1, uC ], [ A0, uA ], [ C1, uC ], [ A1, uA ] ]
 				: [ [ A0, uA ], [ C1, uC ], [ C0, uC ], [ A0, uA ], [ A1, uA ], [ C1, uC ] ];
 			for ( const [ P, uu ] of quad ) v( P, uu );
@@ -568,8 +595,7 @@ for ( let r = 0; r < th; r ++ ) {
 
 }
 
-// The aerial photo is only used to confirm that a canopy peak is vegetation (not a boat or a sculpture).
-const photo = jpeg.decode( await readFile( new URL( 'ortho.jpg', RAW ) ), { useTArray: true } );
+// Canopy peaks only count as trees where the aerial photo is green (not a boat or a sculpture).
 function isGreen( X, Y ) {
 
 	let g = 0, n = 0;
@@ -577,11 +603,9 @@ function isGreen( X, Y ) {
 
 		for ( let dx = - 1; dx <= 1; dx += 0.5 ) {
 
-			const c = Math.floor( ( X + dx - AREA.xmin ) / ( AREA.xmax - AREA.xmin ) * photo.width );
-			const r = Math.floor( ( AREA.ymax - Y - dy ) / ( AREA.ymax - AREA.ymin ) * photo.height );
-			if ( c < 0 || r < 0 || c >= photo.width || r >= photo.height ) continue;
-			const i = ( r * photo.width + c ) * 4;
-			const [ R, G, B ] = [ photo.data[ i ], photo.data[ i + 1 ], photo.data[ i + 2 ] ];
+			const px = photoAt( X + dx, Y + dy );
+			if ( ! px ) continue;
+			const [ R, G, B ] = px;
 			if ( G > R * 1.02 && G > B * 1.02 ) g ++;
 			n ++;
 
