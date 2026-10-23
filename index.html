@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="cs">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Praha – Betlémská čtvrť</title>
+	<style>
+		html, body { margin: 0; height: 100%; overflow: hidden; background: #b9cbd8; font: 14px/1.4 system-ui, sans-serif; color: #fff; }
+		canvas { display: block; }
+		#hud { position: fixed; left: 16px; top: 16px; padding: 10px 14px; background: rgba(20, 24, 30, 0.6); border-radius: 8px; max-width: 320px; user-select: none; }
+		#hud h1 { margin: 0 0 4px; font-size: 15px; }
+		#hud p { margin: 2px 0; opacity: 0.85; }
+		#hud button { margin-top: 6px; padding: 5px 10px; border: 0; border-radius: 5px; background: #e8d9b5; color: #222; font: inherit; cursor: pointer; }
+		#place { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); padding: 6px 14px; background: rgba(20, 24, 30, 0.6); border-radius: 6px; font-size: 16px; display: none; }
+		#credit { position: fixed; right: 10px; bottom: 6px; font-size: 11px; opacity: 0.75; text-shadow: 0 1px 2px #000; }
+		#loading { position: fixed; inset: 0; display: grid; place-items: center; background: #1d232b; font-size: 18px; }
+	</style>
+</head>
+<body>
+	<div id="loading">Načítám Prahu…</div>
+	<div id="hud">
+		<h1>Praha · Betlémská čtvrť</h1>
+		<p id="help"></p>
+		<button id="mode"></button>
+	</div>
+	<div id="place"></div>
+	<div id="credit"></div>
+	<script type="module" src="/src/main.js"></script>
+</body>
+</html>
