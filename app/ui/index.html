@@ -116,7 +116,7 @@
 			const c = grid.control, el = document.getElementById( 'control' );
 			if ( ! c.sessions ) {
 
-				el.innerHTML = '<h2>Claude</h2><p class="muted">Sezení tady neběží (server nemá pracovní kopii, GRID_WORK).</p>';
+				el.innerHTML = '<h2>Claude</h2><p class="muted">Klikněte na čtverec v mapě a pak nahoře na <b>▶ Projet čtverec</b>. Běží jeden po druhém.</p>' + ( c.current ? `<p>Teď běží: <a href="/sezeni/${c.current.id}">${c.current.cell}</a> · ${esc( c.current.step || '' )}</p>` : '' );
 				return;
 
 			}

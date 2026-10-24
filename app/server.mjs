@@ -125,7 +125,8 @@ function sessionView( s, costs ) {
 function control() {
 
 	const s = getSettings( db );
-	const current = jobs.current();
+	// A run started by hand (node app/square.mjs) shows too: it writes to the same database.
+	const current = jobs.current() || db.prepare( "SELECT * FROM sessions WHERE state IN ('running', 'building') ORDER BY id DESC LIMIT 1" ).get();
 	return {
 		sessions: !! WORK, base: BASE, squareBase: ENV.SQUARE_BASE || 'origin/main',
 		autopilot: s.autopilot === '1', autoMerge: s.auto_merge === '1',
