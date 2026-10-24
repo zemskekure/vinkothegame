@@ -15,7 +15,7 @@ const DISTRICT = [ 'STARÉ MĚSTO', 'PRAHA 1' ];
 
 const FONTS = { serif: 'Georgia, "Times New Roman", serif', sans: '"Helvetica Neue", Arial, sans-serif', script: '"Brush Script MT", "Segoe Script", cursive' };
 
-export function dressSquare( { places, frontFacing, frame, S, L, sign, yAtLocal, streetData, project, streetFacades } ) {
+export function dressSquare( { places, frontFacing, frame, S, L, sign, yAtLocal, streetData, project, streetFacades, toLocal, buildingInfo } ) {
 
 	const dress = places.dress = [];
 	places.plates = [];
@@ -136,9 +136,47 @@ export function dressSquare( { places, frontFacing, frame, S, L, sign, yAtLocal,
 
 	}
 
+	const osm = JSON.parse( readFileSync( new URL( '../data/raw/osm.json', import.meta.url ) ) );
+	// --- David Černý's sculptures (OSM): Viselec, Sigmund Freud hanging by one hand from a pole off a roof over the
+	// Husova corner; the rotating head of Franz Kafka in the Quadrio courtyard (src/landmarks.js).
+	{
+
+		const at = id => {
+
+			const n = osm.find( e => e.type === 'node' && e.id === id );
+			return n ? project( n.lon, n.lat ) : null;
+
+		};
+		const v = at( 2517769530 );
+		if ( v ) {
+
+			// The pole comes off the roof of the house the point is over (or nearest to), at its eave.
+			const wall = frontFacing( v[ 0 ], v[ 1 ], v[ 0 ], v[ 1 ] );
+			const eave = wall && buildingInfo.get( wall.code )?.eaveY;
+			if ( wall && eave ) {
+
+				const W = [ wall.a[ 0 ] + wall.ux * wall.len * wall.t, wall.a[ 1 ] + wall.uy * wall.len * wall.t ];
+				const [ x, z ] = L( ...v ), [ wx, wz ] = L( ...W );
+				const out = Math.max( 1.8, Math.hypot( x - wx, z - wz ) );
+				const nx = wall.n[ 0 ], nz = - wall.n[ 1 ];
+				places.viselec = { x: + ( wx + nx * out ).toFixed( 2 ), z: + ( wz + nz * out ).toFixed( 2 ), wx: + wx.toFixed( 2 ), wz: + wz.toFixed( 2 ), y: + toLocal( W[ 0 ], W[ 1 ], eave )[ 1 ].toFixed( 2 ), ground: yAtLocal( x, z ) };
+
+			}
+
+		}
+
+		const k = at( 3166450188 );
+		if ( k ) {
+
+			const [ x, z ] = L( ...k );
+			places.kafka = { x, z, y: yAtLocal( x, z ) };
+
+		}
+
+	}
+
 	// --- Plates: the red house register number (conscription number) over the blue street number, by the door
 	// (the address point in OSM); the red street name plates at the street corners.
-	const osm = JSON.parse( readFileSync( new URL( '../data/raw/osm.json', import.meta.url ) ) );
 	const inArea = ( x, z ) => x > PLATES_AREA.x0 && x < PLATES_AREA.x1 && z > PLATES_AREA.z0 && z < PLATES_AREA.z1;
 	let numbers = 0;
 	for ( const e of osm ) {

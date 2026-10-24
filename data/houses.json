@@ -91,11 +91,11 @@
 		"signs": false
 	},
 	"21643415": {
-		"note": "Náprstkova 7 (no. 214): low white two-storey house under a tiled roof, cream-yellow ground floor with dark wooden doors, flower boxes under the upper windows; FOSIL Mexican restaurant board at the left end, round RESTAURACE hanging sign, 'Old Prague House' letters on the upper wall. Corrected from 'pale yellow neo-renaissance, banded rustication, shuttered shops' - that describes the neighbour no. 215 (Street View 2025)",
-		"colour": "#ede8da",
-		"trim": "#f6f3ea",
-		"ground": "restaurant",
-		"rustic": "none",
+		"note": "Náprstkova 7 (no. 214): cream-yellow two-storey house over a yellow banded-rusticated ground floor, red geraniums in window boxes; the večerka (MINIMARKET, phở in the back room) at the east end by the corner, FOSIL at the west end, Old Prague House lettered above (owner photos 2023, Street View 2025)",
+		"colour": "#efe1b4",
+		"trim": "#f7f0d8",
+		"ground": "shops",
+		"rustic": "banded",
 		"floors": 2,
 		"grilles": false,
 		"graffiti": false,

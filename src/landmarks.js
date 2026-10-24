@@ -3,7 +3,7 @@
 // music pavilion in the Žofín garden (an octagonal cast-iron bandstand on a stone base under a grey roof).
 
 import * as THREE from 'three/webgpu';
-import { Kit, M, plain, ashlar, box, cyl, ball, textTexture, board, SUN } from './kit.js';
+import { Kit, M, plain, ashlar, box, cyl, ball, textTexture, board, SUN, ANIMATE } from './kit.js';
 
 const L = {
 	stone: ashlar( 0x9c8c72, 0xb3a184 ),
@@ -288,6 +288,116 @@ function addChapel( scene, C ) {
 
 }
 
+// David Černý's Viselec (1997): Sigmund Freud, life-size, hanging by his right hand from a pole that sticks out
+// from a roof high over the Husova corner, the left hand in his pocket; a dark suit, the grey beard, round glasses.
+// He sways a little.
+function addViselec( scene, V ) {
+
+	const dx = V.x - V.wx, dz = V.z - V.wz, len = Math.hypot( dx, dz ), ux = dx / len, uz = dz / len;
+	const poleY = V.y + 0.4;
+	new Kit().add( M.iron, new THREE.CylinderGeometry( 0.035, 0.035, len + 0.4, 6 ).rotateZ( Math.PI / 2 ).rotateY( - Math.atan2( uz, ux ) ).translate( V.wx + ux * ( len + 0.4 ) / 2, poleY, V.wz + uz * ( len + 0.4 ) / 2 ) )
+		.add( M.iron, box( 0.12, 0.6, 0.12, V.wx, poleY - 0.5, V.wz ) ).build( scene );
+
+	const suit = plain( 0x2b2d33, { roughness: 0.85 } ), skin = plain( 0xc9a58a ), beard = plain( 0xb9b7b0 ), shoe = plain( 0x141414 );
+	const man = new THREE.Group(); // origin at the hand on the pole
+	const k = new Kit();
+	k.add( skin, ball( 0.06, 0, - 0.02, 0, 6 ) ); // hand round the pole
+	k.add( suit, new THREE.CylinderGeometry( 0.055, 0.06, 0.62, 6 ).translate( 0, - 0.36, 0 ) ); // raised arm
+	k.add( suit, new THREE.CylinderGeometry( 0.2, 0.17, 0.68, 8 ).translate( 0.08, - 0.95, 0 ) ); // torso
+	k.add( suit, new THREE.CylinderGeometry( 0.055, 0.05, 0.6, 6 ).rotateZ( - 0.25 ).translate( 0.29, - 1.0, 0.03 ) ); // left arm, hand in the pocket
+	k.add( skin, ball( 0.105, 0.03, - 0.47, 0.02, 8 ) ); // head, tipped against the arm
+	k.add( beard, new THREE.ConeGeometry( 0.08, 0.14, 7 ).rotateX( Math.PI ).translate( 0.03, - 0.58, 0.07 ) );
+	k.add( beard, ball( 0.1, 0.02, - 0.43, - 0.02, 7 ).scale( 1, 0.6, 1 ) );
+	for ( const s of [ - 1, 1 ] ) k.add( M.iron, new THREE.TorusGeometry( 0.025, 0.006, 4, 10 ).translate( 0.03 + s * 0.04, - 0.46, 0.11 ) );
+	for ( const s of [ - 1, 1 ] ) {
+
+		k.add( suit, new THREE.CylinderGeometry( 0.075, 0.06, 0.88, 6 ).translate( 0.08 + s * 0.09, - 1.72, 0 ) );
+		k.add( shoe, box( 0.1, 0.07, 0.25, 0.08 + s * 0.09, - 2.2, 0.05 ) );
+
+	}
+
+	k.build( man );
+	man.position.set( V.x, poleY, V.z );
+	man.rotation.y = Math.atan2( ux, uz ) + Math.PI / 2;
+	scene.add( man );
+	let t = 0;
+	ANIMATE.push( dt => {
+
+		t += dt;
+		man.rotation.x = Math.sin( t * 0.9 ) * 0.035;
+		man.rotation.z = Math.sin( t * 0.6 + 1 ) * 0.02;
+
+	} );
+
+}
+
+// David Černý's Franz Kafka (2014) in the Quadrio courtyard: an 11 m head of 42 mirror-steel layers that turn
+// separately and come back together into his face. Each layer is a horizontal slice of a head (neck, jaw and
+// chin, nose, ears, the back of the skull); the show: the face holds, the layers wind away in different
+// directions and turns, and line up again.
+function headSlice( t, front ) {
+
+	// Overall half-widths across (x) and front to back (z) at height t (0 neck … 1 crown).
+	const cap = t > 0.8 ? Math.sqrt( Math.max( 0, 1 - ( ( t - 0.8 ) / 0.2 ) ** 2 ) ) : 1;
+	const neck = t < 0.17 ? 0.5 : t < 0.32 ? 0.5 + ( t - 0.17 ) / 0.15 * 0.5 : 1;
+	const rx = 2.45 * neck * cap + 0.05, rz = 2.6 * ( t < 0.17 ? 0.62 : neck ) * cap + 0.05;
+	const bump = ( a, c, w ) => Math.exp( - ( ( a - c ) ** 2 ) / w );
+	const pts = [];
+	for ( let i = 0; i < 72; i ++ ) {
+
+		const a = i / 72 * Math.PI * 2 - Math.PI; // 0 = the face (+z)
+		let x = Math.sin( a ) * rx, z = Math.cos( a ) * rz;
+		if ( Math.abs( a ) < Math.PI / 2 ) z = z * 0.86 + rz * 0.12; // a flatter face
+		const mid = bump( a, 0, 0.035 );
+		if ( t > 0.42 && t < 0.6 ) z += mid * 1.15 * Math.sin( ( t - 0.42 ) / 0.18 * Math.PI ) ** 0.7; // the nose
+		if ( t > 0.33 && t < 0.4 ) z += bump( a, 0, 0.12 ) * 0.28; // the lips
+		if ( t > 0.2 && t < 0.31 ) z += bump( a, 0, 0.1 ) * 0.5; // the chin
+		if ( t > 0.6 && t < 0.67 ) z += bump( a, 0, 0.3 ) * 0.3; // the brow
+		if ( t > 0.54 && t < 0.62 ) z -= ( bump( a, 0.42, 0.02 ) + bump( a, - 0.42, 0.02 ) ) * 0.35; // eye sockets
+		if ( t > 0.44 && t < 0.62 ) x += Math.sign( x ) * ( bump( a, Math.PI / 2, 0.03 ) + bump( a, - Math.PI / 2, 0.03 ) ) * 0.45; // ears
+		if ( t > 0.55 ) z -= bump( Math.abs( a ), Math.PI, 0.6 ) * 0.3 * ( t - 0.55 ) * 3; // the back of the skull
+		pts.push( new THREE.Vector2( x, z * front ) );
+
+	}
+
+	return new THREE.Shape( pts );
+
+}
+
+function addKafka( scene, K ) {
+
+	const steel = new THREE.MeshStandardNodeMaterial( { color: 0xd6dadf, metalness: 1, roughness: 0.16, flatShading: true } );
+	const g = new THREE.Group();
+	g.position.set( K.x, K.y, K.z );
+	g.rotation.y = Math.PI; // the face looks north, towards Národní
+	scene.add( g );
+	new Kit().add( plain( 0x2a2c2e, { roughness: 0.4 } ), cyl( 2.6, 2.8, 0.4, 0, - 0.1, 0, 24 ) ).build( g );
+	const N = 42, H = 10.6, lh = H / N;
+	const layers = [];
+	for ( let i = 0; i < N; i ++ ) {
+
+		const geo = new THREE.ExtrudeGeometry( headSlice( ( i + 0.5 ) / N, - 1 ), { depth: lh * 0.9, bevelEnabled: false, curveSegments: 1 } ).rotateX( - Math.PI / 2 );
+		const m = new THREE.Mesh( geo, steel );
+		m.position.y = 0.3 + i * lh;
+		m.castShadow = m.receiveShadow = true;
+		g.add( m );
+		layers.push( { m, turns: 1 + ( i * 7 % 3 ), dir: ( i * 5 % 2 ) ? 1 : - 1, lag: ( i % 6 ) * 0.03 } );
+
+	}
+
+	// A 48 s cycle: 14 s the face, 34 s apart and back.
+	let t = 0;
+	const ease = u => u <= 0 ? 0 : u >= 1 ? 1 : u * u * ( 3 - 2 * u );
+	ANIMATE.push( dt => {
+
+		t = ( t + dt ) % 48;
+		const u = ( t - 14 ) / 34;
+		for ( const L of layers ) L.m.rotation.y = L.dir * L.turns * Math.PI * 2 * ease( ( u - L.lag ) / ( 1 - 0.15 ) );
+
+	} );
+
+}
+
 // The piazzetta of the National Theatre: Gebauer's Heart for Václav Havel (red, lit, 1.6 m, his signature above it,
 // two heart-shaped wire cages beside it), Malejovský's bronze Rebirth on a round stone plinth, Nová scéna's pillars.
 function heartShape( s ) {
@@ -362,6 +472,8 @@ export function addLandmarks( scene, places, waterLevel ) {
 
 	if ( places.piazzetta ) addPiazzetta( scene, places.piazzetta );
 	if ( places.chapel ) addChapel( scene, places.chapel );
+	if ( places.viselec ) addViselec( scene, places.viselec );
+	if ( places.kafka ) addKafka( scene, places.kafka );
 
 	if ( places.sitkov ) addSitkovTower( scene, places.sitkov, waterLevel );
 	if ( places.bandstand ) addBandstand( scene, places.bandstand );

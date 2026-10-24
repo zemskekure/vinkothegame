@@ -1022,6 +1022,206 @@ function addSlaviaInterior( g, room, kit, seat ) {
 
 // The room shell's floor, walls and ceiling come from each style; this adds the front wall with the doorway and
 // lets the style furnish the room. Returns seats (scene frame).
+// ---------------------------------------------------------------------------
+// Večerka on Náprstkova 7 (from the owner's photos): a corner shop in front (shelves of goods, the drinks fridge,
+// the counter with the cigarette wall), and through an arch at the back the phở room, a white vaulted room with the
+// red menu board of dishes, the wooden counter with porcelain vases, pink flowers, a laughing Buddha and a lucky cat;
+// light wood tables with chopsticks in wooden boxes and Sriracha, a rattan lamp and bare bulbs on cables, the
+// chalkboard "Vaříme jako u nás doma ve Vietnamu".
+
+function menuBoard() {
+
+	return tex( ( c, w, h ) => {
+
+		c.fillStyle = '#8e1717';
+		c.fillRect( 0, 0, w, h );
+		c.fillStyle = '#f6d34a';
+		c.font = '700 22px sans-serif';
+		[ 'PHỞ / NUDLOVÉ POLÉVKY', 'BÚN / NUDLE', 'CƠM / RÝŽE · SPECIAL' ].forEach( ( t, i ) => c.fillText( t, 14 + i * ( w / 3 ), 28 ) );
+		const food = [ '#c9893f', '#e2b45a', '#7a9a3c', '#b8542f', '#d8c08a', '#9c3b25' ];
+		for ( let r = 0; r < 3; r ++ ) for ( let k = 0; k < 9; k ++ ) {
+
+			const x = 30 + k * ( w - 50 ) / 9 + 22, y = 70 + r * 70;
+			c.fillStyle = '#f4f1ea';
+			c.beginPath();
+			c.arc( x, y, 25, 0, Math.PI * 2 );
+			c.fill();
+			c.fillStyle = food[ ( r * 9 + k ) % food.length ];
+			c.beginPath();
+			c.arc( x, y, 18, 0, Math.PI * 2 );
+			c.fill();
+			c.fillStyle = '#4e8a3a';
+			c.fillRect( x - 6, y - 4, 7, 3 );
+			c.fillStyle = '#f6d34a';
+			c.font = '700 13px sans-serif';
+			c.fillText( `${ 129 + ( ( r * 9 + k ) * 17 ) % 90 },-`, x - 16, y + 40 );
+
+		}
+
+	}, 1024, 300 );
+
+}
+
+function chalkboard() {
+
+	return tex( ( c, w, h ) => {
+
+		c.fillStyle = '#22262a';
+		c.fillRect( 0, 0, w, h );
+		c.strokeStyle = '#5a4630';
+		c.lineWidth = 18;
+		c.strokeRect( 0, 0, w, h );
+		c.fillStyle = '#f2f0e8';
+		c.textAlign = 'center';
+		c.font = 'italic 40px "Brush Script MT", "Segoe Script", cursive';
+		[ 'Vaříme', 'jako u nás doma', 've Vietnamu' ].forEach( ( t, i ) => c.fillText( t, w / 2, 90 + i * 70 ) );
+		c.strokeStyle = '#f2f0e8';
+		c.lineWidth = 3;
+		c.beginPath();
+		c.ellipse( w / 2, 330, 70, 22, 0, 0, Math.PI );
+		c.stroke();
+		c.beginPath();
+		c.moveTo( w / 2 + 20, 290 );
+		c.lineTo( w / 2 + 110, 250 );
+		c.moveTo( w / 2 + 30, 300 );
+		c.lineTo( w / 2 + 120, 265 );
+		c.stroke();
+
+	}, 512, 400 );
+
+}
+
+function addVecerkaInterior( g, room, kit, seat ) {
+
+	const { w, d, h, door } = room;
+	const white = lit( plain( 0xf3f1ec ) );
+	const floorMat = lit( tiles( 0xb9b3a7, 0xa7a196, 0.45 ), 0.25 );
+	kit.add( floorMat, box( w, 0.04, d, 0, - 0.04, - d / 2 ) );
+	kit.add( white, box( w, h, 0.08, 0, 0, - d ), box( 0.08, h, d, - w / 2, 0, - d / 2 ), box( 0.08, h, d, w / 2, 0, - d / 2 ) );
+
+	// The partition between shop and back room, with a round-headed arch lined up with the door.
+	const ds = Math.min( 3.8, d * 0.42 ), ax = THREE.MathUtils.clamp( door, - w / 2 + 1.1, w / 2 - 1.1 ), aw = 1.5, ah = 2.45;
+	const wall = new THREE.Shape().moveTo( - w / 2, 0 ).lineTo( w / 2, 0 ).lineTo( w / 2, h ).lineTo( - w / 2, h ).closePath();
+	wall.holes.push( new THREE.Path().moveTo( ax - aw / 2, 0 ).lineTo( ax - aw / 2, ah - aw / 2 ).absarc( ax, ah - aw / 2, aw / 2, Math.PI, 0, true ).lineTo( ax + aw / 2, 0 ).closePath() );
+	kit.add( white, new THREE.ExtrudeGeometry( wall, { depth: 0.3, bevelEnabled: false, curveSegments: 12 } ).translate( 0, 0, - ds - 0.3 ) );
+
+	// --- the shop
+	kit.add( white, box( w, 0.05, ds, 0, h, - ds / 2 ) );
+	kit.add( M.bulb, box( 1.2, 0.03, 0.12, 0, h - 0.04, - ds / 2 ) );
+	const far = door > 0 ? - 1 : 1; // the side away from the door
+	const product = [ 0xd33b2c, 0xf2c230, 0x2f6fb5, 0x3e9a4a, 0xf08a24, 0xffffff, 0x8a3a8f, 0x1d1d1d ].map( c => plain( c, { roughness: 0.5 } ) );
+	// Shelves along the far side wall.
+	const sx = far * ( w / 2 - 0.25 );
+	for ( const y of [ 0.15, 0.6, 1.05, 1.5, 1.95 ] ) {
+
+		kit.add( M.woodLight, box( 0.42, 0.03, ds - 0.6, sx, y, - ds / 2 ) );
+		for ( let z = - 0.45; z > - ds + 0.4; z -= 0.14 ) kit.add( product[ Math.floor( rnd() * product.length ) ], box( 0.3, 0.18 + rnd() * 0.16, 0.11, sx, y + 0.03, z ) );
+
+	}
+
+	// The drinks fridge against the partition, lit, bottles behind its glass.
+	const fx = far * ( w / 2 - 1.2 );
+	kit.add( plain( 0xe9ebee ), box( 0.9, 2.0, 0.65, fx, 0, - ds + 0.35 ) );
+	kit.add( glow( 0xdff3ff, 0.7 ), box( 0.78, 1.7, 0.02, fx, 0.15, - ds + 0.68 ) );
+	for ( const y of [ 0.3, 0.75, 1.2, 1.6 ] ) for ( let k = 0; k < 6; k ++ ) kit.add( product[ ( k + Math.round( y * 3 ) ) % product.length ], cyl( 0.035, 0.035, 0.3, fx - 0.33 + k * 0.13, y, - ds + 0.5, 6 ) );
+	// The counter by the door, cigarettes on the wall behind it.
+	const cx = door - far * 0, cz = - 1.1;
+	const counterX = THREE.MathUtils.clamp( - far * ( w / 2 - 0.9 ), - w / 2 + 0.9, w / 2 - 0.9 );
+	kit.add( M.woodMid, box( 1.4, 1.0, 0.6, counterX, 0, cz - 0.9 ) ).add( M.woodLight, box( 1.5, 0.04, 0.7, counterX, 1.0, cz - 0.9 ) );
+	for ( let r = 0; r < 4; r ++ ) for ( let k = 0; k < 9; k ++ ) kit.add( product[ ( r * 3 + k ) % product.length ], box( 0.09, 0.13, 0.04, counterX - 0.6 + k * 0.15, 1.3 + r * 0.2, - ds + 0.05 ) );
+	kit.add( plain( 0x1d1d1d ), box( 0.35, 0.25, 0.25, counterX + 0.4, 1.04, cz - 0.9 ) ); // the till
+	void cx;
+	// Crates of fruit and a stack of beer crates inside the door.
+	for ( let k = 0; k < 3; k ++ ) {
+
+		const x = far * ( w / 2 - 1.4 ) - far * k * 0.55;
+		kit.add( M.woodLight, box( 0.5, 0.25, 0.35, x, 0.0, - 0.45 ) );
+		for ( let j = 0; j < 6; j ++ ) kit.add( [ plain( 0xf09a2a ), plain( 0xf2d23a ), plain( 0x7ab83a ) ][ k ], ball( 0.05, x - 0.18 + ( j % 3 ) * 0.18, 0.3, - 0.55 + Math.floor( j / 3 ) * 0.2, 6 ) );
+
+	}
+
+	for ( let k = 0; k < 4; k ++ ) kit.add( plain( 0x2a6a3a ), box( 0.4, 0.28, 0.3, - far * ( w / 2 - 0.4 ), k * 0.29, - ds + 0.4 ) );
+
+	// --- the phở room, vaulted
+	const D = d - ds - 0.3, z0 = - ds - 0.3; // its depth and front edge
+	const vault = new THREE.PlaneGeometry( w, D, 16, 1 ).rotateX( Math.PI / 2 );
+	const pos = vault.attributes.position;
+	for ( let i = 0; i < pos.count; i ++ ) {
+
+		const x = pos.getX( i ) / ( w / 2 );
+		pos.setY( i, h - 0.6 + 0.6 * ( 1 - x * x ) );
+
+	}
+
+	vault.computeVertexNormals();
+	kit.add( lit( plain( 0xf6f4ee, { side: THREE.DoubleSide } ) ), vault.translate( 0, 0, z0 - D / 2 ) );
+	// Menu board and the counter under it, on the back wall.
+	const mw = Math.min( 3.8, w - 1.4 );
+	const menu = mapped( menuBoard() );
+	lit( menu, 0.12 );
+	kit.add( menu, new THREE.PlaneGeometry( mw, mw * 300 / 1024 ).translate( 0, 2.05, - d + 0.06 ) );
+	const cw = Math.min( 3.2, w - 1.6 );
+	kit.add( M.woodMid, box( cw, 1.0, 0.55, 0, 0, - d + 0.62 ) ).add( M.woodDark, box( cw + 0.06, 0.05, 0.6, 0, 1.0, - d + 0.62 ) );
+	kit.add( M.woodMid, box( cw, 0.03, 0.25, 0, 1.45, - d + 0.15 ) );
+	for ( let k = 0; k < 10; k ++ ) kit.add( MAT_GLASS, cyl( 0.03, 0.03, 0.1, - cw / 2 + 0.2 + k * ( cw - 0.4 ) / 9, 1.48, - d + 0.15, 6 ) );
+	// Vases (blue, and white with flowers), pink flowers, the laughing Buddha, the lucky cat.
+	const porcelain = plain( 0xf3efe6, { roughness: 0.3 } ), cobalt = plain( 0x223a8c, { roughness: 0.3 } );
+	const vase = ( m, x, hgt ) => kit.add( m, new THREE.LatheGeometry( [ [ 0.0, 0 ], [ 0.07, 0 ], [ 0.11, hgt * 0.35 ], [ 0.06, hgt * 0.8 ], [ 0.08, hgt ] ].map( ( [ r, y ] ) => new THREE.Vector2( r, y ) ), 10 ).translate( x, 1.05, - d + 0.62 ) );
+	vase( cobalt, - cw / 2 + 0.3, 0.42 );
+	vase( porcelain, 0.15, 0.5 );
+	for ( let k = 0; k < 9; k ++ ) kit.add( plain( [ 0xd88ac8, 0xb05aa8, 0xf2e6f0 ][ k % 3 ] ), ball( 0.07, 0.15 + ( rnd() - 0.5 ) * 0.4, 1.6 + rnd() * 0.3, - d + 0.62 + ( rnd() - 0.5 ) * 0.2, 5 ) );
+	const gold = plain( 0xd9b36a, { roughness: 0.4 } );
+	kit.add( gold, ball( 0.2, cw / 2 - 0.3, 1.25, - d + 0.62, 8 ), ball( 0.12, cw / 2 - 0.3, 1.52, - d + 0.62, 8 ) );
+	for ( const s of [ - 1, 1 ] ) kit.add( gold, new THREE.CylinderGeometry( 0.03, 0.03, 0.3, 5 ).rotateZ( s * 0.5 ).translate( cw / 2 - 0.3 + s * 0.15, 1.7, - d + 0.62 ) );
+	kit.add( plain( 0xf8f6f0 ), ball( 0.09, cw / 2 - 0.85, 1.12, - d + 0.62, 7 ), ball( 0.07, cw / 2 - 0.85, 1.26, - d + 0.62, 7 ) ).add( plain( 0xd83a2a ), box( 0.03, 0.12, 0.03, cw / 2 - 0.78, 1.3, - d + 0.66 ) );
+	// Tables: light wood, two chairs each; chopsticks in a wooden box, Sriracha, a steaming bowl now and then.
+	const wood = lit( planks( 0xcdb48e, 0xbfa57f ), 0.15 );
+	const chair = [ plain( 0xe9e9e6 ), plain( 0x9aa1a8 ) ];
+	const rows = [];
+	for ( let z = z0 - 1.0; z > - d + 1.9; z -= 1.7 ) rows.push( z );
+	let n = 0;
+	for ( const z of rows ) for ( const x of [ - w / 4, w / 4 ] ) {
+
+		if ( Math.abs( x - ax ) < 0.8 && z > z0 - 1.3 ) continue; // keep the way through the arch clear
+		kit.add( wood, box( 1.1, 0.04, 0.7, x, 0.74, z ) ).add( M.iron, box( 0.06, 0.74, 0.06, x, 0, z ) );
+		kit.add( M.woodLight, box( 0.12, 0.12, 0.12, x - 0.35, 0.78, z ) );
+		for ( let k = 0; k < 6; k ++ ) kit.add( M.woodLight, box( 0.01, 0.24, 0.01, x - 0.38 + ( k % 3 ) * 0.03, 0.82, z - 0.03 + Math.floor( k / 3 ) * 0.04 ) );
+		kit.add( plain( 0xd8301e ), cyl( 0.03, 0.03, 0.17, x - 0.18, 0.78, z + 0.15, 7 ) ).add( plain( 0x2f8a3a ), cyl( 0.015, 0.02, 0.04, x - 0.18, 0.95, z + 0.15, 6 ) );
+		if ( n ++ % 2 === 0 ) {
+
+			kit.add( porcelain, new THREE.SphereGeometry( 0.12, 12, 6, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2 ).translate( x + 0.2, 0.9, z - 0.05 ) );
+			kit.add( plain( 0x9c6a32, { roughness: 0.2 } ), cyl( 0.11, 0.11, 0.01, x + 0.2, 0.86, z - 0.05, 12 ) ).add( plain( 0x5d9a3a ), box( 0.06, 0.012, 0.03, x + 0.24, 0.875, z - 0.08 ) );
+
+		}
+
+		for ( const sd of [ - 1, 1 ] ) {
+
+			const czz = z + sd * 0.55;
+			kit.add( chair[ ( n + sd ) & 1 ], box( 0.44, 0.04, 0.42, x, 0.45, czz ), box( 0.44, 0.42, 0.04, x, 0.47, czz + sd * 0.2 ) ).add( M.woodLight, box( 0.36, 0.45, 0.32, x, 0, czz ).scale( 1, 1, 1 ) );
+			seat( x, czz, sd > 0 ? Math.PI : 0 );
+
+		}
+
+	}
+
+	// The chalkboard on the side wall, a rattan lamp and bare bulbs on cables.
+	const cb = mapped( chalkboard() );
+	lit( cb, 0.3 );
+	const side = - far;
+	kit.add( cb, new THREE.PlaneGeometry( 0.9, 0.7 ).rotateY( - side * Math.PI / 2 ).translate( side * ( w / 2 - 0.05 ), 1.7, z0 - 1.2 ) );
+	const rattan = glow( 0xc9a05a, 0.35 );
+	kit.add( rattan, new THREE.TorusGeometry( 0.26, 0.07, 6, 14 ).rotateX( Math.PI / 2 ).translate( 0, h - 0.95, z0 - D / 2 ) ).add( M.iron, cyl( 0.005, 0.005, 0.85, 0, h - 0.88, z0 - D / 2, 4 ) );
+	for ( let k = 0; k < 5; k ++ ) {
+
+		const bx = - w / 2 + 0.8 + k * ( w - 1.6 ) / 4, bz = z0 - 0.8 - ( k % 2 ) * ( D - 1.6 ) * 0.6, drop = 0.6 + ( k % 3 ) * 0.3;
+		kit.add( M.iron, cyl( 0.005, 0.005, drop, bx, h - drop - 0.1, bz, 4 ) ).add( M.bulb, ball( 0.05, bx, h - drop - 0.15, bz, 8 ) );
+
+	}
+
+}
+
+const MAT_GLASS = new THREE.MeshStandardNodeMaterial( { color: 0xdfe8ea, roughness: 0.1, transparent: true, opacity: 0.6 } );
+
 function addVenueInterior( scene, room ) {
 
 	const g = onFront( room.x, room.y, room.z, room.n );
@@ -1046,12 +1246,12 @@ function addVenueInterior( scene, room ) {
 
 	} else {
 
-		const front = lit( { pub: roomWall( 0xf1e5d2, 0x5b2a1f, 1.2 ), cafe: roomWall( 0xeeece6, 0x8a9db0, 1.0 ), champagne: roomWall( 0xf3f1ec, 0xe9e6df, 0.05 ) }[ room.style ] );
+		const front = lit( { pub: roomWall( 0xf1e5d2, 0x5b2a1f, 1.2 ), cafe: roomWall( 0xeeece6, 0x8a9db0, 1.0 ), champagne: roomWall( 0xf3f1ec, 0xe9e6df, 0.05 ), vecerka: roomWall( 0xf3f1ec, 0xe4e0d6, 0.9 ) }[ room.style ] );
 		kit.add( front, box( dl + w / 2, h, t, ( - w / 2 + dl ) / 2, 0, - 0.14 ), box( w / 2 - dr, h, t, ( dr + w / 2 ) / 2, 0, - 0.14 ), box( doorW, h - doorH, t, door, doorH, - 0.14 ) );
 
 	}
 
-	( { pub: addPubInterior, cafe: addCafeInterior, champagne: addChampagneInterior, slavia: addSlaviaInterior } )[ room.style ]( g, room, kit, seat );
+	( { pub: addPubInterior, cafe: addCafeInterior, champagne: addChampagneInterior, slavia: addSlaviaInterior, vecerka: addVecerkaInterior } )[ room.style ]( g, room, kit, seat );
 	kit.build( g );
 	return seats;
 

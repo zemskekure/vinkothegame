@@ -13,7 +13,7 @@ import { buildKerbs } from './kerbs.mjs';
 
 // Artworks mapped as statues that are none: "Za pravdu" on Betlémská kaple is a shadow inscription, eight stone
 // ledges on the chapel front (src/landmarks.js).
-const NOT_STATUES = new Set( [ 4923909754 ] );
+const NOT_STATUES = new Set( [ 4923909754, 2517769530 ] ); // and Viselec, which hangs from a roof (src/landmarks.js)
 
 const KERB_HEIGHT = 0.12;
 const RAMP_END = 8.5; // the pavement mesh covers the kerb field up to here
@@ -379,7 +379,7 @@ export function collectFurniture( streets, { toLocal, heightAt, dsmTrees, treeHe
 		else if ( t.barrier === 'bollard' ) put( 'bollard', n.X, n.Y );
 		else if ( t.amenity === 'bicycle_parking' ) put( 'bikestand', n.X, n.Y, along( n.X, n.Y ), Math.min( 6, Math.max( 1, Math.round( ( Number( t.capacity ) || 4 ) / 2 ) ) ) );
 		else if ( t.amenity === 'fountain' ) put( 'fountain', n.X, n.Y );
-		else if ( t.tourism === 'artwork' && ! ( t[ 'addr:conscriptionnumber' ] && ! t.name ) && ! NOT_STATUES.has( n.id ) && ( t.artwork_type === 'statue' || t.artwork_type === 'sculpture' ) || t.historic === 'memorial' && t.memorial === 'statue' || t.historic === 'monument' ) put( 'statue', n.X, n.Y, along( n.X, n.Y ) );
+		else if ( ! NOT_STATUES.has( n.id ) && ( t.tourism === 'artwork' && ! ( t[ 'addr:conscriptionnumber' ] && ! t.name ) && ( t.artwork_type === 'statue' || t.artwork_type === 'sculpture' ) || t.historic === 'memorial' && t.memorial === 'statue' || t.historic === 'monument' ) ) put( 'statue', n.X, n.Y, along( n.X, n.Y ) );
 		else if ( t.public_transport === 'platform' && t.shelter === 'yes' ) put( 'shelter', n.X, n.Y, along( n.X, n.Y ) );
 		else if ( t.natural === 'tree' ) put( 'tree', n.X, n.Y, 0, treeHeightAt( n.X, n.Y ) );
 		else if ( t.man_made === 'chimney' ) put( 'chimney', n.X, n.Y, 0, parseFloat( t.height ) || 30 );

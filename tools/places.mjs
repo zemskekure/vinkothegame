@@ -689,6 +689,20 @@ export function collectPlaces( ctx ) {
 
 	}
 
+	// --- The večerka on Náprstkova 7 (no. 214), from the owner's photos: its door at the east end of the front, by
+	// the corner; inside, the shop, and phở in the vaulted back room (src/venues.js).
+	{
+
+		const f = edgeOf( 21643415, 11 );
+		if ( f ) {
+
+			const k = sideK( f ), sRoom = 4.2, sDoor = 1.5; // from the front's east end
+			interior( 'Večerka a phở', 'vecerka', f, sRoom, { w: 7, maxD: 11, door: ( sDoor - sRoom ) / k, h: 3.3 } );
+
+		}
+
+	}
+
 	// --- Kavárna Slavia (Národní 1, the corner of Lažanský palác): the café's tall windows run along the ground
 	// floor on Národní and round the corner onto Smetanovo nábřeží, facing the theatre and the river; the entrance
 	// is on Národní. A walk-in room behind the Národní front.
@@ -1000,7 +1014,7 @@ export function collectPlaces( ctx ) {
 	places.life = streetLife( ctx, L );
 	places.barriers ||= [];
 	collectWalls( { places, project: ctx.project, L, S, yAtLocal, streetData, AREA } );
-	dressSquare( { places, frontFacing, frame, S, L, sign, yAtLocal, streetData, project: ctx.project, streetFacades } );
+	dressSquare( { places, frontFacing, frame, S, L, sign, yAtLocal, streetData, project: ctx.project, streetFacades, toLocal, buildingInfo: ctx.buildingInfo } );
 
 	return places;
 

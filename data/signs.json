@@ -827,5 +827,33 @@
 		"font": "serif",
 		"street": "konviktska",
 		"what": "gallery lettering above the ground floor (owner screenshot of Konviktská)"
+	},
+	{
+		"front": "21643415_11",
+		"fromLeft": 0.9,
+		"height": 3.05,
+		"kind": "board",
+		"text": "MINIMARKET",
+		"sub": "cigarety · alkohol · nápoje",
+		"width": 2.4,
+		"bg": "#ece9e2",
+		"ink": "#7a1f1f",
+		"font": "sans",
+		"street": "naprstkova",
+		"what": "shop board over the door (owner photo)"
+	},
+	{
+		"front": "21643415_11",
+		"fromLeft": 0.83,
+		"height": 3.25,
+		"kind": "hanging",
+		"text": "MINIMARKET",
+		"sub": "ALKOHOL · CIGARETY · NÁPOJE · ATM",
+		"width": 0.85,
+		"bg": "#f4f2ec",
+		"ink": "#c0262c",
+		"font": "sans",
+		"street": "naprstkova",
+		"what": "projecting box sign (owner photo)"
 	}
 ]

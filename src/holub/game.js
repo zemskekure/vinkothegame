@@ -103,12 +103,13 @@ function scatterFood( scene, spots, surfaceAt, rnd ) {
 
 // --- the game -----------------------------------------------------------------------------------------------------
 
-export function startHolub( { scene, camera, dom, roofGeo, bounds, groundHeight, waterLevel, places, furniture, life, start } ) {
+export function startHolub( { scene, camera, dom, roofGeo, bounds, groundHeight, waterLevel, places, furniture, life, start, indoors = () => false } ) {
 
 	let seed = 7;
 	const rnd = () => ( ( seed = ( seed * 16807 ) % 2147483647 ) / 2147483647 );
 	const roofAt = roofGrid( roofGeo, bounds );
-	const surfaceAt = ( x, z ) => Math.max( groundHeight( x, z ), roofAt( x, z ) );
+	// Inside a walk-in room (the pub, the večerka…) the floor; elsewhere the street or the roof over it.
+	const surfaceAt = ( x, z ) => indoors( x, z ) ? groundHeight( x, z ) : Math.max( groundHeight( x, z ), roofAt( x, z ) );
 	const overWater = ( x, z ) => surfaceAt( x, z ) < waterLevel + 0.3;
 
 	// Leftovers round the terrace tables, benches and bins (more where people sit).
@@ -133,7 +134,7 @@ export function startHolub( { scene, camera, dom, roofGeo, bounds, groundHeight,
 	const pos = new THREE.Vector3( start[ 0 ], 0, start[ 1 ] );
 	pos.y = surfaceAt( pos.x, pos.z );
 	const vel = new THREE.Vector3();
-	let mode = 'walk', heading = start[ 2 ], yaw = start[ 2 ] + Math.PI, pitch = 0.32, dist = 1.6, idle = 0;
+	let mode = 'walk', heading = start[ 2 ], yaw = start[ 2 ] + Math.PI, pitch = 0.3, dist = 0.95, idle = 0;
 	let peck = 0, pecking = 0, poop = 0, poopCooldown = 0, bank = 0, lastYaw = yaw;
 	const keys = new Set();
 	const score = { food: 0, drops: 0, hits: 0 };
@@ -181,7 +182,7 @@ export function startHolub( { scene, camera, dom, roofGeo, bounds, groundHeight,
 	} );
 	dom.addEventListener( 'wheel', e => {
 
-		dist = THREE.MathUtils.clamp( dist * ( e.deltaY > 0 ? 1.12 : 0.89 ), 0.8, 14 );
+		dist = THREE.MathUtils.clamp( dist * ( e.deltaY > 0 ? 1.12 : 0.89 ), 0.5, 14 );
 
 	}, { passive: true } );
 	const peckNow = () => {
@@ -585,10 +586,10 @@ export function startHolub( { scene, camera, dom, roofGeo, bounds, groundHeight,
 
 		// Camera: behind the bird, closer on the ground, further in flight; kept out of the houses.
 		const flying = mode === 'fly' || mode === 'glide';
-		const d = dist * ( flying ? 2.4 : 1 );
-		camTarget.set( pos.x, pos.y + ( flying ? 0.3 : 0.28 ), pos.z );
+		const d = dist * ( flying ? 1.9 : 1 );
+		camTarget.set( pos.x, pos.y + ( flying ? 0.25 : 0.22 ), pos.z );
 		let k = d;
-		for ( ; k > 0.5; k -= 0.25 ) {
+		for ( ; k > 0.35; k -= 0.15 ) {
 
 			camPos.copy( camTarget ).addScaledVector( look, - k );
 			if ( surfaceAt( camPos.x, camPos.z ) < camPos.y - 0.1 ) break;
