@@ -19,15 +19,24 @@ const OPEN_WAYS = new Set( [ 'pedestrian', 'footway', 'living_street', 'path', '
 const SETT = /sett|cobblestone/;
 const surfaceValue = s => s === 'asphalt' || s === 'concrete' ? 1 : SETT.test( s || 'sett' ) ? 0 : 0.5; // 0.5 = paving stones
 
-export async function loadStreets( { AREA, buildingDist } ) {
+export async function loadStreets( { AREA, buildingDist, riverAt = () => false } ) {
 
 	const project = await lonLatToSJTSK();
 	const osm = JSON.parse( await readFile( new URL( '../data/raw/osm.json', import.meta.url ) ) );
 
+	// Manual position fixes (data/corrections.json), e.g. a pin placed on a leaning top in the aerial photo.
+	const corrections = JSON.parse( await readFile( new URL( '../data/corrections.json', import.meta.url ) ) );
 	const nodes = new Map();
 	for ( const el of osm ) if ( el.type === 'node' ) {
 
-		const [ X, Y ] = project( el.lon, el.lat );
+		let [ X, Y ] = project( el.lon, el.lat );
+		const fix = corrections[ `node/${el.id}` ];
+		if ( fix?.offset ) {
+
+			X += fix.offset[ 0 ];
+			Y += fix.offset[ 1 ];
+
+		}
 		nodes.set( el.id, { id: el.id, X, Y, tags: el.tags || {} } );
 
 	}
@@ -61,6 +70,10 @@ export async function loadStreets( { AREA, buildingDist } ) {
 		roads.push( { pts: w.pts, half, kerbed, left, right, sidewalkWidth, asphalt: surfaceValue( t.surface ), name: t.name, highway: t.highway } );
 
 	}
+
+	// --- separately mapped pavements (footway=sidewalk): raised strips of their width
+	const sidewalks = ways.filter( w => w.tags.highway === 'footway' && w.tags.footway === 'sidewalk' && w.pts.some( p => inArea( p.X, p.Y, 30 ) ) )
+		.map( w => ( { pts: w.pts, half: ( parseFloat( w.tags.width ) || 2.4 ) / 2, surface: w.tags.surface } ) );
 
 	// --- open (pedestrian) areas and their surface
 	const openWays = ways.filter( w => OPEN_WAYS.has( w.tags.highway ) && w.tags.surface && w.pts.some( p => inArea( p.X, p.Y, 30 ) ) );
@@ -119,9 +132,22 @@ export async function loadStreets( { AREA, buildingDist } ) {
 
 	const nearestRoad = segmentIndex( roads, ( r, i ) => r.half[ i ] );
 	const nearestOpen = segmentIndex( openWays, () => 0 );
+	const nearestSidewalk = segmentIndex( sidewalks, s => s.half );
 
 	// Field values at a point: F = signed distance to any carriageway edge (< 0 on the road),
 	// Fk = the same for carriageways with kerbs (> 0 on the raised pavement side).
+	const nearRiver = ( X, Y ) => {
+
+		for ( const d of [ 6, 12, 20 ] ) for ( let k = 0; k < 8; k ++ ) {
+
+			if ( riverAt( X + Math.cos( k * Math.PI / 4 ) * d, Y + Math.sin( k * Math.PI / 4 ) * d ) ) return true;
+
+		}
+
+		return false;
+
+	};
+
 	function at( X, Y ) {
 
 		const r = nearestRoad( X, Y );
@@ -138,9 +164,20 @@ export async function loadStreets( { AREA, buildingDist } ) {
 
 				if ( r.left ? road.left : road.right ) {
 
-					const cx = r.seg.a.X + ( r.seg.b.X - r.seg.a.X ) * r.t, cy = r.seg.a.Y + ( r.seg.b.Y - r.seg.a.Y ) * r.t;
-					const width = Math.min( road.sidewalkWidth, 0.6 * buildingDist( cx, cy ) );
-					Fk = width - buildingDist( X, Y );
+					const bd = buildingDist( X, Y );
+					if ( r.f > 0 && bd > 10 ) {
+
+						// No houses on this side (an embankment, a square): the kerb follows the carriageway edge.
+						Fk = Math.min( r.f, 6 );
+
+					} else {
+
+						const cx = r.seg.a.X + ( r.seg.b.X - r.seg.a.X ) * r.t, cy = r.seg.a.Y + ( r.seg.b.Y - r.seg.a.Y ) * r.t;
+						const width = Math.min( road.sidewalkWidth, 0.6 * buildingDist( cx, cy ) );
+						Fk = width - bd;
+
+					}
+
 					F = Fk;
 
 				} else {
@@ -150,6 +187,28 @@ export async function loadStreets( { AREA, buildingDist } ) {
 				}
 
 			}
+
+		}
+
+		// Riverside promenade: outside the carriageway, away from the houses and close to the river (the embankments
+		// are not mapped as pavements), raised with a kerb along the road.
+		if ( r.seg && r.f > 0.2 && Fk === 100 && buildingDist( X, Y ) > 4 && nearRiver( X, Y ) ) {
+
+			Fk = Math.min( r.f, 6 );
+			F = Fk;
+
+		}
+
+		// Separately mapped pavements: raised strips around their centre line, joined to the wall-hugging ones.
+		const sw = nearestSidewalk( X, Y );
+		if ( sw.seg && - sw.f > 0 ) {
+
+			Fk = Fk === 100 ? - sw.f : Math.max( Fk, - sw.f );
+			F = Math.max( F, - sw.f );
+
+		} else if ( sw.seg && sw.f < 3 && Fk === 100 ) {
+
+			Fk = - sw.f; // just outside a mapped pavement: its kerb
 
 		}
 

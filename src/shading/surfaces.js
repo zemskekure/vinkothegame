@@ -169,12 +169,11 @@ export function createGroundMaterial( surfaceTex, surface2Tex, bounds, detailTex
 	col = mix( col, kerbCol, max( kerbTop, kerbFace ) );
 
 	// Real ground detail from the aerial photo (shadow-free, see tools/build-scene.mjs): markings, mosaic patterns,
-	// kerb lines, stains. On carriageways, near-white detail is road paint.
+	// kerb lines, stains.
 	const detail = float( 1 ).add( texture( detailTex, suv ).r.mul( 255 ).sub( 128 ).div( 160 ) );
 	const flat = float( 1 ).sub( steep );
-	const paint = smoothstep( 1.2, 1.45, detail ).mul( road ).mul( flat );
-	col = col.mul( mix( float( 1 ), detail.clamp( 0.55, 1.5 ), mix( float( 0.85 ), float( 0.5 ), pavement ).mul( flat ) ) );
-	col = mix( col, color( 0xe6e5df ), paint.mul( 0.85 ) );
+	// Subtle on purpose: stronger, it turns parked cars and glare into white blotches on the road.
+	col = col.mul( mix( float( 1 ), detail.clamp( 0.7, 1.3 ), mix( float( 0.5 ), float( 0.35 ), pavement ).mul( flat ) ) );
 
 	// Soft contact shadow at the foot of the houses.
 	col = col.mul( mix( float( 0.6 ), float( 1 ), smoothstep( 0.0, 0.9, buildingDist ) ) );

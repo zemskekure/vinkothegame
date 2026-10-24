@@ -1,0 +1,4 @@
+{
+	"_about": "Manual position corrections for OpenStreetMap features, checked against the aerial photo and street photos. offset: [east, north] metres in S-JTSK.",
+	"node/1276838019": { "note": "40 m brick chimney: OSM pin sits on its leaning top in the aerial photo; the base stands in the courtyard off Náprstkova", "offset": [ 8.5, 9.6 ] }
+}

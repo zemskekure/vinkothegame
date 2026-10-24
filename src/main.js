@@ -6,7 +6,7 @@ import { createRoofMaterial, createGroundMaterial, createWaterMaterial } from '.
 import { Walker } from './walker.js';
 import { addFurniture } from './furniture.js';
 import { addSigns } from './signs.js';
-import { addDecor } from './decor.js';
+import { addDecor, addEmbankment } from './decor.js';
 
 async function load( name, type = 'arrayBuffer' ) {
 
@@ -20,7 +20,7 @@ async function load( name, type = 'arrayBuffer' ) {
 
 }
 
-const [ data, wallsBuf, wallIdxBuf, roofsBuf, roofIdxBuf, terrainBuf, surfaceBuf, surface2Buf, pavementBuf, pavementIdxBuf, footprintBuf ] = await Promise.all( [
+const [ data, wallsBuf, wallIdxBuf, roofsBuf, roofIdxBuf, terrainBuf, surfaceBuf, surface2Buf, pavementBuf, pavementIdxBuf, footprintBuf, embankmentBuf ] = await Promise.all( [
 	load( 'scene.json', 'json' ),
 	load( 'walls.bin' ),
 	load( 'walls-index.bin' ),
@@ -31,7 +31,8 @@ const [ data, wallsBuf, wallIdxBuf, roofsBuf, roofIdxBuf, terrainBuf, surfaceBuf
 	load( 'surface2.bin' ),
 	load( 'pavement.bin' ),
 	load( 'pavement-index.bin' ),
-	load( 'footprints.bin' )
+	load( 'footprints.bin' ),
+	load( 'embankment.bin' )
 ] );
 
 const { bounds } = data;
@@ -227,6 +228,7 @@ scene.add( wallMesh );
 addFurniture( scene, data.furniture );
 addSigns( scene, data.signs || [], renderer );
 addDecor( scene, data.decor );
+addEmbankment( scene, embankmentBuf, data.embankment );
 
 // ---------------------------------------------------------------------------
 // Controls: orbit (overview) and walking at street level

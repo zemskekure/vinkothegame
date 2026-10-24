@@ -4,6 +4,8 @@
 
 import * as THREE from 'three/webgpu';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { color, positionWorld, mix, vec2, floor, fract, abs, max, smoothstep } from 'three/tsl';
+import { hash2D } from './shading/common.js';
 
 const iron = new THREE.MeshStandardNodeMaterial( { color: 0x232624, metalness: 0.6, roughness: 0.45 } );
 const glass = new THREE.MeshStandardNodeMaterial( { color: 0xfff2d6, emissive: 0xffd9a0, emissiveIntensity: 0.4, roughness: 0.2 } );
@@ -79,5 +81,43 @@ export function addDecor( scene, decor ) {
 		scene.add( banner );
 
 	}
+
+}
+
+// River embankment (tools/build-scene.mjs): dressed-stone wall and parapet, and an iron railing on top.
+export function addEmbankment( scene, stoneBuf, embankment ) {
+
+	const geometry = new THREE.BufferGeometry();
+	geometry.setAttribute( 'position', new THREE.BufferAttribute( new Float32Array( stoneBuf ), 3 ) );
+	geometry.computeVertexNormals();
+	const stone = new THREE.MeshStandardNodeMaterial( { roughness: 0.9, side: THREE.DoubleSide } );
+	const course = positionWorld.y.div( 0.45 );
+	const along = positionWorld.x.add( positionWorld.z ).div( 0.9 ).add( floor( course ).mul( 0.5 ) );
+	const joint = max( smoothstep( 0.44, 0.5, abs( fract( course ).sub( 0.5 ) ) ), smoothstep( 0.45, 0.5, abs( fract( along ).sub( 0.5 ) ) ) );
+	const block = mix( color( 0x8f8574 ), color( 0xa59a86 ), hash2D( vec2( floor( along ), floor( course ) ) ) );
+	stone.colorNode = mix( block, color( 0x5f594f ), joint.mul( 0.6 ) );
+	const wall = new THREE.Mesh( geometry, stone );
+	wall.castShadow = wall.receiveShadow = true;
+	scene.add( wall );
+
+	const m = new THREE.Matrix4(), q = new THREE.Quaternion(), p = new THREE.Vector3(), s = new THREE.Vector3( 1, 1, 1 );
+	const posts = embankment.posts, rails = embankment.rails;
+	const postMesh = new THREE.InstancedMesh( new THREE.CylinderGeometry( 0.025, 0.03, 0.65, 6 ).translate( 0, 0.325, 0 ), iron, posts.length / 3 );
+	for ( let i = 0; i < posts.length; i += 3 ) postMesh.setMatrixAt( i / 3, m.makeTranslation( posts[ i ], posts[ i + 1 ], posts[ i + 2 ] ) );
+	const railMesh = new THREE.InstancedMesh( new THREE.BoxGeometry( 1, 0.04, 0.05 ), iron, rails.length / 6 );
+	const a = new THREE.Vector3(), b = new THREE.Vector3(), dir = new THREE.Vector3(), x = new THREE.Vector3( 1, 0, 0 );
+	for ( let i = 0; i < rails.length; i += 6 ) {
+
+		a.fromArray( rails, i );
+		b.fromArray( rails, i + 3 );
+		dir.subVectors( b, a );
+		const len = dir.length();
+		q.setFromUnitVectors( x, dir.normalize() );
+		railMesh.setMatrixAt( i / 6, m.compose( p.addVectors( a, b ).multiplyScalar( 0.5 ), q, s.set( len + 0.02, 1, 1 ) ) );
+
+	}
+
+	postMesh.castShadow = railMesh.castShadow = true;
+	scene.add( postMesh, railMesh );
 
 }

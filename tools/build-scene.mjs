@@ -444,10 +444,9 @@ const facadeParams = await ( async () => {
 } )();
 
 // ---------------------------------------------------------------------------
-// Terrain (2 m grid): computed before the buildings so they stand on exactly the same ground as the streets.
+// Terrain (1 m grid): computed before the buildings so they stand on exactly the same ground as the streets.
 
-
-const TERRAIN_CELL = 2;
+const TERRAIN_CELL = 1;
 const tw = Math.round( ( AREA.xmax - AREA.xmin ) / TERRAIN_CELL ) + 1;
 const th = Math.round( ( AREA.ymax - AREA.ymin ) / TERRAIN_CELL ) + 1;
 const terrain = new Float32Array( tw * th );
@@ -462,52 +461,84 @@ for ( let r = 0; r < th; r ++ ) {
 }
 
 // Smooth the terrain over a few metres: the survey surface is slightly noisy at street scale, and Old Town streets
-// are smooth slopes. Two passes of a 5 × 5 box blur on the 2 m grid.
+// are smooth slopes. Two passes of a separable 9 m box blur.
 for ( let pass = 0; pass < 2; pass ++ ) {
 
-	const src = terrain.slice();
-	for ( let r = 0; r < th; r ++ ) for ( let c = 0; c < tw; c ++ ) {
+	for ( const [ n, stride, count, step ] of [ [ tw, 1, th, tw ], [ th, tw, tw, 1 ] ] ) {
 
-		let sum = 0, n = 0;
-		for ( let dr = - 2; dr <= 2; dr ++ ) for ( let dc = - 2; dc <= 2; dc ++ ) {
+		const line = new Float32Array( n );
+		for ( let k = 0; k < count; k ++ ) {
 
-			const rr = r + dr, cc = c + dc;
-			if ( rr < 0 || cc < 0 || rr >= th || cc >= tw ) continue;
-			sum += src[ rr * tw + cc ];
-			n ++;
+			const base = k * step;
+			for ( let i = 0; i < n; i ++ ) line[ i ] = terrain[ base + i * stride ];
+			for ( let i = 0; i < n; i ++ ) {
+
+				let sum = 0, m = 0;
+				for ( let d = - 4; d <= 4; d ++ ) {
+
+					const j = i + d;
+					if ( j >= 0 && j < n ) {
+
+						sum += line[ j ];
+						m ++;
+
+					}
+
+				}
+
+				terrain[ base + i * stride ] = sum / m;
+
+			}
 
 		}
-
-		terrain[ r * tw + c ] = sum / n;
 
 	}
 
 }
 
 // The Vltava: the terrain model interpolates across the water, so cut the river (ZABAGED water outline, islands
-// excluded) down to a bed below the water surface; the embankments become walls. Water level: the lowest
-// terrain height along the river.
+// excluded) down to a bed below the water surface; the embankment walls are built along the outline below.
+// Water level: the lowest terrain height along the river. The mask is filled row by row (even-odd scanlines).
 const riverRings = JSON.parse( await readFile( new URL( 'water.json', RAW ) ) ).flatMap( f => f.geometry?.rings || [] );
-const inRiver = ( X, Y ) => pointInRings( riverRings, X, Y );
 const riverMask = new Uint8Array( tw * th );
-let waterLevel = Infinity;
-for ( let r = 0; r < th; r ++ ) for ( let c = 0; c < tw; c ++ ) {
+for ( let r = 0; r < th; r ++ ) {
 
-	if ( ! inRiver( AREA.xmin + c * TERRAIN_CELL, AREA.ymax - r * TERRAIN_CELL ) ) continue;
-	riverMask[ r * tw + c ] = 1;
-	waterLevel = Math.min( waterLevel, terrain[ r * tw + c ] );
+	const Y = AREA.ymax - r * TERRAIN_CELL;
+	const xs = [];
+	for ( const ring of riverRings ) {
+
+		for ( let i = 0, j = ring.length - 1; i < ring.length; j = i ++ ) {
+
+			const [ xi, yi ] = ring[ i ], [ xj, yj ] = ring[ j ];
+			if ( ( yi > Y ) !== ( yj > Y ) ) xs.push( xi + ( Y - yi ) * ( xj - xi ) / ( yj - yi ) );
+
+		}
+
+	}
+
+	xs.sort( ( a, b ) => a - b );
+	for ( let k = 0; k + 1 < xs.length; k += 2 ) {
+
+		const c0 = Math.max( 0, Math.ceil( ( xs[ k ] - AREA.xmin ) / TERRAIN_CELL ) );
+		const c1 = Math.min( tw - 1, Math.floor( ( xs[ k + 1 ] - AREA.xmin ) / TERRAIN_CELL ) );
+		for ( let c = c0; c <= c1; c ++ ) riverMask[ r * tw + c ] = 1;
+
+	}
 
 }
 
-const riverAt = ( X, Y ) => riverMask[ Math.round( ( AREA.ymax - Y ) / TERRAIN_CELL ) * tw + Math.round( ( X - AREA.xmin ) / TERRAIN_CELL ) ] === 1;
+let waterLevel = Infinity;
+for ( let i = 0; i < tw * th; i ++ ) if ( riverMask[ i ] ) waterLevel = Math.min( waterLevel, terrain[ i ] );
+const riverAt = ( X, Y ) => {
+
+	const r = Math.round( ( AREA.ymax - Y ) / TERRAIN_CELL ), c = Math.round( ( X - AREA.xmin ) / TERRAIN_CELL );
+	return r >= 0 && c >= 0 && r < th && c < tw && riverMask[ r * tw + c ] === 1;
+
+};
 
 if ( ! Number.isFinite( waterLevel ) ) waterLevel = terrain.reduce( ( m, v ) => Math.min( m, v ), Infinity );
 waterLevel += 0.1;
-for ( let r = 0; r < th; r ++ ) for ( let c = 0; c < tw; c ++ ) {
-
-	if ( riverMask[ r * tw + c ] ) terrain[ r * tw + c ] = waterLevel - 2.5;
-
-}
+for ( let i = 0; i < tw * th; i ++ ) if ( riverMask[ i ] ) terrain[ i ] = waterLevel - 2.5;
 
 console.log( `river: water level ${( waterLevel + BASE_HEIGHT ).toFixed( 2 )} m` );
 
@@ -519,6 +550,69 @@ function terrainAt( X, Y ) {
 	const x0 = Math.floor( fx ), y0 = Math.floor( fy ), tx = fx - x0, ty = fy - y0;
 	const i = y0 * tw + x0;
 	return ( terrain[ i ] * ( 1 - tx ) + terrain[ i + 1 ] * tx ) * ( 1 - ty ) + ( terrain[ i + tw ] * ( 1 - tx ) + terrain[ i + tw + 1 ] * tx ) * ty;
+
+}
+
+// River embankment: a dressed-stone wall from below the water up to the street along the official river outline,
+// wherever the bank stands more than 2.5 m above the water, topped by a stone parapet with an iron railing.
+// Stone: non-indexed triangles; railing: a post every 2 m and a top rail per stretch.
+const embankment = { stone: [], posts: [], rails: [] };
+{
+
+	const PARAPET = 0.5, THICK = 0.45, RAIL = 0.65;
+	const push = ( ...pts ) => {
+
+		for ( const [ X, Y, H ] of pts ) embankment.stone.push( ...toLocal( X, Y, H + BASE_HEIGHT ).map( v => + v.toFixed( 3 ) ) );
+
+	};
+
+	for ( const ring of riverRings ) {
+
+		for ( let i = 0; i < ring.length; i ++ ) {
+
+			const [ ax, ay ] = ring[ i ], [ bx, by ] = ring[ ( i + 1 ) % ring.length ];
+			const len = Math.hypot( bx - ax, by - ay );
+			if ( len < 0.01 ) continue;
+			const n = Math.max( 1, Math.ceil( len / 2 ) );
+			for ( let k = 0; k < n; k ++ ) {
+
+				const x0 = ax + ( bx - ax ) * k / n, y0 = ay + ( by - ay ) * k / n;
+				const x1 = ax + ( bx - ax ) * ( k + 1 ) / n, y1 = ay + ( by - ay ) * ( k + 1 ) / n;
+				const mx = ( x0 + x1 ) / 2, my = ( y0 + y1 ) / 2;
+				if ( mx < AREA.xmin + 3 || mx > AREA.xmax - 3 || my < AREA.ymin + 3 || my > AREA.ymax - 3 ) continue;
+
+				// Land side: the normal pointing away from the water.
+				let nx = ( y1 - y0 ) / ( len / n ), ny = - ( x1 - x0 ) / ( len / n );
+				if ( riverAt( mx + nx * 1.5, my + ny * 1.5 ) ) {
+
+					nx = - nx; ny = - ny;
+
+				}
+
+				const h0 = terrainAt( x0 + nx * 1.5, y0 + ny * 1.5 ), h1 = terrainAt( x1 + nx * 1.5, y1 + ny * 1.5 );
+				if ( Math.min( h0, h1 ) - waterLevel < 2.5 ) continue;
+
+				const low = waterLevel - 1, t0 = h0 + PARAPET, t1 = h1 + PARAPET;
+				const ix0 = x0 + nx * THICK, iy0 = y0 + ny * THICK, ix1 = x1 + nx * THICK, iy1 = y1 + ny * THICK;
+				// Water face, parapet top, parapet back (both windings: drawn double-sided).
+				push( [ x0, y0, low ], [ x1, y1, low ], [ x1, y1, t1 ], [ x0, y0, low ], [ x1, y1, t1 ], [ x0, y0, t0 ] );
+				push( [ x0, y0, t0 ], [ x1, y1, t1 ], [ ix1, iy1, t1 ], [ x0, y0, t0 ], [ ix1, iy1, t1 ], [ ix0, iy0, t0 ] );
+				push( [ ix0, iy0, t0 ], [ ix1, iy1, t1 ], [ ix1, iy1, h1 - 0.3 ], [ ix0, iy0, t0 ], [ ix1, iy1, h1 - 0.3 ], [ ix0, iy0, h0 - 0.3 ] );
+
+				// Railing on the parapet's centre line.
+				const cx0 = x0 + nx * THICK / 2, cy0 = y0 + ny * THICK / 2, cx1 = x1 + nx * THICK / 2, cy1 = y1 + ny * THICK / 2;
+				const p0 = toLocal( cx0, cy0, t0 + RAIL + BASE_HEIGHT ), p1 = toLocal( cx1, cy1, t1 + RAIL + BASE_HEIGHT );
+				embankment.rails.push( ...p0.map( v => + v.toFixed( 2 ) ), ...p1.map( v => + v.toFixed( 2 ) ) );
+				const post = toLocal( cx0, cy0, t0 + BASE_HEIGHT );
+				embankment.posts.push( + post[ 0 ].toFixed( 2 ), + post[ 1 ].toFixed( 2 ), + post[ 2 ].toFixed( 2 ) );
+
+			}
+
+		}
+
+	}
+
+	console.log( `embankment: ${embankment.stone.length / 9} triangles, ${embankment.posts.length / 3} railing posts` );
 
 }
 
@@ -1098,7 +1192,7 @@ function polylineDistance( paths, range ) {
 
 }
 
-const streetData = await loadStreets( { AREA, buildingDist } );
+const streetData = await loadStreets( { AREA, buildingDist, riverAt } );
 const surface2 = new Uint8Array( sw * sh * 4 );
 const tramDist = polylineDistance( JSON.parse( await readFile( new URL( 'tram.json', RAW ) ) ).flatMap( f => f.geometry?.paths || [] ), 6 );
 const parks = JSON.parse( await readFile( new URL( 'greenery.json', RAW ) ) ).flatMap( f => f.geometry?.rings ? [ f.geometry.rings ] : [] );
@@ -1246,6 +1340,7 @@ await writeFile( new URL( 'roofs-index.bin', OUT ), new Uint32Array( roofIdx ) )
 await writeFile( new URL( 'terrain.bin', OUT ), terrain );
 await writeFile( new URL( 'surface.bin', OUT ), surface );
 await writeFile( new URL( 'surface2.bin', OUT ), surface2 );
+await writeFile( new URL( 'embankment.bin', OUT ), new Float32Array( embankment.stone ) );
 await writeFile( new URL( 'pavement.bin', OUT ), pavement.positions );
 await writeFile( new URL( 'pavement-index.bin', OUT ), pavement.index );
 await writeFile( new URL( 'street-facades.json', RAW ), JSON.stringify( streetFacades ) );
@@ -1270,6 +1365,7 @@ await writeFile( new URL( 'scene.json', OUT ), JSON.stringify( {
 	signs,
 	kerbHeight: streetData.KERB_HEIGHT,
 	decor,
+	embankment: { posts: embankment.posts, rails: embankment.rails },
 	streets
 } ) );
 
