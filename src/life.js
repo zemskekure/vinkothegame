@@ -1,22 +1,18 @@
-// Street life with Kenney's low-poly models (CC0, kenney.nl: Mini Characters, Car Kit; public/models/).
-//   - People walk the pavement lines and pedestrian lanes from tools/places.mjs (to the end and back) with the
-//     characters' walk animation; others sit on benches, at the café / pub / bar tables and on the bar stools.
-//     Animated characters are costly, so a pool of them follows the people nearest the camera; the rest of the
-//     crowd keeps moving unseen and comes into view as the camera nears.
+// Street life:
+//   - People: architectural scale figures (src/figures.js), one instanced batch per body part. They walk the
+//     pavement lines and pedestrian lanes from tools/places.mjs (to the end and back) and sit on benches, at the
+//     café / pub / bar tables and on the bar stools.
+//   - Cars: Kenney's Car Kit (CC0, kenney.nl; public/models/cars).
 //   - Cars stand at the kerbs where there is room to park (instanced, one batch per model), and a few drive the
 //     streets in their lanes (right-hand traffic), slowing behind the car ahead, re-entering at the start of a lane
 //     when they reach its end.
 
 import * as THREE from 'three/webgpu';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js';
+import { PARTS, PART_TONE, TONES, pose, newPose, figureMaterial } from './figures.js';
 
-const PEOPLE = [ 'female-a', 'female-b', 'female-c', 'female-d', 'female-e', 'female-f', 'male-a', 'male-b', 'male-c', 'male-d', 'male-e', 'male-f' ];
 const CARS = { sedan: 5, 'hatchback-sports': 3, suv: 3, van: 2, taxi: 1, delivery: 1, 'sedan-sports': 2, 'suv-luxury': 2 }; // model: weight
-const PERSON_HEIGHT = 1.45; // chibi figures: big heads, short legs
 const CAR_LENGTH = 4.1;
-const POOL_PER_TYPE = 5; // animated characters per model (12 models)
-const VIEW_RADIUS = 75;
 
 const rnd = ( () => {
 
@@ -93,10 +89,7 @@ export async function addLife( scene, life, { seats = [], benches = [], groundHe
 
 	if ( ! life ) return { update() {} };
 
-	const [ peopleModels, carModels ] = await Promise.all( [
-		Promise.all( PEOPLE.map( n => loadModel( `models/people/character-${n}.glb`, 'models/people/' ) ) ),
-		Promise.all( Object.keys( CARS ).map( n => loadModel( `models/cars/${n}.glb`, 'models/cars/' ) ) )
-	] );
+	const carModels = await Promise.all( Object.keys( CARS ).map( n => loadModel( `models/cars/${n}.glb`, 'models/cars/' ) ) );
 
 	// --- agents: walkers spread over the lines by length, sitters on most chairs and stools and some benches
 	const walks = life.walks.map( makePath ).filter( p => p.length > 8 );
@@ -119,51 +112,58 @@ export async function addLife( scene, life, { seats = [], benches = [], groundHe
 
 		}
 
-		agents.push( { walk: true, path, s: r, dir: rnd() < 0.5 ? 1 : - 1, speed: 1.0 + rnd() * 0.5, side: ( rnd() - 0.5 ) * 0.5, type: Math.floor( rnd() * PEOPLE.length ), x: 0, y: 0, z: 0, yaw: 0, slot: null } );
+		agents.push( { walk: true, path, s: r, dir: rnd() < 0.5 ? 1 : - 1, speed: 1.0 + rnd() * 0.5, side: ( rnd() - 0.5 ) * 0.5, x: 0, y: 0, z: 0, yaw: 0, phase: rnd() * 6, scale: 0.94 + rnd() * 0.1 } );
 
 	}
 
-	for ( const [ x, y, z, rot ] of seats ) if ( rnd() < 0.75 ) agents.push( { walk: false, x, y, z, yaw: rot, type: Math.floor( rnd() * PEOPLE.length ), slot: null } );
+	// Seated figures sit 0.15 m back from the seat's centre (their thighs reach forward over it).
+	const sitter = ( x, y, z, yaw ) => agents.push( { walk: false, x: x - Math.sin( yaw ) * 0.15, y, z: z - Math.cos( yaw ) * 0.15, yaw, scale: 0.94 + rnd() * 0.1 } );
+	for ( const [ x, y, z, rot ] of seats ) if ( rnd() < 0.75 ) sitter( x, y - 0.03, z, rot );
 	for ( let i = 0; i < benches.length; i += 5 ) {
 
 		const [ x, y, z, rot ] = benches.slice( i, i + 5 );
 		for ( const ox of [ - 0.45, 0.45 ] ) {
 
 			// Bench model: seat along local x, sitters face its −z.
-			if ( rnd() < 0.35 ) agents.push( { walk: false, x: x + Math.cos( rot ) * ox, y: y + 0.04, z: z - Math.sin( rot ) * ox, yaw: rot + Math.PI, type: Math.floor( rnd() * PEOPLE.length ), slot: null } );
+			if ( rnd() < 0.35 ) sitter( x + Math.cos( rot ) * ox, y, z - Math.sin( rot ) * ox, rot + Math.PI );
 
 		}
 
 	}
 
-	// --- the pool of animated characters, POOL_PER_TYPE of each model
-	const slots = [];
-	peopleModels.forEach( ( gltf, type ) => {
+	// --- the crowd: one instanced mesh per body part, coloured top / bottom / head per person
+	const crowd = PARTS.map( part => {
 
-		const box = new THREE.Box3().setFromObject( gltf.scene );
-		const scale = PERSON_HEIGHT / ( box.max.y - box.min.y );
-		const clip = name => gltf.animations.find( a => a.name === name );
-		for ( let k = 0; k < POOL_PER_TYPE; k ++ ) {
+		const mesh = new THREE.InstancedMesh( part.geometry, figureMaterial(), agents.length );
+		mesh.castShadow = true;
+		mesh.receiveShadow = true;
+		mesh.frustumCulled = false;
+		scene.add( mesh );
+		return mesh;
 
-			const root = cloneSkinned( gltf.scene );
-			root.scale.setScalar( scale );
-			root.traverse( o => {
+	} );
 
-				if ( o.isMesh ) {
+	const col = new THREE.Color();
+	agents.forEach( ( a, i ) => {
 
-					o.castShadow = true;
-					o.frustumCulled = false;
+		const top = TONES[ Math.floor( rnd() * TONES.length ) ], bottom = TONES[ Math.floor( rnd() * TONES.length ) ];
+		const tones = [ top, bottom, rnd() < 0.5 ? top : 0xeee9df ];
+		PARTS.forEach( ( p, k ) => crowd[ k ].setColorAt( i, col.setHex( tones[ PART_TONE[ p.name ] ] ) ) );
 
-				}
+	} );
 
-			} );
-			root.visible = false;
-			scene.add( root );
-			const mixer = new THREE.AnimationMixer( root );
-			// The 'sit' clip sits on the floor (hips 0.026 model units up): lift to a 0.47 m seat.
-			slots.push( { type, root, mixer, walk: mixer.clipAction( clip( 'walk' ) ), sit: mixer.clipAction( clip( 'sit' ) ), sitLift: 0.47 - 0.026 * scale, agent: null } );
+	const parts = newPose(), base = new THREE.Matrix4(), scaleM = new THREE.Matrix4(), tmp = new THREE.Matrix4();
+	const place = ( i, a, state ) => {
 
-		}
+		pose( parts, state );
+		base.makeRotationY( a.yaw ).setPosition( a.x, a.y, a.z ).multiply( scaleM.makeScale( a.scale, a.scale, a.scale ) );
+		for ( let k = 0; k < PARTS.length; k ++ ) crowd[ k ].setMatrixAt( i, tmp.multiplyMatrices( base, parts[ k ] ) );
+
+	};
+
+	agents.forEach( ( a, i ) => {
+
+		if ( ! a.walk ) place( i, a, { sit: true } );
 
 	} );
 
@@ -227,93 +227,27 @@ export async function addLife( scene, life, { seats = [], benches = [], groundHe
 	// ---------------------------------------------------------------------------
 
 	const at = { x: 0, z: 0, dx: 0, dz: 1 }, at2 = { x: 0, z: 0, dx: 0, dz: 1 };
-	let assignTimer = 0, lastX = Infinity, lastZ = Infinity;
-
-	// Hand the pool to the people nearest the camera.
-	function assign() {
-
-		const cx = camera.position.x, cz = camera.position.z;
-		for ( const a of agents ) a.d = Math.hypot( a.x - cx, a.z - cz );
-		const wanted = agents.filter( a => a.d < VIEW_RADIUS ).sort( ( a, b ) => a.d - b.d );
-		const keep = new Set();
-		const free = new Map( PEOPLE.map( ( _, t ) => [ t, [] ] ) );
-		const budget = new Map( PEOPLE.map( ( _, t ) => [ t, POOL_PER_TYPE ] ) );
-		for ( const a of wanted ) {
-
-			if ( budget.get( a.type ) <= 0 ) continue;
-			budget.set( a.type, budget.get( a.type ) - 1 );
-			keep.add( a );
-
-		}
-
-		for ( const s of slots ) {
-
-			if ( s.agent && ! keep.has( s.agent ) ) {
-
-				s.agent.slot = null;
-				s.agent = null;
-				s.root.visible = false;
-
-			}
-
-			if ( ! s.agent ) free.get( s.type ).push( s );
-
-		}
-
-		for ( const a of keep ) {
-
-			if ( a.slot ) continue;
-			const s = free.get( a.type ).pop();
-			if ( ! s ) continue;
-			s.agent = a;
-			a.slot = s;
-			s.root.visible = true;
-			s.mixer.stopAllAction();
-			const action = a.walk ? s.walk : s.sit;
-			action.reset().play();
-			action.time = rnd() * action.getClip().duration;
-			if ( a.walk ) action.timeScale = a.speed / 1.2;
-
-		}
-
-	}
+	let time = 0;
 
 	function update( dt ) {
 
-		// Walkers move whether seen or not.
-		for ( const a of agents ) {
+		time += dt;
+		agents.forEach( ( a, i ) => {
 
-			if ( ! a.walk ) continue;
+			if ( ! a.walk ) return;
 			a.s += a.dir * a.speed * dt;
 			if ( a.s > a.path.length - 0.5 ) a.dir = - 1;
 			if ( a.s < 0.5 ) a.dir = 1;
 			sample( a.path, a.s, at );
 			a.x = at.x - at.dz * a.side * a.dir;
 			a.z = at.z + at.dx * a.side * a.dir;
+			a.y = groundHeight( a.x, a.z );
 			a.yaw = Math.atan2( at.dx * a.dir, at.dz * a.dir );
+			place( i, a, { phase: time * a.speed * 4.6 + a.phase, stride: Math.min( 1, a.speed / 1.3 ) } );
 
-		}
+		} );
 
-		// Re-pick the nearest people twice a second, or at once after a jump (switching to walking, teleporting).
-		assignTimer -= dt;
-		if ( assignTimer <= 0 || Math.hypot( camera.position.x - lastX, camera.position.z - lastZ ) > 10 ) {
-
-			assignTimer = 0.5;
-			lastX = camera.position.x;
-			lastZ = camera.position.z;
-			assign();
-
-		}
-
-		for ( const s of slots ) {
-
-			const a = s.agent;
-			if ( ! a ) continue;
-			s.root.position.set( a.x, a.walk ? groundHeight( a.x, a.z ) : a.y + s.sitLift, a.z );
-			s.root.rotation.y = a.yaw;
-			s.mixer.update( dt );
-
-		}
+		for ( const m of crowd ) m.instanceMatrix.needsUpdate = true;
 
 		for ( const m of movers ) {
 
@@ -349,6 +283,6 @@ export async function addLife( scene, life, { seats = [], benches = [], groundHe
 	}
 
 	update( 0 );
-	return { update, slots, agents, people: agents.length, cars: parked.length + movers.length };
+	return { update, agents, people: agents.length, cars: parked.length + movers.length };
 
 }

@@ -10,6 +10,7 @@ import { addDecor, addEmbankment } from './decor.js';
 import { addPlaces } from './places.js';
 import { addLife } from './life.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { createMinimap } from './minimap.js';
 
 async function load( name, type = 'arrayBuffer', dir = 'data/' ) {
 
@@ -313,13 +314,52 @@ function isBlocked( x, z ) {
 
 }
 
-const walker = new Walker( camera, renderer.domElement, groundHeight, isBlocked );
+// The third-person camera keeps out of houses (but not out of the walk-in rooms, nor over the river).
+function cameraBlocked( x, z ) {
+
+	const col = Math.floor( ( x - bounds.minX ) / fp.cell ), row = Math.floor( ( z - bounds.minZ ) / fp.cell );
+	if ( col < 0 || row < 0 || col >= fp.width || row >= fp.height || zoneAt( x, z ) ) return false;
+	const i = row * fp.width + col;
+	return ( footprintBits[ i >> 3 ] >> ( i & 7 ) ) & 1;
+
+}
+
+const walker = new Walker( camera, renderer.domElement, groundHeight, isBlocked, scene, cameraBlocked );
 
 const hud = {
 	mode: document.getElementById( 'mode' ),
 	help: document.getElementById( 'help' ),
 	place: document.getElementById( 'place' )
 };
+
+// Minimap: places to find, and the landmarks.
+const placeMarkers = [];
+if ( places?.rotunda ) placeMarkers.push( { x: places.rotunda.x, z: places.rotunda.z, icon: 'R', colour: '#8a6d4b' } );
+for ( const room of places?.interiors || [] ) placeMarkers.push( { x: room.x, z: room.z, icon: { pub: 'H', cafe: 'S', champagne: 'C' }[ room.style ], colour: { pub: '#2f6b45', cafe: '#333', champagne: '#b08a2e' }[ room.style ] } );
+if ( places?.gate ) placeMarkers.push( { x: places.gate.x, z: places.gate.z, icon: 'M', colour: '#8f2a22' } );
+if ( places?.stairs ) placeMarkers.push( { x: places.stairs.top[ 0 ], z: places.stairs.top[ 2 ], icon: '⇵', colour: '#5d6a78' } );
+if ( data.furniture.chimney?.length ) placeMarkers.push( { x: data.furniture.chimney[ 0 ], z: data.furniture.chimney[ 2 ], icon: 'K', colour: '#9b4a32' } );
+for ( const b of data.buildings ) {
+
+	const icon = { 'Národní divadlo': 'D', 'Betlémská kaple': '✝' }[ b.name ];
+	if ( icon ) placeMarkers.push( { x: b.x, z: b.z, icon, colour: '#4f6d8f' } );
+
+}
+
+const isTouch = matchMedia( '(pointer: coarse)' ).matches || navigator.maxTouchPoints > 0 && ! matchMedia( '(pointer: fine)' ).matches;
+const minimap = createMinimap( {
+	bounds, surface: new Uint8Array( surfaceBuf ), surface2, S, waterLevel: data.waterLevel, markers: placeMarkers, touch: isTouch,
+	terrainHeight,
+	isHouse: ( x, z ) => {
+
+		const col = Math.floor( ( x - bounds.minX ) / fp.cell ), row = Math.floor( ( z - bounds.minZ ) / fp.cell );
+		if ( col < 0 || row < 0 || col >= fp.width || row >= fp.height ) return false;
+		const i = row * fp.width + col;
+		return ( footprintBits[ i >> 3 ] >> ( i & 7 ) ) & 1;
+
+	}
+} );
+if ( isTouch ) document.getElementById( 'hud' ).style.maxWidth = 'calc(100vw - 172px)';
 
 let walking = false;
 const touch = matchMedia( '(pointer: coarse)' ).matches || navigator.maxTouchPoints > 0 && ! matchMedia( '(pointer: fine)' ).matches;
@@ -331,21 +371,24 @@ function setMode( walk ) {
 	walker.setEnabled( walk, touch );
 	hud.mode.textContent = ( walk ? 'Pohled shora' : 'Projít se ulicemi' ) + ( touch ? '' : ' (M)' );
 	hud.help.textContent = touch
-		? ( walk ? 'Joystick vlevo dole chůze (až k okraji běh) · táhni prstem pro rozhlížení' : 'Táhni prstem pro otáčení · dvěma prsty přiblížení a posun' )
+		? ( walk ? 'Joystick vlevo dole chůze (až k okraji běh) · táhni prstem kamerou' : 'Táhni prstem pro otáčení · dvěma prsty přiblížení a posun' )
 		: walk
-			? 'Klikni pro rozhlížení myší · WASD chůze · Shift běh'
+			? 'Klikni a ovládej kameru myší · WASD chůze · Shift běh · kolečko zoom · V pohled z očí'
 			: 'Táhni myší pro otáčení · kolečko přiblížení · pravé tlačítko posun';
 	hud.place.style.display = walk ? 'block' : 'none';
+	minimap.setVisible( walk );
 
 	if ( walk ) {
 
-		const [ x, z, yaw ] = ( params.get( 'at' ) || '-20,40,0.6' ).split( ',' ).map( Number );
+		// Back where you left off, or at the start.
+		const [ x, z, yaw ] = walker.placed ? [ walker.pos.x, walker.pos.z, walker.yaw ] : ( params.get( 'at' ) || '-20,40,0.6' ).split( ',' ).map( Number );
 		walker.teleport( x, z, yaw );
+		walker.placed = true;
 
 	} else if ( wasWalking ) {
 
 		if ( document.pointerLockElement ) document.exitPointerLock();
-		const t = camera.position.clone();
+		const t = walker.pos.clone();
 		camera.position.set( t.x - 160, 180, t.z + 180 );
 		orbit.target.set( t.x, 5, t.z );
 
@@ -422,11 +465,12 @@ renderer.setAnimationLoop( () => {
 	if ( walking ) {
 
 		walker.update( dt );
+		minimap.update( walker.pos.x, walker.pos.z, walker.yaw, walker.heading );
 		labelTimer -= dt;
 		if ( labelTimer <= 0 ) {
 
 			labelTimer = 0.3;
-			hud.place.textContent = nearestStreet( camera.position.x, camera.position.z ) || 'Staré Město';
+			hud.place.textContent = nearestStreet( walker.pos.x, walker.pos.z ) || 'Staré Město';
 
 		}
 

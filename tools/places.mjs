@@ -606,7 +606,7 @@ function streetLife( ctx, L ) {
 				if ( since < 5.6 ) continue;
 				since = 0;
 				const p = line[ i ];
-				if ( ! p || blocked( p[ 0 ], p[ 1 ] ) || rnd() > 0.65 ) continue;
+				if ( ! p || blocked( p[ 0 ], p[ 1 ] ) || ctx.inPark( p[ 0 ], p[ 1 ] ) || rnd() > 0.65 ) continue;
 				const [ x, z ] = L( p[ 0 ], p[ 1 ] );
 				const q = line[ i + 1 ] || p;
 				const rot = Math.atan2( q[ 0 ] - p[ 0 ], - ( q[ 1 ] - p[ 1 ] ) ); // model faces +z → along the street
