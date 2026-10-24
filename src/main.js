@@ -304,10 +304,50 @@ orbit.enableDamping = true;
 
 const fp = data.footprints;
 const footprintBits = new Uint8Array( footprintBuf );
+// Walk barriers (tools/places.mjs): railings along the river edge, each blocking above a height (-99: always;
+// higher: you pass below it, through the underpass under the street). On a 0.5 m grid of segment lists.
+const BAR = 0.5, barW = Math.ceil( ( bounds.maxX - bounds.minX ) / BAR ), barGrid = new Map();
+for ( const seg of data.places?.barriers || [] ) {
+
+	const [ x0, z0, x1, z1 ] = seg, n = Math.ceil( Math.hypot( x1 - x0, z1 - z0 ) / 0.2 ) + 1;
+	for ( let k = 0; k <= n; k ++ ) {
+
+		const x = x0 + ( x1 - x0 ) * k / n, z = z0 + ( z1 - z0 ) * k / n;
+		const key = Math.floor( ( z - bounds.minZ ) / BAR ) * barW + Math.floor( ( x - bounds.minX ) / BAR );
+		if ( ! barGrid.has( key ) ) barGrid.set( key, new Set() );
+		barGrid.get( key ).add( seg );
+
+	}
+
+}
+
+function barrierAt( x, z, y ) {
+
+	const segs = barGrid.get( Math.floor( ( z - bounds.minZ ) / BAR ) * barW + Math.floor( ( x - bounds.minX ) / BAR ) );
+	if ( ! segs ) return false;
+	for ( const [ x0, z0, x1, z1, above ] of segs ) {
+
+		if ( y < above ) continue;
+		const dx = x1 - x0, dz = z1 - z0, t = Math.max( 0, Math.min( 1, ( ( x - x0 ) * dx + ( z - z0 ) * dz ) / ( dx * dx + dz * dz || 1 ) ) );
+		if ( Math.hypot( x - x0 - t * dx, z - z0 - t * dz ) < 0.2 ) return true;
+
+	}
+
+	return false;
+
+}
+
+// The walker's height (set once it exists), for the barriers.
+let walkerHeight = () => 0;
+
+// Ceiling over a walkable zone (underpass, passages, arcades): the third-person camera stays below it.
+const ceilingAt = ( x, z ) => zoneAt( x, z )?.ceil ?? Infinity;
+
 function isBlocked( x, z ) {
 
 	const col = Math.floor( ( x - bounds.minX ) / fp.cell ), row = Math.floor( ( z - bounds.minZ ) / fp.cell );
 	if ( col < 0 || row < 0 || col >= fp.width || row >= fp.height ) return true;
+	if ( barrierAt( x, z, walkerHeight() ) ) return true;
 	if ( zoneAt( x, z ) ) return false;
 	if ( groundHeight( x, z ) < data.waterLevel + 1 ) return true; // stay out of the river
 	const i = row * fp.width + col;
@@ -325,7 +365,8 @@ function cameraBlocked( x, z ) {
 
 }
 
-const walker = new Walker( camera, renderer.domElement, groundHeight, isBlocked, scene, cameraBlocked );
+const walker = new Walker( camera, renderer.domElement, groundHeight, isBlocked, scene, cameraBlocked, ceilingAt );
+walkerHeight = () => walker.y + 0.5;
 
 // Trams and their overhead line (poles kept out of houses).
 const trams = addTrams( scene, places?.life?.trams, groundHeight, cameraBlocked );

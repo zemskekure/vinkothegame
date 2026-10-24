@@ -20,6 +20,7 @@ import { loadStreets, buildPavementMesh, collectFurniture } from './streets.mjs'
 import { collectPlaces } from './places.mjs';
 import { lonLatToSJTSK } from './geo.mjs';
 import { findOpenings, openingBox, clipToBox } from './openings.mjs';
+import { buildQuay } from './quay.mjs';
 
 const RAW = new URL( '../data/raw/', import.meta.url );
 const OUT = new URL( '../public/data/', import.meta.url );
@@ -298,7 +299,7 @@ function buildingAt( X, Y ) {
 }
 
 // Arcades and passages through houses, from OpenStreetMap (tools/openings.mjs).
-const openings = await findOpenings( { AREA, buildingAt } );
+const openings = await findOpenings( { AREA, buildingAt, buildings } );
 const openingBoxes = openings.map( o => ( { o, box: openingBox( o, 0.05, 0.4 ) } ) );
 console.log( `openings: ${openings.filter( o => o.kind === 'arcade' ).length} arcade stretches, ${openings.filter( o => o.kind === 'passage' ).length} passage stretches` );
 
@@ -633,7 +634,7 @@ function terrainAt( X, Y ) {
 const embankment = { stone: [], posts: [], rails: [] };
 {
 
-	const PARAPET = 0.5, THICK = 0.45, RAIL = 0.65;
+	const PARAPET = 0.3, THICK = 0.45, RAIL = 0.95;
 	const push = ( ...pts ) => {
 
 		for ( const [ X, Y, H ] of pts ) embankment.stone.push( ...toLocal( X, Y, H + BASE_HEIGHT ).map( v => + v.toFixed( 3 ) ) );
@@ -687,6 +688,55 @@ const embankment = { stone: [], posts: [], rails: [] };
 	}
 
 	console.log( `embankment: ${embankment.stone.length / 9} triangles, ${embankment.posts.length / 3} railing posts` );
+
+}
+
+// Smetanovo nábřeží's river edge (tools/quay.mjs): the railing all along the riverside pavement, a retaining wall
+// down to the Čapadlo terrace; drawn with the embankment (same stone, same railing).
+const quay = await buildQuay( { terrain, tw, th, cell: TERRAIN_CELL, AREA, terrainAt, riverAt } );
+if ( quay ) {
+
+	const push = ( ...pts ) => {
+
+		for ( const [ X, Y, H ] of pts ) embankment.stone.push( ...toLocal( X, Y, H + BASE_HEIGHT ).map( v => + v.toFixed( 3 ) ) );
+
+	};
+
+	const R = quay.rail, CURB = 0.3, THICK = 0.4;
+	for ( let i = 1; i < R.length; i ++ ) {
+
+		const a = R[ i - 1 ], b = R[ i ];
+		if ( a.river || b.river || Math.hypot( b.X - a.X, b.Y - a.Y ) > 2 ) continue;
+		const ta = a.top + CURB, tb = b.top + CURB;
+		const bx0 = a.X - a.nx * THICK, by0 = a.Y - a.ny * THICK, bx1 = b.X - b.nx * THICK, by1 = b.Y - b.ny * THICK;
+		if ( a.wall || b.wall ) {
+
+			// Retaining wall face down to the quay (both windings: double-sided).
+			// Over the underpass's mouth only a lintel, from 2.5 m above the quay.
+			const la = Math.min( a.quay, a.top ) + ( a.portal && b.portal ? 2.8 : - 0.3 ), lb = Math.min( b.quay, b.top ) + ( a.portal && b.portal ? 2.8 : - 0.3 );
+			push( [ a.X, a.Y, la ], [ b.X, b.Y, lb ], [ b.X, b.Y, tb ], [ a.X, a.Y, la ], [ b.X, b.Y, tb ], [ a.X, a.Y, ta ] );
+			push( [ a.X, a.Y, la ], [ b.X, b.Y, tb ], [ b.X, b.Y, lb ], [ a.X, a.Y, la ], [ a.X, a.Y, ta ], [ b.X, b.Y, tb ] );
+
+		}
+
+		// Stone curb under the railing: top and street side.
+		push( [ a.X, a.Y, ta ], [ b.X, b.Y, tb ], [ bx1, by1, tb ], [ a.X, a.Y, ta ], [ bx1, by1, tb ], [ bx0, by0, ta ] );
+		push( [ a.X, a.Y, ta ], [ bx1, by1, tb ], [ b.X, b.Y, tb ], [ a.X, a.Y, ta ], [ bx0, by0, ta ], [ bx1, by1, tb ] );
+		push( [ bx0, by0, ta ], [ bx1, by1, tb ], [ bx1, by1, b.top - 0.2 ], [ bx0, by0, ta ], [ bx1, by1, b.top - 0.2 ], [ bx0, by0, a.top - 0.2 ] );
+		push( [ bx0, by0, ta ], [ bx1, by1, b.top - 0.2 ], [ bx1, by1, tb ], [ bx0, by0, ta ], [ bx0, by0, a.top - 0.2 ], [ bx1, by1, b.top - 0.2 ] );
+
+		// Railing on the curb's centre line, a post every 2 m.
+		const cx0 = a.X - a.nx * THICK / 2, cy0 = a.Y - a.ny * THICK / 2, cx1 = b.X - b.nx * THICK / 2, cy1 = b.Y - b.ny * THICK / 2;
+		const p0 = toLocal( cx0, cy0, ta + 0.95 + BASE_HEIGHT ), p1 = toLocal( cx1, cy1, tb + 0.95 + BASE_HEIGHT );
+		embankment.rails.push( ...p0.map( v => + v.toFixed( 2 ) ), ...p1.map( v => + v.toFixed( 2 ) ) );
+		if ( i % 2 === 0 ) {
+
+			const post = toLocal( cx0, cy0, ta + BASE_HEIGHT );
+			embankment.posts.push( + post[ 0 ].toFixed( 2 ), + post[ 1 ].toFixed( 2 ), + post[ 2 ].toFixed( 2 ) );
+
+		}
+
+	}
 
 }
 
@@ -1409,7 +1459,7 @@ for ( let r = 0; r < sh; r ++ ) {
 
 
 const inKeptBuilding = ( X, Y ) => keptIds.has( buildingAt( X, Y ) );
-const pavement = buildPavementMesh( streetData, { AREA, toLocal, heightAt: terrainAt, inBuilding: inKeptBuilding } );
+const pavement = buildPavementMesh( streetData, { AREA, toLocal, heightAt: terrainAt, inBuilding: ( X, Y ) => inKeptBuilding( X, Y ) || !! quay?.beyond( X, Y ) } );
 console.log( `pavements: ${pavement.positions.length / 3} vertices, ${( pavement.kerbLength / 1000 ).toFixed( 1 )} km of kerb` );
 
 const furniture = collectFurniture( streetData, {
@@ -1427,7 +1477,7 @@ const furniture = collectFurniture( streetData, {
 } );
 furniture.statue.push( ...landmarkStatues );
 
-const places = collectPlaces( { openings, buildings, streetFacades, toLocal, terrainAt, buildingAt, keptIds, dsm, idGrid, AREA, ORIGIN, streetData, furniture, riverAt, buildingInfo, terrainGrid: { terrain, tw, th, cell: TERRAIN_CELL }, inPark: ( X, Y ) => parks.some( rings => pointInRings( rings, X, Y ) ), tramPaths: JSON.parse( await readFile( new URL( 'tram.json', RAW ) ) ).flatMap( f => f.geometry?.paths || [] ) } );
+const places = collectPlaces( { quay, openings, buildings, streetFacades, toLocal, terrainAt, buildingAt, keptIds, dsm, idGrid, AREA, ORIGIN, streetData, furniture, riverAt, buildingInfo, terrainGrid: { terrain, tw, th, cell: TERRAIN_CELL }, inPark: ( X, Y ) => parks.some( rings => pointInRings( rings, X, Y ) ), tramPaths: JSON.parse( await readFile( new URL( 'tram.json', RAW ) ) ).flatMap( f => f.geometry?.paths || [] ) } );
 
 // Name boards over the shop windows, one per wall position (several shops on one spot are spread along the wall).
 const signs = [];

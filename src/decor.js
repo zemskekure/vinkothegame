@@ -100,12 +100,48 @@ export function addEmbankment( scene, stoneBuf, embankment ) {
 	wall.castShadow = wall.receiveShadow = true;
 	scene.add( wall );
 
+	// The Prague embankment railing: dark green cast-iron panels (vertical bars, a band of rings) under a top rail,
+	// between square sandstone pillars every other post (≈ 4 m) and thin iron posts in between.
 	const m = new THREE.Matrix4(), q = new THREE.Quaternion(), p = new THREE.Vector3(), s = new THREE.Vector3( 1, 1, 1 );
 	const posts = embankment.posts, rails = embankment.rails;
-	const postMesh = new THREE.InstancedMesh( new THREE.CylinderGeometry( 0.025, 0.03, 0.65, 6 ).translate( 0, 0.325, 0 ), iron, posts.length / 3 );
-	for ( let i = 0; i < posts.length; i += 3 ) postMesh.setMatrixAt( i / 3, m.makeTranslation( posts[ i ], posts[ i + 1 ], posts[ i + 2 ] ) );
-	const railMesh = new THREE.InstancedMesh( new THREE.BoxGeometry( 1, 0.04, 0.05 ), iron, rails.length / 6 );
+	const green = new THREE.MeshStandardNodeMaterial( { color: 0x2b3a2f, metalness: 0.5, roughness: 0.5 } );
+	const pillarStone = new THREE.MeshStandardNodeMaterial( { color: 0xa79c88, roughness: 0.9 } );
+	const pillars = [], thin = [];
+	for ( let i = 0; i < posts.length; i += 3 ) ( ( i / 3 ) % 2 ? thin : pillars ).push( i );
+	const pillarMesh = new THREE.InstancedMesh( new THREE.BoxGeometry( 0.34, 1.05, 0.34 ).translate( 0, 0.525, 0 ), pillarStone, pillars.length );
+	pillars.forEach( ( i, k ) => pillarMesh.setMatrixAt( k, m.makeTranslation( posts[ i ], posts[ i + 1 ], posts[ i + 2 ] ) ) );
+	const capMesh = new THREE.InstancedMesh( new THREE.BoxGeometry( 0.42, 0.08, 0.42 ).translate( 0, 1.09, 0 ), pillarStone, pillars.length );
+	pillars.forEach( ( i, k ) => capMesh.setMatrixAt( k, m.makeTranslation( posts[ i ], posts[ i + 1 ], posts[ i + 2 ] ) ) );
+	const postMesh = new THREE.InstancedMesh( new THREE.CylinderGeometry( 0.025, 0.03, 0.95, 6 ).translate( 0, 0.475, 0 ), green, thin.length );
+	thin.forEach( ( i, k ) => postMesh.setMatrixAt( k, m.makeTranslation( posts[ i ], posts[ i + 1 ], posts[ i + 2 ] ) ) );
+
+	const canvas = document.createElement( 'canvas' );
+	canvas.width = 256;
+	canvas.height = 128;
+	const g = canvas.getContext( '2d' );
+	g.strokeStyle = '#ffffff';
+	g.fillStyle = '#ffffff';
+	g.fillRect( 0, 0, 256, 8 );
+	g.fillRect( 0, 120, 256, 8 );
+	g.fillRect( 0, 40, 256, 5 );
+	g.fillRect( 0, 86, 256, 5 );
+	for ( let x = 8; x < 256; x += 16 ) g.fillRect( x - 2, 0, 4, 128 );
+	g.lineWidth = 5;
+	for ( let x = 32; x < 256; x += 64 ) {
+
+		g.beginPath();
+		g.arc( x, 65, 19, 0, Math.PI * 2 );
+		g.stroke();
+
+	}
+
+	const pattern = new THREE.CanvasTexture( canvas );
+	pattern.wrapS = THREE.RepeatWrapping;
+	const panel = new THREE.MeshStandardNodeMaterial( { color: 0x2b3a2f, metalness: 0.5, roughness: 0.5, alphaMap: pattern, alphaTest: 0.5, side: THREE.DoubleSide } );
+	const railMesh = new THREE.InstancedMesh( new THREE.BoxGeometry( 1, 0.05, 0.06 ), green, rails.length / 6 );
+	const panelMesh = new THREE.InstancedMesh( new THREE.PlaneGeometry( 1, 0.62 ).translate( 0, - 0.33, 0 ), panel, rails.length / 6 );
 	const a = new THREE.Vector3(), b = new THREE.Vector3(), dir = new THREE.Vector3(), x = new THREE.Vector3( 1, 0, 0 );
+	const flat = new THREE.Vector3();
 	for ( let i = 0; i < rails.length; i += 6 ) {
 
 		a.fromArray( rails, i );
@@ -114,10 +150,15 @@ export function addEmbankment( scene, stoneBuf, embankment ) {
 		const len = dir.length();
 		q.setFromUnitVectors( x, dir.normalize() );
 		railMesh.setMatrixAt( i / 6, m.compose( p.addVectors( a, b ).multiplyScalar( 0.5 ), q, s.set( len + 0.02, 1, 1 ) ) );
+		// The panel stays upright: turned about the vertical only.
+		flat.set( b.x - a.x, 0, b.z - a.z ).normalize();
+		q.setFromUnitVectors( x, flat );
+		panelMesh.setMatrixAt( i / 6, m.compose( p.addVectors( a, b ).multiplyScalar( 0.5 ), q, s.set( len + 0.02, 1, 1 ) ) );
 
 	}
 
-	postMesh.castShadow = railMesh.castShadow = true;
-	scene.add( postMesh, railMesh );
+	railMesh.castShadow = panelMesh.castShadow = pillarMesh.castShadow = true;
+	scene.add( railMesh, panelMesh, pillarMesh, capMesh, postMesh );
+
 
 }

@@ -10,6 +10,7 @@ import { addOpenings } from './openings.js';
 import { addStops } from './stops.js';
 import { addBridges } from './bridges.js';
 import { addLandmarks } from './landmarks.js';
+import { addFlights } from './flights.js';
 import { addVenues } from './venues.js';
 
 // ---------------------------------------------------------------------------
@@ -318,6 +319,7 @@ export function addPlaces( scene, places, furniture = {}, waterLevel = 0 ) {
 	addStops( scene, places.stops );
 	addBridges( scene, places.bridges, places.piers, waterLevel );
 	addLandmarks( scene, places, waterLevel );
+	addFlights( scene, places.flights, places.tunnels );
 	return { seats };
 
 }

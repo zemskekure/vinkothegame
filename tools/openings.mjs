@@ -14,13 +14,65 @@ const RAW = new URL( '../data/raw/', import.meta.url );
 const WALK = new Set( [ 'footway', 'pedestrian', 'path', 'service', 'living_street', 'residential', 'unclassified', 'tertiary', 'secondary', 'cycleway' ] );
 const WIDTH = { footway: 2.6, path: 2.2, pedestrian: 3.2, cycleway: 2.6, service: 3.4, living_street: 3.6 };
 
-export async function findOpenings( { AREA, buildingAt } ) {
+export async function findOpenings( { AREA, buildingAt, buildings = [] } ) {
 
 	const project = await lonLatToSJTSK();
 	const osm = JSON.parse( await readFile( new URL( 'osm.json', RAW ) ) );
 	const nodes = new Map( osm.filter( e => e.type === 'node' ).map( e => [ e.id, e ] ) );
 	const inside = ( X, Y ) => buildingAt( X, Y ) >= 0;
 	const openings = [];
+
+	// House front edges, to set arcades on: the footprints' outer rings.
+	const fronts = [];
+	for ( const b of buildings ) {
+
+		const r = b.poly.outer;
+		for ( let i = 0; i < r.length; i ++ ) {
+
+			const [ ax, ay ] = r[ i ], [ bx, by ] = r[ ( i + 1 ) % r.length ];
+			const len = Math.hypot( bx - ax, by - ay );
+			if ( len >= 2 ) fronts.push( { ax, ay, ux: ( bx - ax ) / len, uy: ( by - ay ) / len, len } );
+
+		}
+
+	}
+
+	// An arcade stretch along its street face from (x0, y0) to (x1, y1), n out to the street: snapped onto the
+	// house front it belongs to (OSM lines run a metre or two off).
+	const addArcade = ( w, t, x0, y0, x1, y1, nx, ny, depth ) => {
+
+		let ux = x1 - x0, uy = y1 - y0;
+		const l = Math.hypot( ux, uy );
+		ux /= l; uy /= l;
+		const mx = ( x0 + x1 ) / 2, my = ( y0 + y1 ) / 2;
+		let best = null;
+		for ( const f of fronts ) {
+
+			if ( Math.abs( f.ux * ux + f.uy * uy ) < Math.cos( 20 * Math.PI / 180 ) ) continue;
+			const s = ( mx - f.ax ) * f.ux + ( my - f.ay ) * f.uy;
+			if ( s < - 1 || s > f.len + 1 ) continue;
+			const d = Math.abs( - ( mx - f.ax ) * f.uy + ( my - f.ay ) * f.ux );
+			if ( d < 2.5 && ( ! best || d < best.d ) ) best = { f, d };
+
+		}
+
+		if ( best ) {
+
+			const f = best.f, sg = f.ux * ux + f.uy * uy > 0 ? 1 : - 1;
+			const proj = ( X, Y ) => ( X - f.ax ) * f.ux + ( Y - f.ay ) * f.uy;
+			const s0 = Math.min( proj( x0, y0 ), proj( x1, y1 ) ), s1 = Math.max( proj( x0, y0 ), proj( x1, y1 ) );
+			if ( s1 - s0 < 1.5 ) return;
+			ux = f.ux * sg; uy = f.uy * sg;
+			const pn = - f.uy * nx + f.ux * ny > 0 ? 1 : - 1; // keep n pointing to the street
+			nx = - f.uy * pn; ny = f.ux * pn;
+			x0 = f.ax + f.ux * s0; y0 = f.ay + f.uy * s0; x1 = f.ax + f.ux * s1; y1 = f.ay + f.uy * s1;
+
+		}
+
+		const len = Math.hypot( x1 - x0, y1 - y0 );
+		openings.push( { kind: 'arcade', way: w.id, name: t.name, X: ( x0 + x1 ) / 2, Y: ( y0 + y1 ) / 2, ux, uy, nx, ny, len: + len.toFixed( 2 ), depth: + depth.toFixed( 2 ), h: 4.0 } );
+
+	};
 
 	for ( const w of osm ) {
 
@@ -76,7 +128,7 @@ export async function findOpenings( { AREA, buildingAt } ) {
 				}
 
 				if ( a0 === null || a1 - a0 < 2 ) continue;
-				openings.push( { kind: 'arcade', way: w.id, name: t.name, X: fx + ux * ( a0 + a1 ) / 2, Y: fy + uy * ( a0 + a1 ) / 2, ux, uy, nx, ny, len: + ( a1 - a0 ).toFixed( 2 ), depth: 3.6, h: 4.0 } );
+				addArcade( w, t, fx + ux * a0, fy + uy * a0, fx + ux * a1, fy + uy * a1, nx, ny, 3.6 );
 				continue;
 
 			}
@@ -108,13 +160,37 @@ export async function findOpenings( { AREA, buildingAt } ) {
 			const sgn = dl < dr ? 1 : - 1, face = Math.min( dl, dr );
 			const nx = - uy * sgn, ny = ux * sgn;
 			const depth = Math.min( 4.2, Math.max( 3.0, face * 2 ) );
-			openings.push( { kind: 'arcade', way: w.id, name: t.name, X: mx + nx * face, Y: my + ny * face, ux, uy, nx, ny, len: + runLen.toFixed( 2 ), depth: + depth.toFixed( 2 ), h: 4.0 } );
+			const half = runLen / 2;
+			addArcade( w, t, mx + nx * face - ux * half, my + ny * face - uy * half, mx + nx * face + ux * half, my + ny * face + uy * half, nx, ny, depth );
 
 		}
 
 	}
 
-	return openings;
+	// One arcade per straight stretch of front: join a way's pieces along the same line, at one depth.
+	const merged = [];
+	for ( const o of openings ) {
+
+		const m = o.kind === 'arcade' && merged.find( q => q.kind === 'arcade' && q.way === o.way && q.ux * o.ux + q.uy * o.uy > 0.995 &&
+			Math.abs( - ( o.X - q.X ) * q.uy + ( o.Y - q.Y ) * q.ux ) < 1.0 &&
+			Math.abs( ( o.X - q.X ) * q.ux + ( o.Y - q.Y ) * q.uy ) < ( o.len + q.len ) / 2 + 1.5 );
+		if ( ! m ) {
+
+			merged.push( o );
+			continue;
+
+		}
+
+		const along = ( X, Y ) => ( X - m.X ) * m.ux + ( Y - m.Y ) * m.uy;
+		const a = Math.min( - m.len / 2, along( o.X, o.Y ) - o.len / 2 ), b = Math.max( m.len / 2, along( o.X, o.Y ) + o.len / 2 );
+		m.X += m.ux * ( a + b ) / 2;
+		m.Y += m.uy * ( a + b ) / 2;
+		m.len = + ( b - a ).toFixed( 2 );
+		m.depth = Math.max( m.depth, o.depth );
+
+	}
+
+	return merged.filter( o => o.kind !== 'arcade' || o.len >= 3 );
 
 }
 

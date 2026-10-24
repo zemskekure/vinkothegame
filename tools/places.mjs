@@ -14,6 +14,8 @@
 
 const ROTUNDA_WAY = 395230762;
 const STAIRS_WAY = 1201817510;
+// Čapadlo by the Faculty of Social Sciences: steps beside it, the underpass, the metal stair from the terrace.
+const CAPADLO = { steps: 137806765, underpass: 1201427940, metal: 34056146 };
 
 export function collectPlaces( ctx ) {
 
@@ -561,6 +563,91 @@ export function collectPlaces( ctx ) {
 
 	}
 
+	// --- Čapadlo (Smetanovo nábřeží by the Faculty of Social Sciences): the steps down beside the faculty into the
+	// underpass under the street and out onto the riverside terrace, and the metal stair from the terrace back up
+	// to the riverside pavement. The railing along the street (tools/quay.mjs) is a walk barrier, open where the
+	// stair lands on the pavement, and passable under it where the underpass comes out.
+	places.flights = [];
+	places.tunnels = [];
+	places.barriers = [];
+	{
+
+		const way = id => wayById.get( id )?.pts.map( p => [ p.X, p.Y ] );
+		const steps = way( CAPADLO.steps ), under = way( CAPADLO.underpass ), metal = way( CAPADLO.metal );
+		const rail = ctx.quay?.rail || [];
+		const { terrain, tw, th, cell } = ctx.terrainGrid;
+		const cut = ( [ ax, ay ], [ bx, by ], half, y ) => {
+
+			// Lower the ground under a stretch (the survey surface runs over steps and trenches).
+			const len = Math.hypot( bx - ax, by - ay ), ux = ( bx - ax ) / len, uy = ( by - ay ) / len;
+			for ( let s = - 0.5; s <= len + 0.5; s += 0.4 ) for ( let o = - half; o <= half; o += 0.4 ) {
+
+				const X = ax + ux * s - uy * o, Y = ay + uy * s + ux * o;
+				const c = Math.round( ( X - ctx.AREA.xmin ) / cell ), r = Math.round( ( ctx.AREA.ymax - Y ) / cell );
+				if ( c >= 0 && r >= 0 && c < tw && r < th ) terrain[ r * tw + c ] = Math.min( terrain[ r * tw + c ], typeof y === 'function' ? y( s / len ) : y );
+
+			}
+
+		};
+
+		if ( steps && under && rail.length ) {
+
+			// The underpass floor is the terrace's level where it comes out under the railing.
+			const mouth = rail.filter( p => p.portal );
+			const floorY = mouth.length ? mouth.reduce( ( a, p ) => a + p.quay, 0 ) / mouth.length : rail[ 0 ].quay;
+			const [ p0, p1 ] = [ steps[ 0 ], steps[ steps.length - 1 ] ];
+			const top = terrainAt( ...p0 ) > terrainAt( ...p1 ) ? p0 : p1, bottom = top === p0 ? p1 : p0;
+			const yTop = terrainAt( ...top ), n = Math.max( 6, Math.round( ( yTop - floorY ) / 0.16 ) );
+			const [ tx, tz ] = L( ...top ), [ bx, bz ] = L( ...bottom );
+			const len = Math.hypot( tx - bx, tz - bz ), along = [ ( tx - bx ) / len, ( tz - bz ) / len ];
+			places.flights.push( { top: [ tx, + yTop.toFixed( 2 ), tz ], bottom: [ bx, + floorY.toFixed( 2 ), bz ], steps: n, w: 2.6, kind: 'trench' } );
+			zone( ( tx + bx ) / 2, ( tz + bz ) / 2, [ along[ 1 ], - along[ 0 ] ], 1.15, len / 2 + 0.3, { y0: + floorY.toFixed( 2 ), y1: + yTop.toFixed( 2 ), along, steps: n } );
+			cut( bottom, top, 1.6, t => floorY + ( yTop - floorY ) * t - 0.5 );
+
+			// Underpass: from the foot of the steps to the terrace.
+			// It ends at the opening in the wall under the railing.
+			const end = mouth.length ? [ 0, 1 ].map( k => mouth.reduce( ( a, p ) => a + ( k ? p.Y + p.ny * 0.3 : p.X + p.nx * 0.3 ), 0 ) / mouth.length ) : under[ under.length - 1 ];
+			const [ ex, ez ] = L( ...end );
+			const ul = Math.hypot( ex - bx, ez - bz ), ua = [ ( ex - bx ) / ul, ( ez - bz ) / ul ];
+			places.tunnels.push( { a: [ bx, bz ], b: [ ex, ez ], y: + floorY.toFixed( 2 ), h: 2.8, w: 2.8 } );
+			zone( ( bx + ex ) / 2, ( bz + ez ) / 2, [ ua[ 1 ], - ua[ 0 ] ], 1.25, ul / 2 + 0.6, { y: + floorY.toFixed( 2 ), ceil: + ( floorY + 2.7 ).toFixed( 2 ) } );
+			console.log( `places: Čapadlo steps ${n} × ${( ( yTop - floorY ) / n ).toFixed( 3 )} m, underpass ${ul.toFixed( 1 )} m at ${floorY.toFixed( 2 )}` );
+
+		}
+
+		let landing = null;
+		if ( metal && metal.length >= 3 && rail.length ) {
+
+			// Metal stair along the wall from the terrace up to a landing on the pavement.
+			const [ q0, q1, q2 ] = [ metal[ 0 ], metal[ 1 ], metal[ 2 ] ];
+			const y0 = terrainAt( ...q0 ), y1 = terrainAt( ...q2 );
+			const lo = y0 < y1 ? q0 : q2;
+			const foot = lo === q0 ? q0 : q2, head = lo === q0 ? q1 : q1, top = lo === q0 ? q2 : q0;
+			const yLow = Math.min( y0, y1 ), yHigh = Math.max( y0, y1 );
+			const n = Math.max( 6, Math.round( ( yHigh - yLow ) / 0.17 ) );
+			const [ fx, fz ] = L( ...foot ), [ hx, hz ] = L( ...head ), [ px, pz ] = L( ...top );
+			const len = Math.hypot( hx - fx, hz - fz ), along = [ ( hx - fx ) / len, ( hz - fz ) / len ];
+			places.flights.push( { top: [ hx, + yHigh.toFixed( 2 ), hz ], bottom: [ fx, + yLow.toFixed( 2 ), fz ], steps: n, w: 1.4, kind: 'metal', landing: [ px, + yHigh.toFixed( 2 ), pz ] } );
+			zone( ( hx + fx ) / 2, ( hz + fz ) / 2, [ along[ 1 ], - along[ 0 ] ], 0.6, len / 2 + 0.2, { y0: + yLow.toFixed( 2 ), y1: + yHigh.toFixed( 2 ), along, steps: n } );
+			const ll = Math.hypot( px - hx, pz - hz ), la = [ ( px - hx ) / ll, ( pz - hz ) / ll ];
+			zone( ( hx + px ) / 2, ( hz + pz ) / 2, [ la[ 1 ], - la[ 0 ] ], 0.75, ll / 2 + 0.4, { y: + yHigh.toFixed( 2 ) } );
+			landing = top;
+
+		}
+
+		// Walk barrier along the railing: open at the stair's landing; under it, the underpass.
+		for ( let i = 1; i < rail.length; i ++ ) {
+
+			const a = rail[ i - 1 ], b = rail[ i ];
+			if ( a.river && b.river || Math.hypot( b.X - a.X, b.Y - a.Y ) > 2 ) continue;
+			if ( landing && Math.hypot( ( a.X + b.X ) / 2 - landing[ 0 ], ( a.Y + b.Y ) / 2 - landing[ 1 ] ) < 1.6 ) continue;
+			const [ x0, z0 ] = L( a.X, a.Y ), [ x1, z1 ] = L( b.X, b.Y );
+			places.barriers.push( [ x0, z0, x1, z1, a.portal && b.portal ? + ( a.quay + 2.2 ).toFixed( 2 ) : - 99 ] );
+
+		}
+
+	}
+
 	// --- landmark lettering and plaques, on the house fronts seen in street photos
 	const edgeOf = ( code, edge ) => {
 
@@ -623,7 +710,7 @@ export function collectPlaces( ctx ) {
 			const y0 = + end( - 1 ).toFixed( 2 ), y1 = + end( 1 ).toFixed( 2 );
 			const [ x, z ] = L( o.X, o.Y );
 			places.openings.push( { kind: 'passage', x, z, lx, lz, len: o.len, w: o.w, h: o.h, y0, y1 } );
-			zone( x, z, across, o.w / 2 - 0.15, o.len / 2 + 0.35, { y0, y1, along: [ lx, lz ] } );
+			zone( x, z, across, o.w / 2 - 0.15, o.len / 2 + 0.35, { y0, y1, along: [ lx, lz ], ceil: + ( Math.max( y0, y1 ) + o.h - 0.2 ).toFixed( 2 ) } );
 
 		} else {
 
@@ -634,7 +721,7 @@ export function collectPlaces( ctx ) {
 			// From just outside the street face to 0.3 m short of the back wall.
 			const depth = o.depth - 0.3;
 			const mid = ( depth - 0.3 ) / 2;
-			zone( x - nx * mid, z - nz * mid, across, ( depth + 0.3 ) / 2, o.len / 2, { y0, y1, along: [ lx, lz ] } );
+			zone( x - nx * mid, z - nz * mid, across, ( depth + 0.3 ) / 2, o.len / 2, { y0, y1, along: [ lx, lz ], ceil: + ( Math.max( y0, y1 ) + o.h - 0.2 ).toFixed( 2 ) } );
 
 		}
 

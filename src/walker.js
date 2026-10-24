@@ -10,12 +10,13 @@ const WALK = 1.7, RUN = 5.2;
 // house stands between it and the figure. Terrain following, sliding collisions against building footprints.
 export class Walker {
 
-	constructor( camera, dom, groundHeight, isBlocked, scene, cameraBlocked = isBlocked ) {
+	constructor( camera, dom, groundHeight, isBlocked, scene, cameraBlocked = isBlocked, ceilingAt = () => Infinity ) {
 
 		this.camera = camera;
 		this.groundHeight = groundHeight;
 		this.isBlocked = isBlocked;
 		this.cameraBlocked = cameraBlocked;
+		this.ceilingAt = ceilingAt;
 		this.enabled = false;
 		this.pos = new THREE.Vector3();
 		this.heading = 0; // the figure faces ( sin, cos )
@@ -281,7 +282,7 @@ export class Walker {
 		for ( let s = 0.4; s <= this.distance; s += 0.2 ) {
 
 			const x = tx + dx * s, y = ty + dy * s, z = tz + dz * s;
-			if ( this.cameraBlocked( x, z ) || y < this.groundHeight( x, z ) + 0.25 ) {
+			if ( this.cameraBlocked( x, z ) || y < this.groundHeight( x, z ) + 0.25 || y > this.ceilingAt( x, z ) - 0.15 ) {
 
 				allowed = Math.max( 0.6, s - 0.35 );
 				break;
