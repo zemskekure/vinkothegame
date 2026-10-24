@@ -169,7 +169,7 @@ export function startHolub( { scene, camera, dom, roofGeo, bounds, groundHeight,
 	// --- input
 	dom.addEventListener( 'click', () => {
 
-		if ( document.pointerLockElement !== dom ) dom.requestPointerLock();
+		if ( document.pointerLockElement !== dom && matchMedia( '(pointer: fine)' ).matches ) dom.requestPointerLock();
 
 	} );
 	document.addEventListener( 'mousemove', e => {
@@ -184,25 +184,176 @@ export function startHolub( { scene, camera, dom, roofGeo, bounds, groundHeight,
 		dist = THREE.MathUtils.clamp( dist * ( e.deltaY > 0 ? 1.12 : 0.89 ), 0.8, 14 );
 
 	}, { passive: true } );
+	const peckNow = () => {
+
+		idle = 0;
+		if ( mode === 'fly' || mode === 'glide' ) return;
+		mode = 'walk';
+		pecking = 0.35;
+
+	};
+	const poopNow = () => {
+
+		idle = 0;
+		if ( poopCooldown <= 0 ) dropOne();
+
+	};
+	const sitToggle = () => {
+
+		idle = 0;
+		if ( mode === 'walk' ) mode = 'sit';
+		else if ( mode === 'sit' ) mode = 'walk';
+
+	};
 	window.addEventListener( 'keydown', e => {
 
 		keys.add( e.code );
 		idle = 0;
-		if ( e.code === 'KeyE' && mode !== 'fly' && mode !== 'glide' ) {
-
-			mode = 'walk';
-			pecking = 0.35;
-
-		}
-
-		if ( e.code === 'KeyQ' && poopCooldown <= 0 ) dropOne();
-		if ( e.code === 'KeyC' && mode === 'walk' ) mode = 'sit';
-		else if ( e.code === 'KeyC' && mode === 'sit' ) mode = 'walk';
+		if ( e.code === 'KeyE' ) peckNow();
+		if ( e.code === 'KeyQ' ) poopNow();
+		if ( e.code === 'KeyC' ) sitToggle();
 		if ( e.code === 'Space' ) e.preventDefault();
 
 	} );
 	window.addEventListener( 'keyup', e => keys.delete( e.code ) );
 	window.addEventListener( 'blur', () => keys.clear() );
+
+	// --- touch: a joystick bottom left (walk, or steer in flight; pushed to the rim, faster), drag anywhere else to
+	// look, and big thumb buttons bottom right: fly (hold to flap and climb), down (hold in flight; tap on the
+	// ground to sit), peck, poop.
+	const stick = { x: 0, y: 0, id: null };
+	const isTouch = matchMedia( '(pointer: coarse)' ).matches || navigator.maxTouchPoints > 0 && ! matchMedia( '(pointer: fine)' ).matches;
+	if ( isTouch ) {
+
+		document.getElementById( 'help' ).textContent = 'Joystick vlevo: chůze a let · táhni prstem: rozhlížení · tlačítka vpravo';
+		hud.style.maxWidth = 'calc(100vw - 170px)';
+		hud.style.fontSize = '12px';
+		Object.assign( document.getElementById( 'place' ).style, { top: '118px', bottom: 'auto', left: '12px', right: 'auto', transform: 'none', fontSize: '13px' } );
+		const css = ( el, st ) => Object.assign( el.style, st );
+		const pad = document.createElement( 'div' ), knob = document.createElement( 'div' );
+		css( pad, { position: 'fixed', left: '22px', bottom: '22px', width: '140px', height: '140px', borderRadius: '50%', background: 'rgba(30,20,12,0.28)', border: '2px solid rgba(255,236,200,0.45)', zIndex: 5, touchAction: 'none' } );
+		css( knob, { position: 'absolute', left: '45px', top: '45px', width: '50px', height: '50px', borderRadius: '50%', background: 'rgba(255,236,200,0.75)', pointerEvents: 'none' } );
+		pad.appendChild( knob );
+		document.body.appendChild( pad );
+		const setStick = t => {
+
+			const r = pad.getBoundingClientRect(), R = r.width / 2;
+			let dx = ( t.clientX - r.left - R ) / R, dy = ( t.clientY - r.top - R ) / R;
+			const m = Math.hypot( dx, dy );
+			if ( m > 1 ) {
+
+				dx /= m;
+				dy /= m;
+
+			}
+
+			stick.x = dx;
+			stick.y = - dy;
+			knob.style.left = `${45 + dx * 45}px`;
+			knob.style.top = `${45 + dy * 45}px`;
+
+		};
+		pad.addEventListener( 'touchstart', e => {
+
+			e.preventDefault();
+			const t = e.changedTouches[ 0 ];
+			stick.id = t.identifier;
+			setStick( t );
+
+		}, { passive: false } );
+		pad.addEventListener( 'touchmove', e => {
+
+			e.preventDefault();
+			for ( const t of e.changedTouches ) if ( t.identifier === stick.id ) setStick( t );
+
+		}, { passive: false } );
+		const release = e => {
+
+			for ( const t of e.changedTouches ) if ( t.identifier === stick.id ) {
+
+				stick.id = null;
+				stick.x = stick.y = 0;
+				knob.style.left = knob.style.top = '45px';
+
+			}
+
+		};
+		pad.addEventListener( 'touchend', release );
+		pad.addEventListener( 'touchcancel', release );
+
+		// Buttons: hold ones press a key while held; tap ones act once.
+		const bar = document.createElement( 'div' );
+		css( bar, { position: 'fixed', right: '16px', bottom: '22px', display: 'grid', gridTemplateColumns: '68px 68px', gap: '12px', zIndex: 5 } );
+		document.body.appendChild( bar );
+		const button = ( label, title, { hold, tap } ) => {
+
+			const b = document.createElement( 'div' );
+			b.innerHTML = `<div style="font-size:26px;line-height:1">${label}</div><div style="font-size:10px;margin-top:2px">${title}</div>`;
+			css( b, { width: '68px', height: '68px', borderRadius: '50%', display: 'grid', placeContent: 'center', textAlign: 'center', background: 'rgba(30,20,12,0.45)', border: '2px solid rgba(255,236,200,0.6)', color: '#fff3d6', userSelect: 'none', webkitUserSelect: 'none', touchAction: 'none' } );
+			b.addEventListener( 'touchstart', e => {
+
+				e.preventDefault();
+				b.style.background = 'rgba(255,190,110,0.6)';
+				if ( hold ) keys.add( hold );
+				tap?.();
+
+			}, { passive: false } );
+			const up = e => {
+
+				e.preventDefault();
+				b.style.background = 'rgba(30,20,12,0.45)';
+				if ( hold ) keys.delete( hold );
+
+			};
+			b.addEventListener( 'touchend', up );
+			b.addEventListener( 'touchcancel', up );
+			bar.appendChild( b );
+
+		};
+		button( '🕊️', 'letět', { hold: 'Space' } );
+		button( '⬇️', 'dolů / sednout', { hold: 'KeyC', tap: () => {
+
+			if ( mode !== 'fly' && mode !== 'glide' ) sitToggle();
+
+		} } );
+		button( '🍞', 'zobnout', { tap: peckNow } );
+		button( '💩', 'bobek', { tap: poopNow } );
+
+		// Look: drag on the view (any finger not on the joystick or a button).
+		let lookId = null, lx = 0, ly = 0;
+		dom.addEventListener( 'touchstart', e => {
+
+			const t = e.changedTouches[ 0 ];
+			if ( lookId === null ) {
+
+				lookId = t.identifier;
+				lx = t.clientX;
+				ly = t.clientY;
+
+			}
+
+		}, { passive: true } );
+		dom.addEventListener( 'touchmove', e => {
+
+			for ( const t of e.changedTouches ) if ( t.identifier === lookId ) {
+
+				yaw -= ( t.clientX - lx ) * 0.006;
+				pitch = THREE.MathUtils.clamp( pitch + ( t.clientY - ly ) * 0.005, - 0.9, 1.35 );
+				lx = t.clientX;
+				ly = t.clientY;
+
+			}
+
+		}, { passive: true } );
+		const lookEnd = e => {
+
+			for ( const t of e.changedTouches ) if ( t.identifier === lookId ) lookId = null;
+
+		};
+		dom.addEventListener( 'touchend', lookEnd );
+		dom.addEventListener( 'touchcancel', lookEnd );
+
+	}
 
 	const tailPos = new THREE.Vector3();
 	function dropOne() {
@@ -269,11 +420,19 @@ export function startHolub( { scene, camera, dom, roofGeo, bounds, groundHeight,
 		poop = Math.max( 0, poop - dt * 2.5 );
 		toastTimer -= dt;
 		if ( toastTimer <= 0 ) toast.style.opacity = 0;
-		const fast = keys.has( 'ShiftLeft' ) || keys.has( 'ShiftRight' );
+		const fast = keys.has( 'ShiftLeft' ) || keys.has( 'ShiftRight' ) || Math.hypot( stick.x, stick.y ) > 0.95;
 		look.set( - Math.sin( yaw ) * Math.cos( pitch ), - Math.sin( pitch ), - Math.cos( yaw ) * Math.cos( pitch ) );
 		fwd.set( - Math.sin( yaw ), 0, - Math.cos( yaw ) );
 		right.set( - fwd.z, 0, fwd.x );
-		const ix = ( keys.has( 'KeyD' ) ? 1 : 0 ) - ( keys.has( 'KeyA' ) ? 1 : 0 ), iz = ( keys.has( 'KeyW' ) ? 1 : 0 ) - ( keys.has( 'KeyS' ) ? 1 : 0 );
+		let ix = ( keys.has( 'KeyD' ) ? 1 : 0 ) - ( keys.has( 'KeyA' ) ? 1 : 0 ), iz = ( keys.has( 'KeyW' ) ? 1 : 0 ) - ( keys.has( 'KeyS' ) ? 1 : 0 );
+		if ( Math.hypot( stick.x, stick.y ) > 0.15 ) {
+
+			ix = stick.x;
+			iz = stick.y;
+			// In flight, the stick also turns: sideways steers the view (and so the bird) round.
+			if ( mode === 'fly' || mode === 'glide' ) yaw -= stick.x * 1.6 * dt;
+
+		}
 		let speed = 0;
 
 		if ( mode === 'walk' || mode === 'sit' ) {
