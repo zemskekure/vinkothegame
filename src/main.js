@@ -13,6 +13,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { createMinimap } from './minimap.js';
 import { addTrams } from './trams.js';
 import { SUN } from './kit.js';
+import { HOLUB_SUN, PIXEL_SCALE, holubLook, startHolub } from './holub/game.js';
 
 async function load( name, type = 'arrayBuffer', dir = 'data/' ) {
 
@@ -43,12 +44,15 @@ const [ data, wallsBuf, wallIdxBuf, roofsBuf, roofIdxBuf, terrainBuf, surfaceBuf
 
 const { bounds } = data;
 const params = new URLSearchParams( location.search );
+// Letím jak holub: the pigeon game on the same city (src/holub/), from its own page or with ?holub.
+const HOLUB = window.GAME === 'holub' || params.has( 'holub' );
+if ( HOLUB ) SUN.copy( HOLUB_SUN );
 
 // ---------------------------------------------------------------------------
 // Renderer, sky, light
 
-const renderer = new THREE.WebGPURenderer( { antialias: true, forceWebGL: params.has( 'webgl' ) } );
-renderer.setPixelRatio( Math.min( window.devicePixelRatio, 2 ) );
+const renderer = new THREE.WebGPURenderer( { antialias: ! HOLUB, forceWebGL: params.has( 'webgl' ) } );
+renderer.setPixelRatio( Math.min( window.devicePixelRatio, 2 ) * ( HOLUB ? PIXEL_SCALE : 1 ) );
 renderer.setSize( window.innerWidth, window.innerHeight );
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 0.75;
@@ -92,7 +96,9 @@ sun.shadow.bias = - 0.0003;
 sun.shadow.normalBias = 0.3;
 sun.position.copy( sunDir ).multiplyScalar( 700 ).add( centre );
 sun.target.position.copy( centre );
-scene.add( sun, sun.target, new THREE.HemisphereLight( 0xdfe6ee, 0xc49a6c, 0.75 ) );
+const hemi = new THREE.HemisphereLight( 0xdfe6ee, 0xc49a6c, 0.75 );
+scene.add( sun, sun.target, hemi );
+if ( HOLUB ) holubLook( { renderer, scene, sky, sun, hemi, camera } );
 
 // ---------------------------------------------------------------------------
 // Terrain and street surfaces
@@ -466,10 +472,19 @@ function setMode( walk ) {
 hud.mode.addEventListener( 'click', () => setMode( ! walking ) );
 window.addEventListener( 'keydown', e => {
 
-	if ( e.code === 'KeyM' ) setMode( ! walking );
+	if ( e.code === 'KeyM' && ! HOLUB ) setMode( ! walking );
 
 } );
-setMode( ! params.has( 'overview' ) ); // start on foot; ?overview for the view from above
+// The pigeon (?holub) instead of the walker: on Betlémské náměstí by the terrace, facing the chapel.
+const holub = HOLUB ? startHolub( { scene, camera, dom: renderer.domElement, roofGeo, bounds, groundHeight, waterLevel: data.waterLevel, places, furniture: data.furniture, life, start: [ - 74, 66, Math.atan2( 30, - 14 ) ] } ) : null;
+if ( HOLUB ) {
+
+	orbit.enabled = false;
+	minimap.setVisible( true );
+	hud.place.style.display = 'block';
+	document.title = 'Letím jak holub';
+
+} else setMode( ! params.has( 'overview' ) ); // start on foot; ?overview for the view from above
 
 // ?view=x,y,z,tx,ty,tz aims the overview camera (handy for sharing a viewpoint).
 if ( params.has( 'view' ) && ! walking ) {
@@ -530,7 +545,19 @@ renderer.setAnimationLoop( () => {
 	life.update( dt );
 	trams.update( dt );
 
-	if ( walking ) {
+	if ( holub ) {
+
+		holub.update( dt );
+		minimap.update( holub.pos.x, holub.pos.z, holub.yaw, holub.heading );
+		labelTimer -= dt;
+		if ( labelTimer <= 0 ) {
+
+			labelTimer = 0.3;
+			hud.place.textContent = nearestStreet( holub.pos.x, holub.pos.z ) || 'Staré Město';
+
+		}
+
+	} else if ( walking ) {
 
 		walker.update( dt );
 		minimap.update( walker.pos.x, walker.pos.z, walker.yaw, walker.heading );
@@ -553,6 +580,6 @@ renderer.setAnimationLoop( () => {
 } );
 
 document.getElementById( 'loading' ).remove();
-window.__debug = { camera, isBlocked, groundHeight, walker, life, trams };
+window.__debug = { camera, isBlocked, groundHeight, walker, life, trams, holub };
 window.__THREE = THREE;
 window.__ready = true;
