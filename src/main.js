@@ -262,16 +262,19 @@ const hud = {
 };
 
 let walking = false;
+const touch = matchMedia( '(pointer: coarse)' ).matches || navigator.maxTouchPoints > 0 && ! matchMedia( '(pointer: fine)' ).matches;
 function setMode( walk ) {
 
 	const wasWalking = walking;
 	walking = walk;
 	orbit.enabled = ! walk;
-	walker.enabled = walk;
-	hud.mode.textContent = walk ? 'Pohled shora (M)' : 'Projít se ulicemi (M)';
-	hud.help.textContent = walk
-		? 'Klikni pro rozhlížení myší · WASD chůze · Shift běh'
-		: 'Táhni myší pro otáčení · kolečko přiblížení · pravé tlačítko posun';
+	walker.setEnabled( walk, touch );
+	hud.mode.textContent = ( walk ? 'Pohled shora' : 'Projít se ulicemi' ) + ( touch ? '' : ' (M)' );
+	hud.help.textContent = touch
+		? ( walk ? 'Joystick vlevo dole chůze (až k okraji běh) · táhni prstem pro rozhlížení' : 'Táhni prstem pro otáčení · dvěma prsty přiblížení a posun' )
+		: walk
+			? 'Klikni pro rozhlížení myší · WASD chůze · Shift běh'
+			: 'Táhni myší pro otáčení · kolečko přiblížení · pravé tlačítko posun';
 	hud.place.style.display = walk ? 'block' : 'none';
 
 	if ( walk ) {

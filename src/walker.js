@@ -3,7 +3,8 @@ import * as THREE from 'three/webgpu';
 const EYE = 1.7;
 const RADIUS = 0.35;
 
-// First-person walking: pointer-lock mouse look, WASD, terrain following,
+// First-person walking: pointer-lock mouse look and WASD, or on touch screens a joystick
+// (bottom left) to walk and a drag anywhere else to look; terrain following,
 // sliding collisions against building footprints.
 export class Walker {
 
@@ -32,9 +33,90 @@ export class Walker {
 
 		} );
 
+		// Touch: drag on the canvas to look around.
+		this.stick = { x: 0, y: 0 };
+		let look = null;
+		dom.addEventListener( 'pointerdown', e => {
+
+			if ( ! this.enabled || e.pointerType === 'mouse' || look ) return;
+			look = { id: e.pointerId, x: e.clientX, y: e.clientY };
+
+		} );
+		window.addEventListener( 'pointermove', e => {
+
+			if ( ! look || e.pointerId !== look.id ) return;
+			this.yaw += ( e.clientX - look.x ) * 0.005;
+			this.pitch = THREE.MathUtils.clamp( this.pitch + ( e.clientY - look.y ) * 0.005, - 1.4, 1.4 );
+			look.x = e.clientX;
+			look.y = e.clientY;
+
+		} );
+		const endLook = e => {
+
+			if ( look && e.pointerId === look.id ) look = null;
+
+		};
+		window.addEventListener( 'pointerup', endLook );
+		window.addEventListener( 'pointercancel', endLook );
+
+		this.joystick = this.createJoystick();
+
 		window.addEventListener( 'keydown', e => this.keys.add( e.code ) );
 		window.addEventListener( 'keyup', e => this.keys.delete( e.code ) );
 		window.addEventListener( 'blur', () => this.keys.clear() );
+
+	}
+
+	// On-screen joystick for touch screens: pushing the knob to the rim walks, past it runs.
+	createJoystick() {
+
+		const base = document.createElement( 'div' );
+		base.style.cssText = 'position:fixed;left:28px;bottom:28px;width:120px;height:120px;border-radius:50%;background:rgba(20,24,30,0.35);border:2px solid rgba(255,255,255,0.5);touch-action:none;display:none;z-index:2';
+		const knob = document.createElement( 'div' );
+		knob.style.cssText = 'position:absolute;left:35px;top:35px;width:50px;height:50px;border-radius:50%;background:rgba(232,217,181,0.9);pointer-events:none';
+		base.appendChild( knob );
+		document.body.appendChild( base );
+
+		let id = null;
+		const move = e => {
+
+			const r = base.getBoundingClientRect();
+			let dx = ( e.clientX - r.left - 60 ) / 45, dy = ( e.clientY - r.top - 60 ) / 45;
+			const len = Math.hypot( dx, dy );
+			this.stick.x = dx;
+			this.stick.y = dy;
+			if ( len > 1 ) dx /= len, dy /= len;
+			knob.style.transform = `translate(${ dx * 45 }px, ${ dy * 45 }px)`;
+
+		};
+		const end = e => {
+
+			if ( e.pointerId !== id ) return;
+			id = null;
+			this.stick.x = this.stick.y = 0;
+			knob.style.transform = '';
+
+		};
+		base.addEventListener( 'pointerdown', e => {
+
+			e.preventDefault();
+			id = e.pointerId;
+			base.setPointerCapture( id );
+			move( e );
+
+		} );
+		base.addEventListener( 'pointermove', e => e.pointerId === id && move( e ) );
+		base.addEventListener( 'pointerup', end );
+		base.addEventListener( 'pointercancel', end );
+		return base;
+
+	}
+
+	setEnabled( enabled, touch ) {
+
+		this.enabled = enabled;
+		this.joystick.style.display = enabled && touch ? 'block' : 'none';
+		if ( ! enabled ) this.stick.x = this.stick.y = 0;
 
 	}
 
@@ -82,9 +164,18 @@ export class Walker {
 	update( dt ) {
 
 		const k = this.keys;
-		const forward = ( k.has( 'KeyW' ) || k.has( 'ArrowUp' ) ? 1 : 0 ) - ( k.has( 'KeyS' ) || k.has( 'ArrowDown' ) ? 1 : 0 );
-		const strafe = ( k.has( 'KeyD' ) || k.has( 'ArrowRight' ) ? 1 : 0 ) - ( k.has( 'KeyA' ) || k.has( 'ArrowLeft' ) ? 1 : 0 );
-		const speed = k.has( 'ShiftLeft' ) || k.has( 'ShiftRight' ) ? 7 : 2.4;
+		let forward = ( k.has( 'KeyW' ) || k.has( 'ArrowUp' ) ? 1 : 0 ) - ( k.has( 'KeyS' ) || k.has( 'ArrowDown' ) ? 1 : 0 );
+		let strafe = ( k.has( 'KeyD' ) || k.has( 'ArrowRight' ) ? 1 : 0 ) - ( k.has( 'KeyA' ) || k.has( 'ArrowLeft' ) ? 1 : 0 );
+		let speed = k.has( 'ShiftLeft' ) || k.has( 'ShiftRight' ) ? 7 : 2.4;
+
+		const push = Math.hypot( this.stick.x, this.stick.y );
+		if ( push > 0.15 ) {
+
+			forward = - this.stick.y;
+			strafe = this.stick.x;
+			speed = push > 1.25 ? 7 : 2.4 * Math.min( 1, push );
+
+		}
 
 		if ( forward || strafe ) {
 

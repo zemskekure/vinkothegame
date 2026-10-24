@@ -11,6 +11,7 @@
 	#hud button:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
 	#place { position: fixed; left: 50%; bottom: calc(28px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); padding: 6px 14px; background: var(--panel); border-radius: 6px; font-size: 16px; display: none; white-space: nowrap; }
 	#credit { position: fixed; right: calc(10px + env(safe-area-inset-right, 0px)); bottom: calc(6px + env(safe-area-inset-bottom, 0px)); left: 10px; text-align: right; font-size: 11px; color: var(--muted); text-shadow: 0 1px 2px #000; pointer-events: none; }
+	@media (max-width: 600px) { #hud { font-size: 12px; padding: 8px 10px; } #hud h1 { font-size: 13px; } #place { left: auto; right: calc(12px + env(safe-area-inset-right, 0px)); bottom: calc(60px + env(safe-area-inset-bottom, 0px)); transform: none; font-size: 13px; } #credit { display: none; } }
 	#loading { position: fixed; inset: 0; display: grid; place-items: center; background: var(--bg); font-size: 18px; }
 </style>
 <div id="loading">Načítám Prahu… (≈ 15 MB)</div>

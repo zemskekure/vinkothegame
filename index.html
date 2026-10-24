@@ -6,7 +6,7 @@
 	<title>Praha – Betlémská čtvrť</title>
 	<style>
 		html, body { margin: 0; height: 100%; overflow: hidden; background: #b9cbd8; font: 14px/1.4 system-ui, sans-serif; color: #fff; }
-		canvas { display: block; }
+		canvas { display: block; touch-action: none; }
 		#hud { position: fixed; left: 16px; top: 16px; padding: 10px 14px; background: rgba(20, 24, 30, 0.6); border-radius: 8px; max-width: 320px; user-select: none; }
 		#hud h1 { margin: 0 0 4px; font-size: 15px; }
 		#hud p { margin: 2px 0; opacity: 0.85; }
@@ -14,6 +14,7 @@
 		#place { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); padding: 6px 14px; background: rgba(20, 24, 30, 0.6); border-radius: 6px; font-size: 16px; display: none; }
 		#credit { position: fixed; right: 10px; bottom: 6px; font-size: 11px; opacity: 0.75; text-shadow: 0 1px 2px #000; }
 		#loading { position: fixed; inset: 0; display: grid; place-items: center; background: #1d232b; font-size: 18px; }
+		@media (max-width: 600px) { #hud { left: 8px; top: 8px; max-width: calc(100vw - 32px); font-size: 12px; } #place { bottom: 60px; right: 12px; left: auto; transform: none; font-size: 13px; } #credit { display: none; } }
 	</style>
 </head>
 <body>
