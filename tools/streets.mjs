@@ -329,7 +329,40 @@ export function collectFurniture( streets, { toLocal, heightAt, dsmTrees, treeHe
 
 	// S-JTSK direction angle (from +X towards +Y) → rotation about the scene's +y axis (z points south).
 	const rotation = a => a;
+	// Benches, bins and bike stands mapped on a carriageway (OSM points on squares where the road runs) are moved
+	// to the nearest point off it within 4 m, else left out: no one sits in the road.
+	const OFF_ROAD = new Set( [ 'bench', 'bin', 'bikestand' ] );
+	const offRoad = ( X, Y ) => {
+
+		if ( streets.at( X, Y ).F > 0.6 ) return [ X, Y ];
+		for ( let r = 0.5; r <= 4; r += 0.5 ) for ( let k = 0; k < 16; k ++ ) {
+
+			const P = X + r * Math.cos( k * Math.PI / 8 ), Q = Y + r * Math.sin( k * Math.PI / 8 );
+			if ( streets.at( P, Q ).F > 0.9 ) return [ P, Q ];
+
+		}
+
+		return null;
+
+	};
+
+	let moved = 0, dropped = 0;
 	const put = ( type, X, Y, a = 0, s = 1 ) => {
+
+		if ( OFF_ROAD.has( type ) ) {
+
+			const p = offRoad( X, Y );
+			if ( ! p ) {
+
+				dropped ++;
+				return;
+
+			}
+
+			if ( p[ 0 ] !== X || p[ 1 ] !== Y ) moved ++;
+			[ X, Y ] = p;
+
+		}
 
 		const [ x, , z ] = toLocal( X, Y, 0 );
 		out[ type ].push( + x.toFixed( 2 ), + heightAt( X, Y ).toFixed( 2 ), + z.toFixed( 2 ), + rotation( a ).toFixed( 3 ), + s.toFixed( 2 ) );
@@ -377,6 +410,7 @@ export function collectFurniture( streets, { toLocal, heightAt, dsmTrees, treeHe
 
 	}
 
+	console.log( `furniture: ${moved} benches, bins and bike stands moved off the carriageway, ${dropped} left out` );
 	return out;
 
 }

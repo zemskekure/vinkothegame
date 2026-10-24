@@ -18,6 +18,7 @@ const STAIRS_WAY = 1201817510;
 const CAPADLO = { steps: 137806765, underpass: 1201427940, metal: 34056146 };
 
 import { dressSquare } from './dress.mjs';
+import { collectWalls } from './walls.mjs';
 
 export function collectPlaces( ctx ) {
 
@@ -997,6 +998,8 @@ export function collectPlaces( ctx ) {
 	}
 
 	places.life = streetLife( ctx, L );
+	places.barriers ||= [];
+	collectWalls( { places, project: ctx.project, L, S, yAtLocal, streetData, AREA } );
 	dressSquare( { places, frontFacing, frame, S, L, sign, yAtLocal, streetData, project: ctx.project } );
 
 	return places;

@@ -514,7 +514,7 @@
 		}
 	},
 	"21643903": {
-		"note": "Betlémské náměstí 1: U Halánků, the Náprstek museum: warm yellow, red roof, purple exhibition banners (Street View 2023–24)",
+		"note": "Betlémské náměstí 1: U Halánků, the Náprstek museum: warm yellow, red roof, dark red exhibition banners (Street View 2023–24)",
 		"signs": false,
 		"colour": "#e8c46c",
 		"trim": "#f6ecd0",
@@ -525,7 +525,7 @@
 			"19": {
 				"banner": {
 					"text": "NÁPRSTKOVO MUZEUM",
-					"board": "#6b2465",
+					"board": "#9b2335",
 					"ink": "#ffffff"
 				}
 			}
@@ -555,7 +555,7 @@
 		"rustic": "banded"
 	},
 	"21643750": {
-		"note": "Betlémské náměstí 2: five-storey historicist block in pinkish sandstone, arched ground floor with red awnings, restaurant U Betlémské kaple (Street View 2023)",
+		"note": "Betlémské náměstí 2: five-storey historicist block in pinkish sandstone, arched ground floor with red frames under white awnings, restaurant U Betlémské kaple (Street View 2023–24)",
 		"signs": false,
 		"colour": "#dcb996",
 		"trim": "#ead7bf",
@@ -564,10 +564,10 @@
 		"rustic": "banded",
 		"edges": {
 			"0": {
-				"awning": "#b3322c"
+				"awning": "#f1efe8"
 			},
 			"11": {
-				"awning": "#b3322c"
+				"awning": "#f1efe8"
 			}
 		}
 	},

@@ -78,7 +78,7 @@ export function dressSquare( { places, frontFacing, frame, S, L, sign, yAtLocal,
 	const fragner = front( - 16, 45, - 30, 52 );
 	if ( fragner ) dress.push( { kind: 'board', ...on( fragner, 0.5, 2.7 ), w: 2.2, h: 0.62, text: 'GALERIE JAROSLAVA FRAGNERA', sub: 'Klub Betlémská', bg: '#111111', ink: '#f4f4f0', font: '"Helvetica Neue", Arial, sans-serif', weight: '600', spacing: 4, frame: 'none' } );
 
-	// --- U Betlémské kaple (no. 2): the restaurant's name and red awnings over the arched ground floor.
+	// --- U Betlémské kaple (no. 2): the restaurant's name and white awnings over the arched ground floor.
 	const no2 = front( - 88, 47, - 80, 58 );
 	if ( no2 ) {
 
@@ -86,7 +86,7 @@ export function dressSquare( { places, frontFacing, frame, S, L, sign, yAtLocal,
 		for ( const t of [ 0.2, 0.4, 0.6, 0.8 ] ) {
 
 			const p = on( no2, t, 2.9 );
-			places.awnings.push( [ p.x, p.y, p.z, + Math.atan2( p.n[ 0 ], p.n[ 1 ] ).toFixed( 3 ), + Math.min( 2.6, no2.len * 0.16 ).toFixed( 2 ), '#b3322c' ] );
+			places.awnings.push( [ p.x, p.y, p.z, + Math.atan2( p.n[ 0 ], p.n[ 1 ] ).toFixed( 3 ), + Math.min( 2.6, no2.len * 0.16 ).toFixed( 2 ), '#f1efe8' ] );
 
 		}
 

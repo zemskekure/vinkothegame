@@ -425,11 +425,47 @@ function addPlates( scene, plates ) {
 
 }
 
+// Garden walls (tools/walls.mjs): plastered, with a thin tiled coping; barred gates with iron bars between stone
+// jambs; open gateways leave a gap with an arch-less lintel.
+function addWalls( scene, walls ) {
+
+	const kit = new Kit(), mats = new Map();
+	const mat = c => mats.get( c ) || mats.set( c, plain( c, { roughness: 0.95 } ) ).get( c );
+	const coping = plain( 0x8d4a35, { roughness: 0.8 } );
+	for ( const w of walls ) {
+
+		const len = Math.hypot( w.x1 - w.x0, w.z1 - w.z0 ), rot = Math.atan2( w.x1 - w.x0, w.z1 - w.z0 );
+		const mx = ( w.x0 + w.x1 ) / 2, mz = ( w.z0 + w.z1 ) / 2;
+		const place = geo => geo.rotateY( rot ).translate( mx, w.y, mz );
+		if ( w.kind === 'wall' ) {
+
+			kit.add( mat( w.colour ), place( box( 0.4, w.h + 0.6, len + 0.02, 0, - 0.6, 0 ) ) );
+			kit.add( coping, place( box( 0.5, 0.08, len + 0.04, 0, w.h, 0 ) ) );
+
+		} else {
+
+			for ( const e of [ - 1, 1 ] ) kit.add( mat( w.colour ), place( box( 0.45, w.h + 0.2, 0.25, 0, - 0.2, e * ( len / 2 + 0.05 ) ) ) );
+			if ( w.kind === 'barred' ) {
+
+				for ( let z = - len / 2 + 0.1; z <= len / 2 - 0.09; z += 0.12 ) kit.add( M.iron, place( box( 0.03, w.h - 0.3, 0.03, 0, 0, z ) ) );
+				for ( const y of [ 0.15, w.h - 0.4 ] ) kit.add( M.iron, place( box( 0.04, 0.05, len, 0, y, 0 ) ) );
+
+			} else kit.add( M.iron, place( box( 0.05, 0.08, len + 0.3, 0, w.h - 0.1, 0 ) ) );
+
+		}
+
+	}
+
+	kit.build( scene );
+
+}
+
 const ADD = { board: addBoard, letters: addLetters, badge: addBadge, lantern: addLantern, flags: addFlags, portal: addPortal, canopy: addCanopy, clock: addClock };
 
 export function addDress( scene, places ) {
 
 	for ( const s of places.dress || [] ) ADD[ s.kind ]?.( scene, s );
 	addPlates( scene, places.plates || [] );
+	addWalls( scene, places.walls || [] );
 
 }
