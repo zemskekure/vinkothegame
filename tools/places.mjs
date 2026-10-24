@@ -50,6 +50,38 @@ export function collectPlaces( ctx ) {
 
 	};
 
+	// The house front nearest a point that faces a given street point (outward normal towards it, open ground in
+	// front), from the footprints themselves: also fronts on passages and lanes that are not in the street data.
+	const frontFacing = ( X, Y, TX, TY, { number } = {} ) => {
+
+		let best = null;
+		for ( const b of buildings ) {
+
+			if ( ! b.kept || ( number && Number( b.number ) !== number ) ) continue;
+			if ( b.bbox[ 0 ] > X + 40 || b.bbox[ 2 ] < X - 40 || b.bbox[ 1 ] > Y + 40 || b.bbox[ 3 ] < Y - 40 ) continue;
+			const ring = b.poly.outer;
+			for ( let i = 0; i < ring.length; i ++ ) {
+
+				const [ ax, ay ] = ring[ i ], [ bx, by ] = ring[ ( i + 1 ) % ring.length ];
+				const dx = bx - ax, dy = by - ay, len = Math.hypot( dx, dy );
+				if ( len < 3 ) continue;
+				let nx = dy / len, ny = - dx / len;
+				const mx = ( ax + bx ) / 2, my = ( ay + by ) / 2;
+				if ( buildingAt( mx + nx * 0.5, my + ny * 0.5 ) === b.id ) { nx = - nx; ny = - ny; }
+				if ( inKept( mx + nx * 1.0, my + ny * 1.0 ) ) continue; // a party wall
+				if ( ( TX - mx ) * nx + ( TY - my ) * ny <= 0 ) continue; // faces away from the street
+				const t = Math.max( 0, Math.min( 1, ( ( X - ax ) * dx + ( Y - ay ) * dy ) / ( len * len ) ) );
+				const d = Math.hypot( X - ax - t * dx, Y - ay - t * dy );
+				if ( ! best || d < best.d ) best = { code: b.code, id: b.id, a: [ ax, ay ], b: [ bx, by ], n: [ nx, ny ], d, t, len, ux: dx / len, uy: dy / len };
+
+			}
+
+		}
+
+		return best;
+
+	};
+
 	// A frame on a house front at distance s (m) along it: local position, along-vector, outward normal, ground.
 	const frame = ( f, s ) => {
 
@@ -198,8 +230,8 @@ export function collectPlaces( ctx ) {
 	// --- Standard Café (Karoliny Světlé 23)
 	{
 
-		const node = nodeById( 1257276111 );
-		const f = facadeNear( node.X, node.Y );
+		// House no. 321 (Karoliny Světlé 321/23), its front on Karoliny Světlé, by the address point.
+		const f = frontFacing( ...S( - 277.5, 138.3 ), ...S( - 268, 138.3 ), { number: 321 } );
 		const s = Math.max( 3, Math.min( f.len - 3, f.t * f.len ) );
 		interior( 'Standard', 'cafe', f, s, { maxW: 7, maxD: 8 } );
 		sign( f, s, 2.95, 'STANDARD', 'cafe' );
@@ -210,8 +242,8 @@ export function collectPlaces( ctx ) {
 	// --- Champagneria (Průchodní 2): bistro tables in the gas-lit passage, festoon lights across it.
 	{
 
-		const node = nodeById( 4781897274 );
-		const f = facadeNear( node.X, node.Y );
+		// Průchodní 4: the east side of the passage, towards its Bartolomějská end.
+		const f = frontFacing( ...S( - 43.6, 138 ), ...S( - 45.5, 138 ) );
 		const s = Math.max( 3, Math.min( f.len - 3, f.t * f.len ) );
 		interior( 'Champagneria', 'champagne', f, s, { maxW: 7, maxD: 8 } );
 		sign( f, s, 2.95, 'CHAMPAGNERIA', 'champagne' );
