@@ -11,7 +11,7 @@ npm install
 npm run dev
 ```
 
-Open the printed URL (http://localhost:5173). You start on foot in front of Hostinec U Rotundy, in third person: click to steer the camera with the mouse, **WASD** to walk, **Shift** to run, the wheel
+Open the printed URL (http://localhost:5173). You start on foot on Betlémské náměstí, in third person: click to steer the camera with the mouse, **WASD** to walk, **Shift** to run, the wheel
 to zoom, **V** for first person; **M** (or the button) for the view from above (drag to orbit, scroll to zoom). The minimap (bottom left) turns with the camera and marks the places below.
 Add `?webgl` to the URL to force WebGL 2, `?overview` to start with the view from above.
 
