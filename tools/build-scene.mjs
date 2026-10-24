@@ -326,7 +326,10 @@ for ( const z of zabaged ) {
 // Geometry: clean extruded walls up to the measured eave, hipped roofs generated
 // from the footprint (constant slope from every edge, capped at the measured ridge).
 
-const WALL_STRIDE = 17; // x y z  u  wallWidth  base  top  floorH  seed  kind  r g b  bay  window  shop  style
+const WALL_STRIDE = 24; // x y z  u  wallWidth  base  top  floorH  seed  kind  r g b  bay  window  shop  style  trim r g b  ground grilles rustic graffiti
+// Ground floor kinds and rustication from data/houses.json (−1 / 0 = not described: the shader decides).
+const GROUND = { default: 0, gate: 1, blank: 2, restaurant: 3, shops: 3, windows: 4 };
+const RUSTIC = { none: 0, banded: 1, ornate: 2 };
 // r g b: measured plaster colour (sRGB, -1 when unknown); bay (m) / window (fraction of bay): measured window
 // rhythm, 0 when unknown; shop: 1 shops, 0 none, -1 unknown. See tools/facades.mjs and tools/facade-params.mjs.
 const WALL_KIND = { street: 0, rear: 2, party: 3 };
@@ -440,6 +443,85 @@ const facadeParams = await ( async () => {
 
 } )();
 
+// ---------------------------------------------------------------------------
+// Terrain (2 m grid): computed before the buildings so they stand on exactly the same ground as the streets.
+
+
+const TERRAIN_CELL = 2;
+const tw = Math.round( ( AREA.xmax - AREA.xmin ) / TERRAIN_CELL ) + 1;
+const th = Math.round( ( AREA.ymax - AREA.ymin ) / TERRAIN_CELL ) + 1;
+const terrain = new Float32Array( tw * th );
+for ( let r = 0; r < th; r ++ ) {
+
+	for ( let c = 0; c < tw; c ++ ) {
+
+		terrain[ r * tw + c ] = sample( dtm, AREA.xmin + c * TERRAIN_CELL, AREA.ymax - r * TERRAIN_CELL ) - BASE_HEIGHT;
+
+	}
+
+}
+
+// Smooth the terrain over a few metres: the survey surface is slightly noisy at street scale, and Old Town streets
+// are smooth slopes. Two passes of a 5 × 5 box blur on the 2 m grid.
+for ( let pass = 0; pass < 2; pass ++ ) {
+
+	const src = terrain.slice();
+	for ( let r = 0; r < th; r ++ ) for ( let c = 0; c < tw; c ++ ) {
+
+		let sum = 0, n = 0;
+		for ( let dr = - 2; dr <= 2; dr ++ ) for ( let dc = - 2; dc <= 2; dc ++ ) {
+
+			const rr = r + dr, cc = c + dc;
+			if ( rr < 0 || cc < 0 || rr >= th || cc >= tw ) continue;
+			sum += src[ rr * tw + cc ];
+			n ++;
+
+		}
+
+		terrain[ r * tw + c ] = sum / n;
+
+	}
+
+}
+
+// The Vltava: the terrain model interpolates across the water, so cut the river (ZABAGED water outline, islands
+// excluded) down to a bed below the water surface; the embankments become walls. Water level: the lowest
+// terrain height along the river.
+const riverRings = JSON.parse( await readFile( new URL( 'water.json', RAW ) ) ).flatMap( f => f.geometry?.rings || [] );
+const inRiver = ( X, Y ) => pointInRings( riverRings, X, Y );
+const riverMask = new Uint8Array( tw * th );
+let waterLevel = Infinity;
+for ( let r = 0; r < th; r ++ ) for ( let c = 0; c < tw; c ++ ) {
+
+	if ( ! inRiver( AREA.xmin + c * TERRAIN_CELL, AREA.ymax - r * TERRAIN_CELL ) ) continue;
+	riverMask[ r * tw + c ] = 1;
+	waterLevel = Math.min( waterLevel, terrain[ r * tw + c ] );
+
+}
+
+const riverAt = ( X, Y ) => riverMask[ Math.round( ( AREA.ymax - Y ) / TERRAIN_CELL ) * tw + Math.round( ( X - AREA.xmin ) / TERRAIN_CELL ) ] === 1;
+
+if ( ! Number.isFinite( waterLevel ) ) waterLevel = terrain.reduce( ( m, v ) => Math.min( m, v ), Infinity );
+waterLevel += 0.1;
+for ( let r = 0; r < th; r ++ ) for ( let c = 0; c < tw; c ++ ) {
+
+	if ( riverMask[ r * tw + c ] ) terrain[ r * tw + c ] = waterLevel - 2.5;
+
+}
+
+console.log( `river: water level ${( waterLevel + BASE_HEIGHT ).toFixed( 2 )} m` );
+
+// Street-level ground height in the scene frame: the same 2 m grid the terrain mesh is built from.
+function terrainAt( X, Y ) {
+
+	const fx = Math.min( Math.max( ( X - AREA.xmin ) / TERRAIN_CELL, 0 ), tw - 1.001 );
+	const fy = Math.min( Math.max( ( AREA.ymax - Y ) / TERRAIN_CELL, 0 ), th - 1.001 );
+	const x0 = Math.floor( fx ), y0 = Math.floor( fy ), tx = fx - x0, ty = fy - y0;
+	const i = y0 * tw + x0;
+	return ( terrain[ i ] * ( 1 - tx ) + terrain[ i + 1 ] * tx ) * ( 1 - ty ) + ( terrain[ i + tw ] * ( 1 - tx ) + terrain[ i + tw + 1 ] * tx ) * ty;
+
+}
+
 // Which landmark (if any) a point lies in, from the OSM outlines.
 const landmarkAt = await ( async () => {
 
@@ -454,6 +536,13 @@ const landmarkAt = await ( async () => {
 
 } )();
 const landmarkStatues = [];
+
+
+// Hand-written house descriptions read from street photos (data/houses.json), and the street decorations they
+// ask for: awnings, wall lanterns, hanging banners.
+const HOUSES = JSON.parse( await readFile( new URL( '../data/houses.json', import.meta.url ) ) );
+const srgb = hex => [ 1, 3, 5 ].map( i => parseInt( hex.slice( i, i + 2 ), 16 ) / 255 );
+const decor = { awnings: [], lanterns: [], banners: [] };
 
 // Real shopfronts: every named shop / café / restaurant… in OSM is pinned to the nearest building wall,
 // whose ground floor then becomes a shop front, with a name board above it (placed after the geometry pass).
@@ -492,6 +581,7 @@ const pendingSigns = [];
 		}
 
 		if ( ! best || best.score > 14 ) continue;
+		if ( HOUSES[ best.b.code ] ) continue; // described from photos: only what was seen there (data/houses.json)
 		shopEdges.add( `${best.b.code}_${best.i}` );
 		pendingSigns.push( { ...best, name: t.name, kind: t.shop ? 'shop' : t.amenity || t.tourism } );
 
@@ -540,7 +630,7 @@ for ( const b of buildings ) {
 	const rings = [ b.poly.outer, ...b.poly.holes ];
 
 	let ground = Infinity;
-	for ( const ring of rings ) for ( const [ X, Y ] of ring ) ground = Math.min( ground, sample( dtm, X, Y ) );
+	for ( const ring of rings ) for ( const [ X, Y ] of ring ) ground = Math.min( ground, terrainAt( X, Y ) + BASE_HEIGHT );
 
 	const edges = rings.map( ring => densify( ring, EDGE_STEP ).map( ( [ X, Y, edge, along, edgeLen ], i, arr ) => {
 
@@ -585,7 +675,8 @@ for ( const b of buildings ) {
 	const maxDepth = interior.reduce( ( m, p ) => Math.max( m, p.d ), 0 );
 	const roofRise = flat ? 0 : Math.min( rise, maxDepth * ROOF_SLOPE, 22 );
 
-	const floors = b.floors > 0 ? b.floors : Math.max( 1, Math.round( eave / 3.4 ) );
+	const house = HOUSES[ b.code ];
+	const floors = house?.floors ?? ( b.floors > 0 ? b.floors : Math.max( 1, Math.round( eave / 3.4 ) ) );
 	const floorH = Math.min( 5.5, Math.max( 2.7, eave / floors ) );
 	const seed = hash01( b.code | 0 );
 	const measured = facadeParams.forBuilding( b.code );
@@ -702,8 +793,8 @@ for ( const b of buildings ) {
 
 			}
 
-			const A0 = toLocal( a.X, a.Y, sample( dtm, a.X, a.Y ) - 1.0 ), A1 = toLocal( a.X, a.Y, roofAt( a.X, a.Y ) );
-			const C0 = toLocal( c.X, c.Y, sample( dtm, c.X, c.Y ) - 1.0 ), C1 = toLocal( c.X, c.Y, roofAt( c.X, c.Y ) );
+			const A0 = toLocal( a.X, a.Y, terrainAt( a.X, a.Y ) + BASE_HEIGHT - 1.0 ), A1 = toLocal( a.X, a.Y, roofAt( a.X, a.Y ) );
+			const C0 = toLocal( c.X, c.Y, terrainAt( c.X, c.Y ) + BASE_HEIGHT - 1.0 ), C1 = toLocal( c.X, c.Y, roofAt( c.X, c.Y ) );
 
 			// Scene frame: outward normal n = (nx, -ny); reading direction t = (n.z, -n.x).
 			const ex = C0[ 0 ] - A0[ 0 ], ez = C0[ 2 ] - A0[ 2 ];
@@ -714,10 +805,14 @@ for ( const b of buildings ) {
 			const uA = readsAtoC ? sA : a.edgeLen - sA, uC = readsAtoC ? sC : a.edgeLen - sC;
 
 			const wallParams = ringIndex === 0 ? facadeParams.forWall( b.code, a.edge ) : null;
-			const [ cr, cg, cb ] = measured.colour || [ - 1, - 1, - 1 ];
+			const [ cr, cg, cb ] = house?.colour ? srgb( house.colour ) : measured.colour || [ - 1, - 1, - 1 ];
+			const [ tr, tg, tb ] = house?.trim ? srgb( house.trim ) : [ - 1, - 1, - 1 ];
+			const houseGround = GROUND[ house?.ground ] ?? 0, grilles = house?.grilles ? 1 : 0;
+			const rustic = house?.rustic ? RUSTIC[ house.rustic ] : - 1, graffiti = house?.graffiti ? 1 : 0;
 			const bay = wallParams?.bay || 0, win = wallParams?.window || 0;
-			const shop = ringIndex === 0 && shopEdges.has( `${b.code}_${a.edge}` ) ? 1 : wallParams ? ( wallParams.shop ? 1 : 0 ) : - 1;
-			const v = ( P, uu ) => wallData.push( P[ 0 ], P[ 1 ], P[ 2 ], uu, a.edgeLen, ground - BASE_HEIGHT, eaveY - BASE_HEIGHT, floorH, seed, kind, cr, cg, cb, bay, win, shop, style );
+			let shop = ringIndex === 0 && shopEdges.has( `${b.code}_${a.edge}` ) ? 1 : wallParams ? ( wallParams.shop ? 1 : 0 ) : - 1;
+			if ( house?.ground ) shop = house.ground === 'restaurant' || house.ground === 'shops' ? 1 : 0;
+			const v = ( P, uu ) => wallData.push( P[ 0 ], P[ 1 ], P[ 2 ], uu, a.edgeLen, ground - BASE_HEIGHT, eaveY - BASE_HEIGHT, floorH, seed, kind, cr, cg, cb, bay, win, shop, style, tr, tg, tb, houseGround, grilles, rustic, graffiti );
 			// Four corners per quad, two indexed triangles facing outwards.
 			const q = wallData.length / WALL_STRIDE;
 			v( A0, uA ); v( C0, uC ); v( C1, uC ); v( A1, uA );
@@ -749,6 +844,24 @@ for ( const b of buildings ) {
 			if ( streetDistance( mx + nx * 3, my + ny * 3 ) >= 9 ) continue;
 			streetFacades.push( { code: b.code, edge: i, a: [ ax, ay ], b: [ bx, by ], n: [ nx, ny ], ground, eave: eaveY, floors } );
 
+			// Decorations this facade has in its house description.
+			const extra = house?.edges?.[ i ];
+			if ( extra ) {
+
+				const rot = + Math.atan2( nx, - ny ).toFixed( 3 ); // faces outwards (scene frame)
+				const at = ( t, out, h ) => {
+
+					const [ x, y, z ] = toLocal( ax + ( bx - ax ) * t + nx * out, ay + ( by - ay ) * t + ny * out, ground + h );
+					return [ + x.toFixed( 2 ), + y.toFixed( 2 ), + z.toFixed( 2 ) ];
+
+				};
+
+				if ( extra.awning ) decor.awnings.push( [ ...at( 0.5, 0, Math.min( 3.0, floorH * 0.9 ) ), rot, + ( len * 0.8 ).toFixed( 2 ), extra.awning ] );
+				if ( extra.lanterns ) for ( let d = 4; d < len - 2; d += 9 ) decor.lanterns.push( [ ...at( d / len, 0, Math.min( 3.6, floorH * 1.05 ) ), rot ] );
+				if ( extra.banner ) decor.banners.push( [ ...at( Math.min( 0.9, 1.5 / len ), 0, Math.min( floorH * 1.6, 6 ) ), rot, extra.banner.text, extra.banner.board, extra.banner.ink ] );
+
+			}
+
 		}
 
 	}
@@ -756,7 +869,7 @@ for ( const b of buildings ) {
 	b.kept = true;
 	buildingInfo.set( b.code, { ground, floorH, eaveY } );
 	const [ lx, , lz ] = toLocal( ( x0 + x1 ) / 2, ( y0 + y1 ) / 2, 0 );
-	meta.push( { id: b.id, x: + lx.toFixed( 1 ), z: + lz.toFixed( 1 ), eave: + eave.toFixed( 1 ), rise: + roofRise.toFixed( 1 ), floors, name: b.name } );
+	meta.push( { id: b.id, code: b.code, area: + Math.abs( signedArea( b.poly.outer ) ).toFixed( 0 ), x: + lx.toFixed( 1 ), z: + lz.toFixed( 1 ), eave: + eave.toFixed( 1 ), rise: + roofRise.toFixed( 1 ), floors, name: b.name } );
 
 }
 
@@ -764,71 +877,7 @@ console.log( `buildings: ${meta.length} (skipped ${skipped}, fallback triangulat
 console.log( `roof vertices: ${roofData.length / ROOF_STRIDE}, roof triangles: ${roofIdx.length / 3}, wall vertices: ${wallData.length / WALL_STRIDE}` );
 
 // ---------------------------------------------------------------------------
-// Terrain (2 m grid) and trees
-
-const TERRAIN_CELL = 2;
-const tw = Math.round( ( AREA.xmax - AREA.xmin ) / TERRAIN_CELL ) + 1;
-const th = Math.round( ( AREA.ymax - AREA.ymin ) / TERRAIN_CELL ) + 1;
-const terrain = new Float32Array( tw * th );
-for ( let r = 0; r < th; r ++ ) {
-
-	for ( let c = 0; c < tw; c ++ ) {
-
-		terrain[ r * tw + c ] = sample( dtm, AREA.xmin + c * TERRAIN_CELL, AREA.ymax - r * TERRAIN_CELL ) - BASE_HEIGHT;
-
-	}
-
-}
-
-// Smooth the terrain over a few metres: the survey surface is slightly noisy at street scale, and Old Town streets
-// are smooth slopes. Two passes of a 5 × 5 box blur on the 2 m grid.
-for ( let pass = 0; pass < 2; pass ++ ) {
-
-	const src = terrain.slice();
-	for ( let r = 0; r < th; r ++ ) for ( let c = 0; c < tw; c ++ ) {
-
-		let sum = 0, n = 0;
-		for ( let dr = - 2; dr <= 2; dr ++ ) for ( let dc = - 2; dc <= 2; dc ++ ) {
-
-			const rr = r + dr, cc = c + dc;
-			if ( rr < 0 || cc < 0 || rr >= th || cc >= tw ) continue;
-			sum += src[ rr * tw + cc ];
-			n ++;
-
-		}
-
-		terrain[ r * tw + c ] = sum / n;
-
-	}
-
-}
-
-// The Vltava: the terrain model interpolates across the water, so cut the river (ZABAGED water outline, islands
-// excluded) down to a bed below the water surface; the embankments become walls. Water level: the lowest
-// terrain height along the river.
-const riverRings = JSON.parse( await readFile( new URL( 'water.json', RAW ) ) ).flatMap( f => f.geometry?.rings || [] );
-const inRiver = ( X, Y ) => pointInRings( riverRings, X, Y );
-const riverMask = new Uint8Array( tw * th );
-let waterLevel = Infinity;
-for ( let r = 0; r < th; r ++ ) for ( let c = 0; c < tw; c ++ ) {
-
-	if ( ! inRiver( AREA.xmin + c * TERRAIN_CELL, AREA.ymax - r * TERRAIN_CELL ) ) continue;
-	riverMask[ r * tw + c ] = 1;
-	waterLevel = Math.min( waterLevel, terrain[ r * tw + c ] );
-
-}
-
-const riverAt = ( X, Y ) => riverMask[ Math.round( ( AREA.ymax - Y ) / TERRAIN_CELL ) * tw + Math.round( ( X - AREA.xmin ) / TERRAIN_CELL ) ] === 1;
-
-if ( ! Number.isFinite( waterLevel ) ) waterLevel = terrain.reduce( ( m, v ) => Math.min( m, v ), Infinity );
-waterLevel += 0.1;
-for ( let r = 0; r < th; r ++ ) for ( let c = 0; c < tw; c ++ ) {
-
-	if ( riverMask[ r * tw + c ] ) terrain[ r * tw + c ] = waterLevel - 2.5;
-
-}
-
-console.log( `river: water level ${( waterLevel + BASE_HEIGHT ).toFixed( 2 )} m` );
+// Trees
 
 // Canopy peaks only count as trees where the aerial photo is green (not a boat or a sculpture).
 function isGreen( X, Y ) {
@@ -1130,16 +1179,6 @@ for ( let r = 0; r < sh; r ++ ) {
 // ---------------------------------------------------------------------------
 // Raised pavements and street furniture
 
-// Street-level ground height in the scene frame: the same 2 m grid the terrain mesh is built from.
-function terrainAt( X, Y ) {
-
-	const fx = Math.min( Math.max( ( X - AREA.xmin ) / TERRAIN_CELL, 0 ), tw - 1.001 );
-	const fy = Math.min( Math.max( ( AREA.ymax - Y ) / TERRAIN_CELL, 0 ), th - 1.001 );
-	const x0 = Math.floor( fx ), y0 = Math.floor( fy ), tx = fx - x0, ty = fy - y0;
-	const i = y0 * tw + x0;
-	return ( terrain[ i ] * ( 1 - tx ) + terrain[ i + 1 ] * tx ) * ( 1 - ty ) + ( terrain[ i + tw ] * ( 1 - tx ) + terrain[ i + tw + 1 ] * tx ) * ty;
-
-}
 
 const inKeptBuilding = ( X, Y ) => keptIds.has( buildingAt( X, Y ) );
 const pavement = buildPavementMesh( streetData, { AREA, toLocal, heightAt: terrainAt, inBuilding: inKeptBuilding } );
@@ -1230,6 +1269,7 @@ await writeFile( new URL( 'scene.json', OUT ), JSON.stringify( {
 	furniture,
 	signs,
 	kerbHeight: streetData.KERB_HEIGHT,
+	decor,
 	streets
 } ) );
 

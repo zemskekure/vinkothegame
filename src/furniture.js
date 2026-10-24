@@ -3,7 +3,7 @@
 
 import * as THREE from 'three/webgpu';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { color, positionWorld, mix, float } from 'three/tsl';
+import { color, positionWorld, mix, float, vec2, floor, fract, abs, smoothstep } from 'three/tsl';
 import { noise2D } from './shading/common.js';
 
 const iron = new THREE.MeshStandardNodeMaterial( { color: 0x262b28, metalness: 0.6, roughness: 0.45 } );
@@ -18,6 +18,18 @@ leaves.colorNode = mix( color( 0x3e5a24 ), color( 0x5f7d32 ), noise2D( positionW
 
 const cyl = ( r0, r1, h, y, seg = 12 ) => new THREE.CylinderGeometry( r0, r1, h, seg ).translate( 0, y + h / 2, 0 );
 const box = ( w, h, d, x, y, z ) => new THREE.BoxGeometry( w, h, d ).translate( x, y + h / 2, z );
+
+// Brick for the factory chimneys: running-bond courses with a light mortar.
+const brick = new THREE.MeshStandardNodeMaterial( { roughness: 0.9 } );
+{
+
+	const row = positionWorld.y.div( 0.075 );
+	const around = positionWorld.x.add( positionWorld.z ).div( 0.25 ); // brick length along the circumference
+	const mortar = smoothstep( 0.42, 0.5, abs( fract( row ).sub( 0.5 ) ) ).max( smoothstep( 0.44, 0.5, abs( fract( around.add( floor( row ).mul( 0.5 ) ) ).sub( 0.5 ) ) ) );
+	const tone = mix( color( 0x8c4a34 ), color( 0xa25a3e ), noise2D( vec2( floor( around ), floor( row ) ).mul( 0.7 ) ) );
+	brick.colorNode = mix( tone, color( 0x9a9286 ), mortar.mul( 0.6 ) ).mul( mix( float( 0.75 ), float( 1 ), smoothstep( 0, 8, positionWorld.y ) ) );
+
+}
 
 // Each model: a list of [ geometry, material ] parts, merged per material.
 const MODELS = {
@@ -43,6 +55,9 @@ const MODELS = {
 			box( 0.05, 0.45, 0.05, - 0.75, 0.44, 0.24 ), box( 0.05, 0.45, 0.05, 0.75, 0.44, 0.24 )
 		] ), iron ]
 	],
+
+	// Free-standing brick chimney, tapering, with a corbelled collar near the top; scaled to its height.
+	chimney: [ [ mergeGeometries( [ cyl( 0.03, 0.045, 1, 0, 24 ), cyl( 0.036, 0.036, 0.015, 0.94, 24 ), cyl( 0.04, 0.04, 0.01, 0.955, 24 ) ] ), brick ] ],
 
 	bin: [ [ mergeGeometries( [ cyl( 0.2, 0.18, 0.85, 0, 14 ), cyl( 0.22, 0.22, 0.06, 0.85, 14 ) ] ), new THREE.MeshStandardNodeMaterial( { color: 0x2c3a31, roughness: 0.6, metalness: 0.3 } ) ] ],
 
@@ -87,6 +102,9 @@ export function addFurniture( scene, furniture ) {
 	const q = new THREE.Quaternion(), p = new THREE.Vector3(), s = new THREE.Vector3( 1, 1, 1 );
 	const up = new THREE.Vector3( 0, 1, 0 );
 	const place = ( [ x, y, z, rot ], m ) => m.compose( p.set( x, y, z ), q.setFromAxisAngle( up, rot ), s.set( 1, 1, 1 ) );
+
+	// Chimneys: [ x, y, z, rot, height ], the unit model scaled uniformly to the height.
+	instance( scene, 'chimney', MODELS.chimney, furniture.chimney || [], ( [ x, y, z, , h ], m ) => m.compose( p.set( x, y - 0.5, z ), q.identity(), s.set( h, h, h ) ) );
 
 	for ( const type of [ 'lamp', 'bench', 'bin', 'bollard', 'fountain', 'statue' ] ) {
 

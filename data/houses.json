@@ -1,0 +1,55 @@
+{
+	"_about": "Hand-written descriptions of individual houses, read from street-level photos (tools/facade-views.mjs → data/raw/views/house-<code>_<edge>.jpg). Keyed by RÚIAN building code. Colours are sRGB. ground: shops | restaurant | windows | gate | blank. rustic: none | banded | ornate. edges: per-facade extras by footprint edge index (awning, banner, lanterns).",
+
+	"21643768": {
+		"note": "Náprstkova: long white two-storey house with dormers and an orange tile roof, barred ground-floor windows, wall lanterns",
+		"colour": "#ece6d8", "trim": "#f6f2e9", "floors": 2, "ground": "windows", "grilles": true, "rustic": "none",
+		"edges": { "30": { "lanterns": true }, "32": { "lanterns": true }, "34": { "lanterns": true } }
+	},
+	"21643954": {
+		"note": "Náprstkova: cream historicist house with a rusticated white ground floor, dark wooden glazed doors, restaurant with a pink awning, vertical black HOTEL banner",
+		"colour": "#e8e0cf", "trim": "#f3eee3", "ground": "restaurant", "rustic": "banded",
+		"edges": {
+			"7": { "banner": { "text": "HOTEL", "board": "#141414", "ink": "#f2f2f2" } },
+			"9": { "lanterns": true },
+			"10": { "awning": "#b8475f" },
+			"12": { "awning": "#b8475f" }
+		}
+	},
+	"21643369": {
+		"note": "Náprstkova: white classicist front with large windows in plain surrounds and wall lanterns; ornate dark-green door next door",
+		"colour": "#efebe2", "trim": "#f7f4ee", "ground": "windows", "rustic": "none",
+		"edges": { "15": { "lanterns": true } }
+	},
+	"21643962": {
+		"note": "Náprstkova: pale pinkish-grey house, blank lower wall with a large graffiti mural, dark green door",
+		"colour": "#e2dad3", "trim": "#ece6df", "ground": "blank", "graffiti": true, "rustic": "none"
+	},
+	"21643971": {
+		"note": "Náprstkova: white wall with a big graffiti mural (swimmers) at the corner, framed street-art panel",
+		"colour": "#ebe7df", "trim": "#f2efe8", "ground": "blank", "graffiti": true, "rustic": "none"
+	},
+	"21643393": {
+		"note": "Náprstkova: cream house with a restaurant, red awning, menu box, potted plants",
+		"colour": "#eadfc8", "trim": "#f3ebda", "ground": "restaurant", "rustic": "banded",
+		"edges": { "10": { "awning": "#a8323f" } }
+	},
+	"21643831": {
+		"note": "Betlémská: pale green-grey house with a big arched wooden gate in a stone surround, barred windows",
+		"colour": "#c9d1c0", "trim": "#dfe3d6", "ground": "gate", "grilles": true, "rustic": "none"
+	},
+	"21644063": {
+		"note": "Betlémská: neo-renaissance house with dense brown stucco ornament, grey stone base covered in graffiti",
+		"colour": "#8f6c52", "trim": "#a7856a", "ground": "blank", "graffiti": true, "rustic": "ornate"
+	},
+	"21643822": {
+		"note": "Betlémské náměstí: pale green house with a café terrace under white awnings",
+		"colour": "#c6d2bf", "trim": "#e3e8dc", "ground": "restaurant", "rustic": "none",
+		"edges": { "0": { "awning": "#f1efe8" }, "1": { "awning": "#f1efe8" } }
+	},
+	"21643903": {
+		"note": "Betlémské náměstí: low house with the restaurant terrace and white awnings",
+		"colour": "#ece5d6", "trim": "#f4efe6", "ground": "restaurant", "rustic": "none",
+		"edges": { "19": { "awning": "#f1efe8" } }
+	}
+}

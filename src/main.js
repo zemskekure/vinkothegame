@@ -6,6 +6,7 @@ import { createRoofMaterial, createGroundMaterial, createWaterMaterial } from '.
 import { Walker } from './walker.js';
 import { addFurniture } from './furniture.js';
 import { addSigns } from './signs.js';
+import { addDecor } from './decor.js';
 
 async function load( name, type = 'arrayBuffer' ) {
 
@@ -145,7 +146,7 @@ function groundHeight( x, z ) {
 	const col = Math.min( S.width - 1, Math.max( 0, Math.floor( ( x - bounds.minX ) / S.cell ) ) );
 	const row = Math.min( S.height - 1, Math.max( 0, Math.floor( ( z - bounds.minZ ) / S.cell ) ) );
 	const Fk = ( 128 - surface2[ ( row * S.width + col ) * 4 + 2 ] ) / 25;
-	const raise = Fk <= 0 ? 0 : Fk < 6 ? data.kerbHeight : Fk < 8.5 ? data.kerbHeight * ( 8.5 - Fk ) / 2.5 : 0;
+	const raise = Fk > 0 && Fk < 8.5 ? data.kerbHeight : 0;
 	return terrainHeight( x, z ) + raise;
 
 }
@@ -191,7 +192,7 @@ const ws = data.wallStride;
 const wallGeo = new THREE.BufferGeometry();
 const wib = new THREE.InterleavedBuffer( walls, ws );
 // Packed into vec4s: WebGPU allows at most 16 values passed from vertex to fragment shader.
-[ [ 'position', 3, 0 ], [ 'wallA', 4, 3 ], [ 'wallB', 4, 7 ], [ 'wallC', 4, 13 ] ].forEach( ( [ name, size, offset ] ) => {
+[ [ 'position', 3, 0 ], [ 'wallA', 4, 3 ], [ 'wallB', 4, 7 ], [ 'wallC', 4, 13 ], [ 'trimColour', 3, 17 ], [ 'house', 4, 20 ] ].forEach( ( [ name, size, offset ] ) => {
 
 	wallGeo.setAttribute( name, new THREE.InterleavedBufferAttribute( wib, size, offset ) );
 
@@ -225,6 +226,7 @@ scene.add( wallMesh );
 
 addFurniture( scene, data.furniture );
 addSigns( scene, data.signs || [], renderer );
+addDecor( scene, data.decor );
 
 // ---------------------------------------------------------------------------
 // Controls: orbit (overview) and walking at street level

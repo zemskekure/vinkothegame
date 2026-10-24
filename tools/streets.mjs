@@ -10,8 +10,8 @@
 import { readFile } from 'node:fs/promises';
 import { lonLatToSJTSK } from './geo.mjs';
 
-const KERB_HEIGHT = 0.14;
-const RAMP_START = 6, RAMP_END = 8.5; // pavements blend down to the street level this far from the kerb
+const KERB_HEIGHT = 0.12;
+const RAMP_END = 8.5; // the pavement mesh covers the kerb field up to here
 const CAR_ROADS = new Set( [ 'primary', 'secondary', 'tertiary', 'unclassified', 'residential', 'living_street', 'service',
 	'primary_link', 'secondary_link', 'tertiary_link' ] );
 const OPEN_WAYS = new Set( [ 'pedestrian', 'footway', 'living_street', 'path', 'steps', 'service', 'residential' ] );
@@ -47,12 +47,18 @@ export async function loadStreets( { AREA, buildingDist } ) {
 		const lanes = Number( t.lanes ) || ( t.highway === 'service' ? 1 : t.oneway === 'yes' ? 1 : 2 );
 		const tagged = parseFloat( t.width );
 		let width = tagged > 0 ? tagged : t.highway === 'service' ? 3.2 : lanes * 3.0 + ( lanes === 1 ? 0.6 : 0 );
-		const side = t.sidewalk || t[ 'sidewalk:both' ] || t[ 'sidewalk:left' ] || t[ 'sidewalk:right' ] || '';
-		const kerbed = t.highway !== 'pedestrian' && /both|left|right|yes|separate/.test( side + ( t[ 'sidewalk:right' ] || '' ) );
+		// Pavement on each side of the way (OSM sidewalk / sidewalk:left / sidewalk:right / sidewalk:both).
+		const has = v => v !== undefined && v !== 'no' && v !== 'none';
+		const sideTag = which => t[ `sidewalk:${which}` ] ?? t[ 'sidewalk:both' ] ??
+			( t.sidewalk === undefined ? undefined : /both|yes|separate/.test( t.sidewalk ) || t.sidewalk === which ? 'yes' : 'no' );
+		const left = t.highway !== 'pedestrian' && has( sideTag( 'left' ) );
+		const right = t.highway !== 'pedestrian' && has( sideTag( 'right' ) );
+		const kerbed = left || right;
 
 		// Keep at least a narrow pavement between the carriageway and the houses.
 		const half = w.pts.map( p => Math.max( 1.3, Math.min( width / 2, buildingDist( p.X, p.Y ) - ( kerbed ? 1.0 : 0.3 ) ) ) );
-		roads.push( { pts: w.pts, half, kerbed, asphalt: surfaceValue( t.surface ), name: t.name, highway: t.highway } );
+		const sidewalkWidth = parseFloat( t[ 'sidewalk:width' ] || t[ 'sidewalk:both:width' ] ) || 1.8;
+		roads.push( { pts: w.pts, half, kerbed, left, right, sidewalkWidth, asphalt: surfaceValue( t.surface ), name: t.name, highway: t.highway } );
 
 	}
 
@@ -87,9 +93,10 @@ export async function loadStreets( { AREA, buildingDist } ) {
 		} );
 
 		// Nearest segment by (distance − half width): returns { f, seg, t }.
-		return ( X, Y ) => {
+		// accept( item, isLeft ): optional filter by the side of the way the point lies on.
+		return ( X, Y, accept ) => {
 
-			let best = { f: Infinity, seg: null, t: 0, d: Infinity };
+			let best = { f: Infinity, seg: null, t: 0, d: Infinity, left: false };
 			const list2 = grid.get( Math.floor( X / CELL ) * 100000 + Math.floor( Y / CELL ) );
 			if ( ! list2 ) return best;
 			for ( const seg of list2 ) {
@@ -98,7 +105,9 @@ export async function loadStreets( { AREA, buildingDist } ) {
 				const t = Math.max( 0, Math.min( 1, ( ( X - seg.a.X ) * dx + ( Y - seg.a.Y ) * dy ) / ( dx * dx + dy * dy || 1 ) ) );
 				const d = Math.hypot( X - seg.a.X - t * dx, Y - seg.a.Y - t * dy );
 				const f = d - ( seg.ha + ( seg.hb - seg.ha ) * t );
-				if ( f < best.f ) best = { f, seg, t, d };
+				const isLeft = dx * ( Y - seg.a.Y ) - dy * ( X - seg.a.X ) > 0;
+				if ( accept && ! accept( list[ seg.item ], isLeft ) ) continue;
+				if ( f < best.f ) best = { f, seg, t, d, left: isLeft };
 
 			}
 
@@ -109,7 +118,6 @@ export async function loadStreets( { AREA, buildingDist } ) {
 	}
 
 	const nearestRoad = segmentIndex( roads, ( r, i ) => r.half[ i ] );
-	const nearestKerbed = segmentIndex( roads.filter( r => r.kerbed ), ( r, i ) => r.half[ i ] );
 	const nearestOpen = segmentIndex( openWays, () => 0 );
 
 	// Field values at a point: F = signed distance to any carriageway edge (< 0 on the road),
@@ -117,18 +125,44 @@ export async function loadStreets( { AREA, buildingDist } ) {
 	function at( X, Y ) {
 
 		const r = nearestRoad( X, Y );
-		const k = nearestKerbed( X, Y );
 		const o = nearestOpen( X, Y );
+		let F = r.f, Fk = 100; // Fk 100: no kerbed pavement anywhere near
+
+		// Streets with kerbs: in the Old Town the pavements hug the house walls, so the kerb line runs at the
+		// pavement's width from the wall (tagged, or a typical 1.8 m, at most 30 % of the street's width) on
+		// each side that has one; a side without a pavement is carriageway right up to the houses.
+		if ( r.seg && r.d < 14 ) {
+
+			const road = roads[ r.seg.item ];
+			if ( road.kerbed ) {
+
+				if ( r.left ? road.left : road.right ) {
+
+					const cx = r.seg.a.X + ( r.seg.b.X - r.seg.a.X ) * r.t, cy = r.seg.a.Y + ( r.seg.b.Y - r.seg.a.Y ) * r.t;
+					const width = Math.min( road.sidewalkWidth, 0.6 * buildingDist( cx, cy ) );
+					Fk = width - buildingDist( X, Y );
+					F = Fk;
+
+				} else {
+
+					F = - 0.5;
+
+				}
+
+			}
+
+		}
+
 		return {
-			F: r.f,
-			Fk: k.f,
+			F,
+			Fk,
 			roadAsphalt: r.seg ? roads[ r.seg.item ].asphalt : 0,
 			openSurface: o.seg && o.d < 15 ? surfaceValue( openWays[ o.seg.item ].tags.surface ) : 0
 		};
 
 	}
 
-	const raise = Fk => Fk <= 0 ? 0 : Fk < RAMP_START ? KERB_HEIGHT : Fk < RAMP_END ? KERB_HEIGHT * ( RAMP_END - Fk ) / ( RAMP_END - RAMP_START ) : 0;
+	const raise = Fk => Fk > 0 && Fk < RAMP_END ? KERB_HEIGHT : 0;
 
 	return { roads, nodes, ways, at, raise, nearestRoad, inArea, KERB_HEIGHT, RAMP_END };
 
@@ -246,7 +280,7 @@ export function buildPavementMesh( streets, { AREA, toLocal, heightAt, inBuildin
  */
 export function collectFurniture( streets, { toLocal, heightAt, dsmTrees, treeHeightAt } ) {
 
-	const out = { lamp: [], bench: [], bin: [], bollard: [], bikestand: [], fountain: [], statue: [], shelter: [], tree: [], zebra: [] };
+	const out = { lamp: [], bench: [], bin: [], bollard: [], bikestand: [], fountain: [], statue: [], shelter: [], tree: [], zebra: [], chimney: [] };
 	const along = ( X, Y ) => {
 
 		const r = streets.nearestRoad( X, Y );
@@ -277,6 +311,7 @@ export function collectFurniture( streets, { toLocal, heightAt, dsmTrees, treeHe
 		else if ( t.tourism === 'artwork' && ( t.artwork_type === 'statue' || t.artwork_type === 'sculpture' ) || t.historic === 'memorial' && t.memorial === 'statue' || t.historic === 'monument' ) put( 'statue', n.X, n.Y, along( n.X, n.Y ) );
 		else if ( t.public_transport === 'platform' && t.shelter === 'yes' ) put( 'shelter', n.X, n.Y, along( n.X, n.Y ) );
 		else if ( t.natural === 'tree' ) put( 'tree', n.X, n.Y, 0, treeHeightAt( n.X, n.Y ) );
+		else if ( t.man_made === 'chimney' ) put( 'chimney', n.X, n.Y, 0, parseFloat( t.height ) || 30 );
 
 	}
 

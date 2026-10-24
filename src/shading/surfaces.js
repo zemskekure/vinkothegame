@@ -102,35 +102,40 @@ export function createGroundMaterial( surfaceTex, surface2Tex, bounds, detailTex
 	const steep = smoothstep( 0.8, 0.6, normalWorldGeometry.y );
 	const kerbFace = steep.mul( smoothstep( 0.5, 0.3, abs( Fk ) ) );
 
-	// Granite setts ("kostky") in staggered rows: grey granite, about 16 × 13 cm, domed, with dark joints.
-	const setRow = wz.div( 0.13 );
+	// Granite setts ("kostky"), as on Náprstkova: light cool-grey granite, about 16 × 14 cm, in staggered rows,
+	// slightly domed, with dark mossy joints.
+	const setRow = wz.div( 0.14 );
 	const setRowIdx = floor( setRow );
 	const setCol = wx.div( 0.16 ).add( hash2D( vec2( setRowIdx, 3.1 ) ) );
 	const setId = vec2( floor( setCol ), setRowIdx );
 	const setFade = float( 1 ).sub( smoothstep( 0.35, 0.9, fwidth( setRow ) ) );
 	const setRnd = hash2D( setId );
-	const sett = mix( mix( color( 0x6c6a66 ), color( 0x858079 ), setRnd ), color( 0x8a7a68 ), step( 0.82, setRnd ).mul( 0.7 ) );
-	const setDome = smoothstep( 0.0, 0.32, float( 0.5 ).sub( abs( fract( setCol ).sub( 0.5 ) ) ) )
-		.mul( smoothstep( 0.0, 0.32, float( 0.5 ).sub( abs( fract( setRow ).sub( 0.5 ) ) ) ) );
-	const cobbles = mix( sett.mul( 0.75 ), sett.mul( mix( float( 0.35 ), float( 1.0 ), setDome ) ), setFade );
+	const sett = mix( mix( color( 0x8b8b88 ), color( 0xaaa9a4 ), setRnd ), color( 0x9a9284 ), step( 0.85, setRnd ).mul( 0.6 ) );
+	const setDome = smoothstep( 0.0, 0.3, float( 0.5 ).sub( abs( fract( setCol ).sub( 0.5 ) ) ) )
+		.mul( smoothstep( 0.0, 0.3, float( 0.5 ).sub( abs( fract( setRow ).sub( 0.5 ) ) ) ) );
+	const joint = mix( color( 0x3d3f37 ), color( 0x4f5a3a ), noise2D( vec2( wx, wz ).mul( 1.7 ) ) );
+	const cobbles = mix( mix( sett, joint, 0.35 ), mix( joint, sett.mul( mix( float( 0.8 ), float( 1.0 ), setDome ) ), smoothstep( 0.0, 0.25, setDome ) ), setFade );
 
-	// Prague mosaic pavement: 5 cm white limestone cubes laid in bold black basalt patterns. Each stretch of
-	// pavement (an 8 m cell) gets one of three classic patterns: a checkerboard of squares, a diagonal lattice,
-	// or plain white with a black border band.
+	// Prague mosaic pavement: 5 cm limestone cubes, pale grey, with subtle mid-grey patterns (zigzag bands
+	// or a diagonal lattice, chosen per stretch of pavement). Bold black-and-white patterns are left to the
+	// big boulevards, which the aerial-photo detail brings in.
 	const mos = vec2( wx, wz ).div( 0.055 );
 	const mosId = floor( mos );
 	const mosFade = float( 1 ).sub( smoothstep( 0.35, 0.9, fwidth( mos.x ) ) );
 	const mosRnd = hash2D( mosId.add( 7.7 ) );
-	const patternKind = hash2D( floor( vec2( wx, wz ).div( 8 ) ).add( 1.7 ) );
-	const checker = step( 0.5, fract( floor( mosId.x.div( 6 ) ).add( floor( mosId.y.div( 6 ) ) ).mul( 0.5 ) ) );
-	const lattice = step( mod( mosId.x.add( mosId.y ), 10 ), 0.5 ).add( step( mod( mosId.x.sub( mosId.y ), 10 ), 0.5 ) ).min( 1 );
-	const border = step( mod( mosId.x.add( 2 ), 24 ), 1.5 ).add( step( mod( mosId.y.add( 2 ), 24 ), 1.5 ) ).min( 1 );
-	const pattern = mix( mix( checker, lattice, step( 0.4, patternKind ) ), border, step( 0.75, patternKind ) );
-	const mosaicStone = mix( mix( color( 0xdcd7cd ), color( 0xc5beb1 ), mosRnd ), mix( color( 0x2c2b2a ), color( 0x3d3b39 ), mosRnd ), pattern );
+	const patternKind = hash2D( floor( vec2( wx, wz ).div( 10 ) ).add( 1.7 ) );
+	const zig = step( fract( mosId.x.add( abs( fract( mosId.y.div( 16 ) ).sub( 0.5 ) ).mul( 16 ) ).div( 12 ) ), 0.28 );
+	const lattice = step( mod( mosId.x.add( mosId.y ), 9 ), 0.5 ).add( step( mod( mosId.x.sub( mosId.y ), 9 ), 0.5 ) ).min( 1 );
+	const pattern = mix( zig, lattice, step( 0.55, patternKind ) );
+	const mosaicStone = mix( mix( color( 0xd4d0c7 ), color( 0xbdb8ad ), mosRnd ), mix( color( 0x7a766f ), color( 0x8b867d ), mosRnd ), pattern );
 	const mosJoint = max( gridLine( wx, 0.055, 0.005 ), gridLine( wz, 0.055, 0.005 ) );
-	const mosaic = mix( mix( color( 0xc0bab0 ), color( 0x4a4846 ), pattern.mul( 0.9 ) ), mosaicStone.mul( float( 1 ).sub( mosJoint.mul( 0.45 ) ) ), mosFade );
+	const mosaic = mix( mix( color( 0xc6c1b7 ), color( 0x8a867f ), pattern.mul( 0.7 ) ), mosaicStone.mul( float( 1 ).sub( mosJoint.mul( 0.4 ) ) ), mosFade );
 
-	const kerbCol = mix( color( 0xa8a59e ), color( 0x96938b ), noise2D( vec2( wx, wz ).mul( 4 ) ) )
+	// Band of small reddish-brown setts along the kerb.
+	const bandStone = mix( color( 0x6f5546 ), color( 0x8a6a56 ), hash2D( floor( vec2( wx, wz ).div( 0.09 ) ).add( 4.4 ) ) );
+	const band = mix( bandStone.mul( 0.9 ), bandStone.mul( float( 1 ).sub( max( gridLine( wx, 0.09, 0.008 ), gridLine( wz, 0.09, 0.008 ) ).mul( 0.4 ) ) ), mosFade );
+
+	const kerbCol = mix( color( 0xb9b7b0 ), color( 0xa6a49d ), noise2D( vec2( wx, wz ).mul( 4 ) ) )
 		.mul( float( 1 ).sub( gridLine( wx.add( wz ), 1.0, 0.008 ).mul( 0.35 ) ) );
 
 	// Paving stones: larger rectangular slabs in running bond.
@@ -157,7 +162,8 @@ export function createGroundMaterial( surfaceTex, surface2Tex, bounds, detailTex
 
 	let col = surfaceColour( openSurface );
 	col = mix( col, mix( surfaceColour( roadSurface ), railCol, rail ), road );
-	col = mix( col, mosaic, pavement );
+	const kerbBand = smoothstep( KERB + 0.28, KERB + 0.24, Fk ).mul( pavement );
+	col = mix( col, mix( mosaic, band, kerbBand ), pavement );
 	col = mix( col, grass, park.mul( float( 1 ).sub( pavement ) ) );
 	col = mix( col, ashlar, steep );
 	col = mix( col, kerbCol, max( kerbTop, kerbFace ) );

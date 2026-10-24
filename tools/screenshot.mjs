@@ -16,7 +16,7 @@ for ( let i = 0; i < args.length; i += 2 ) {
 	await page.goto( args[ i ] );
 	await page.waitForFunction( () => window.__ready, null, { timeout: 240000 } );
 	await page.waitForTimeout( 4000 );
-	await page.screenshot( { path: args[ i + 1 ] } );
+	await page.screenshot( { path: args[ i + 1 ], timeout: 180000 } );
 	console.log( 'saved', args[ i + 1 ] );
 
 }
