@@ -85,6 +85,9 @@ main { padding: 20px; }
 .dot.review { background: var(--review); border-color: transparent; }
 .dot.failed { background: var(--failed); border-color: transparent; }
 .shots-row { display: flex; gap: 6px; }
+button.stop { background: #d64533; color: #fff; border: 0; font-size: 16px; font-weight: 800; padding: 12px 22px; border-radius: 8px; cursor: pointer; letter-spacing: 0.02em; }
+button.stop:hover { background: #b8321f; }
+button.stop.stopped { background: #2f9e5b; }
 .shots-row img { width: 32%; border-radius: 4px; }
 .dot.done { background: var(--done); border-color: transparent; }
 .dot.needs_fix { background: var(--needs_fix); border-color: transparent; }

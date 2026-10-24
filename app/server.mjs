@@ -123,6 +123,17 @@ function sessionView( s, costs ) {
 
 }
 
+// Street View photos fetched by square runs (metadata look-ups are free), at Google's list price.
+function google() {
+
+	const count = since => db.prepare( 'SELECT COALESCE( SUM( images_fetched ), 0 ) AS n FROM sessions WHERE COALESCE( started, created ) >= ?' ).get( since ).n;
+	const today = new Date();
+	today.setHours( 0, 0, 0, 0 );
+	const all = count( '' ), day = count( today.toISOString() );
+	return { images: all, cost: all * 0.007, today: day, todayCost: day * 0.007 };
+
+}
+
 function control() {
 
 	const s = getSettings( db );
@@ -131,6 +142,7 @@ function control() {
 	return {
 		sessions: !! WORK, base: BASE, squareBase: ENV.SQUARE_BASE || 'origin/main',
 		api: ENV.SQUARE_USE_API === '1' && ENV.ANTHROPIC_API_KEY ? { spent: apiSpent( db ), cap: Number( ENV.SQUARE_API_CAP || 70 ) } : null,
+		stopped: jobs.stopped(), google: google(),
 		autopilot: s.autopilot === '1', autoMerge: s.auto_merge === '1',
 		pausedUntil: s.paused_until > now() ? s.paused_until : null, pausedReason: s.paused_reason || null,
 		queued: db.prepare( "SELECT id, cell FROM sessions WHERE state = 'queued' ORDER BY id" ).all(),
@@ -338,6 +350,20 @@ async function route( req, res ) {
 		if ( ! cost ) throw new HttpError( 400, 'Od toho data aplikace nezaznamenala žádné tokeny.' );
 		db.prepare( 'INSERT INTO calibrations (at, since, pct, cost, tokens) VALUES (?, ?, ?, ?, ?)' ).run( now(), from, Number( pct ), cost, tokens );
 		return send( res, 200, settingsView() );
+
+	}
+
+	if ( p === '/api/stop' && m === 'POST' ) {
+
+		jobs.stopAll();
+		return send( res, 200, { control: control() } );
+
+	}
+
+	if ( p === '/api/resume' && m === 'POST' ) {
+
+		jobs.resume();
+		return send( res, 200, { control: control() } );
 
 	}
 

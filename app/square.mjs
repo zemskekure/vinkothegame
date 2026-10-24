@@ -88,6 +88,7 @@ export async function runSquare( { db, grid, data, live, env, id, budget = 40, s
 
 	const run = ( cmd, args, { cwd = tree, quiet = false, extra } = {} ) => new Promise( resolve => {
 
+		if ( cancelled() ) return resolve( { code: - 1, out: 'cancelled' } );
 		const child = spawn( cmd, args, { cwd, env: childEnv( extra ) } );
 		onChild( child );
 		let out = '';

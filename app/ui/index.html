@@ -11,6 +11,7 @@
 		<h1>Vínko · mřížka</h1>
 		<div class="stats" id="stats"></div>
 		<span class="grow"></span>
+		<button id="stop" class="stop">■ ZASTAVIT VŠE</button>
 		<a href="/game/" target="_blank">hra</a>
 		<a href="/nastaveni">nastavení</a>
 	</header>
@@ -62,13 +63,25 @@
 
 			const { minX, maxX, minZ, maxZ } = grid.bounds;
 			const W = maxX - minX, H = maxZ - minZ;
-			const t = grid.totals, u = grid.usage;
+			const t = grid.totals, u = grid.usage, c = grid.control;
 
 			document.getElementById( 'stats' ).innerHTML = `
 				<span><b>${t.done}</b> / ${t.workable} buněk hotovo</span>
 				<span><b>${t.openBugs}</b> otevřených chyb</span>
-				<span><b>${usd( u.grid.cost )}</b> v mřížce</span>
-				<span>týden <b>${u.week.share ? pct( u.week.share.week ) : usd( u.week.cost )}</b>${u.week.share ? ' limitu' : ''}</span>`;
+				<span title="Skutečně utraceno z API kreditu (strop)">Claude API <b>${c.api ? `${usd( c.api.spent )} / ${usd( c.api.cap )}` : 'vypnuto'}</b></span>
+				<span title="Fotky Street View stažené čtverci, ceníková cena $0.007/ks; v rámci měsíčního free limitu Googlu nejspíš zdarma">Google <b>${usd( c.google.cost )}</b> (${c.google.images} fotek, dnes ${c.google.today})</span>`;
+
+			// The big red button: stops the queue, the running square and Claude, so nothing more is spent.
+			const stop = document.getElementById( 'stop' );
+			stop.textContent = c.stopped ? '▶ ZASTAVENO · pokračovat' : '■ ZASTAVIT VŠE';
+			stop.classList.toggle( 'stopped', c.stopped );
+			stop.onclick = async () => {
+
+				if ( ! c.stopped && ! confirm( 'Zastavit všechno? Fronta se vyprázdní, běžící čtverec a Claude se ukončí.' ) ) return;
+				await api( c.stopped ? '/api/resume' : '/api/stop', { method: 'POST', body: '{}' } );
+				location.reload();
+
+			};
 
 			// Map: the orthophoto, or the model from above (each cell's latest straight-down view).
 			map.style.aspectRatio = `${W} / ${H}`;

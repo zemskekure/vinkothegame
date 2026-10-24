@@ -5,7 +5,7 @@
 // The autopilot keeps picking the next cell (cells with open bugs first, then outward from Betlémské náměstí)
 // until it is switched off, runs into the daily cap or the share of the weekly limit set on the settings page.
 
-import { spawn } from 'node:child_process';
+import { spawn, execFile } from 'node:child_process';
 import { createWriteStream, existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { UsageCounter } from './usage.mjs';
@@ -136,8 +136,11 @@ export function createJobs( { db, grid, data, live, work, base, env, gameURL, pr
 
 	}
 
+	const stopped = () => getSettings( db ).stopped === '1';
+
 	function enqueue( cellId, prompt ) {
 
+		if ( stopped() ) throw new Error( 'Vše je zastavené (STOP). Nejdřív pokračovat.' );
 		if ( ! grid.cells.has( cellId ) ) throw new Error( 'no such cell' );
 		const active = db.prepare( "SELECT id FROM sessions WHERE cell = ? AND state IN ('queued', 'running', 'building')" ).get( cellId );
 		if ( active ) return active.id;
@@ -151,6 +154,7 @@ export function createJobs( { db, grid, data, live, work, base, env, gameURL, pr
 	// A square through the street-photo pipeline (app/square.mjs), one at a time like the cell sessions.
 	function enqueueSquare( cellId, budget = 40 ) {
 
+		if ( stopped() ) throw new Error( 'Vše je zastavené (STOP). Nejdřív pokračovat.' );
 		if ( ! grid.cells.has( cellId ) ) throw new Error( 'no such cell' );
 		const active = db.prepare( "SELECT id FROM sessions WHERE cell = ? AND state IN ('queued', 'running', 'building')" ).get( cellId );
 		if ( active ) return active.id;
@@ -228,9 +232,52 @@ export function createJobs( { db, grid, data, live, work, base, env, gameURL, pr
 
 	}
 
+	// STOP: nothing more is spent. The queue is emptied, the autopilot switched off, the running session and any
+	// square run started by hand are killed, Claude processes included; nothing starts until resume().
+	function stopAll() {
+
+		setSetting( db, 'stopped', '1' );
+		setSetting( db, 'autopilot', '0' );
+		for ( const s of db.prepare( "SELECT id, cell FROM sessions WHERE state = 'queued'" ).all() ) {
+
+			update( s.id, { state: 'cancelled', error: 'STOP', ended: now() } );
+			restoreStatus( s.cell );
+
+		}
+
+		if ( current ) {
+
+			current.cancelled = true;
+			current.child?.kill( 'SIGTERM' );
+
+		}
+
+		for ( const s of db.prepare( "SELECT id, pid FROM sessions WHERE state IN ('running', 'building') AND pid IS NOT NULL" ).all() ) {
+
+			try {
+
+				if ( s.pid !== process.pid ) process.kill( s.pid, 'SIGTERM' );
+
+			} catch {}
+
+			if ( s.pid !== process.pid ) update( s.id, { state: 'cancelled', error: 'STOP', ended: now(), step: null } );
+
+		}
+
+		execFile( 'pkill', [ '-f', 'claude -p --output-format stream-json' ], () => {} );
+		execFile( 'pkill', [ '-f', 'night-queue' ], () => {} );
+
+	}
+
+	function resume() {
+
+		setSetting( db, 'stopped', '0' );
+
+	}
+
 	async function tick() {
 
-		if ( busy ) return;
+		if ( busy || stopped() ) return;
 		busy = true;
 		try {
 
@@ -669,7 +716,7 @@ export function createJobs( { db, grid, data, live, work, base, env, gameURL, pr
 	}
 
 	return {
-		enqueue, enqueueSquare, cancel, tick, defaultPrompt, reviewAction, shootModel, events,
+		enqueue, enqueueSquare, cancel, stopAll, resume, stopped, tick, defaultPrompt, reviewAction, shootModel, events,
 		current: () => current && session( current.id ),
 		busy: () => busy
 	};
