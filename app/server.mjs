@@ -12,6 +12,10 @@
 //   CLAUDE_CODE_OAUTH_TOKEN  for headless Claude Code on the owner's subscription (claude setup-token)
 //   MAPILLARY_TOKEN          passed on to sessions, optional
 //   CLAUDE_BIN               path to claude, default from PATH
+//   GMAPS_KEY                Street View for squares (app/square.mjs); never in git or logs
+//   STREETVIEW_DIR           where the Street View photos go, default <GRID_DATA>/streetview
+//   SQUARE_BASE              the branch square worktrees start from, default origin/main
+//   SQUARE_WORKTREES         where they go, default ../work next to this checkout
 
 import { createServer } from 'node:http';
 import { createReadStream, existsSync, mkdirSync, statSync, readFileSync } from 'node:fs';
@@ -23,9 +27,10 @@ import { execFileSync } from 'node:child_process';
 import { randomUUID, timingSafeEqual } from 'node:crypto';
 import { loadGrid, viewsOf, describe } from './grid.mjs';
 import { openDB, getSettings, setSetting } from './db.mjs';
-import { summary, costSince } from './stats.mjs';
+import { summary, costSince, weeklyBudget } from './stats.mjs';
 import { findTranscripts, readTranscript } from './usage.mjs';
 import { createJobs } from './jobs.mjs';
+import { readEnv } from './env.mjs';
 
 const DATA = process.env.GRID_DATA || join( homedir(), 'vinko-grid-data' );
 mkdirSync( DATA, { recursive: true } );
@@ -46,13 +51,13 @@ const db = openDB( join( DATA, 'grid.sqlite' ) );
 const grid = loadGrid( Number( ENV.GRID_CELL || 100 ) );
 
 const BASE = WORK ? ENV.GRID_BRANCH || execFileSync( 'git', [ 'rev-parse', '--abbrev-ref', 'HEAD' ], { cwd: WORK } ).toString().trim() : null;
-const jobs = WORK ? createJobs( {
+const jobs = createJobs( {
 	db, grid, data: DATA, live: REPO, work: WORK, base: BASE, password: PASSWORD,
-	env: Object.fromEntries( [ 'CLAUDE_CODE_OAUTH_TOKEN', 'MAPILLARY_TOKEN', 'CLAUDE_BIN', 'PATH' ].filter( k => ENV[ k ] ).map( k => [ k, ENV[ k ] ] ) ),
+	env: Object.fromEntries( [ 'CLAUDE_CODE_OAUTH_TOKEN', 'MAPILLARY_TOKEN', 'CLAUDE_BIN', 'PATH', 'GMAPS_KEY', 'STREETVIEW_DIR', 'SQUARE_BASE', 'SQUARE_WORKTREES' ].filter( k => ENV[ k ] ).map( k => [ k, ENV[ k ] ] ) ),
 	gameURL: `http://127.0.0.1:${PORT}/game/`, previewURL: `http://127.0.0.1:${PORT}/preview/`
-} ) : null;
+} );
 
-const STATUSES = [ 'todo', 'in_progress', 'done' ];
+const STATUSES = [ 'todo', 'in_progress', 'review', 'done', 'failed' ];
 const TYPES = {
 	'.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css',
 	'.json': 'application/json', '.bin': 'application/octet-stream', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
@@ -62,21 +67,6 @@ const TYPES = {
 const IMAGE = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp', 'image/gif': '.gif' };
 
 const now = () => new Date().toISOString();
-
-function readEnv( file ) {
-
-	if ( ! existsSync( file ) ) return {};
-	const out = {};
-	for ( const line of readFileSync( file, 'utf8' ).split( '\n' ) ) {
-
-		const m = line.match( /^\s*([A-Z0-9_]+)\s*=\s*(.*?)\s*$/ );
-		if ( m ) out[ m[ 1 ] ] = m[ 2 ].replace( /^(['"])(.*)\1$/, '$2' );
-
-	}
-
-	return out;
-
-}
 
 // Claude Code transcripts of this repo already on this machine (sessions not started from the app) are counted too.
 function importTranscripts() {
@@ -122,8 +112,9 @@ function cellState( id ) {
 function sessionView( s, costs ) {
 
 	const c = costs.get( s.id );
+	const wb = weeklyBudget( db );
 	return {
-		...s,
+		...s, weekShare: wb && c ? c.cost / wb.budget * 100 : null,
 		shots: s.shots ? JSON.parse( s.shots ) : null,
 		tokens: c?.tokens || 0, cost: c?.cost || 0, usage: c || null,
 		minutes: s.started ? Math.round( ( Date.parse( s.ended || now() ) - Date.parse( s.started ) ) / 60e3 ) : null
@@ -134,9 +125,9 @@ function sessionView( s, costs ) {
 function control() {
 
 	const s = getSettings( db );
-	const current = jobs?.current();
+	const current = jobs.current();
 	return {
-		sessions: !! jobs, base: BASE,
+		sessions: !! WORK, base: BASE, squareBase: ENV.SQUARE_BASE || 'origin/main',
 		autopilot: s.autopilot === '1', autoMerge: s.auto_merge === '1',
 		pausedUntil: s.paused_until > now() ? s.paused_until : null, pausedReason: s.paused_reason || null,
 		queued: db.prepare( "SELECT id, cell FROM sessions WHERE state = 'queued' ORDER BY id" ).all(),
@@ -186,7 +177,7 @@ function cellDetail( cell ) {
 		bugs: db.prepare( 'SELECT * FROM bugs WHERE cell = ? ORDER BY open DESC, id DESC' ).all( cell.id ),
 		refs: db.prepare( 'SELECT * FROM refs WHERE cell = ? ORDER BY id' ).all( cell.id ).map( r => ( { ...r, url: `/files/refs/${r.file}` } ) ),
 		sessions: db.prepare( "SELECT * FROM sessions WHERE cell = ? ORDER BY id DESC" ).all( cell.id ).map( s => sessionView( s, sum.costs ) ),
-		usage: sum.byCell[ cell.id ] || null,
+		usage: sum.byCell[ cell.id ] || null, plan: sum.plan,
 		control: control(),
 		neighbours: neighbours( cell )
 	};
@@ -288,7 +279,7 @@ function authorised( req ) {
 
 function needJobs() {
 
-	if ( ! jobs ) throw new HttpError( 409, 'Sezení nejsou nastavená (GRID_WORK).' );
+	if ( ! WORK ) throw new HttpError( 409, 'Sezení nejsou nastavená (GRID_WORK).' );
 	return jobs;
 
 }
@@ -301,7 +292,7 @@ async function route( req, res ) {
 
 	if ( m === 'GET' && p === '/' ) return serveFile( req, res, UI, 'index.html' );
 	if ( m === 'GET' && p === '/nastaveni' ) return serveFile( req, res, UI, 'settings.html' );
-	if ( m === 'GET' && /^\/cell\/[A-Z]+\d+$/.test( p ) ) return serveFile( req, res, UI, 'cell.html' );
+	if ( m === 'GET' && /^\/cell\/x-?\d+_z-?\d+$/.test( p ) ) return serveFile( req, res, UI, 'cell.html' );
 	if ( m === 'GET' && /^\/sezeni\/\d+$/.test( p ) ) return serveFile( req, res, UI, 'session.html' );
 	if ( m === 'GET' && p.startsWith( '/ui/' ) ) return serveFile( req, res, UI, p.slice( 4 ) );
 	if ( m === 'GET' && p === '/ortho.jpg' ) return serveFile( req, res, join( REPO, 'data/raw' ), 'ortho.jpg' );
@@ -371,7 +362,7 @@ async function route( req, res ) {
 
 	}
 
-	if ( ( r = p.match( /^\/api\/cells\/([A-Z]+\d+)(\/\w+)?$/ ) ) ) {
+	if ( ( r = p.match( /^\/api\/cells\/(x-?\d+_z-?\d+)(\/\w+)?$/ ) ) ) {
 
 		const cell = grid.cells.get( r[ 1 ] );
 		if ( ! cell ) throw new HttpError( 404, 'no such cell' );
@@ -386,6 +377,15 @@ async function route( req, res ) {
 		}
 
 		if ( sub === '/prompt' && m === 'GET' ) return send( res, 200, { prompt: needJobs().defaultPrompt( cell.id ) } );
+
+		// The street-photo pipeline for this square (app/square.mjs), queued like any session.
+		if ( sub === '/square' && m === 'POST' ) {
+
+			const { budget } = await json( req );
+			const id = jobs.enqueueSquare( cell.id, Number( budget ) || 40 );
+			return send( res, 200, { id, cell: cellDetail( cell ) } );
+
+		}
 
 		if ( sub === '/sessions' && m === 'POST' ) {
 

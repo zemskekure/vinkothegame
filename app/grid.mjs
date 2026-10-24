@@ -1,5 +1,6 @@
-// The play area sliced into square cells, named like a map: columns A… west to east, rows 1… north to south
-// (scene frame: +x east, +z south). Each cell knows what is in it, read from the built scene and the raw RÚIAN data,
+// The play area sliced into the grid squares of tools/square.mjs: x<i>_z<j> covers 100·i ≤ x < 100·(i+1),
+// 100·j ≤ z < 100·(j+1) in the scene frame (+x east, +z south), so the squares stay put when the play area grows;
+// the ones on the edge are clipped to the area. Each cell knows what is in it, read from the built scene and the raw RÚIAN data,
 // so it can be described in words to a Claude Code session.
 
 import { readFileSync, existsSync } from 'node:fs';
@@ -28,26 +29,25 @@ export function loadGrid( size = 100 ) {
 
 	}
 
-	const cols = Math.ceil( ( maxX - minX ) / size ), rows = Math.ceil( ( maxZ - minZ ) / size );
+	const i0 = Math.floor( minX / size ), j0 = Math.floor( minZ / size );
+	const cols = Math.ceil( maxX / size ) - i0, rows = Math.ceil( maxZ / size ) - j0;
 	const cells = new Map();
 
-	for ( let j = 0; j < rows; j ++ ) for ( let i = 0; i < cols; i ++ ) {
+	for ( let j = j0; j < j0 + rows; j ++ ) for ( let i = i0; i < i0 + cols; i ++ ) {
 
-		const id = columnName( i ) + ( j + 1 );
-		const x0 = minX + i * size, z0 = minZ + j * size;
+		const id = squareName( i, j );
 		cells.set( id, {
-			id, col: i, row: j,
-			x0, z0, x1: Math.min( maxX, x0 + size ), z1: Math.min( maxZ, z0 + size ),
-			buildings: [], streets: new Set(), venues: [], street: null
+			id, i, j, col: i - i0, row: j - j0,
+			x0: Math.max( minX, i * size ), z0: Math.max( minZ, j * size ), x1: Math.min( maxX, ( i + 1 ) * size ), z1: Math.min( maxZ, ( j + 1 ) * size ),
+			buildings: [], streets: new Set(), venues: [], street: null, streetAt: {}
 		} );
 
 	}
 
 	const cellAt = ( x, z ) => {
 
-		const i = Math.floor( ( x - minX ) / size ), j = Math.floor( ( z - minZ ) / size );
-		if ( i < 0 || j < 0 || i >= cols || j >= rows ) return null;
-		return cells.get( columnName( i ) + ( j + 1 ) );
+		if ( x < minX || x > maxX || z < minZ || z > maxZ ) return null;
+		return cells.get( squareName( Math.floor( x / size ), Math.floor( z / size ) ) ) || null;
 
 	};
 
@@ -79,10 +79,14 @@ export function loadGrid( size = 100 ) {
 				if ( s.name ) cell.streets.add( s.name );
 				const cx = ( cell.x0 + cell.x1 ) / 2, cz = ( cell.z0 + cell.z1 ) / 2;
 				const d = Math.hypot( x - cx, z - cz );
-				if ( cell.street && cell.street.d <= d ) continue;
+				const near = cell.street && cell.street.d <= d, nearOnStreet = s.name && cell.streetAt[ s.name ]?.d <= d;
+				if ( near && ( ! s.name || nearOnStreet ) ) continue;
 				// Look along the street, from this point towards the next one (or back from the previous).
 				const n = k + 5 < p.length ? [ p[ k + 3 ] - p[ k ], p[ k + 5 ] - p[ k + 2 ] ] : k >= 3 ? [ p[ k ] - p[ k - 3 ], p[ k + 2 ] - p[ k - 1 ] ] : [ 0, - 1 ];
-				cell.street = { d, x, z, yaw: Math.atan2( - n[ 0 ], - n[ 1 ] ), name: s.name };
+				const at = { d, x, z, yaw: Math.atan2( - n[ 0 ], - n[ 1 ] ), name: s.name };
+				if ( ! near ) cell.street = at;
+				// The same per street, so a square's main street can be looked down from nearest its centre.
+				if ( s.name && ! nearOnStreet ) cell.streetAt[ s.name ] = at;
 
 			}
 
@@ -112,13 +116,9 @@ export function loadGrid( size = 100 ) {
 
 }
 
-export function columnName( i ) {
+export const squareName = ( i, j ) => `x${i}_z${j}`;
 
-	let s = '';
-	for ( i ++; i > 0; i = Math.floor( ( i - 1 ) / 26 ) ) s = String.fromCharCode( 65 + ( i - 1 ) % 26 ) + s;
-	return s;
-
-}
+export const SQUARE = /^x-?\d+_z-?\d+$/;
 
 // Where the game should look for a cell: from above (camera south of the centre, tilted down) and on foot.
 export function viewsOf( cell ) {

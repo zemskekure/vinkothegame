@@ -99,6 +99,10 @@ export function openDB( file ) {
 		);
 	` );
 
+	// Columns added with the square pipeline: the pull request and the Street View images used.
+	const have = new Set( db.prepare( 'PRAGMA table_info(sessions)' ).all().map( c => c.name ) );
+	for ( const [ c, type ] of [ [ 'pr', 'TEXT' ], [ 'images', 'INTEGER' ], [ 'images_fetched', 'INTEGER' ] ] ) if ( ! have.has( c ) ) db.exec( `ALTER TABLE sessions ADD COLUMN ${c} ${type}` );
+
 	if ( ! db.prepare( 'SELECT COUNT(*) AS n FROM prices' ).get().n ) {
 
 		PRICES.forEach( ( p, i ) => db.prepare( 'INSERT INTO prices (match, label, input, output, cache_read, sort) VALUES (?, ?, ?, ?, ?, ?)' ).run( p.match, p.label, p.input, p.output, p.cache_read, i ) );

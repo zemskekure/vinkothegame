@@ -47,6 +47,26 @@ Claude reports a usage limit.
 Street View screenshots are optional reference for fine-tuning a cell; nothing depends on them. They stay in
 `GRID_DATA`, never in the repo (Google's terms, see `CLAUDE.md`).
 
+## Grid squares through the street-photo pipeline
+
+The cells are the grid squares of `tools/square.mjs`: `x<i>_z<j>` covers 100·i ≤ x < 100·(i+1), 100·j ≤ z < 100·(j+1)
+(i −7…2, j −3…8 on today's map). "Projet fotky" on a cell page, or by hand `node app/square.mjs x0_z1 --budget 40`,
+runs `app/square.mjs`:
+
+1. A git worktree `SQUARE_WORKTREES/<square>` (default `../work/` next to this checkout) on a new branch
+   `cell/<square>-<YYYYMMDD-HHMM>` off `SQUARE_BASE` (default `origin/main`); `node_modules` and `data/raw` are
+   linked from this checkout.
+2. `npm run square -- prepare <square> --budget N` (`GMAPS_KEY`; photos in `STREETVIEW_DIR`, default
+   `<GRID_DATA>/streetview`; inventory in `<GRID_DATA>/squares/<square>/`).
+3. `claude -p` with the reviewer prompt (docs/review-brief.md): reads and writes `review.json` only; a changed
+   worktree fails the run. Tokens come from its transcript and its subagents' transcripts.
+4. `npm run square -- merge <square>`, `node tools/build-scene.mjs`, `npx vite build`, three screenshots (two on foot
+   along the main street, one from above) of the worktree's build.
+5. A commit of `data/houses.json`, `data/signs.json` and `public/data/` only, pushed, and a pull request (needs
+   `gh auth` on the machine) with what was merged, the reviewer's issues, tokens, cost and the images used.
+
+The square's status follows it: rozpracováno → ke kontrole (PR open) or selhalo; set hotovo when the PR is merged.
+
 ## Tokens and cost
 
 Usage comes from each session's stream (and from any other Claude Code transcripts of this repo on the machine),

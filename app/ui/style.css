@@ -6,7 +6,9 @@
 	--line: #e2e0da;
 	--todo: transparent;
 	--in_progress: #e6a700;
+	--review: #3b7dd8;
 	--done: #2f9e5b;
+	--failed: #8a3b8f;
 	--needs_fix: #d64533;
 	--accent: #1c1c1a;
 }
@@ -68,6 +70,8 @@ main { padding: 20px; }
 
 .map .cell:hover { background: rgba( 255, 255, 255, 0.18 ); border-color: #fff; z-index: 1; }
 .map .cell.in_progress { background: color-mix( in srgb, var(--in_progress) 40%, transparent ); }
+.map .cell.review { background: color-mix( in srgb, var(--review) 40%, transparent ); }
+.map .cell.failed { background: color-mix( in srgb, var(--failed) 40%, transparent ); }
 .map .cell.done { background: color-mix( in srgb, var(--done) 40%, transparent ); }
 .map .cell.needs_fix { background: color-mix( in srgb, var(--needs_fix) 45%, transparent ); }
 .map .cell .bugs { margin-left: auto; background: var(--needs_fix); border-radius: 8px; padding: 0 5px; text-shadow: none; }
@@ -76,6 +80,10 @@ main { padding: 20px; }
 .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; border: 1px solid var(--line); }
 .dot.todo { background: #fff; }
 .dot.in_progress { background: var(--in_progress); border-color: transparent; }
+.dot.review { background: var(--review); border-color: transparent; }
+.dot.failed { background: var(--failed); border-color: transparent; }
+.shots-row { display: flex; gap: 6px; }
+.shots-row img { width: 32%; border-radius: 4px; }
 .dot.done { background: var(--done); border-color: transparent; }
 .dot.needs_fix { background: var(--needs_fix); border-color: transparent; }
 

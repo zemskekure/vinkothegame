@@ -12,6 +12,7 @@ import { UsageCounter } from './usage.mjs';
 import { getSettings, setSetting } from './db.mjs';
 import { describe, viewsOf } from './grid.mjs';
 import { summary } from './stats.mjs';
+import { runSquare, reviewPrompt } from './square.mjs';
 
 const now = () => new Date().toISOString();
 const DAY = 24 * 3600e3;
@@ -129,6 +130,20 @@ export function createJobs( { db, grid, data, live, work, base, env, gameURL, pr
 
 	}
 
+	// A square through the street-photo pipeline (app/square.mjs), one at a time like the cell sessions.
+	function enqueueSquare( cellId, budget = 40 ) {
+
+		if ( ! grid.cells.has( cellId ) ) throw new Error( 'no such cell' );
+		const active = db.prepare( "SELECT id FROM sessions WHERE cell = ? AND state IN ('queued', 'running', 'building')" ).get( cellId );
+		if ( active ) return active.id;
+		const { lastInsertRowid } = db.prepare( "INSERT INTO sessions (cell, kind, state, prompt, created, images) VALUES (?, 'square', 'queued', ?, ?, ?)" )
+			.run( cellId, reviewPrompt( cellId, join( data, 'squares', cellId ) ), now(), budget );
+		setStatus( cellId, 'in_progress' );
+		setTimeout( tick, 100 );
+		return Number( lastInsertRowid );
+
+	}
+
 	function cancel( id ) {
 
 		const s = session( id );
@@ -239,6 +254,19 @@ export function createJobs( { db, grid, data, live, work, base, env, gameURL, pr
 	async function runSession( id ) {
 
 		const s = session( id );
+		if ( s.kind === 'square' ) {
+
+			// The queued row's images column holds the Street View budget until the run counts what it used.
+			current = { id, child: null, cancelled: false };
+			await runSquare( {
+				db, grid, data, live, env, id, budget: s.images || 40, setStatus,
+				onChild: c => current.child = c, cancelled: () => current.cancelled
+			} );
+			return;
+
+		}
+
+		if ( ! work ) return update( id, { state: 'failed', error: 'GRID_WORK is not set', ended: now() } );
 		const cell = grid.cells.get( s.cell );
 		const stamp = now().slice( 0, 16 ).replace( /[-:]/g, '' ).replace( 'T', '-' );
 		const branch = `cell/${cell.id}-${stamp}`;
@@ -623,7 +651,7 @@ export function createJobs( { db, grid, data, live, work, base, env, gameURL, pr
 	}
 
 	return {
-		enqueue, cancel, tick, defaultPrompt, reviewAction, shootModel, events,
+		enqueue, enqueueSquare, cancel, tick, defaultPrompt, reviewAction, shootModel, events,
 		current: () => current && session( current.id ),
 		busy: () => busy
 	};

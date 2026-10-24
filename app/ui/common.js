@@ -8,7 +8,7 @@ export const api = ( path, opts = {} ) => fetch( path, { ...opts, headers: { 'co
 
 export const esc = s => String( s ?? '' ).replace( /[&<>"]/g, c => ( { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' } )[ c ] );
 
-export const STATUS = { todo: 'k udělání', in_progress: 'rozpracováno', done: 'hotovo', needs_fix: 'k opravě' };
+export const STATUS = { todo: 'k udělání', in_progress: 'rozpracováno', review: 'ke kontrole', done: 'hotovo', failed: 'selhalo', needs_fix: 'k opravě' };
 
 export const STATE = {
 	queued: 've frontě', running: 'běží', building: 'sestavuje', review: 'ke kontrole', merged: 'sloučeno',
