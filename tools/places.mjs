@@ -27,7 +27,7 @@ export function collectPlaces( ctx ) {
 	const wayById = new Map( streetData.ways.map( w => [ w.id, w ] ) );
 	const nodeById = id => streetData.nodes.get( id );
 
-	const places = { zones: [], cutouts: [], seats: [], signs: [], interiors: [], terraces: [], lights: [] };
+	const places = { zones: [], cutouts: [], seats: [], signs: [], interiors: [], terraces: [], lights: [], fronts: [] };
 
 	// --- house fronts
 	const facadeNear = ( X, Y, { number, code } = {} ) => {
@@ -59,8 +59,7 @@ export function collectPlaces( ctx ) {
 
 			if ( ! b.kept || ( number && Number( b.number ) !== number ) ) continue;
 			if ( b.bbox[ 0 ] > X + 40 || b.bbox[ 2 ] < X - 40 || b.bbox[ 1 ] > Y + 40 || b.bbox[ 3 ] < Y - 40 ) continue;
-			const ring = b.poly.outer;
-			for ( let i = 0; i < ring.length; i ++ ) {
+			for ( const ring of [ b.poly.outer, ...b.poly.holes ] ) for ( let i = 0; i < ring.length; i ++ ) { // courtyards too
 
 				const [ ax, ay ] = ring[ i ], [ bx, by ] = ring[ ( i + 1 ) % ring.length ];
 				const dx = bx - ax, dy = by - ay, len = Math.hypot( dx, dy );
@@ -96,12 +95,16 @@ export function collectPlaces( ctx ) {
 	const zone = ( x, z, u, hu, hn, extra = {} ) => places.zones.push( { x, z, ux: u[ 0 ], uz: u[ 1 ], hu, hn, ...extra } );
 	const cutout = ( x, y0, z, u, hu, hn, y1 ) => places.cutouts.push( { x, z, ux: u[ 0 ], uz: u[ 1 ], hu, hn, y0, y1 } );
 
-	// A walk-in room behind a front: as wide as the front allows (≤ maxW), as deep as the house (≤ maxD).
-	function interior( name, style, f, s, { maxW = 8, maxD = 9, door = 0 } = {} ) {
+	// Along a front, the viewer's right (seen from the street) is +X; k converts X offsets to distances along it.
+	const sideK = f => ( - f.ux * f.n[ 1 ] + f.uy * f.n[ 0 ] ) >= 0 ? 1 : - 1;
 
-		const w = Math.min( maxW, f.len - 1.2, 2 * Math.min( s, f.len - s ) - 0.6 );
+	// A walk-in room behind a front: centred `s` m along it, as wide as asked (≤ the front), as deep as the house
+	// (≤ maxD); its door `door` m to the right (+X) of the room's centre.
+	function interior( name, style, f, s, { w = 7, maxD = 9, door = 0 } = {} ) {
+
+		w = Math.min( w, f.len - 1.2, 2 * Math.min( s, f.len - s ) - 0.6 );
 		let depth = maxD;
-		for ( let k = - w / 2; k <= w / 2 + 1e-6; k += 0.5 ) {
+		for ( let k = - w / 2 + 0.5; k <= w / 2 - 0.5 + 1e-6; k += 0.5 ) { // the corners of the front read short
 
 			const X = f.a[ 0 ] + f.ux * ( s + k ), Y = f.a[ 1 ] + f.uy * ( s + k );
 			// Through the front wall (its edge cells may read as street), then on while inside this house.
@@ -129,17 +132,46 @@ export function collectPlaces( ctx ) {
 		}
 
 		const floorH = ctx.buildingInfo.get( f.code )?.floorH || 3.4;
-		const room = { name, style, x: c.x, z: c.z, u: c.u, n: c.n, w: + w.toFixed( 2 ), d: + depth.toFixed( 2 ), h: + Math.min( 3.6, floorH * 0.95 ).toFixed( 2 ), y: + ( c.y + 0.02 ).toFixed( 2 ), door, doorW: 1.3, doorH: 2.5 };
+		const room = { name, style, x: c.x, z: c.z, n: c.n, w: + w.toFixed( 2 ), d: + depth.toFixed( 2 ), h: + Math.min( 3.6, Math.max( 3.0, floorH * 0.95 ) ).toFixed( 2 ), y: + ( c.y + 0.02 ).toFixed( 2 ), door: + door.toFixed( 2 ), doorW: 1.3, doorH: 2.5 };
 		places.interiors.push( room );
 
 		// Walkable: the room (0.3 m inside its walls) and the doorway through the front wall.
-		const inward = ( d ) => [ c.x - c.n[ 0 ] * d, c.z - c.n[ 1 ] * d ];
+		const X = [ c.n[ 1 ], - c.n[ 0 ] ];
+		const inward = d => [ c.x - c.n[ 0 ] * d, c.z - c.n[ 1 ] * d ];
 		const [ rx, rz ] = inward( depth / 2 );
-		zone( rx, rz, c.u, w / 2 - 0.3, depth / 2 - 0.3, { y: room.y } );
+		zone( rx, rz, X, w / 2 - 0.3, depth / 2 - 0.3, { y: room.y } );
 		const [ dx, dz ] = inward( 0 );
-		zone( dx + c.u[ 0 ] * door, dz + c.u[ 1 ] * door, c.u, room.doorW / 2 - 0.15, 0.7, { y: room.y } );
-		cutout( dx + c.u[ 0 ] * door, room.y - 0.5, dz + c.u[ 1 ] * door, c.u, room.doorW / 2, 0.45, room.y + room.doorH );
+		zone( dx + X[ 0 ] * door, dz + X[ 1 ] * door, X, room.doorW / 2 - 0.15, 0.7, { y: room.y } );
+		cutout( dx + X[ 0 ] * door, room.y - 0.5, dz + X[ 1 ] * door, X, room.doorW / 2, 0.45, room.y + room.doorH );
 		return room;
+
+	}
+
+	// The composition on a house front for src/places.js: centre, normal, ground, how far the front runs either way.
+	function venueFront( style, f, s, extra = {} ) {
+
+		const c = frame( f, s ), k = sideK( f );
+		const front = { style, x: c.x, y: c.y, z: c.z, n: c.n, left: + ( k > 0 ? s : f.len - s ).toFixed( 2 ), right: + ( k > 0 ? f.len - s : s ).toFixed( 2 ), ...extra };
+		places.fronts.push( front );
+		return front;
+
+	}
+
+	// Outdoor tables at X offsets along a front, `out` m in front of it: [ x, y, z, rot, kind ]; two seats each.
+	function tablesAt( f, s, kind, spots ) {
+
+		const k = sideK( f ), tables = [];
+		for ( const [ dx, out, type = kind ] of spots ) {
+
+			const c = frame( f, Math.max( 0.3, Math.min( f.len - 0.3, s + k * dx ) ) );
+			const x = c.x + c.n[ 0 ] * out, z = c.z + c.n[ 1 ] * out, y = yAtLocal( x, z );
+			const X = [ c.n[ 1 ], - c.n[ 0 ] ];
+			tables.push( [ + x.toFixed( 2 ), y, + z.toFixed( 2 ), + Math.atan2( X[ 0 ], X[ 1 ] ).toFixed( 3 ), type ] );
+			for ( const side of [ - 1, 1 ] ) places.seats.push( [ + ( x + X[ 0 ] * 0.55 * side ).toFixed( 2 ), y, + ( z + X[ 1 ] * 0.55 * side ).toFixed( 2 ), + Math.atan2( - X[ 0 ] * side, - X[ 1 ] * side ).toFixed( 3 ) ] );
+
+		}
+
+		places.terraces.push( { kind, tables } );
 
 	}
 
@@ -214,56 +246,47 @@ export function collectPlaces( ctx ) {
 
 	}
 
-	// --- Hostinec U Rotundy (Karoliny Světlé 17, house no. 1035)
+	// --- Hostinec U Rotundy (Karoliny Světlé 17, house no. 1035): a rusticated ground floor of four round arches
+	// (the door in the first, the pub's window in the second), the red sign, a relief frieze above. The room behind
+	// the first two arches.
 	{
 
 		const node = nodeById( 552405058 );
 		const f = facadeNear( node.X, node.Y, { number: 1035 } ) || facadeNear( node.X, node.Y );
-		const s = Math.max( 3, Math.min( f.len - 3, f.t * f.len ) );
-		interior( 'Hostinec U Rotundy', 'pub', f, s, { maxW: 8, maxD: 9 } );
-		sign( f, s, 3.0, 'HOSTINEC U ROTUNDY', 'pub' );
-		sign( f, s + 3.2 < f.len - 0.6 ? s + 3.2 : s - 3.2, 3.4, 'Pilsner Urquell', 'beer' );
-		if ( f.len > 9 ) terrace( f, Math.max( 1.5, s - 4.5 ), Math.max( 1.5, s - 4.5 ), 1.4, 'pub' );
+		const W = Math.min( 14, f.len - 0.6 ), bay = W / 4;
+		const s = Math.max( W / 2 + 0.3, Math.min( f.len - W / 2 - 0.3, f.t * f.len ) );
+		const doorX = - 1.5 * bay, w = Math.min( 7.5, 2 * bay + 0.6 ), roomX = doorX + w / 2 - 1.1;
+		interior( 'Hostinec U Rotundy', 'pub', f, s + sideK( f ) * roomX, { w, maxD: 9, door: doorX - roomX } );
+		venueFront( 'pub', f, s, { width: + W.toFixed( 2 ), bay: + bay.toFixed( 2 ) } );
 
 	}
 
-	// --- Standard Café (Karoliny Světlé 23)
+	// --- Standard Café (Karoliny Světlé 321/23): black awnings over two grey-blue shopfronts with shutters and the
+	// door between them, barrel planters, folding wooden tables and white bistro tables on the paving.
 	{
 
-		// House no. 321 (Karoliny Světlé 321/23), its front on Karoliny Světlé, by the address point.
 		const f = frontFacing( ...S( - 277.5, 138.3 ), ...S( - 268, 138.3 ), { number: 321 } );
-		const s = Math.max( 3, Math.min( f.len - 3, f.t * f.len ) );
-		interior( 'Standard', 'cafe', f, s, { maxW: 7, maxD: 8 } );
-		sign( f, s, 2.95, 'STANDARD', 'cafe' );
-		terrace( f, Math.min( f.len - 1.5, s + 2.6 ), Math.min( f.len - 1.5, s + 2.6 ), 1.1, 'cafe' );
+		const s = Math.max( 4, Math.min( f.len - 4, f.t * f.len ) );
+		interior( 'Standard', 'cafe', f, s, { w: 6.5, maxD: 8 } );
+		venueFront( 'cafe', f, s );
+		tablesAt( f, s, 'fold', [ [ - 2.5, 1.0 ], [ 2.6, 1.0 ], [ 0.9, 3.4, 'bistro' ], [ 3.8, 3.6, 'fold' ], [ - 1.6, 3.6, 'bistro' ] ] );
 
 	}
 
-	// --- Champagneria (Průchodní 2): bistro tables in the gas-lit passage, festoon lights across it.
+	// --- Champagneria (Průchodní 4): on the little square with the big tree at the Bartolomějská end of Průchodní.
+	// A weathered ochre wall with bare stone and graffiti faces the square from the north, the doorway at its east
+	// end by the lane; tables with parasols along it.
 	{
 
-		// Průchodní 4: the east side of the passage, towards its Bartolomějská end.
-		const f = frontFacing( ...S( - 43.6, 138 ), ...S( - 45.5, 138 ) );
-		const s = Math.max( 3, Math.min( f.len - 3, f.t * f.len ) );
-		interior( 'Champagneria', 'champagne', f, s, { maxW: 7, maxD: 8 } );
-		sign( f, s, 2.95, 'CHAMPAGNERIA', 'champagne' );
-		const free = side => {
-
-			let d = 0.5;
-			while ( d < 12 && ! inKept( f.a[ 0 ] + f.ux * side + f.n[ 0 ] * d, f.a[ 1 ] + f.uy * side + f.n[ 1 ] * d ) ) d += 0.25;
-			return d;
-
-		};
-
-		const across = Math.min( free( s ), 9 );
-		terrace( f, Math.max( 1.5, s - 4.8 ), Math.max( 1.5, s - 2.4 ), Math.min( 1.3, across * 0.3 ), 'champagne' );
-		terrace( f, Math.min( f.len - 1.5, s + 2.4 ), Math.min( f.len - 1.5, s + 4.8 ), Math.min( 1.3, across * 0.3 ), 'champagne' );
-		for ( let k = - 2; k <= 2; k ++ ) {
-
-			const c = frame( f, Math.max( 0.5, Math.min( f.len - 0.5, s + k * 2.5 ) ) );
-			places.lights.push( { a: [ c.x, + ( c.y + 3.6 ).toFixed( 2 ), c.z ], b: [ + ( c.x + c.n[ 0 ] * across ).toFixed( 2 ), + ( c.y + 3.4 ).toFixed( 2 ), + ( c.z + c.n[ 1 ] * across ).toFixed( 2 ) ] } );
-
-		}
+		const f = frontFacing( ...S( - 56, 137.4 ), ...S( - 56, 148 ) );
+		const s = f.t * f.len;
+		const front = venueFront( 'champagne', f, s );
+		const doorX = front.right - 1.0, w = Math.min( 6.5, front.left + front.right - 1.2 ), roomX = doorX - ( w / 2 - 1.0 );
+		interior( 'Champagneria', 'champagne', f, s + sideK( f ) * roomX, { w, maxD: 8, door: doorX - roomX } );
+		front.door = + doorX.toFixed( 2 );
+		const spots = [];
+		for ( let x = - front.left + 1.0; x < doorX - 1.6; x += 2.0 ) spots.push( [ x, 0.75 ] );
+		tablesAt( f, s, 'champagne', spots );
 
 	}
 

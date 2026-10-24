@@ -1377,7 +1377,7 @@ for ( const sg of pendingSigns ) {
 	const len = Math.hypot( bx - ax, by - ay );
 	// The signature places carry their own signs (tools/places.mjs).
 	const [ sx, , sz ] = toLocal( ax + ( bx - ax ) * sg.t, ay + ( by - ay ) * sg.t, 0 );
-	if ( places.signs.some( p => Math.hypot( p.x - sx, p.z - sz ) < 9 ) ) continue;
+	if ( [ ...places.signs, ...places.fronts ].some( p => Math.hypot( p.x - sx, p.z - sz ) < ( p.width ? p.width / 2 + 3 : 9 ) ) ) continue;
 	const key = `${sg.b.code}_${sg.i}`;
 	const slot = used.get( key ) || 0;
 	used.set( key, slot + 1 );
