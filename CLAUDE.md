@@ -116,3 +116,10 @@ Headless Chromium via Playwright renders the game: `tools/screenshot.mjs <url> <
 - Seasonal wooden market stalls in front of Betlémská kaple.
 - The garden of the Náprstek museum (playground, trees) behind the new wall.
 - Karoliny Světlé by the rotunda; Most Legií visuals.
+
+## Improving a grid square
+
+`npm run square -- prepare|merge x<i>_z<j>` (tools/square.mjs) runs the street-photo review for one 100 m square;
+the reviewer instructions are in docs/review-brief.md and the whole workflow in docs/realism-workflow.md. Needs
+`GMAPS_KEY` in the environment for Street View (never in the repo); photos go to `STREETVIEW_DIR`
+(default ../vinko-streetview/), work files to `.square/` (gitignored).

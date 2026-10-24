@@ -3,3 +3,5 @@ dist
 data/raw
 artifact/assets
 artifact/data
+.square
+*.streetview.jpg
