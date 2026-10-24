@@ -607,11 +607,18 @@
 		"signs": false
 	},
 	"21644331": {
-		"note": "Konviktská 2: photos look along the street rather than at the front; the corner building on this side is an ornate sandstone-beige neo-renaissance block with banded ground floor, balustraded windows and large ground-floor openings (Street View)",
-		"signs": false
+		"note": "Konviktská 2 / Divadelní corner: grand pale beige neo-renaissance apartment palace. Banded rusticated ground floor with big round-arched windows; piano nobile with balustraded balconies and engaged columns; rich cornices and console brackets above; about five storeys to the main cornice. Faces the Kranner's Fountain park across Divadelní (Street View 2024)",
+		"signs": false,
+		"colour": "#d8c9af",
+		"trim": "#ccbb9c",
+		"floors": 5,
+		"ground": "windows",
+		"rustic": "banded",
+		"grilles": false,
+		"graffiti": false
 	},
 	"21644349": {
-		"note": "Konviktská 1 / Karoliny Světlé 21: plain baroque house in warm beige, eared window surrounds with heavy cornice hoods; ground floor in banded rustication with arched bays holding brown doors and grilled windows with flower boxes; restaurant Století lettering near the right end (Street View)",
+		"note": "Divadelní 20 / Karoliny Světlé 21: plain baroque house in warm beige, eared window surrounds with cornice hoods; banded rusticated ground floor with arched bays, brown doors and grilled windows with flower boxes; lower than its ornate neighbours (three storeys). OSM lists Communio (social facility) here but no visible sign (Street View 2024)",
 		"colour": "#e2d2ab",
 		"trim": "#d3c096",
 		"ground": "windows",
@@ -631,13 +638,20 @@
 		"signs": false
 	},
 	"21644365": {
-		"note": "Karoliny Světlé 25 / Betlémská corner: probably the yellow house with brown-orange trim and a wall lantern at the right of the photo; seen obliquely (Street View)",
+		"note": "Divadelní 24 / Betlémská / Karoliny Světlé corner: renovated pale cream house, NOT the yellow brown-trim house the old note described. Smooth sandstone-clad ground floor with modern dark-framed glass shopfront doors; tall upper windows with simple iron French balconies; about five storeys. White Sage Therapy occupies the ground floor. A wall lantern sits on the narrow Karoliny Světlé passage side ",
 		"edges": {
 			"1": {
 				"lanterns": true
 			}
 		},
-		"signs": false
+		"signs": false,
+		"colour": "#dcd3c0",
+		"trim": "#e8e0cf",
+		"floors": 5,
+		"ground": "shops",
+		"rustic": "none",
+		"grilles": false,
+		"graffiti": false
 	},
 	"21644373": {
 		"note": "Karoliny Světlé 27 (plate 323/27): pale yellow three-storey house with orange window frames, cornices and plinth; seen obliquely, no Platina sign visible (Street View)",
@@ -1113,6 +1127,17 @@
 		"note": "Karoliny Světlé 7: pale grey-white neo-renaissance front, round-arched first-floor windows with balustrades, round-arched ground-floor openings; seen obliquely (Street View)",
 		"signs": false
 	},
+	"21650004": {
+		"note": "Divadelní 18: grand warm pink-beige neo-renaissance apartment house; banded rusticated ground floor with round-arched windows in moulded surrounds, upper floors with louvred shutters and console brackets under the sills, heavy cornice. About five storeys (Street View 2024)",
+		"colour": "#d8c3b0",
+		"trim": "#ccbaa2",
+		"floors": 5,
+		"ground": "windows",
+		"rustic": "banded",
+		"grilles": false,
+		"graffiti": false,
+		"signs": false
+	},
 	"21650039": {
 		"note": "Konviktská 7/9: neo-renaissance houses; no. 9 (edges 6, 8) in pale yellow-cream, no. 7 (edge 15) in off-white cream; banded rustication with grilled windows on the lower floors, balustrades and arched windows with rich stucco above; large arched gate at no. 7; Golden Tikka and Sad Man's Tongue at street level (Street View)",
 		"colour": "#ecdcae",
@@ -1124,6 +1149,22 @@
 		"graffiti": false,
 		"edges": {
 			"15": {
+				"lanterns": true
+			}
+		},
+		"signs": false
+	},
+	"21650365": {
+		"note": "Divadelní 22: very ornate white (pale cream) neo-gothic / neo-renaissance house. Elaborate pointed-arch carriage portal with rich stucco tracery and an iron gate, an oriel bay window above the entrance, iron balconies and a wall lantern beside the door; blue '22' number plate. Four to five storeys (Street View 2024)",
+		"colour": "#ebe6dc",
+		"trim": "#f2efe8",
+		"floors": 4,
+		"ground": "gate",
+		"rustic": "ornate",
+		"grilles": false,
+		"graffiti": false,
+		"edges": {
+			"4": {
 				"lanterns": true
 			}
 		},
@@ -1334,6 +1375,14 @@
 		"ground": "windows",
 		"rustic": "none"
 	},
+	"21661014": {
+		"note": "Národní 22: cream-yellow house with bay windows, CAFÉ LOUVRE in red letters across the first floor, dark green shopfronts below (Street View 2026)",
+		"colour": "#e8d5a6",
+		"trim": "#f2e7c8",
+		"ground": "shops",
+		"rustic": "none",
+		"signs": false
+	},
 	"21675201": {
 		"note": "Masarykovo nábřeží: cream-yellow ornate house with shops",
 		"colour": "#e3cf98",
@@ -1368,6 +1417,10 @@
 		"trim": "#e0d6c4",
 		"ground": "restaurant",
 		"rustic": "ornate"
+	},
+	"40357422": {
+		"note": "No address, len ~5 m: a low pale garden building/pavilion set among trees inside the Kranner's Fountain park, off Smetanovo nábřeží. No street front is visible; the photo shows mostly garden and trees with only a glimpse of a pale two-storey wall behind. Not describable in detail (Street View)",
+		"signs": false
 	},
 	"48864005": {
 		"note": "Národní, St Ursula's church: baroque front with salmon-pink recessed panels framed by white pilasters and cornices, central stone portal with statue in a niche above, oval oculi, statues on the gable. Current colours confirmed (pink a touch deeper). (Street View 2026)",
@@ -1416,13 +1469,5 @@
 		},
 		"signs": false
 	},
-	"_about": "Hand-written descriptions of individual houses, read from street-level photos (tools/facade-views.mjs → data/raw/views/house-<code>_<edge>.jpg). Keyed by RÚIAN building code. Colours are sRGB. ground: shops | restaurant | windows | gate | blank. rustic: none | banded | ornate. edges: per-facade extras by footprint edge index (awning, banner, lanterns). signs: false keeps the OpenStreetMap shop signs off (only what the photos show).",
-	"21661014": {
-		"note": "Národní 22: cream-yellow house with bay windows, CAFÉ LOUVRE in red letters across the first floor, dark green shopfronts below (Street View 2026)",
-		"colour": "#e8d5a6",
-		"trim": "#f2e7c8",
-		"ground": "shops",
-		"rustic": "none",
-		"signs": false
-	}
+	"_about": "Hand-written descriptions of individual houses, read from street-level photos (tools/facade-views.mjs → data/raw/views/house-<code>_<edge>.jpg). Keyed by RÚIAN building code. Colours are sRGB. ground: shops | restaurant | windows | gate | blank. rustic: none | banded | ornate. edges: per-facade extras by footprint edge index (awning, banner, lanterns). signs: false keeps the OpenStreetMap shop signs off (only what the photos show)."
 }

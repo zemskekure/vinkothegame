@@ -843,5 +843,18 @@
 		"font": "sans",
 		"street": "naprstkova",
 		"what": "projecting box sign (owner photo)"
+	},
+	{
+		"front": "21644365_8",
+		"fromLeft": 0.4,
+		"height": 2.6,
+		"kind": "letters",
+		"text": "WHITE SAGE",
+		"sub": "THERAPY",
+		"width": 1.2,
+		"ink": "#f2f2ee",
+		"font": "sans",
+		"street": "x-4_z1",
+		"what": "White Sage Therapy logo (wavy monogram) and lettering on the glass entrance door; matches the OSM fitness_centre place"
 	}
 ]
