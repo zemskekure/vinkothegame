@@ -1,59 +1,4 @@
 {
-	"_about": "Hand-written descriptions of individual houses, read from street-level photos (tools/facade-views.mjs → data/raw/views/house-<code>_<edge>.jpg). Keyed by RÚIAN building code. Colours are sRGB. ground: shops | restaurant | windows | gate | blank. rustic: none | banded | ornate. edges: per-facade extras by footprint edge index (awning, banner, lanterns). signs: false keeps the OpenStreetMap shop signs off (only what the photos show).",
-	"21649685": {
-		"note": "Národní / Smetanovo nábřeží: Lažanský palác (FAMU upstairs, Kavárna Slavia on the corner): neo-renaissance in pale sandstone, ornate stucco, big café windows under dark green awnings, KAVÁRNA SLAVIA lettering",
-		"colour": "#ddd3bf",
-		"trim": "#ebe5d6",
-		"ground": "restaurant",
-		"rustic": "ornate",
-		"edges": {
-			"0": {
-				"awning": "#2f5b3c"
-			},
-			"7": {
-				"awning": "#2f5b3c"
-			},
-			"9": {
-				"awning": "#2f5b3c"
-			}
-		}
-	},
-	"21643296": {
-		"note": "Smetanovo nábřeží 198 / Novotného lávka: Karlovy lázně club, dark red-brown front, arched ground-floor windows boarded white and tagged",
-		"colour": "#7d3e2f",
-		"trim": "#94523f",
-		"ground": "blank",
-		"graffiti": true,
-		"rustic": "none"
-	},
-	"21652252": {
-		"note": "Slovanský ostrov: Žofín palace, ochre-yellow neo-renaissance with white dressings",
-		"colour": "#e6c56e",
-		"trim": "#f4ecd6",
-		"ground": "windows",
-		"rustic": "banded"
-	},
-	"21652481": {
-		"note": "Masarykovo nábřeží / Slovanský ostrov: Mánes, white functionalist gallery with ribbon windows and MÁNES lettering",
-		"colour": "#f1f0eb",
-		"trim": "#e6e5df",
-		"ground": "windows",
-		"rustic": "none"
-	},
-	"21645132": {
-		"note": "Národní 37: Platýz, classicist palace in cream with white dressings, shops below, passage to Uhelný trh",
-		"colour": "#e8dfcb",
-		"trim": "#f5f1e6",
-		"ground": "shops",
-		"rustic": "banded"
-	},
-	"21649553": {
-		"note": "Smetanovo nábřeží 6: Charles University, Faculty of Social Sciences (Hollar), pale cream classicist palace behind railings and trees",
-		"colour": "#e6dcc3",
-		"trim": "#f2ecdd",
-		"ground": "windows",
-		"rustic": "banded"
-	},
 	"21643253": {
 		"note": "Smetanovo nábřeží by Karlův most: pale cream house with a great arched gateway over the street",
 		"colour": "#ece4d2",
@@ -68,6 +13,14 @@
 		"ground": "windows",
 		"rustic": "none"
 	},
+	"21643296": {
+		"note": "Smetanovo nábřeží 198 / Novotného lávka: Karlovy lázně club, dark red-brown front, arched ground-floor windows boarded white and tagged",
+		"colour": "#7d3e2f",
+		"trim": "#94523f",
+		"ground": "blank",
+		"graffiti": true,
+		"rustic": "none"
+	},
 	"21643342": {
 		"note": "Smetanovo nábřeží: cream upper floors over a black-fronted bar",
 		"colour": "#e2d6bd",
@@ -75,312 +28,129 @@
 		"ground": "restaurant",
 		"rustic": "none"
 	},
-	"21644420": {
-		"note": "Smetanovo nábřeží: Bellevue, red brick and sandstone neo-renaissance with a corner turret",
-		"colour": "#b2604a",
-		"trim": "#e3d2b0",
+	"21643351": {
+		"note": "Smetanovo nábřeží 22 / Na zábradlí 1 corner: cream neo-baroque corner house with rich stucco window heads, rusticated ground floor with round-arched openings, Prague Beer Museum pub with pale grey awnings and terrace (Street View)",
+		"colour": "#ece3cc",
+		"trim": "#f5efe0",
+		"floors": 5,
+		"ground": "restaurant",
+		"rustic": "ornate",
+		"grilles": false,
+		"graffiti": false,
+		"edges": {
+			"0": {
+				"awning": "#cfcac0"
+			}
+		},
+		"signs": false
+	},
+	"21643369": {
+		"note": "Náprstkova (no. 208): off-white classicist front, banded rusticated ground floor with voussoirs over tall round-arched glazed doors with fanlights, pedimented upper windows. Confirms current; wall lanterns not visible in this photo, so dropped (Street View)",
+		"colour": "#ece8de",
+		"trim": "#f6f3ec",
 		"ground": "windows",
-		"rustic": "ornate"
+		"rustic": "banded",
+		"signs": false,
+		"edges": {
+			"15": {
+				"lanterns": true
+			},
+			"17": {
+				"awning": "#2e2e2e",
+				"lanterns": true
+			}
+		},
+		"floors": 4,
+		"grilles": false,
+		"graffiti": false
 	},
-	"21644438": {
-		"note": "Smetanovo nábřeží: red and cream striped neo-renaissance with stucco gables",
-		"colour": "#b8655a",
-		"trim": "#e6d4b4",
-		"ground": "windows",
-		"rustic": "ornate"
-	},
-	"21644403": {
-		"note": "Smetanovo nábřeží: red brick with ochre ornament and balconies",
-		"colour": "#b0614b",
-		"trim": "#dcb987",
-		"ground": "windows",
-		"rustic": "ornate"
-	},
-	"21644390": {
-		"note": "Smetanovo nábřeží: ochre house with round-arched windows",
-		"colour": "#cfb07a",
-		"trim": "#e4cfa2",
-		"ground": "windows",
-		"rustic": "banded"
-	},
-	"21644381": {
-		"note": "Smetanovo nábřeží: pale grey-lilac house, arched ground-floor windows and a big wooden door",
-		"colour": "#cdc6c6",
-		"trim": "#e6e1de",
-		"ground": "windows",
-		"rustic": "banded"
-	},
-	"21645990": {
-		"note": "Uhelný trh: white corner house with a shop",
-		"colour": "#efe7d6",
-		"trim": "#f6f1e6",
-		"ground": "shops",
-		"rustic": "none"
-	},
-	"21646091": {
-		"note": "Uhelný trh: cream-yellow house with red-framed shopfronts",
-		"colour": "#f0dfae",
-		"trim": "#f3e9cf",
-		"ground": "shops",
-		"rustic": "none"
-	},
-	"21645213": {
-		"note": "Uhelný trh: red house over a yellow arcaded ground floor",
-		"colour": "#c4503a",
-		"trim": "#e8b84a",
+	"21643393": {
+		"note": "Stříbrná 2 (no. 212): high beige-ochre plastered wall with tile coping, covered in dried creeper tendrils, beside a white baroque portal with a dark arched wooden gate and an ornate bracket lantern; plates 212 / 2 on the portal. Corrected from 'cream house with restaurant and red awning' - no restaurant, awning or menu box seen. Based on 21643393_10 plus the mis-aimed photos 21643946_7, 21643954_12, 21643954_13 which show this wall and portal (Street View 2026)",
+		"signs": false,
+		"colour": "#e3c9a0",
+		"trim": "#f2efe6",
 		"ground": "gate",
-		"rustic": "none"
+		"rustic": "none",
+		"edges": {
+			"10": {
+				"awning": "#a8323f",
+				"lanterns": true
+			}
+		},
+		"grilles": false,
+		"graffiti": false
 	},
-	"21645205": {
-		"note": "Uhelný trh: grey-beige neo-renaissance house with shops",
-		"colour": "#cbbfa8",
-		"trim": "#ddd3c0",
-		"ground": "shops",
-		"rustic": "banded"
-	},
-	"21645175": {
-		"note": "Uhelný trh: cream house with arched openings and dark wooden doors",
-		"colour": "#e9dfc6",
-		"trim": "#f3ecdc",
-		"ground": "gate",
-		"rustic": "none"
-	},
-	"21649367": {
-		"note": "Národní: grey-cream front over the arcade, shops behind the piers",
-		"colour": "#d6cbb5",
-		"trim": "#e6dfcf",
-		"ground": "shops",
-		"rustic": "banded"
-	},
-	"21644519": {
-		"note": "Národní: ochre-brown neo-renaissance with dressed window surrounds",
-		"colour": "#b99472",
-		"trim": "#d6bd9c",
-		"ground": "shops",
-		"rustic": "ornate"
-	},
-	"21644501": {
-		"note": "Národní: salmon-orange baroque house",
-		"colour": "#d38a5c",
-		"trim": "#ecd2b2",
-		"ground": "shops",
-		"rustic": "banded"
-	},
-	"21651191": {
-		"note": "Národní by Máj: cream house over a dark green glazed art-nouveau shopfront",
-		"colour": "#e2d8c6",
-		"trim": "#efe9dd",
-		"ground": "shops",
-		"rustic": "banded"
-	},
-	"21649651": {
-		"note": "Národní 3: Academy of Sciences, sandstone neo-renaissance palace",
-		"colour": "#c9b38e",
-		"trim": "#dcc9a6",
+	"21643407": {
+		"note": "Náprstkova 5 (no. 213, plate 213 visible): yellow-ochre house, upper floor weathered/greyer, plain moulded window frames, lattice grilles on ground-floor windows, a blind panel with vent, heavy tags on the lower wall. Confirms current; colour a touch more saturated yellow (Street View 2025)",
+		"colour": "#dfbf5e",
+		"trim": "#e9d69a",
 		"ground": "windows",
-		"rustic": "ornate"
+		"grilles": true,
+		"graffiti": true,
+		"rustic": "none",
+		"signs": false
 	},
-	"21649677": {
-		"note": "Národní: long salmon-pink baroque front",
-		"colour": "#e2b9a3",
-		"trim": "#f0e2d5",
-		"ground": "windows",
-		"rustic": "none"
-	},
-	"48864005": {
-		"note": "Národní: St Ursula's church, salmon pink with white pilasters",
-		"colour": "#e3a99a",
-		"trim": "#f2e6dc",
-		"ground": "blank",
-		"rustic": "none"
-	},
-	"21651078": {
-		"note": "Spálená: Divadlo Ypsilon, blue-framed glazing along the ground floor",
-		"colour": "#d7d0c3",
-		"trim": "#e7e2d8",
-		"ground": "shops",
-		"rustic": "none"
-	},
-	"21651060": {
-		"note": "Spálená: green-grey art-nouveau house with dark shopfronts",
-		"colour": "#a9b0a0",
-		"trim": "#c7cbbd",
-		"ground": "shops",
-		"rustic": "banded"
-	},
-	"21651035": {
-		"note": "Spálená: cream house with a dark wooden restaurant front",
-		"colour": "#efe5cf",
-		"trim": "#f6f0e3",
+	"21643415": {
+		"note": "Náprstkova 7 (no. 214): low white two-storey house under a tiled roof, cream-yellow ground floor with dark wooden doors, flower boxes under the upper windows; FOSIL Mexican restaurant board at the left end, round RESTAURACE hanging sign, 'Old Prague House' letters on the upper wall. Corrected from 'pale yellow neo-renaissance, banded rustication, shuttered shops' - that describes the neighbour no. 215 (Street View 2025)",
+		"colour": "#ede8da",
+		"trim": "#f6f3ea",
 		"ground": "restaurant",
-		"rustic": "banded"
+		"rustic": "none",
+		"floors": 2,
+		"grilles": false,
+		"graffiti": false,
+		"signs": false
 	},
-	"21651027": {
-		"note": "Spálená: cream neo-renaissance with a green shopfront",
-		"colour": "#e3dccb",
-		"trim": "#efeadf",
+	"21643423": {
+		"note": "Náprstkova 9 (no. 215): pale lemon-yellow neo-renaissance block with horizontal rustication on all floors, dentil cornices and segmental window pediments; pedimented doorway with reclining figures and a red-brown door, black shopfronts with red doors (Donuterie, round pink logo), brown shutter boxes and brown double gates. Confirms current; floors added (Street View 2026)",
+		"colour": "#e9e3a8",
+		"trim": "#f3efcd",
 		"ground": "shops",
-		"rustic": "banded"
+		"rustic": "banded",
+		"floors": 5,
+		"grilles": false,
+		"graffiti": false,
+		"signs": false
 	},
-	"21651019": {
-		"note": "Spálená: pale green-grey house with a dark green shopfront",
-		"colour": "#cfd1bf",
-		"trim": "#e2e3d6",
-		"ground": "shops",
-		"rustic": "none"
-	},
-	"21650977": {
-		"note": "Spálená: cream house with a supermarket",
-		"colour": "#e6dcc9",
-		"trim": "#f1ebdf",
-		"ground": "shops",
-		"rustic": "none"
-	},
-	"21650969": {
-		"note": "Spálená: Restaurace U Kotvy, cream with stucco crowns",
-		"colour": "#e0d6c4",
-		"trim": "#eee7da",
+	"21643431": {
+		"note": "Náprstkova 11 / Liliová 1 (no. 216): ochre-sandstone neo-renaissance corner house with rich stucco, arched first-floor windows in block surrounds, a corbelled corner balcony; pale cream banded-rusticated ground floor with red window frames and 'V Zátiší' letters. Edge 9 shows a narrow cream house with pink window surrounds and a BEYOND THE BAR board. New entry (Street View 2026)",
+		"colour": "#d4ad74",
+		"trim": "#e3c592",
 		"ground": "restaurant",
-		"rustic": "banded"
+		"rustic": "ornate",
+		"grilles": false,
+		"graffiti": false,
+		"edges": {
+			"9": {
+				"lanterns": true
+			}
+		},
+		"signs": false
 	},
-	"21650934": {
-		"note": "Spálená: long ochre-yellow neo-renaissance block",
-		"colour": "#e3c063",
-		"trim": "#efdca0",
-		"ground": "windows",
-		"rustic": "banded"
-	},
-	"21650926": {
-		"note": "Spálená: long ochre-yellow neo-renaissance block",
-		"colour": "#e3c063",
-		"trim": "#efdca0",
-		"ground": "windows",
-		"rustic": "banded"
-	},
-	"21650918": {
-		"note": "Spálená: long ochre-yellow neo-renaissance block",
-		"colour": "#e3c063",
-		"trim": "#efdca0",
-		"ground": "windows",
-		"rustic": "banded"
-	},
-	"21652236": {
-		"note": "Masarykovo nábřeží: beige neo-baroque apartment house",
-		"colour": "#d8c8ad",
-		"trim": "#e7dcc8",
-		"ground": "windows",
-		"rustic": "ornate"
-	},
-	"21652350": {
-		"note": "Masarykovo nábřeží: ochre art-nouveau house with balconies and arched ground floor",
-		"colour": "#e0b65a",
-		"trim": "#efd9a0",
-		"ground": "windows",
-		"rustic": "ornate"
-	},
-	"21652341": {
-		"note": "Masarykovo nábřeží: pinkish-beige house with an oriel",
-		"colour": "#d8c2b3",
-		"trim": "#e9ddd2",
-		"ground": "windows",
-		"rustic": "banded"
-	},
-	"21652333": {
-		"note": "Masarykovo nábřeží: cream ornate apartment house with a restaurant",
-		"colour": "#dccbae",
-		"trim": "#ebe0cc",
+	"21643750": {
+		"note": "Betlémské náměstí 2 / Liliová 2 (no. 251): historicist block in cream-beige (not pinkish), balustraded window sills, banded rusticated ground floor with round arches, dark red window frames, white awnings, Pilsner Urquell plaque at the corner. Colour corrected; rest confirmed (Street View 2024)",
+		"signs": false,
+		"colour": "#e3d2ac",
+		"trim": "#eee2c6",
+		"floors": 5,
 		"ground": "restaurant",
-		"rustic": "ornate"
-	},
-	"21652325": {
-		"note": "Masarykovo nábřeží: pale grey-cream art-nouveau corner house",
-		"colour": "#dcd5c8",
-		"trim": "#ebe6dc",
-		"ground": "windows",
-		"rustic": "ornate"
-	},
-	"21652384": {
-		"note": "Masarykovo nábřeží: grey-white ornate apartment house",
-		"colour": "#d6d2ca",
-		"trim": "#e8e5df",
-		"ground": "windows",
-		"rustic": "ornate"
-	},
-	"21652376": {
-		"note": "Masarykovo nábřeží: ochre ornate apartment house",
-		"colour": "#d8b67a",
-		"trim": "#e9d3a8",
-		"ground": "windows",
-		"rustic": "ornate"
-	},
-	"21652368": {
-		"note": "Masarykovo nábřeží: ochre-cream ornate house with shops",
-		"colour": "#d9bd8a",
-		"trim": "#eadab9",
-		"ground": "shops",
-		"rustic": "ornate"
-	},
-	"21652473": {
-		"note": "Masarykovo nábřeží: ochre ornate apartment house",
-		"colour": "#d4b47c",
-		"trim": "#e7d2aa",
-		"ground": "windows",
-		"rustic": "ornate"
-	},
-	"21652465": {
-		"note": "Masarykovo nábřeží: plain grey apartment house",
-		"colour": "#cbc6bd",
-		"trim": "#dfdbd3",
-		"ground": "windows",
-		"rustic": "banded"
-	},
-	"21652457": {
-		"note": "Masarykovo nábřeží: cream-grey ornate corner house",
-		"colour": "#ddd5c6",
-		"trim": "#ece7dd",
-		"ground": "windows",
-		"rustic": "ornate"
-	},
-	"21675244": {
-		"note": "Masarykovo nábřeží: grey-beige house with a red brick centre and a wine bar",
-		"colour": "#cdbfa8",
-		"trim": "#e0d6c4",
-		"ground": "restaurant",
-		"rustic": "ornate"
-	},
-	"21675236": {
-		"note": "Masarykovo nábřeží: grey art-nouveau house with restaurants",
-		"colour": "#c8c3b8",
-		"trim": "#dedad2",
-		"ground": "restaurant",
-		"rustic": "ornate"
-	},
-	"21675228": {
-		"note": "Masarykovo nábřeží: yellow ornate house with restaurants",
-		"colour": "#e4c56d",
-		"trim": "#f0dca6",
-		"ground": "restaurant",
-		"rustic": "ornate"
-	},
-	"21675210": {
-		"note": "Masarykovo nábřeží: yellow ornate corner house, arched restaurant fronts",
-		"colour": "#e2c470",
-		"trim": "#efdba8",
-		"ground": "restaurant",
-		"rustic": "ornate"
-	},
-	"21675201": {
-		"note": "Masarykovo nábřeží: cream-yellow ornate house with shops",
-		"colour": "#e3cf98",
-		"trim": "#f0e4c4",
-		"ground": "shops",
-		"rustic": "ornate"
+		"rustic": "banded",
+		"edges": {
+			"0": {
+				"awning": "#f1efe8"
+			},
+			"11": {
+				"awning": "#f1efe8"
+			}
+		},
+		"grilles": false,
+		"graffiti": false
 	},
 	"21643768": {
-		"note": "Náprstkova: long white two-storey house with dormers and an orange tile roof, barred ground-floor windows, wall lanterns",
+		"note": "Náprstkova (no. 252, Pachtův palác): long pale grey-white two-storey house, plain white window surrounds with sill panels, string course, dark roof; door flanked by two wall lanterns on front 34. Confirms current, colour slightly greyer; edges 30/32 not reviewed here (Street View 2026)",
 		"signs": false,
-		"colour": "#ece6d8",
-		"trim": "#f6f2e9",
+		"colour": "#e4e0d4",
+		"trim": "#f3f1ea",
 		"floors": 2,
 		"ground": "windows",
 		"grilles": true,
@@ -395,7 +165,130 @@
 			"34": {
 				"lanterns": true
 			}
+		},
+		"graffiti": false
+	},
+	"21643776": {
+		"note": "Betlémské náměstí 3: white three-storey house with dormers in the red roof (Street View 2023)",
+		"signs": false,
+		"colour": "#f3f1ec",
+		"trim": "#fbfaf6",
+		"floors": 3,
+		"ground": "windows",
+		"rustic": "none"
+	},
+	"21643806": {
+		"note": "Betlémské náměstí 9 / Konviktská 19: Hotel Betlem Club, four storeys plus dormered red roof; greenish-white upper floors with window hoods, pale green banded ground floor with lattice iron grilles, arched doors, wall lanterns and three flags; 'HOTEL' lettering on the upper floor. Current model confirmed; ground floor is pale green rather than just pale, grilles added (Street View)",
+		"signs": false,
+		"colour": "#eef0e8",
+		"trim": "#f8f8f2",
+		"floors": 4,
+		"ground": "windows",
+		"rustic": "banded",
+		"grilles": true,
+		"graffiti": false,
+		"edges": {
+			"2": {
+				"lanterns": true
+			}
 		}
+	},
+	"21643814": {
+		"note": "Betlémské náměstí 10: white four-storey house with dormers, Oliva Nera's terrace in the square in front (Street View 2023–25)",
+		"signs": false,
+		"colour": "#f1eee6",
+		"trim": "#faf8f2",
+		"floors": 4,
+		"ground": "restaurant",
+		"rustic": "none"
+	},
+	"21643822": {
+		"note": "Betlémské náměstí: pale green house with a café terrace under white awnings",
+		"signs": false,
+		"colour": "#c6d2bf",
+		"trim": "#e3e8dc",
+		"ground": "restaurant",
+		"rustic": "none",
+		"edges": {
+			"0": {
+				"awning": "#f1efe8"
+			},
+			"1": {
+				"awning": "#f1efe8"
+			}
+		}
+	},
+	"21643831": {
+		"note": "Betlémská: pale green-grey house with a big arched wooden gate in a stone surround, barred windows",
+		"signs": false,
+		"colour": "#c9d1c0",
+		"trim": "#dfe3d6",
+		"ground": "gate",
+		"grilles": true,
+		"rustic": "none"
+	},
+	"21643849": {
+		"note": "Konviktská 13 area: narrow 1930s house, weathered dark grey-brown render, plain wide windows, dark red-brown brick ground floor with a small shop window and door; top floors not visible (Street View)",
+		"colour": "#6f6858",
+		"trim": "#6f6858",
+		"ground": "shops",
+		"rustic": "none",
+		"grilles": false,
+		"graffiti": false,
+		"signs": false
+	},
+	"21643857": {
+		"note": "Konviktská 11: narrow two-bay house; rough white plaster first floor under a small red-tiled ledge, smoother cream upper floors with round stucco medallions; restaurant with grey parasols at street level. Floor count estimated, top not visible (Street View)",
+		"colour": "#ebe8e0",
+		"trim": "#e3dccb",
+		"floors": 5,
+		"ground": "restaurant",
+		"rustic": "none",
+		"grilles": false,
+		"graffiti": false,
+		"signs": false
+	},
+	"21643865": {
+		"note": "Konviktská 5/7: Residence Bologna, 1930s functionalist block, white render with rounded glazed corner bays and a setback top; grey stone-clad ground floor with large shop windows, green-and-white striped awnings, brass lanterns, red geranium boxes along the first-floor ledge and red vertical BOLOGNA banners (Street View)",
+		"colour": "#eeeeea",
+		"trim": "#f6f6f2",
+		"floors": 6,
+		"ground": "restaurant",
+		"rustic": "none",
+		"grilles": false,
+		"graffiti": false,
+		"edges": {
+			"19": {
+				"awning": "#3f8a5f",
+				"lanterns": true,
+				"banner": {
+					"text": "BOLOGNA",
+					"board": "#b33a3f",
+					"ink": "#ffffff"
+				}
+			}
+		},
+		"signs": false
+	},
+	"21643903": {
+		"note": "Betlémské náměstí 1 (no. 269, U Halánků, Náprstek museum): pale yellow two-storey house with pilasters, red tile roof with dormers, dark red vertical banner, barred ground-floor windows and a wall lantern. Corrected colour (paler than #e8c46c) and ground (barred windows, not gate); seen only at the right edge of the photo (Street View)",
+		"signs": false,
+		"colour": "#e9d9a0",
+		"trim": "#f3e9c6",
+		"floors": 2,
+		"ground": "windows",
+		"rustic": "none",
+		"edges": {
+			"19": {
+				"banner": {
+					"text": "NÁPRSTKOVO MUZEUM",
+					"board": "#9b2335",
+					"ink": "#ffffff"
+				}
+			}
+		},
+		"grilles": true,
+		"graffiti": false
 	},
 	"21643954": {
 		"note": "Náprstkova: cream historicist house with a rusticated white ground floor, dark wooden glazed doors, restaurant with a pink awning, vertical black HOTEL banner",
@@ -423,23 +316,10 @@
 			}
 		}
 	},
-	"21643369": {
-		"note": "Náprstkova: white classicist front, banded rusticated ground floor with round-arched fanlight windows, wall lanterns (Street View 2024)",
-		"colour": "#efebe2",
-		"trim": "#f7f4ee",
-		"ground": "windows",
-		"rustic": "banded",
-		"signs": false,
-		"edges": {
-			"15": {
-				"lanterns": true
-			}
-		}
-	},
 	"21643962": {
-		"note": "Náprstkova: long cream two-storey house with wall lanterns and barred windows (Street View 2024)",
-		"colour": "#e6dfcd",
-		"trim": "#f1ece0",
+		"note": "Náprstkova 4 (no. 275): long curving pale grey-white two-storey baroque house, white window surrounds with sill panels, wavy string course, pair of wall lanterns by the glazed door, diamond-lattice grilles on ground-floor windows. Confirms current, colour greyer (Street View 2026)",
+		"colour": "#e3e0d6",
+		"trim": "#f2f0ea",
 		"ground": "windows",
 		"grilles": true,
 		"rustic": "none",
@@ -448,14 +328,16 @@
 			"1": {
 				"lanterns": true
 			}
-		}
+		},
+		"floors": 2,
+		"graffiti": false
 	},
 	"21643971": {
-		"note": "Náprstkova corner: white house over a café with round-arched windows under a grey-blue band, wall lanterns (Street View 2024)",
-		"colour": "#efede6",
+		"note": "Náprstkova 2 (no. 276): off-white historicist house, pedimented window heads, a band of rustication above the ground floor; café with five round-arched fanlight windows under a dark slate fascia lettered CAFÉ, potted plants, bracket lantern. Confirms current; rustic set to banded (Street View 2026)",
+		"colour": "#eeece5",
 		"trim": "#f7f6f2",
 		"ground": "restaurant",
-		"rustic": "none",
+		"rustic": "banded",
 		"signs": false,
 		"edges": {
 			"0": {
@@ -464,121 +346,445 @@
 			"9": {
 				"lanterns": true
 			}
-		}
+		},
+		"floors": 5,
+		"grilles": false,
+		"graffiti": false
 	},
-	"21643393": {
-		"note": "Náprstkova: cream house with a restaurant, red awning, menu box, potted plants",
-		"signs": false,
-		"colour": "#eadfc8",
-		"trim": "#f3ebda",
+	"21643989": {
+		"note": "Karoliny Světlé 30: pale yellow house, cream window surrounds with pediment heads on consoles, white plaster ground-floor band with big black 'duende' letters and red wooden shutter doors (Café-Bar Duende) (Street View)",
+		"colour": "#e6daa8",
+		"trim": "#efe9d6",
+		"floors": 4,
 		"ground": "restaurant",
-		"rustic": "banded",
-		"edges": {
-			"10": {
-				"awning": "#a8323f"
-			}
-		}
+		"rustic": "none",
+		"grilles": false,
+		"graffiti": false,
+		"signs": false
 	},
-	"21643831": {
-		"note": "Betlémská: pale green-grey house with a big arched wooden gate in a stone surround, barred windows",
-		"signs": false,
-		"colour": "#c9d1c0",
-		"trim": "#dfe3d6",
+	"21643997": {
+		"note": "Karoliny Světlé 30 (plate seen): same pale yellow front as Duende, pedimented window heads on consoles, plain white-grey ground floor with a minimarket behind brown shutter doors (Street View)",
+		"colour": "#e3d7a6",
+		"trim": "#ece6d2",
+		"ground": "shops",
+		"rustic": "none",
+		"grilles": false,
+		"graffiti": false,
+		"signs": false
+	},
+	"21644004": {
+		"note": "Karoliny Světlé 28 (plate 278): cream house, ground floor of big rusticated blocks with wedge voussoirs around a round-arched carriage gate with brown wooden doors; plain window surrounds above (Street View)",
+		"colour": "#ecdcb0",
+		"trim": "#f2e8cc",
 		"ground": "gate",
-		"grilles": true,
-		"rustic": "none"
+		"rustic": "banded",
+		"grilles": false,
+		"graffiti": false,
+		"signs": false
+	},
+	"21644039": {
+		"note": "Karoliny Světlé 26 (keystone '279', plate 26): salmon-pink house with a Madonna statue in a shell niche at first-floor level, black HEMINGWAY BAR board over round-arched ground-floor openings, wall lantern. Boršov photo (edge 8) shows the neighbouring house no. 28, not used (Street View)",
+		"colour": "#dca797",
+		"trim": "#e6bcad",
+		"ground": "restaurant",
+		"rustic": "none",
+		"grilles": false,
+		"graffiti": false,
+		"edges": {
+			"7": {
+				"lanterns": true
+			}
+		},
+		"signs": false
+	},
+	"21644047": {
+		"note": "Karoliny Světlé 24: pale cream-yellow house, window heads with consoles, dentil cornice over the ground floor, black WINESDAY letters on the wall, red and brown wooden shutter doors (Street View)",
+		"colour": "#ebdfb4",
+		"trim": "#f1e8cc",
+		"ground": "restaurant",
+		"rustic": "none",
+		"grilles": false,
+		"graffiti": false,
+		"signs": false
+	},
+	"21644055": {
+		"note": "Karoliny Světlé 22 (plate 284): pale green house with white window surrounds, round bronze memorial plaque with bust of Karolina Světlá between first floor and ground floor, round-arched doorway (Street View)",
+		"colour": "#c8d5c2",
+		"trim": "#eef0e8",
+		"rustic": "none",
+		"grilles": false,
+		"graffiti": false,
+		"signs": false
 	},
 	"21644063": {
-		"note": "Betlémská: neo-renaissance house with dense brown stucco ornament, grey stone base covered in graffiti",
+		"note": "Karoliny Světlé 18: off-white neo-renaissance house, rusticated pilaster strips, pedimented first-floor windows, dentil cornice, round-arched gate with brown door and a glazed brown door (Život 90 / theatre notice boards); north part of the front is the pink-and-cream Hotel & Spa Carolline house (no. 20) with a vertical BERNARD banner. Current (brown stucco, graffiti, blank) was wrong: changed colour, trim, ground, rustic, graffiti (Street View)",
 		"signs": false,
-		"colour": "#8f6c52",
-		"trim": "#a7856a",
-		"ground": "blank",
-		"graffiti": true,
-		"rustic": "ornate"
-	},
-	"21643822": {
-		"note": "Betlémské náměstí: pale green house with a café terrace under white awnings",
-		"signs": false,
-		"colour": "#c6d2bf",
-		"trim": "#e3e8dc",
-		"ground": "restaurant",
-		"rustic": "none",
-		"edges": {
-			"0": {
-				"awning": "#f1efe8"
-			},
-			"1": {
-				"awning": "#f1efe8"
-			}
-		}
-	},
-	"21643903": {
-		"note": "Betlémské náměstí 1: U Halánků, the Náprstek museum: warm yellow, red roof, dark red exhibition banners (Street View 2023–24)",
-		"signs": false,
-		"colour": "#e8c46c",
-		"trim": "#f6ecd0",
-		"floors": 2,
+		"colour": "#ece8dc",
+		"trim": "#f4f1e8",
 		"ground": "gate",
+		"graffiti": false,
 		"rustic": "none",
+		"floors": 3,
+		"grilles": false,
 		"edges": {
-			"19": {
+			"2": {
 				"banner": {
-					"text": "NÁPRSTKOVO MUZEUM",
-					"board": "#9b2335",
-					"ink": "#ffffff"
+					"text": "BERNARD",
+					"board": "#f4f4f2",
+					"ink": "#1f3d7a"
 				}
 			}
 		}
 	},
-	"21643407": {
-		"note": "Náprstkova: ochre house, barred ground-floor windows, tags on the lower wall (Street View 2024)",
-		"colour": "#d8b968",
-		"trim": "#e8d49a",
+	"21644071": {
+		"note": "Konviktská 3 / Betlémská 4: long neo-renaissance block; pale grey-white upper floors with beige stone window pediments, balustrades under first-floor windows and arched second-floor windows; heavy beige banded rustication on the ground floor over a plinth with grilled basement windows; arched gate (tagged) on edge 26 and pedimented wooden doorway at no. 3 on edge 33. No Bianco Nero sign visible (Street View)",
+		"colour": "#e6e4dd",
+		"trim": "#d4cab6",
+		"floors": 4,
 		"ground": "windows",
+		"rustic": "banded",
+		"grilles": false,
+		"graffiti": true,
+		"edges": {
+			"39": {
+				"lanterns": true
+			},
+			"41": {
+				"lanterns": true
+			}
+		},
+		"signs": false
+	},
+	"21644080": {
+		"note": "Konviktská 17: plain classicist house in weathered grey-beige plaster, brown-framed windows, simple pilasters and an arched doorway; edge 9 is a blank white firewall with a black stencil mural (parachute, falling figures) and a memorial plaque. Right half of edge 8 photo shows a white house with pale green ground floor and lattice grilles matching the hotel (Street View)",
+		"colour": "#aaa395",
+		"trim": "#b8b1a2",
+		"floors": 4,
+		"ground": "windows",
+		"rustic": "none",
+		"grilles": false,
+		"graffiti": true,
+		"signs": false
+	},
+	"21644098": {
+		"note": "Konvikt (Konviktská 24 / Průchodní): plain cream baroque houses with steep gables and red tiled roofs, white window surrounds, brown wooden shutters on ground-floor windows; open courtyard with a large tree and restaurant garden with Bernard parasols (Street View)",
+		"signs": false
+	},
+	"21644101": {
+		"note": "Konviktská 22: large baroque palace in cream-beige plaster, ochre plinth storey with ornate iron grilles, arched first-floor windows in banded rustication, richly moulded window heads with segmental pediments above; carved portal with cartouche and wooden door on edge 13; some tags on a side door. Edge 2 photo shows a narrower gabled cream house instead (see issues) (Street View)",
+		"colour": "#e4d7b9",
+		"trim": "#ece3cc",
+		"floors": 5,
+		"ground": "windows",
+		"rustic": "ornate",
 		"grilles": true,
 		"graffiti": true,
-		"rustic": "none"
+		"edges": {
+			"13": {
+				"lanterns": true
+			}
+		},
+		"signs": false
 	},
-	"21643415": {
-		"note": "Náprstkova / Liliová: pale yellow neo-renaissance, banded rustication, shuttered shops, carved door; FOSIL Mexican restaurant in the white wing (Street View 2024)",
-		"colour": "#e9dfa5",
-		"trim": "#f4eecd",
-		"ground": "shops",
-		"rustic": "banded"
+	"21644136": {
+		"note": "Konviktská 14/16: Hotel Cloister Inn, plain modern block in grey render with a setback attic and dormers, dark grey plinth, red awnings over the ground-floor windows, red canopy at the entrance and red vertical CLOISTER INN banners; set back from the street line (Street View)",
+		"colour": "#a7a399",
+		"trim": "#b3afa5",
+		"floors": 4,
+		"ground": "windows",
+		"rustic": "none",
+		"grilles": false,
+		"graffiti": false,
+		"edges": {
+			"16": {
+				"awning": "#b2303c",
+				"banner": {
+					"text": "CLOISTER INN",
+					"board": "#a3283a",
+					"ink": "#ffffff"
+				}
+			}
+		},
+		"signs": false
 	},
-	"21643423": {
-		"note": "Náprstkova: pale yellow historicist house with red doors and dark wooden shopfronts (Donutterie) (Street View 2023)",
-		"colour": "#ece2a6",
-		"trim": "#f5efcf",
-		"ground": "shops",
-		"rustic": "banded"
-	},
-	"21643750": {
-		"note": "Betlémské náměstí 2: five-storey historicist block in pinkish sandstone, arched ground floor with red frames under white awnings, restaurant U Betlémské kaple (Street View 2023–24)",
-		"signs": false,
-		"colour": "#dcb996",
-		"trim": "#ead7bf",
-		"floors": 5,
+	"21644144": {
+		"note": "Konviktská 12: restaurant U Ampezonů; pale grey-green three-storey house with white window hoods and cornices, pale horizontally banded ground floor with pilasters, door with 'u Ampezonů' lettering; tall white side wall facing east painted 'RESTAURACE U AMPEZONŮ', tagged at the bottom (Street View)",
+		"colour": "#d8ded3",
+		"trim": "#f2f2ee",
+		"floors": 3,
 		"ground": "restaurant",
 		"rustic": "banded",
-		"edges": {
-			"0": {
-				"awning": "#f1efe8"
-			},
-			"11": {
-				"awning": "#f1efe8"
-			}
-		}
+		"grilles": false,
+		"graffiti": true,
+		"signs": false
 	},
-	"21643814": {
-		"note": "Betlémské náměstí 10: white four-storey house with dormers, Oliva Nera's terrace in the square in front (Street View 2023–25)",
-		"signs": false,
-		"colour": "#f1eee6",
-		"trim": "#faf8f2",
+	"21644152": {
+		"note": "Konviktská 10: 1930s apartment block in pale yellow render with plain framed windows, travertine-clad ground floor with two brown garage doors, a grilled entrance door with a hanging lantern and grilled windows (Street View)",
+		"colour": "#e3cf9b",
+		"trim": "#ebdcb4",
+		"floors": 6,
+		"ground": "gate",
+		"rustic": "none",
+		"grilles": true,
+		"graffiti": false,
+		"edges": {
+			"14": {
+				"lanterns": true
+			}
+		},
+		"signs": false
+	},
+	"21644161": {
+		"note": "Karoliny Světlé 12: sand-ochre neo-renaissance house, ashlar-rusticated ground floor with a big rusticated pilaster, brown wooden shutter doors, a wrought-iron grille gate and a round-arched fanlight window; window heads on consoles above (Street View)",
+		"colour": "#d8b98a",
+		"trim": "#e3c79d",
+		"ground": "gate",
+		"rustic": "banded",
+		"grilles": false,
+		"graffiti": false,
+		"signs": false
+	},
+	"21644179": {
+		"note": "Karoliny Světlé 6: cream neo-renaissance house, banded rusticated ground floor with round-arched windows and a glazed brown door, rich stucco (pilasters, roundels, cartouches) above, heavy graffiti on the ground floor; west end (no. 8, edge 14) under green-netted scaffolding (Street View)",
+		"colour": "#ecdcb0",
+		"trim": "#f3e8cc",
 		"floors": 4,
+		"ground": "windows",
+		"rustic": "banded",
+		"grilles": false,
+		"graffiti": true,
+		"edges": {
+			"13": {
+				"lanterns": true
+			}
+		},
+		"signs": false
+	},
+	"21644187": {
+		"note": "Karoliny Světlé 4: grey sandstone ashlar neo-renaissance house, brown framed shop windows, door portico with columns and pediment, shell-shaped balcony bracket, wall lanterns. Edge 8 (Bartolomějská 304/1) looks like a different, 1930s travertine-clad building with green window frames (Street View)",
+		"colour": "#a9a292",
+		"trim": "#bbb5a5",
+		"ground": "shops",
+		"rustic": "banded",
+		"grilles": false,
+		"graffiti": false,
+		"edges": {
+			"16": {
+				"lanterns": true
+			}
+		},
+		"signs": false
+	},
+	"21644276": {
+		"note": "Bartolomějská / Karoliny Světlé 2 (Eurostars Thalia): cream neo-renaissance block, banded rusticated ground floor with grilled windows, round-arched first-floor windows in rusticated voussoir surrounds, carved portal with brown door under a balcony on consoles, rounded corner, wall lanterns; no hotel sign visible (Street View)",
+		"colour": "#ebe3d0",
+		"trim": "#f4efe3",
+		"floors": 5,
+		"ground": "windows",
+		"rustic": "banded",
+		"grilles": true,
+		"graffiti": false,
+		"edges": {
+			"13": {
+				"lanterns": true
+			},
+			"14": {
+				"lanterns": true
+			}
+		},
+		"signs": false
+	},
+	"21644306": {
+		"note": "Karoliny Světlé 13: seen only at a grazing angle; the near building looks like a 1930s house clad in white and grey-blue ceramic tiles with shop fronts, next to the rich neo-renaissance house at no. 15 (Street View)",
+		"signs": false
+	},
+	"21644314": {
+		"note": "Karoliny Světlé 15: rich neo-renaissance house seen obliquely: rock-faced rusticated ground floor with round arches, giant pilasters/columns, patterned panels and dense stucco above (Street View)",
+		"signs": false
+	},
+	"21644322": {
+		"note": "Konviktská 4 / Karoliny Světlé 19: photo shows a large ornate neo-renaissance corner block in sandstone beige with balustraded windows, corner domed turret and shop fronts (incl. a mini market); unclear which part is this 6 m front (Street View)",
+		"signs": false
+	},
+	"21644331": {
+		"note": "Konviktská 2: photos look along the street rather than at the front; the corner building on this side is an ornate sandstone-beige neo-renaissance block with banded ground floor, balustraded windows and large ground-floor openings (Street View)",
+		"signs": false
+	},
+	"21644349": {
+		"note": "Konviktská 1 / Karoliny Světlé 21: plain baroque house in warm beige, eared window surrounds with heavy cornice hoods; ground floor in banded rustication with arched bays holding brown doors and grilled windows with flower boxes; restaurant Století lettering near the right end (Street View)",
+		"colour": "#e2d2ab",
+		"trim": "#d3c096",
+		"ground": "windows",
+		"rustic": "banded",
+		"grilles": true,
+		"graffiti": false,
+		"edges": {
+			"8": {
+				"lanterns": true
+			}
+		},
+		"signs": false,
+		"floors": 3
+	},
+	"21644357": {
+		"note": "Karoliny Světlé 23: tall brown-beige neo-renaissance house with gables, rich window heads and a neo-gothic gabled portal; partly hidden by trees, seen obliquely (Street View)",
+		"signs": false
+	},
+	"21644365": {
+		"note": "Karoliny Světlé 25 / Betlémská corner: probably the yellow house with brown-orange trim and a wall lantern at the right of the photo; seen obliquely (Street View)",
+		"edges": {
+			"1": {
+				"lanterns": true
+			}
+		},
+		"signs": false
+	},
+	"21644373": {
+		"note": "Karoliny Světlé 27 (plate 323/27): pale yellow three-storey house with orange window frames, cornices and plinth; seen obliquely, no Platina sign visible (Street View)",
+		"colour": "#edd394",
+		"trim": "#d99a4d",
+		"floors": 3,
+		"ground": "windows",
+		"rustic": "none",
+		"grilles": false,
+		"graffiti": false,
+		"signs": false
+	},
+	"21644381": {
+		"note": "Smetanovo nábřeží: pale grey-lilac house, arched ground-floor windows and a big wooden door",
+		"colour": "#cdc6c6",
+		"trim": "#e6e1de",
+		"ground": "windows",
+		"rustic": "banded"
+	},
+	"21644390": {
+		"note": "Smetanovo nábřeží: ochre house with round-arched windows",
+		"colour": "#cfb07a",
+		"trim": "#e4cfa2",
+		"ground": "windows",
+		"rustic": "banded"
+	},
+	"21644403": {
+		"note": "Karoliny Světlé 35: on the street side a tall salmon-pink narrow house with cream window surrounds and a round hanging sign; its north side wall (edge 5), facing down the street, is plain white with a painted CAFÉ - PUB ATMOSPHERE sign. Current red brick (from the embankment side) does not match the street side (Street View)",
+		"colour": "#b0614b",
+		"trim": "#dcb987",
+		"ground": "windows",
+		"rustic": "ornate",
+		"signs": false
+	},
+	"21644411": {
+		"note": "Karoliny Světlé 35/37: neo-renaissance house in the Bellevue style: cream-ochre banded lower floors with round-arched windows and an oriel, red-brick upper floors, dark MLÉKÁRNA shop board on the ground floor; seen obliquely (Street View)",
+		"colour": "#dcc596",
+		"trim": "#e9d9b2",
+		"floors": 5,
+		"ground": "shops",
+		"rustic": "banded",
+		"grilles": false,
+		"graffiti": false,
+		"signs": false
+	},
+	"21644420": {
+		"note": "Karoliny Světlé 37 / Smetanovo nábřeží (Bellevue): red brick with cream sandstone bands, stepped crenellated gables, oriel bays, balcony with iron railing, cream ground floor heavily tagged with graffiti. Current colours confirmed; added graffiti; no corner turret seen, stepped gables instead (Street View)",
+		"colour": "#b2604a",
+		"trim": "#e3d0a6",
+		"ground": "windows",
+		"rustic": "ornate",
+		"floors": 5,
+		"grilles": false,
+		"graffiti": true,
+		"signs": false
+	},
+	"21644438": {
+		"note": "Smetanovo nábřeží: red and cream striped neo-renaissance with stucco gables",
+		"colour": "#b8655a",
+		"trim": "#e6d4b4",
+		"ground": "windows",
+		"rustic": "ornate"
+	},
+	"21644497": {
+		"note": "Karoliny Světlé 1 / Národní corner: long off-white neo-renaissance front, banded ground floor with round-arched windows in rusticated surrounds, carved wooden corner door, wrought-iron balcony, rich window heads, wall lanterns (Street View)",
+		"colour": "#eee9de",
+		"trim": "#f6f3ec",
+		"floors": 5,
+		"ground": "windows",
+		"rustic": "banded",
+		"grilles": false,
+		"graffiti": false,
+		"edges": {
+			"7": {
+				"lanterns": true
+			}
+		},
+		"signs": false
+	},
+	"21644501": {
+		"note": "Národní: salmon-orange baroque house",
+		"colour": "#d38a5c",
+		"trim": "#ecd2b2",
+		"ground": "shops",
+		"rustic": "banded"
+	},
+	"21644519": {
+		"note": "Národní 23: photo is centred on the Palác Metro passage entrance; only the upper-left corner shows this house (grey-beige stone with dressed, pedimented window surrounds). Ground floor appears to be the same dark grey stone arcade as Palác Metro. Colour uncertain; model's ochre-brown not confirmed. (Street View 2026)",
+		"colour": "#b99472",
+		"trim": "#d6bd9c",
+		"ground": "shops",
+		"rustic": "ornate",
+		"signs": false
+	},
+	"21644527": {
+		"note": "Na Perštýně 1/3 (corner Národní): modern glass curtain-wall office block, dark stone ground floor recessed behind square columns (arcade) with canopy; Spaces coworking, exchange office, blue bank ATM wall (Street View)",
+		"colour": "#6f8f96",
+		"trim": "#3b3a38",
+		"floors": 7,
+		"ground": "shops",
+		"rustic": "none",
+		"grilles": false,
+		"graffiti": false,
+		"signs": false
+	},
+	"21644535": {
+		"note": "Na Perštýně 5-7, U Medvídků: pale butter-yellow classicist house, low triangular pediment, three storeys plus dormers; ground floor with dark-brown wooden pilasters/frames and serif letters RESTAURACE / U MEDVÍDKŮ / BEER BAR / 1466 along the band; round bronze bracket emblem and street lamp (Street View)",
+		"colour": "#eee1b2",
+		"trim": "#f6efd6",
+		"floors": 3,
 		"ground": "restaurant",
-		"rustic": "none"
+		"rustic": "none",
+		"grilles": false,
+		"graffiti": false,
+		"edges": {
+			"11": {
+				"lanterns": true
+			},
+			"16": {
+				"lanterns": true
+			}
+		},
+		"signs": false
+	},
+	"21644543": {
+		"note": "Na Perštýně 345 (between U Medvídků and no. 9): plain cream house with dark red-brown framed shop windows; seen only obliquely at the photo's left edge (Street View)",
+		"signs": false
+	},
+	"21644551": {
+		"note": "Na Perštýně 9: cream neo-baroque house with rich stucco, balconies with balustrades and decorated parapets; dark red-brown framed shopfronts; seen obliquely only (Street View)",
+		"edges": {
+			"4": {
+				"lanterns": true
+			}
+		},
+		"signs": false
+	},
+	"21644560": {
+		"note": "Na Perštýně 11 / Bartolomějská 14 (police): long curving 1920s block in brownish-pink plaster, triangular window pediments, dormer row in the roof; heavy dark-brown stone ground floor with pilasters, bronze-grilled windows and doors; four blue seated sculptures on the cornice above the ground floor (Street View)",
+		"colour": "#a07f6c",
+		"trim": "#7d5747",
+		"floors": 6,
+		"ground": "windows",
+		"rustic": "none",
+		"grilles": true,
+		"graffiti": false,
+		"signs": false
 	},
 	"21644586": {
 		"note": "Betlémské náměstí: cream-yellow house with the dark wooden Švejk restaurant front (Street View 2019)",
@@ -597,11 +803,211 @@
 		"signs": false
 	},
 	"21644608": {
-		"note": "Betlémské náměstí: pinkish-beige plain house with shop windows and a wall lantern (Street View)",
-		"colour": "#dfc39f",
-		"trim": "#ecdcc4",
+		"note": "Jilská 1a / Husova 2 corner: plain ochre-beige house with string courses, display windows and a wall lantern; current confirmed, colour slightly warmer; Viselec (hanging-man sculpture) on a pole at roof level (Street View)",
+		"colour": "#e0c295",
+		"trim": "#e9d3ad",
+		"ground": "shops",
+		"rustic": "none",
+		"floors": 4,
+		"grilles": false,
+		"graffiti": false,
+		"edges": {
+			"13": {
+				"lanterns": true
+			}
+		},
+		"signs": false
+	},
+	"21644632": {
+		"note": "Na Perštýně 14 / Skořepka 2: 1930s functionalist block, pale grey-white plaster, cantilevered balconies with tubular railings at the corner, large windows; ground floor HUDY outdoor shop with black fascia (Street View)",
+		"colour": "#e6e6e2",
+		"trim": "#f2f2ef",
+		"floors": 7,
+		"ground": "shops",
+		"rustic": "none",
+		"grilles": false,
+		"graffiti": false,
+		"signs": false
+	},
+	"21644641": {
+		"note": "Na Perštýně 12: pale cream classicist house, rusticated (ashlar-banded) ground floor, stone window surrounds with low lattice grilles, wooden double door, long dark-brown wooden shopfront with arched cornices at its south end; tagged ground floor (Street View)",
+		"colour": "#ebe8d3",
+		"trim": "#f5f3e8",
+		"floors": 4,
+		"ground": "shops",
+		"rustic": "banded",
+		"grilles": true,
+		"graffiti": true,
+		"signs": false
+	},
+	"21644659": {
+		"note": "Na Perštýně 10: grey-beige baroque house, stucco cartouche pediments over windows, rusticated quoin strips; souvenir/art shop under a stone arch and Live Exchange; front 6 photo shows mostly no. 12's wooden shopfront (Street View)",
+		"colour": "#cbc3ad",
+		"trim": "#ddd6c4",
+		"floors": 5,
+		"ground": "shops",
+		"rustic": "ornate",
+		"grilles": false,
+		"graffiti": true,
+		"signs": false
+	},
+	"21644667": {
+		"note": "Na Perštýně 8: pale cream house with simple window cornices; dark fascia with BEEF BAR, hostel door with Ahoy! hanging disc, green mini-market fascia at the south end; street lamp in front (Street View)",
+		"edges": {
+			"9": {
+				"lanterns": true
+			}
+		},
+		"signs": false
+	},
+	"21644705": {
+		"note": "Na Perštýně 2 (corner Národní): white-grey neo-baroque/secession house with rich stucco, oriels and wrought-iron balconies; tall arched shop windows (Feratt) with brown stone plinths, ornate carved portal with iron door, Numismatika shop with hanging gold coin; Pietro Filipi (OSM) no longer there (Street View)",
+		"colour": "#e5e4dd",
+		"trim": "#f4f3ef",
+		"floors": 5,
+		"ground": "shops",
+		"rustic": "ornate",
+		"grilles": false,
+		"graffiti": false,
+		"signs": false
+	},
+	"21644721": {
+		"note": "Národní 43 / Perlová 10 (corner, right end): salmon-pink neo-renaissance block, round-arched windows with balustraded sills, ornate cornices, chamfered corner with balcony and stacked arched windows. Ground floor clad in grey-beige stone (#b5ab98) with shops under a dark fascia band with gold letters; red roller shutter at the corner shop. (Street View 2026)",
+		"colour": "#d9a291",
+		"trim": "#ecccbd",
+		"floors": 5,
+		"ground": "shops",
+		"rustic": "banded",
+		"grilles": false,
+		"graffiti": false,
+		"signs": false
+	},
+	"21645132": {
+		"note": "Národní 37: Platýz, classicist palace in cream with white dressings, shops below, passage to Uhelný trh",
+		"colour": "#e8dfcb",
+		"trim": "#f5f1e6",
+		"ground": "shops",
+		"rustic": "banded"
+	},
+	"21645175": {
+		"note": "Uhelný trh: cream house with arched openings and dark wooden doors",
+		"colour": "#e9dfc6",
+		"trim": "#f3ecdc",
+		"ground": "gate",
+		"rustic": "none"
+	},
+	"21645205": {
+		"note": "Uhelný trh: grey-beige neo-renaissance house with shops",
+		"colour": "#cbbfa8",
+		"trim": "#ddd3c0",
+		"ground": "shops",
+		"rustic": "banded"
+	},
+	"21645213": {
+		"note": "Uhelný trh: red house over a yellow arcaded ground floor",
+		"colour": "#c4503a",
+		"trim": "#e8b84a",
+		"ground": "gate",
+		"rustic": "none"
+	},
+	"21645990": {
+		"note": "Uhelný trh: white corner house with a shop",
+		"colour": "#efe7d6",
+		"trim": "#f6f1e6",
 		"ground": "shops",
 		"rustic": "none"
+	},
+	"21646091": {
+		"note": "Uhelný trh: cream-yellow house with red-framed shopfronts",
+		"colour": "#f0dfae",
+		"trim": "#f3e9cf",
+		"ground": "shops",
+		"rustic": "none"
+	},
+	"21649308": {
+		"note": "Národní 19: white functionalist block with stacked rectangular bay windows (oriels), ground floor of shops with black fascias and a dark-wood hostel entrance. Only the left half photographed; tree in front. (Street View 2026)",
+		"colour": "#e8e5dc",
+		"trim": "#f1efe9",
+		"ground": "shops",
+		"rustic": "none",
+		"grilles": false,
+		"graffiti": false,
+		"signs": false
+	},
+	"21649324": {
+		"note": "Konviktská 8: low two-storey house with pale olive-green upper floor, white ground floor with a grilled window, steep red tiled roof with dormer; low white wall with a red door to its left. Photo for edge 0 shows the neighbouring yellow block no. 10 instead (Street View)",
+		"colour": "#d4d5a8",
+		"trim": "#f0efe8",
+		"floors": 2,
+		"ground": "windows",
+		"rustic": "none",
+		"grilles": true,
+		"graffiti": false,
+		"signs": false
+	},
+	"21649367": {
+		"note": "Národní 25, Palác Metro (already hand-modelled): cream neo-renaissance/neo-baroque upper floors with pedimented windows on consoles and rich cornice. Ground floor is a recessed arcade of dark grey stone (#6e6c68) with heavy square piers (not banded rustication), shopfronts set back, freestanding poster vitrines in front. Right end: stone portico with fluted columns carrying a balustraded balcony over the passage entrance. (Street View 2026)",
+		"colour": "#ddd4c0",
+		"trim": "#ebe4d3",
+		"ground": "shops",
+		"rustic": "ornate",
+		"grilles": false,
+		"graffiti": false,
+		"signs": false
+	},
+	"21649502": {
+		"note": "Karoliny Světlé 10 (plate 979/10): plain pale yellow house, white window frames, worn ground floor with a brown wooden gate and small shops (NÁPOJE - PIVO, shop BALT) (Street View)",
+		"colour": "#e5d6a1",
+		"trim": "#eee7cf",
+		"ground": "shops",
+		"rustic": "none",
+		"grilles": false,
+		"graffiti": false,
+		"signs": false
+	},
+	"21649511": {
+		"note": "Národní 17: plain pale grey-cream modernist front; ground floor and first floor clad in polished brown-red granite (#6b524b), first floor a band of large display windows; part of a big letter sign ('…ASSAGE') along the top. Left part has orange awnings (Frisson, #d9663e), right part cream awnings (Kozlovna U Paukerta). Trees in front. (Street View 2026)",
+		"colour": "#d9d4c8",
+		"trim": "#e6e2d8",
+		"ground": "shops",
+		"rustic": "none",
+		"grilles": false,
+		"graffiti": false,
+		"edges": {
+			"3": {
+				"awning": "#efe9d8"
+			}
+		},
+		"signs": false
+	},
+	"21649553": {
+		"note": "Smetanovo nábřeží 6: Charles University, Faculty of Social Sciences (Hollar), pale cream classicist palace behind railings and trees",
+		"colour": "#e6dcc3",
+		"trim": "#f2ecdd",
+		"ground": "windows",
+		"rustic": "banded"
+	},
+	"21649561": {
+		"note": "Konviktská 13/15: 1930s houses; left part (no. 13) clad in cream glazed brick tiles, right part (no. 15) in grey render, both with dark red brick ground floors holding shops (ŠATNA, SECOND HAND) and doorways; plain wide windows (Street View)",
+		"colour": "#dbd2bd",
+		"trim": "#6a3b2f",
+		"floors": 5,
+		"ground": "shops",
+		"rustic": "none",
+		"grilles": false,
+		"graffiti": false,
+		"signs": false
+	},
+	"21649570": {
+		"note": "Konviktská 15/17 area: grey-render 1930s house with brick ground floor and two wooden garage doors (left half), then an older house in rough grey plaster with a moulded string course and tagged ground floor (right half); floor count estimated (Street View)",
+		"colour": "#8c8677",
+		"trim": "#9a9486",
+		"floors": 5,
+		"ground": "gate",
+		"rustic": "none",
+		"grilles": false,
+		"graffiti": true,
+		"signs": false
 	},
 	"21649626": {
 		"note": "Betlémské náměstí: long cream four-storey front, Galerie U Betlémské kaple, dark wooden shopfronts (Street View 2025)",
@@ -611,30 +1017,404 @@
 		"rustic": "banded",
 		"signs": false
 	},
-	"78878535": {
-		"note": "Náprstkova: yellow wall of the chimney yard with a big round-arched wooden gate, tagged (Street View)",
-		"colour": "#e3c35f",
-		"trim": "#efd88f",
-		"ground": "gate",
-		"graffiti": true,
-		"rustic": "none"
+	"21649634": {
+		"note": "Konviktská 30: ochre-yellow house over a pale beige banded ground floor with a shop window, wall lantern and an empty hanging-sign bracket; no gallery sign visible on this front (Street View)",
+		"colour": "#dcc887",
+		"trim": "#e3dac0",
+		"ground": "windows",
+		"rustic": "banded",
+		"grilles": false,
+		"graffiti": false,
+		"edges": {
+			"10": {
+				"lanterns": true
+			}
+		},
+		"signs": false
 	},
-	"21643776": {
-		"note": "Betlémské náměstí 3: white three-storey house with dormers in the red roof (Street View 2023)",
-		"signs": false,
-		"colour": "#f3f1ec",
-		"trim": "#fbfaf6",
-		"floors": 3,
+	"21649651": {
+		"note": "Národní 3/5, Academy of Sciences: cream sandstone neo-renaissance palace. Ground floor of very heavy horizontal block rustication with stepped voussoirs over tall round-arched windows behind ornate iron grilles, on a darker vermiculated plinth (#b8ad95). Egg-and-dart cornice above, columned piano nobile. Sunlit stone is paler than the model's #c9b38e: lightened. Floors not countable from these low shots. (Street View 2026)",
+		"colour": "#e3d9c1",
+		"trim": "#ece4d0",
+		"ground": "windows",
+		"rustic": "ornate",
+		"grilles": true,
+		"graffiti": false,
+		"signs": false
+	},
+	"21649677": {
+		"note": "Národní: long salmon-pink baroque front",
+		"colour": "#e2b9a3",
+		"trim": "#f0e2d5",
 		"ground": "windows",
 		"rustic": "none"
 	},
-	"21643806": {
-		"note": "Betlémské náměstí 9: Hotel Betlem Club, white with a pale ground floor, name and flags (Street View 2025)",
-		"signs": false,
-		"colour": "#f2f0ea",
-		"trim": "#fbfaf5",
-		"floors": 4,
+	"21649685": {
+		"note": "Národní 1 / Lažanský palác (Kavárna Slavia): pale sandstone neo-renaissance, pedimented windows on consoles, rusticated sandstone ground floor. Edges 7 and 9: tall café windows under a continuous row of teal-green awnings with white 'Slavia' script (awning corrected from #2f5b3c to a lighter teal #2c6a56). Edge 6 (east end): no café windows, banded rustication with arched windows behind iron grilles, wall lantern, white-painted plinth. Plaster lightened slightly. (Street View 2026)",
+		"colour": "#ddd5c2",
+		"trim": "#ece6d7",
+		"ground": "restaurant",
+		"rustic": "ornate",
+		"edges": {
+			"0": {
+				"awning": "#2f5b3c"
+			},
+			"6": {
+				"lanterns": true
+			},
+			"7": {
+				"awning": "#2c6a56",
+				"banner": {
+					"text": "Slavia",
+					"board": "#2c6a56",
+					"ink": "#f4f1ea"
+				}
+			},
+			"9": {
+				"awning": "#2c6a56",
+				"banner": {
+					"text": "Slavia",
+					"board": "#2c6a56",
+					"ink": "#f4f1ea"
+				}
+			}
+		},
+		"floors": 5,
+		"grilles": true,
+		"graffiti": false,
+		"signs": false
+	},
+	"21649693": {
+		"note": "Konviktská (by the Rotunda of the Holy Cross): narrow neoclassical house in ochre-beige with two tall arched brown wooden doors, a pair of windows above, attic band with three oculi under a pediment, balustraded roof terrace behind; plaque by the right door (Street View)",
+		"colour": "#dcc59c",
+		"trim": "#e6d4b2",
+		"floors": 3,
+		"ground": "gate",
+		"rustic": "none",
+		"grilles": false,
+		"graffiti": false,
+		"edges": {
+			"14": {
+				"lanterns": true
+			}
+		},
+		"signs": false
+	},
+	"21649715": {
+		"note": "Karoliny Světlé (south side, east of no. 11): long white-grey neo-renaissance front with banded round-arched ground floor, balustraded first-floor balconies, brown doors, wall lanterns; seen only obliquely (Street View)",
+		"edges": {
+			"0": {
+				"lanterns": true
+			}
+		},
+		"signs": false
+	},
+	"21649731": {
+		"note": "Karoliny Světlé 7: pale grey-white neo-renaissance front, round-arched first-floor windows with balustrades, round-arched ground-floor openings; seen obliquely (Street View)",
+		"signs": false
+	},
+	"21650039": {
+		"note": "Konviktská 7/9: neo-renaissance houses; no. 9 (edges 6, 8) in pale yellow-cream, no. 7 (edge 15) in off-white cream; banded rustication with grilled windows on the lower floors, balustrades and arched windows with rich stucco above; large arched gate at no. 7; Golden Tikka and Sad Man's Tongue at street level (Street View)",
+		"colour": "#ecdcae",
+		"trim": "#f2ead6",
+		"floors": 5,
+		"ground": "restaurant",
+		"rustic": "ornate",
+		"grilles": true,
+		"graffiti": false,
+		"edges": {
+			"15": {
+				"lanterns": true
+			}
+		},
+		"signs": false
+	},
+	"21650802": {
+		"note": "Národní 28/30: two buildings under one code. Right (No. 28): 1920s beige stone office block with tall pilasters, sculpted keystone heads, round medallions, a glazed first-floor band and a mansard with arched dormers; entrance to Komorní kino Evald in the middle, Datart left, eppi right. Left (No. 30): narrower cream house (#d8c7a8) with curved bay windows and white glass shopfront of Galerie Václava Špály. (Street View 2026)",
+		"colour": "#cbbfa8",
+		"trim": "#d8cdb7",
+		"floors": 6,
+		"ground": "shops",
+		"rustic": "none",
+		"grilles": false,
+		"graffiti": false,
+		"signs": false
+	},
+	"21650918": {
+		"note": "Spálená: long ochre-yellow neo-renaissance block",
+		"colour": "#e3c063",
+		"trim": "#efdca0",
 		"ground": "windows",
 		"rustic": "banded"
-	}
+	},
+	"21650926": {
+		"note": "Spálená: long ochre-yellow neo-renaissance block",
+		"colour": "#e3c063",
+		"trim": "#efdca0",
+		"ground": "windows",
+		"rustic": "banded"
+	},
+	"21650934": {
+		"note": "Spálená: long ochre-yellow neo-renaissance block",
+		"colour": "#e3c063",
+		"trim": "#efdca0",
+		"ground": "windows",
+		"rustic": "banded"
+	},
+	"21650969": {
+		"note": "Spálená: Restaurace U Kotvy, cream with stucco crowns",
+		"colour": "#e0d6c4",
+		"trim": "#eee7da",
+		"ground": "restaurant",
+		"rustic": "banded"
+	},
+	"21650977": {
+		"note": "Spálená: cream house with a supermarket",
+		"colour": "#e6dcc9",
+		"trim": "#f1ebdf",
+		"ground": "shops",
+		"rustic": "none"
+	},
+	"21651019": {
+		"note": "Spálená: pale green-grey house with a dark green shopfront",
+		"colour": "#cfd1bf",
+		"trim": "#e2e3d6",
+		"ground": "shops",
+		"rustic": "none"
+	},
+	"21651027": {
+		"note": "Spálená: cream neo-renaissance with a green shopfront",
+		"colour": "#e3dccb",
+		"trim": "#efeadf",
+		"ground": "shops",
+		"rustic": "banded"
+	},
+	"21651035": {
+		"note": "Spálená: cream house with a dark wooden restaurant front",
+		"colour": "#efe5cf",
+		"trim": "#f6f0e3",
+		"ground": "restaurant",
+		"rustic": "banded"
+	},
+	"21651060": {
+		"note": "Spálená: green-grey art-nouveau house with dark shopfronts",
+		"colour": "#a9b0a0",
+		"trim": "#c7cbbd",
+		"ground": "shops",
+		"rustic": "banded"
+	},
+	"21651078": {
+		"note": "Spálená: Divadlo Ypsilon, blue-framed glazing along the ground floor",
+		"colour": "#d7d0c3",
+		"trim": "#e7e2d8",
+		"ground": "shops",
+		"rustic": "none"
+	},
+	"21651191": {
+		"note": "Národní 24 (corner): cream art-nouveau house with a round corner tower crowned by a green copper cupola and lantern, corner balconies with iron railings, long iron balcony over the shopfront. Ground floor: dark green glazed shopfront, as in the model. Rustication not visible (shopfront covers it). (Street View 2026)",
+		"colour": "#e2d7bd",
+		"trim": "#efe8d6",
+		"ground": "shops",
+		"rustic": "banded",
+		"floors": 5,
+		"grilles": false,
+		"graffiti": false,
+		"signs": false
+	},
+	"21651221": {
+		"note": "Národní 16: pale ochre-yellow baroque palace, windows framed in red-brown with cream stucco aprons and pediments, central triangular gable with an oculus, red tiled roof. Ground floor: arched entrances and dark-glazed shop windows. (Street View 2026)",
+		"colour": "#e4cd97",
+		"trim": "#b5533f",
+		"floors": 3,
+		"ground": "shops",
+		"rustic": "none",
+		"grilles": false,
+		"graffiti": false,
+		"signs": false
+	},
+	"21652228": {
+		"note": "Národní 2, National Theatre (already hand-modelled): warm sandstone neo-renaissance front, ground-floor arcade of five round arches, upper loggia of five arches between paired Corinthian columns with balustrade, attic balustrade topped by a row of statues. (Street View 2026)",
+		"colour": "#c4ae8b",
+		"trim": "#d6c4a3",
+		"floors": 3,
+		"ground": "gate",
+		"rustic": "ornate",
+		"grilles": false,
+		"graffiti": false,
+		"signs": false
+	},
+	"21652236": {
+		"note": "Masarykovo nábřeží: beige neo-baroque apartment house",
+		"colour": "#d8c8ad",
+		"trim": "#e7dcc8",
+		"ground": "windows",
+		"rustic": "ornate"
+	},
+	"21652252": {
+		"note": "Slovanský ostrov: Žofín palace, ochre-yellow neo-renaissance with white dressings",
+		"colour": "#e6c56e",
+		"trim": "#f4ecd6",
+		"ground": "windows",
+		"rustic": "banded"
+	},
+	"21652325": {
+		"note": "Masarykovo nábřeží: pale grey-cream art-nouveau corner house",
+		"colour": "#dcd5c8",
+		"trim": "#ebe6dc",
+		"ground": "windows",
+		"rustic": "ornate"
+	},
+	"21652333": {
+		"note": "Masarykovo nábřeží: cream ornate apartment house with a restaurant",
+		"colour": "#dccbae",
+		"trim": "#ebe0cc",
+		"ground": "restaurant",
+		"rustic": "ornate"
+	},
+	"21652341": {
+		"note": "Masarykovo nábřeží: pinkish-beige house with an oriel",
+		"colour": "#d8c2b3",
+		"trim": "#e9ddd2",
+		"ground": "windows",
+		"rustic": "banded"
+	},
+	"21652350": {
+		"note": "Masarykovo nábřeží: ochre art-nouveau house with balconies and arched ground floor",
+		"colour": "#e0b65a",
+		"trim": "#efd9a0",
+		"ground": "windows",
+		"rustic": "ornate"
+	},
+	"21652368": {
+		"note": "Masarykovo nábřeží: ochre-cream ornate house with shops",
+		"colour": "#d9bd8a",
+		"trim": "#eadab9",
+		"ground": "shops",
+		"rustic": "ornate"
+	},
+	"21652376": {
+		"note": "Masarykovo nábřeží: ochre ornate apartment house",
+		"colour": "#d8b67a",
+		"trim": "#e9d3a8",
+		"ground": "windows",
+		"rustic": "ornate"
+	},
+	"21652384": {
+		"note": "Masarykovo nábřeží: grey-white ornate apartment house",
+		"colour": "#d6d2ca",
+		"trim": "#e8e5df",
+		"ground": "windows",
+		"rustic": "ornate"
+	},
+	"21652457": {
+		"note": "Masarykovo nábřeží: cream-grey ornate corner house",
+		"colour": "#ddd5c6",
+		"trim": "#ece7dd",
+		"ground": "windows",
+		"rustic": "ornate"
+	},
+	"21652465": {
+		"note": "Masarykovo nábřeží: plain grey apartment house",
+		"colour": "#cbc6bd",
+		"trim": "#dfdbd3",
+		"ground": "windows",
+		"rustic": "banded"
+	},
+	"21652473": {
+		"note": "Masarykovo nábřeží: ochre ornate apartment house",
+		"colour": "#d4b47c",
+		"trim": "#e7d2aa",
+		"ground": "windows",
+		"rustic": "ornate"
+	},
+	"21652481": {
+		"note": "Masarykovo nábřeží / Slovanský ostrov: Mánes, white functionalist gallery with ribbon windows and MÁNES lettering",
+		"colour": "#f1f0eb",
+		"trim": "#e6e5df",
+		"ground": "windows",
+		"rustic": "none"
+	},
+	"21675201": {
+		"note": "Masarykovo nábřeží: cream-yellow ornate house with shops",
+		"colour": "#e3cf98",
+		"trim": "#f0e4c4",
+		"ground": "shops",
+		"rustic": "ornate"
+	},
+	"21675210": {
+		"note": "Masarykovo nábřeží: yellow ornate corner house, arched restaurant fronts",
+		"colour": "#e2c470",
+		"trim": "#efdba8",
+		"ground": "restaurant",
+		"rustic": "ornate"
+	},
+	"21675228": {
+		"note": "Masarykovo nábřeží: yellow ornate house with restaurants",
+		"colour": "#e4c56d",
+		"trim": "#f0dca6",
+		"ground": "restaurant",
+		"rustic": "ornate"
+	},
+	"21675236": {
+		"note": "Masarykovo nábřeží: grey art-nouveau house with restaurants",
+		"colour": "#c8c3b8",
+		"trim": "#dedad2",
+		"ground": "restaurant",
+		"rustic": "ornate"
+	},
+	"21675244": {
+		"note": "Masarykovo nábřeží: grey-beige house with a red brick centre and a wine bar",
+		"colour": "#cdbfa8",
+		"trim": "#e0d6c4",
+		"ground": "restaurant",
+		"rustic": "ornate"
+	},
+	"48864005": {
+		"note": "Národní, St Ursula's church: baroque front with salmon-pink recessed panels framed by white pilasters and cornices, central stone portal with statue in a niche above, oval oculi, statues on the gable. Current colours confirmed (pink a touch deeper). (Street View 2026)",
+		"colour": "#dd9a86",
+		"trim": "#f1ebe1",
+		"ground": "blank",
+		"rustic": "none",
+		"grilles": true,
+		"graffiti": false,
+		"signs": false
+	},
+	"78878535": {
+		"note": "Náprstkova 5a (no. 1102): pale yellow yard wall with tile coping and a big round-arched dark wooden gate, brick chimney behind. Colour paler than #e3c35f; the tags are on the neighbouring no. 213, not on this wall (Street View 2025)",
+		"colour": "#e2cf88",
+		"trim": "#ece0aa",
+		"ground": "gate",
+		"graffiti": false,
+		"rustic": "none",
+		"grilles": false,
+		"signs": false
+	},
+	"155557548": {
+		"note": "Konviktská 18: pale yellow neo-renaissance house with pedimented windows, cream banded-rusticated ground floor with grilled windows and a herringbone wooden door; seen mostly at the edge of its photo and next to the Cloister Inn (Street View)",
+		"colour": "#e9d9a3",
+		"trim": "#f1ebdc",
+		"floors": 5,
+		"ground": "windows",
+		"rustic": "banded",
+		"grilles": true,
+		"graffiti": false,
+		"signs": false
+	},
+	"973673162": {
+		"note": "Na Perštýně 6: pale yellow baroque house, triangular gable with cornice, segmental stucco window caps, white pilaster strips; ochre banded-rustication ground floor with arched gateway closed by an ornate iron grille (studio dva theatre entrance); front 37 more ochre with white rusticated corner quoins (Street View)",
+		"colour": "#ecdfb2",
+		"trim": "#f4f1e6",
+		"floors": 3,
+		"ground": "gate",
+		"rustic": "banded",
+		"grilles": false,
+		"graffiti": false,
+		"edges": {
+			"36": {
+				"lanterns": true
+			}
+		},
+		"signs": false
+	},
+	"_about": "Hand-written descriptions of individual houses, read from street-level photos (tools/facade-views.mjs → data/raw/views/house-<code>_<edge>.jpg). Keyed by RÚIAN building code. Colours are sRGB. ground: shops | restaurant | windows | gate | blank. rustic: none | banded | ornate. edges: per-facade extras by footprint edge index (awning, banner, lanterns). signs: false keeps the OpenStreetMap shop signs off (only what the photos show)."
 }
