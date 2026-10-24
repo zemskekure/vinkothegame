@@ -749,7 +749,7 @@ const pendingSigns = [];
 		}
 
 		if ( ! best || best.score > 14 ) continue;
-		if ( HOUSES[ best.b.code ] ) continue; // described from photos: only what was seen there (data/houses.json)
+		if ( HOUSES[ best.b.code ]?.signs === false ) continue; // described from photos: only what was seen there (data/houses.json)
 		shopEdges.add( `${best.b.code}_${best.i}` );
 		pendingSigns.push( { ...best, name: t.name, kind: t.shop ? 'shop' : t.amenity || t.tourism } );
 
@@ -870,6 +870,7 @@ for ( const b of buildings ) {
 	else if ( sat < 0.07 ) kind = ROOF_KIND.slate;
 
 	const style = landmark?.style ?? STYLE.default;
+	if ( landmark && ! b.name ) b.name = landmark.name;
 	if ( landmark?.roof !== undefined ) kind = landmark.roof;
 
 	const eaveY = ground + eave;

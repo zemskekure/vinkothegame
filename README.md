@@ -1,6 +1,7 @@
 # Praha · Betlémská čtvrť
 
-A walkable 3D model of Prague's Old Town around Betlémské náměstí, from Smetanovo nábřeží to Jilská.
+A walkable 3D model of Prague's Old Town around Betlémské náměstí, from Smetanovo nábřeží to Jilská and south over
+Národní to Žofín and Spálená.
 Built with three.js (WebGPU, falls back to WebGL 2).
 
 ## Run it
@@ -26,10 +27,20 @@ The generated scene is committed in `public/data/`, so nothing else is needed to
 - **Náprstkovo muzeum**: the gate with banners
 - The **chimney courtyard** off Náprstkova
 - The **stairs** from Národní down to Divadelní
+- **Národní**: Kavárna Slavia and FAMU in Lažanský palác, the National Theatre, **Nová scéna** in its glass blocks
+  with the piazzetta behind, the arcade (podloubí) of Palác Metro, DRN, Máj, Platýz and its passage
+- **Spálená** with Quadrio and Divadlo Ypsilon; **Uhelný trh** and the arcades of **Havelská**
+- **Smetanovo nábřeží**: Fakulta sociálních věd, Bellevue, Karlovy lázně; **Masarykovo nábřeží** and its
+  apartment palaces
+- **Slovanský ostrov** over its footbridge: Žofín, the music pavilion, Mánes and the Šítkov water tower;
+  **Most Legií**
+- Arcades and passages through houses wherever OpenStreetMap has them (`tools/openings.mjs`, `src/openings.js`)
+- Tram stops: raised islands with shelters, stop poles and departure boards (`src/stops.js`)
 - People (architectural scale figures, `src/figures.js`) walking the pavements and sitting at tables and benches;
-  parked and driving cars (Kenney's Car Kit, CC0); trams (stylised Tatra T3) on the real tracks, stopping at the stops
+  parked and driving cars (Kenney's Car Kit, CC0, `?cars`); trams (15T and T3) on the real tracks, stopping at the stops
 
-These are located in the data by `tools/places.mjs` and modelled in `src/places.js` and `src/life.js`.
+These are located in the data by `tools/places.mjs` and modelled in `src/places.js`, `src/venues.js`, `src/bridges.js`,
+`src/landmarks.js` and `src/life.js`. House fronts read from street photos are described in `data/houses.json`.
 
 ## Where the data comes from
 

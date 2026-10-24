@@ -345,10 +345,22 @@ if ( places?.stairs ) placeMarkers.push( { x: places.stairs.top[ 0 ], z: places.
 if ( data.furniture.chimney?.length ) placeMarkers.push( { x: data.furniture.chimney[ 0 ], z: data.furniture.chimney[ 2 ], icon: 'K', colour: '#9b4a32' } );
 for ( const b of data.buildings ) {
 
-	const icon = { 'Národní divadlo': 'D', 'Betlémská kaple': '✝' }[ b.name ];
+	const icon = { 'Národní divadlo': 'D', 'Betlémská kaple': '✝', 'Nová scéna': 'N', Quadrio: 'Q', 'Máj': 'Á' }[ b.name ];
 	if ( icon ) placeMarkers.push( { x: b.x, z: b.z, icon, colour: '#4f6d8f' } );
 
 }
+
+// Signature fronts with their lettering: Kavárna Slavia, Platýz, Žofín, Mánes…; the Šítkov tower and Žofín's pavilion.
+const SIGN_ICONS = { 'KAVÁRNA SLAVIA': [ 'K', '#2f5b3c' ], 'PLATÝZ': [ 'P', '#7a6a4f' ], 'ŽOFÍN': [ 'Ž', '#b8902f' ], 'KARLOVY LÁZNĚ': [ 'L', '#c2387f' ], 'FAMU': [ 'F', '#1f2d4d' ], 'UNIVERZITA KARLOVA · FAKULTA SOCIÁLNÍCH VĚD': [ 'U', '#1f2d4d' ] };
+for ( const s of places?.signs || [] ) {
+
+	const m = SIGN_ICONS[ s.text ];
+	if ( m && ! placeMarkers.some( p => p.icon === m[ 0 ] && Math.hypot( p.x - s.x, p.z - s.z ) < 40 ) ) placeMarkers.push( { x: s.x, z: s.z, icon: m[ 0 ], colour: m[ 1 ] } );
+
+}
+
+if ( places?.sitkov ) placeMarkers.push( { x: places.sitkov.x, z: places.sitkov.z, icon: 'V', colour: '#4f7a68' } );
+if ( places?.bandstand ) placeMarkers.push( { x: places.bandstand.x, z: places.bandstand.z, icon: '♫', colour: '#26352d' } );
 
 const isTouch = matchMedia( '(pointer: coarse)' ).matches || navigator.maxTouchPoints > 0 && ! matchMedia( '(pointer: fine)' ).matches;
 const minimap = createMinimap( {
@@ -455,7 +467,7 @@ function nearestStreet( x, z ) {
 
 }
 
-document.getElementById( 'credit' ).textContent = data.attribution + ' · fasády podle fotek © Mapillary (CC BY-SA) · postavy a auta: Kenney (CC0) · rendering after Slop New York (MIT, Mr.doob)';
+document.getElementById( 'credit' ).textContent = data.attribution + ' · fasády podle fotek © Mapillary (CC BY-SA) · auta: Kenney (CC0) · rendering after Slop New York (MIT, Mr.doob)';
 
 // ---------------------------------------------------------------------------
 
