@@ -105,3 +105,19 @@ It took about five rounds on the square. Things that went wrong in rendering and
 Commit with a message that says what now matches reality and what was wrong before; keep `houses.json` notes
 current; list what is still missing (on the square: U Halánků's painted gable, the seasonal market stalls) so
 the next session can pick it up.
+
+## As commands: one grid square
+
+The photo-review part of this workflow (steps on inventory, Street View, review and merge) runs per 100 m grid
+square:
+
+```sh
+GMAPS_KEY=… npm run square -- prepare x-1_z0 --budget 80   # inventory + Street View photos (outside git)
+# a Claude session reads the photos as docs/review-brief.md says → .square/x-1_z0/review.json
+npm run square -- merge x-1_z0 [--protect 21644594]          # checked merge into houses.json / signs.json
+node tools/build-scene.mjs && npx vite build                  # rebuild, then look at the square
+```
+
+Square `x<i>_z<j>` covers 100·i ≤ x < 100·(i+1), 100·j ≤ z < 100·(j+1) in the scene's frame; Betlémské náměstí
+is `x-1_z0`. Landmarks, dress items and interiors (the later steps) are still hand work in `tools/dress.mjs`,
+`src/landmarks.js` and `src/venues.js`.
