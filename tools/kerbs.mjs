@@ -354,7 +354,11 @@ function measureChain( parts, photo, inBuilding ) {
  * Builds the kerbed carriageway field. roads: OSM car roads from streets.mjs; inBuilding( X, Y ): inside a house.
  * Returns { sdf( X, Y ) → signed distance to the kerb line (< 0 on the carriageway, > 0 on the pavement), chains }.
  */
-export async function buildKerbs( { roads, AREA, inBuilding } ) {
+// Tram streets: the carriageway always holds both tracks and a traffic lane either side (half width about the
+// double track's centre line).
+const TRAM_HALF = 5.6;
+
+export async function buildKerbs( { roads, AREA, inBuilding, tramPaths = [] } ) {
 
 	const photo = await loadPhoto( AREA );
 	const kerbed = roads.filter( r => r.highway !== 'service' && r.highway !== 'pedestrian' && r.pts.length >= 2 );
@@ -365,7 +369,14 @@ export async function buildKerbs( { roads, AREA, inBuilding } ) {
 	const field = new Float32Array( W * H ).fill( FAR );
 	const paved = new Float32Array( W * H ).fill( FAR ); // < 0 within a kerbed side's pavement band
 
-	for ( const chain of chains ) {
+	const tramStrips = tramPaths.filter( p => p.length >= 2 ).map( pts => {
+
+		const zero = pts.map( () => 0 ), half = pts.map( () => TRAM_HALF );
+		return { pts, left: half, right: half, outer: { left: zero, right: zero } };
+
+	} );
+
+	for ( const chain of [ ...chains, ...tramStrips ] ) {
 
 		const { pts, left, right, outer } = chain;
 		const reachOut = Math.max( ...left, ...right ) + 12;

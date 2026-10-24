@@ -1268,7 +1268,7 @@ const streetData = await loadStreets( { AREA, buildingDist, inBuilding: ( X, Y )
 	const id = buildingAt( X, Y );
 	return keptIds.has( id ) && ! HAND_MODELLED.has( buildings[ id ]?.code );
 
-} } );
+}, tramPaths: JSON.parse( await readFile( new URL( 'tram.json', RAW ) ) ).flatMap( f => f.geometry?.paths || [] ) } );
 const surface2 = new Uint8Array( sw * sh * 4 );
 const tramDist = polylineDistance( JSON.parse( await readFile( new URL( 'tram.json', RAW ) ) ).flatMap( f => f.geometry?.paths || [] ), 6 );
 const parks = JSON.parse( await readFile( new URL( 'greenery.json', RAW ) ) ).flatMap( f => f.geometry?.rings ? [ f.geometry.rings ] : [] );

@@ -620,7 +620,7 @@ function streetLife( ctx, L ) {
 			let run = [];
 			for ( const p of line ) {
 
-				if ( ! p || blocked( p[ 0 ], p[ 1 ] ) ) {
+				if ( ! p || blocked( p[ 0 ], p[ 1 ] ) || streetData.kerbs.sdf( p[ 0 ], p[ 1 ] ) < 0.4 ) { // off the carriageway
 
 					flush( walks, run );
 					run = [];
@@ -651,9 +651,11 @@ function streetLife( ctx, L ) {
 
 		}
 
+		// Cars park along the house fronts (not along the river or a park).
+		const houses = side => chain.rule[ side ].filter( r => r === 'front' ).length > chain.rule[ side ].length / 2;
 		for ( const [ on, side, sign ] of [ [ parkRight, 'right', - 1 ], [ parkLeft, 'left', 1 ] ] ) {
 
-			if ( ! on ) continue;
+			if ( ! on || ! houses( side ) ) continue;
 			const line = offsetLine( chain, i => sign * ( chain[ side ][ i ] - 1.1 ) );
 			let since = 0;
 			for ( let i = 7; i < line.length - 7; i ++ ) {

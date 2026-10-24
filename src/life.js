@@ -85,11 +85,11 @@ function mergedModel( gltf, length ) {
 
 // ---------------------------------------------------------------------------
 
-export async function addLife( scene, life, { seats = [], benches = [], groundHeight, loadModel, camera } ) {
+export async function addLife( scene, life, { seats = [], benches = [], groundHeight, loadModel, camera, cars = true } ) {
 
 	if ( ! life ) return { update() {} };
 
-	const carModels = await Promise.all( Object.keys( CARS ).map( n => loadModel( `models/cars/${n}.glb`, 'models/cars/' ) ) );
+	const carModels = cars ? await Promise.all( Object.keys( CARS ).map( n => loadModel( `models/cars/${n}.glb`, 'models/cars/' ) ) ) : [];
 
 	// --- agents: walkers spread over the lines by length, sitters on most chairs and stools and some benches
 	const walks = life.walks.map( makePath ).filter( p => p.length > 8 );
@@ -180,9 +180,9 @@ export async function addLife( scene, life, { seats = [], benches = [], groundHe
 	};
 
 	const parked = [];
-	for ( let i = 0; i < life.parked.length; i += 4 ) parked.push( { type: pickCar(), p: life.parked.slice( i, i + 4 ) } );
+	if ( cars ) for ( let i = 0; i < life.parked.length; i += 4 ) parked.push( { type: pickCar(), p: life.parked.slice( i, i + 4 ) } );
 	const movers = [];
-	for ( let k = 0; k < Math.min( 18, drives.length ); k ++ ) {
+	for ( let k = 0; k < ( cars ? Math.min( 18, drives.length ) : 0 ); k ++ ) {
 
 		const path = drives[ Math.floor( rnd() * drives.length ) ];
 		movers.push( { type: pickCar(), path, s: rnd() * path.length * 0.8, speed: 0, cruise: 6 + rnd() * 3 } );

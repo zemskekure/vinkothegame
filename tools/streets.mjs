@@ -20,7 +20,7 @@ const OPEN_WAYS = new Set( [ 'pedestrian', 'footway', 'living_street', 'path', '
 const SETT = /sett|cobblestone/;
 const surfaceValue = s => s === 'asphalt' || s === 'concrete' ? 1 : SETT.test( s || 'sett' ) ? 0 : 0.5; // 0.5 = paving stones
 
-export async function loadStreets( { AREA, buildingDist, inBuilding } ) {
+export async function loadStreets( { AREA, buildingDist, inBuilding, tramPaths } ) {
 
 	const project = await lonLatToSJTSK();
 	const osm = JSON.parse( await readFile( new URL( '../data/raw/osm.json', import.meta.url ) ) );
@@ -132,7 +132,7 @@ export async function loadStreets( { AREA, buildingDist, inBuilding } ) {
 	const nearestOpen = segmentIndex( openWays, () => 0 );
 
 	// Kerbed carriageways (tools/kerbs.mjs): measured from the house fronts and the aerial photo.
-	const kerbs = await buildKerbs( { roads, AREA, inBuilding } );
+	const kerbs = await buildKerbs( { roads, AREA, inBuilding, tramPaths } );
 	const unkerbed = r => r.highway === 'service' || r.highway === 'pedestrian';
 
 	// Field values at a point: Fk = signed distance to a kerb line (> 0 on the raised pavement, 100: none near),

@@ -289,8 +289,7 @@ const { seats } = addPlaces( scene, places, data.furniture );
 // Models: Kenney's Mini Characters and Car Kit (CC0); textures resolve next to them.
 const gltfLoader = new GLTFLoader();
 const loadModel = async ( path, dir ) => gltfLoader.parseAsync( await load( path, 'arrayBuffer', '' ), dir );
-const trams = addTrams( scene, places?.life?.trams, groundHeight );
-const life = await addLife( scene, places?.life, { seats, benches: data.furniture.bench, groundHeight, loadModel, camera } );
+const life = await addLife( scene, places?.life, { seats, benches: data.furniture.bench, groundHeight, loadModel, camera, cars: params.has( 'cars' ) } ); // cars hidden for now (?cars shows them)
 
 // ---------------------------------------------------------------------------
 // Controls: orbit (overview) and walking at street level
@@ -327,6 +326,9 @@ function cameraBlocked( x, z ) {
 }
 
 const walker = new Walker( camera, renderer.domElement, groundHeight, isBlocked, scene, cameraBlocked );
+
+// Trams and their overhead line (poles kept out of houses).
+const trams = addTrams( scene, places?.life?.trams, groundHeight, cameraBlocked );
 
 const hud = {
 	mode: document.getElementById( 'mode' ),
