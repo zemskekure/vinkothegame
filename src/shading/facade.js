@@ -20,7 +20,8 @@ export const sceneUniforms = {
 	sunColor: uniform( new THREE.Color( 0xffe2bd ) )
 };
 
-export function createFacadeMaterial() {
+// cutouts: oriented boxes (scene frame, see tools/places.mjs) where the wall is open: doorways into the walk-in rooms.
+export function createFacadeMaterial( cutouts = [] ) {
 
 	const mat = new THREE.MeshStandardNodeMaterial( { roughness: 0.85, metalness: 0 } );
 
@@ -273,6 +274,24 @@ export function createFacadeMaterial() {
 		return bumpNormal( relief.mul( fade ) );
 
 	} )();
+
+	// Real openings: fragments inside a cut-out box are discarded.
+	if ( cutouts.length ) {
+
+		let inside = null;
+		for ( const c of cutouts ) {
+
+			const d = positionWorld.xz.sub( vec2( c.x, c.z ) );
+			const a = abs( dot( d, vec2( c.ux, c.uz ) ) ).lessThan( c.hu )
+				.and( abs( dot( d, vec2( - c.uz, c.ux ) ) ).lessThan( c.hn ) )
+				.and( positionWorld.y.greaterThan( c.y0 ) ).and( positionWorld.y.lessThan( c.y1 ) );
+			inside = inside ? inside.or( a ) : a;
+
+		}
+
+		mat.maskNode = inside.not();
+
+	}
 
 	return mat;
 

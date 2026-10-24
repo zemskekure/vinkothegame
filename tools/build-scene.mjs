@@ -17,6 +17,7 @@ import poly2tri from 'poly2tri';
 import { ShapeUtils, Vector2, Color, SRGBColorSpace } from 'three';
 import { AREA, ORIGIN } from './area.mjs';
 import { loadStreets, buildPavementMesh, collectFurniture } from './streets.mjs';
+import { collectPlaces } from './places.mjs';
 import { lonLatToSJTSK } from './geo.mjs';
 
 const RAW = new URL( '../data/raw/', import.meta.url );
@@ -779,9 +780,18 @@ const percentile = ( values, p ) => {
 
 const SACRED = /kostel|kaple|Svat|Nejsvětější|Betlémská|klášter|Klementinum/i;
 
+// Modelled by hand at runtime (src/places.js): kept for collisions, no generic walls or roof.
+const HAND_MODELLED = new Set( [ 40354954 ] ); // Rotunda sv. Kříže Menšího
+
 for ( const b of buildings ) {
 
 	const rings = [ b.poly.outer, ...b.poly.holes ];
+	if ( HAND_MODELLED.has( b.code ) ) {
+
+		b.kept = true;
+		continue;
+
+	}
 
 	let ground = Infinity;
 	for ( const ring of rings ) for ( const [ X, Y ] of ring ) ground = Math.min( ground, terrainAt( X, Y ) + BASE_HEIGHT );
@@ -1353,6 +1363,8 @@ const furniture = collectFurniture( streetData, {
 } );
 furniture.statue.push( ...landmarkStatues );
 
+const places = collectPlaces( { buildings, streetFacades, toLocal, terrainAt, buildingAt, keptIds, dsm, idGrid, AREA, ORIGIN, streetData, furniture, riverAt, buildingInfo, terrainGrid: { terrain, tw, th, cell: TERRAIN_CELL } } );
+
 // Name boards over the shop windows, one per wall position (several shops on one spot are spread along the wall).
 const signs = [];
 const used = new Map();
@@ -1363,6 +1375,9 @@ for ( const sg of pendingSigns ) {
 	const ring = sg.b.poly.outer;
 	const [ ax, ay ] = ring[ sg.i ], [ bx, by ] = ring[ ( sg.i + 1 ) % ring.length ];
 	const len = Math.hypot( bx - ax, by - ay );
+	// The signature places carry their own signs (tools/places.mjs).
+	const [ sx, , sz ] = toLocal( ax + ( bx - ax ) * sg.t, ay + ( by - ay ) * sg.t, 0 );
+	if ( places.signs.some( p => Math.hypot( p.x - sx, p.z - sz ) < 9 ) ) continue;
 	const key = `${sg.b.code}_${sg.i}`;
 	const slot = used.get( key ) || 0;
 	used.set( key, slot + 1 );
@@ -1426,6 +1441,7 @@ await writeFile( new URL( 'scene.json', OUT ), JSON.stringify( {
 	kerbHeight: streetData.KERB_HEIGHT,
 	decor,
 	embankment: { posts: embankment.posts, rails: embankment.rails },
+	places,
 	streets
 } ) );
 

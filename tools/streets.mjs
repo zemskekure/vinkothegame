@@ -69,7 +69,7 @@ export async function loadStreets( { AREA, buildingDist, inBuilding } ) {
 		const half = w.pts.map( p => Math.max( 1.3, Math.min( width / 2, buildingDist( p.X, p.Y ) - ( kerbed ? 1.0 : 0.3 ) ) ) );
 		const sidewalkTagged = Object.keys( t ).some( k => k.startsWith( 'sidewalk' ) );
 		const sidewalkWidthTag = parseFloat( t[ 'sidewalk:width' ] || t[ 'sidewalk:both:width' ] ) || 0;
-		roads.push( { pts: w.pts, half, kerbed, left, right, sidewalkTagged, sidewalkWidthTag, asphalt: surfaceValue( t.surface ), name: t.name, highway: t.highway } );
+		roads.push( { pts: w.pts, half, kerbed, left, right, oneway: t.oneway === 'yes' ? 1 : t.oneway === '-1' ? - 1 : 0, sidewalkTagged, sidewalkWidthTag, asphalt: surfaceValue( t.surface ), name: t.name, highway: t.highway } );
 
 	}
 

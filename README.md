@@ -14,7 +14,21 @@ Open the printed URL (http://localhost:5173). Drag to orbit, scroll to zoom; pre
 the streets: click to look around with the mouse, **WASD** to walk, **Shift** to run.
 Add `?webgl` to the URL to force WebGL 2, `?walk` to start on foot.
 
+On a phone: the joystick bottom left walks (push to the rim to run), drag anywhere else to look.
+
 The generated scene is committed in `public/data/`, so nothing else is needed to run it.
+
+## Places to find
+
+- **Rotunda sv. Kříže Menšího** (Konviktská) with its lantern and iron fence
+- **Hostinec U Rotundy**, **Standard Café** and **Champagneria** (in the Průchodní passage): walk in through
+  the open doors; outdoor seating, festoon lights over Průchodní
+- **Náprstkovo muzeum**: the gate with banners
+- The **chimney courtyard** off Náprstkova
+- The **stairs** from Národní down to Divadelní
+- People walking the pavements and sitting at tables and benches; parked and driving cars
+
+These are located in the data by `tools/places.mjs` and modelled in `src/places.js` and `src/life.js`.
 
 ## Where the data comes from
 
@@ -26,6 +40,8 @@ The generated scene is committed in `public/data/`, so nothing else is needed to
 | Building and roof heights | ČÚZK DMP (0.5 m surface model) |
 | Roof colours and materials, tree check | ČÚZK Ortofoto |
 | Facade colour, window spacing, shop fronts | Mapillary street photos (CC BY-SA 4.0) |
+| Kerb lines | house fronts (RÚIAN) and the 12.5 cm aerial photo, see `tools/kerbs.mjs` |
+| Pavements, places, street furniture | © OpenStreetMap contributors (ODbL) |
 
 Facade layout, antialiasing helpers and window interiors are ported from
 [Slop New York](https://github.com/mrdoob/slop-newyork) (MIT, Mr.doob); see `src/shading/common.js`.

@@ -55,7 +55,7 @@ async function loadPhoto( AREA ) {
 // flipping ways so a chain runs one way (their pts, half widths and sides flip with them).
 function chainRoads( roads ) {
 
-	const flip = r => ( { ...r, pts: [ ...r.pts ].reverse(), left: r.right, right: r.left, half: [ ...r.half ].reverse() } );
+	const flip = r => ( { ...r, pts: [ ...r.pts ].reverse(), left: r.right, right: r.left, half: [ ...r.half ].reverse(), oneway: - r.oneway } );
 	const dir = ( a, b ) => {
 
 		const l = Math.hypot( b.X - a.X, b.Y - a.Y ) || 1;
@@ -346,7 +346,7 @@ function measureChain( parts, photo, inBuilding ) {
 
 	}
 
-	return { pts: line.map( p => [ p.X, p.Y ] ), left: halves.left, right: halves.right, outer, rule, kerbed: line.map( p => p.left || p.right ), name: parts[ 0 ].name, paveWidth };
+	return { pts: line.map( p => [ p.X, p.Y ] ), left: halves.left, right: halves.right, outer, rule, kerbed: line.map( p => p.left || p.right ), name: parts[ 0 ].name, highway: parts[ 0 ].highway, oneway: parts[ 0 ].oneway, paveWidth };
 
 }
 

@@ -7,6 +7,8 @@ import { Walker } from './walker.js';
 import { addFurniture } from './furniture.js';
 import { addSigns } from './signs.js';
 import { addDecor, addEmbankment } from './decor.js';
+import { addPlaces } from './places.js';
+import { addLife } from './life.js';
 
 async function load( name, type = 'arrayBuffer' ) {
 
@@ -142,8 +144,36 @@ function terrainHeight( x, z ) {
 }
 
 // Walking surface: street level plus the raised pavement (kerb field in surface2's blue channel).
+// Walkable zones from tools/places.mjs (rooms, doorways, stairs): oriented rectangles with their own floor height.
+const zones = data.places?.zones || [];
+function zoneAt( x, z ) {
+
+	for ( const zn of zones ) {
+
+		const dx = x - zn.x, dz = z - zn.z;
+		if ( Math.abs( dx * zn.ux + dz * zn.uz ) < zn.hu && Math.abs( - dx * zn.uz + dz * zn.ux ) < zn.hn ) return zn;
+
+	}
+
+	return null;
+
+}
+
+function zoneHeight( zn, x, z ) {
+
+	if ( zn.y !== undefined ) return zn.y;
+	// Sloping zones (stairs, passages): y0 at the −along end, y1 at the +along end, in steps if it has them.
+	let t = ( ( x - zn.x ) * zn.along[ 0 ] + ( z - zn.z ) * zn.along[ 1 ] ) / ( 2 * zn.hn ) + 0.5;
+	t = Math.min( 1, Math.max( 0, t ) );
+	if ( zn.steps ) t = Math.min( zn.steps, Math.floor( t * ( zn.steps + 1 ) ) ) / zn.steps;
+	return zn.y0 + ( zn.y1 - zn.y0 ) * t;
+
+}
+
 function groundHeight( x, z ) {
 
+	const zn = zoneAt( x, z );
+	if ( zn ) return zoneHeight( zn, x, z );
 	const col = Math.min( S.width - 1, Math.max( 0, Math.floor( ( x - bounds.minX ) / S.cell ) ) );
 	const row = Math.min( S.height - 1, Math.max( 0, Math.floor( ( z - bounds.minZ ) / S.cell ) ) );
 	const Fk = ( 128 - surface2[ ( row * S.width + col ) * 4 + 2 ] ) / 25;
@@ -218,17 +248,42 @@ for ( let i = 0, n = walls.length / ws; i < n; i ++ ) {
 wallGeo.setAttribute( 'plaster', new THREE.BufferAttribute( plaster, 3 ) );
 wallGeo.setIndex( new THREE.BufferAttribute( new Uint32Array( wallIdxBuf ), 1 ) );
 wallGeo.computeVertexNormals();
-const wallMesh = new THREE.Mesh( wallGeo, createFacadeMaterial() );
+const wallMesh = new THREE.Mesh( wallGeo, createFacadeMaterial( data.places?.cutouts || [] ) );
 wallMesh.castShadow = wallMesh.receiveShadow = true;
 scene.add( wallMesh );
 
 // ---------------------------------------------------------------------------
 // Street furniture and trees (OpenStreetMap, plus canopy peaks found in the surface model)
 
+// The chimney courtyard's benches and lamps, the museum gate's lanterns: ordinary furniture and decor.
+const places = data.places;
+if ( places?.yard ) {
+
+	for ( const [ x, z, y, rot ] of places.yard.benches ) data.furniture.bench.push( x, y, z, rot, 1 );
+	for ( const [ x, z, y ] of places.yard.lamps ) data.furniture.lamp.push( x, y, z, 0, 1 );
+
+}
+
+if ( places?.gate ) {
+
+	const G = places.gate;
+	for ( const side of [ - 1, 1 ] ) {
+
+		const o = side * ( G.w / 2 + 0.95 );
+		data.decor.lanterns.push( [ G.x + G.n[ 1 ] * o, G.y + 3.4, G.z - G.n[ 0 ] * o, Math.atan2( G.n[ 0 ], G.n[ 1 ] ) ] );
+
+	}
+
+}
+
 addFurniture( scene, data.furniture );
 addSigns( scene, data.signs || [], renderer );
 addDecor( scene, data.decor );
 addEmbankment( scene, embankmentBuf, data.embankment );
+
+// Signature places (rotunda, pub, café, champagne bar, museum gate, stairs) and street life (people, cars).
+const { seats } = addPlaces( scene, places );
+const life = addLife( scene, places?.life, { seats, benches: data.furniture.bench, groundHeight } );
 
 // ---------------------------------------------------------------------------
 // Controls: orbit (overview) and walking at street level
@@ -247,6 +302,7 @@ function isBlocked( x, z ) {
 
 	const col = Math.floor( ( x - bounds.minX ) / fp.cell ), row = Math.floor( ( z - bounds.minZ ) / fp.cell );
 	if ( col < 0 || row < 0 || col >= fp.width || row >= fp.height ) return true;
+	if ( zoneAt( x, z ) ) return false;
 	if ( groundHeight( x, z ) < data.waterLevel + 1 ) return true; // stay out of the river
 	const i = row * fp.width + col;
 	return ( footprintBits[ i >> 3 ] >> ( i & 7 ) ) & 1;
@@ -357,6 +413,7 @@ renderer.setAnimationLoop( () => {
 
 	timer.update();
 	const dt = Math.min( timer.getDelta(), 0.1 );
+	life.update( dt );
 
 	if ( walking ) {
 
@@ -380,5 +437,5 @@ renderer.setAnimationLoop( () => {
 } );
 
 document.getElementById( 'loading' ).remove();
-window.__debug = { camera, isBlocked, groundHeight, walker };
+window.__debug = { camera, isBlocked, groundHeight, walker, life };
 window.__ready = true;
