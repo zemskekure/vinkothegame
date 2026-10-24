@@ -1,10 +1,12 @@
-// Prague trams on the tram routes from tools/places.mjs, stylised after the two types seen on Národní and the
-// embankments:
-//   - Škoda 15T ForCity: the common modern car, about 31 m in four articulated sections; red below the windows,
-//     a continuous black window band, light grey above with a white roof and roof-top equipment covers, a raked
-//     black windscreen with a red nose, a single-arm pantograph;
-//   - Tatra T3: the classic, running as a coupled pair of 14 m cars; red with a cream band under the windows and a
-//     cream roof edge, rounded ends, a diamond pantograph.
+// Prague trams on the tram routes from tools/places.mjs, modelled after street photographs of the two types on
+// Národní, Spálená and the embankments (no freely licensed models of them exist):
+//   - Škoda 15T ForCity Alfa: 31.4 m in three articulated sections, 2.46 m wide, low floor. A red skirt, a silver
+//     belt, a continuous black window band and silver above; a big raked black windscreen with the orange line
+//     display at its top over a silver band with the headlamps and the fleet number and a red bumper; double plug
+//     doors, roof equipment covers, a single-arm pantograph on the middle section.
+//   - Tatra T3 (T3R.P): 14 m, 2.5 m wide, in coupled pairs. A cream skirt, a red body with a cream band under the
+//     windows, cream above them and a grey roof; a rounded three-pane front; three folding doors; a diamond
+//     pantograph.
 // Every section rides on the track by its two ends, so a train bends through the curves. Trams brake into the
 // stops, wait, pull away, and start again from the beginning of their route when they run off the end.
 // The overhead line follows the tracks: a contact wire over each track on poles at the roadside with span arms.
@@ -12,18 +14,19 @@
 import * as THREE from 'three/webgpu';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
-const HALF_W = 1.25;
+const HALF_W = 1.24;
 const CRUISE = 9, ACCEL = 1.0, BRAKE = 1.3, DWELL = 12;
 const WIRE_H = 5.7;
 
-// Plan of a body section (x across, s along): cab ends drawn in to a rounded nose, joint ends square.
-function plan( L, noseFront, noseBack, inset = 0 ) {
+// Plan of a body section (x across, s along): cab ends drawn in to a rounded nose, joint ends square. `cut` pulls
+// the front end back (the raked windscreen, slice by slice up the cab).
+function plan( L, noseFront, noseBack, inset = 0, cut = 0, n = 0.8 ) {
 
-	const w = HALF_W - inset, h = L / 2 - inset, n = 0.8;
+	const w = HALF_W - inset, h = L / 2 - inset, hf = h - cut;
 	const sh = new THREE.Shape().moveTo( - w, noseBack ? - h + n : - h );
-	sh.lineTo( - w, noseFront ? h - n : h );
-	if ( noseFront ) sh.quadraticCurveTo( - w, h, - w + n, h ).lineTo( w - n, h ).quadraticCurveTo( w, h, w, h - n );
-	else sh.lineTo( w, h );
+	sh.lineTo( - w, noseFront ? hf - n : hf );
+	if ( noseFront ) sh.quadraticCurveTo( - w, hf, - w + n, hf ).lineTo( w - n, hf ).quadraticCurveTo( w, hf, w, hf - n );
+	else sh.lineTo( w, hf );
 	sh.lineTo( w, noseBack ? - h + n : - h );
 	if ( noseBack ) sh.quadraticCurveTo( w, - h, w - n, - h ).lineTo( - w + n, - h ).quadraticCurveTo( - w, - h, - w, - h + n );
 	else sh.lineTo( - w, - h );
@@ -32,12 +35,13 @@ function plan( L, noseFront, noseBack, inset = 0 ) {
 }
 
 // A horizontal slab of a section between two heights (+z forward).
-const band = ( L, nf, nb, y0, y1, inset = 0 ) => new THREE.ExtrudeGeometry( plan( L, nf, nb, inset ), { depth: y1 - y0, bevelEnabled: false, curveSegments: 6 } )
+const band = ( L, nf, nb, y0, y1, inset = 0, cut = 0, n = 0.8 ) => new THREE.ExtrudeGeometry( plan( L, nf, nb, inset, cut, n ), { depth: y1 - y0, bevelEnabled: false, curveSegments: 6 } )
 	.rotateX( - Math.PI / 2 ).rotateY( Math.PI ).translate( 0, y0, 0 );
 
 const mat = ( hex, opts = {} ) => new THREE.MeshStandardNodeMaterial( { color: hex, roughness: 0.5, ...opts } );
 const MATS = {
 	red: mat( 0xc8102e, { roughness: 0.35 } ),
+	silver: mat( 0xc9ccce, { roughness: 0.3, metalness: 0.55 } ),
 	cream: mat( 0xefe5c8, { roughness: 0.4 } ),
 	grey: mat( 0xd9dcde, { roughness: 0.4 } ),
 	white: mat( 0xf4f4f2, { roughness: 0.5 } ),
@@ -79,48 +83,83 @@ const bar = ( x0, y0, z0, x1, y1, z1, r = 0.025 ) => {
 // One section as a group of meshes (one per material). kind: '15T' or 'T3'.
 function section( kind, L, noseFront, noseBack, { pantograph = false, line = '' } = {} ) {
 
-	const parts = { dark: [], red: [], cream: [], grey: [], white: [], glass: [], roof: [], light: [] };
+	const parts = { dark: [], red: [], cream: [], grey: [], white: [], glass: [], roof: [], light: [], silver: [] };
 	const nf = noseFront, nb = noseBack;
 	if ( kind === '15T' ) {
 
-		parts.dark.push( band( L, nf, nb, 0.12, 0.38, 0.12 ) );
-		parts.red.push( band( L, nf, nb, 0.38, 1.05 ) );
-		parts.glass.push( band( L, nf, nb, 1.05, 2.42, 0.02 ) );
-		parts.grey.push( band( L, nf, nb, 2.42, 3.05 ) );
-		parts.white.push( band( L, nf, nb, 3.05, 3.2, 0.2 ), new THREE.BoxGeometry( 1.6, 0.35, L * 0.55 ).translate( 0, 3.37, 0 ) );
-		// Doors: grey-glass leaves on the right (−x), one per section.
-		parts.grey.push( new THREE.BoxGeometry( 0.04, 2.05, 1.3 ).translate( - HALF_W - 0.01, 0.38 + 1.02, 0 ) );
-		parts.glass.push( new THREE.BoxGeometry( 0.045, 1.4, 1.1 ).translate( - HALF_W - 0.015, 1.3, 0 ) );
+		// The cab's front rakes back up the windscreen: each slice's front pulled back a little more.
+		const rake = y => nf ? Math.max( 0, ( y - 1.15 ) / 2.2 ) * 0.75 : 0;
+		const slices = ( y0, y1, part, inset = 0, k = 4 ) => {
+
+			for ( let i = 0; i < k; i ++ ) {
+
+				const a = y0 + ( y1 - y0 ) * i / k, b = y0 + ( y1 - y0 ) * ( i + 1 ) / k;
+				part.push( band( L, nf, nb, a, b, inset, rake( ( a + b ) / 2 ), 0.9 ) );
+
+			}
+
+		};
+
+		parts.dark.push( band( L, nf, nb, 0.1, 0.3, 0.15 ) );
+		parts.red.push( band( L, nf, nb, 0.3, 0.88, 0, 0, 0.9 ) );
+		parts.silver.push( band( L, nf, nb, 0.88, 1.15, 0, 0, 0.9 ) );
+		slices( 1.15, 2.55, parts.glass, 0.01, nf ? 14 : 1 );
+		slices( 2.55, 3.3, parts.silver, 0, nf ? 8 : 1 );
+		parts.roof.push( band( L, nf, nb, 3.3, 3.38, 0.15, rake( 3.35 ) + 0.1, 0.9 ) );
+		// Roof equipment covers, silver, along the middle of each section.
+		parts.silver.push( new THREE.BoxGeometry( 1.7, 0.42, L * 0.5 ).translate( 0, 3.59, - L * 0.08 ) );
+		// Double plug doors on the right (−x): two per section, dark glass with silver frames.
+		for ( const s of [ L * 0.24, - L * 0.24 ] ) {
+
+			parts.silver.push( new THREE.BoxGeometry( 0.05, 2.15, 1.42 ).translate( - HALF_W - 0.01, 0.3 + 1.07, s ) );
+			parts.glass.push( new THREE.BoxGeometry( 0.06, 1.75, 0.6 ).translate( - HALF_W - 0.02, 1.35, s - 0.33 ), new THREE.BoxGeometry( 0.06, 1.75, 0.6 ).translate( - HALF_W - 0.02, 1.35, s + 0.33 ) );
+
+		}
+
 		if ( nf ) {
 
-			// Raked windscreen and the red nose.
-			parts.glass.push( new THREE.BoxGeometry( 2.0, 1.55, 0.08 ).translate( 0, 1.85, L / 2 - 0.05 ).rotateX( 0 ) );
-			parts.red.push( new THREE.BoxGeometry( 2.1, 0.75, 0.25 ).translate( 0, 0.7, L / 2 - 0.05 ) );
-			parts.light.push( ...[ - 0.75, 0.75 ].map( x => new THREE.BoxGeometry( 0.32, 0.1, 0.05 ).translate( x, 0.95, L / 2 + 0.08 ) ) );
+			// Headlamps in the silver band.
+			parts.light.push( ...[ - 0.8, 0.8 ].map( x => new THREE.BoxGeometry( 0.42, 0.11, 0.05 ).translate( x, 1.03, L / 2 + 0.01 ) ) );
 
 		}
 
 		if ( pantograph ) {
 
 			// Single-arm pantograph.
-			parts.dark.push( bar( 0, 3.55, - 0.6, 0, 4.3, 0.5 ), bar( 0, 4.3, 0.5, 0, 4.95, - 0.4 ), new THREE.BoxGeometry( 1.4, 0.04, 0.1 ).translate( 0, 4.97, - 0.4 ) );
+			parts.dark.push( bar( 0, 3.8, - 0.6, 0, 4.4, 0.5 ), bar( 0, 4.4, 0.5, 0, 5.05, - 0.4 ), new THREE.BoxGeometry( 1.4, 0.04, 0.1 ).translate( 0, 5.07, - 0.4 ) );
 
 		}
 
 	} else {
 
-		parts.dark.push( band( L, nf, nb, 0.18, 0.62, 0.15 ) );
-		parts.red.push( band( L, nf, nb, 0.62, 1.42 ), band( L, nf, nb, 2.5, 2.78 ) );
-		parts.cream.push( band( L, nf, nb, 1.42, 1.58 ), band( L, nf, nb, 2.78, 2.98, 0.05 ) );
-		parts.glass.push( band( L, nf, nb, 1.58, 2.5, 0.02 ) );
-		parts.roof.push( band( L, nf, nb, 2.98, 3.08, 0.25 ) );
-		for ( const s of [ L / 2 - 1.6, 0, - L / 2 + 1.6 ] ) parts.dark.push( new THREE.BoxGeometry( 0.04, 1.85, 1.25 ).translate( - HALF_W - 0.005, 0.62 + 0.92, s ) );
-		if ( nf ) parts.light.push( ...[ - 0.6, 0.6 ].map( x => new THREE.CylinderGeometry( 0.11, 0.11, 0.06, 12 ).rotateX( Math.PI / 2 ).translate( x, 1.05, L / 2 + 0.01 ) ) );
+		parts.dark.push( band( L, nf, nb, 0.12, 0.38, 0.18 ) );
+		parts.cream.push( band( L, nf, nb, 0.38, 0.66, 0, 0, 1.0 ) );
+		parts.red.push( band( L, nf, nb, 0.66, 1.46, 0, 0, 1.0 ) );
+		parts.cream.push( band( L, nf, nb, 1.46, 1.6, 0, 0, 1.0 ), band( L, nf, nb, 2.48, 2.92, 0, 0, 1.0 ) );
+		parts.glass.push( band( L, nf, nb, 1.6, 2.48, 0.02, 0, 1.0 ) );
+		parts.roof.push( band( L, nf, nb, 2.92, 3.05, 0.22, 0, 1.0 ) );
+		// Window pillars (cream) down the sides.
+		for ( let s = - L / 2 + 1.4; s < L / 2 - 1.2; s += 1.25 ) for ( const x of [ - 1, 1 ] ) parts.cream.push( new THREE.BoxGeometry( 0.05, 0.88, 0.12 ).translate( x * ( HALF_W + 0.005 ), 2.04, s ) );
+		// Three folding doors on the right, dark frames with glass.
+		for ( const s of [ L / 2 - 1.6, 0, - L / 2 + 1.6 ] ) {
+
+			parts.dark.push( new THREE.BoxGeometry( 0.05, 2.1, 1.25 ).translate( - HALF_W - 0.005, 0.4 + 1.05, s ) );
+			parts.glass.push( new THREE.BoxGeometry( 0.06, 1.2, 1.0 ).translate( - HALF_W - 0.01, 1.55, s ) );
+
+		}
+
+		if ( nf ) {
+
+			parts.light.push( ...[ - 0.65, 0.65 ].map( x => new THREE.CylinderGeometry( 0.1, 0.1, 0.06, 12 ).rotateX( Math.PI / 2 ).translate( x, 1.0, L / 2 + 0.01 ) ) );
+			parts.dark.push( new THREE.BoxGeometry( 2.2, 0.12, 0.08 ).translate( 0, 0.5, L / 2 + 0.02 ) );
+
+		}
+
 		if ( pantograph ) {
 
-			parts.roof.push( new THREE.BoxGeometry( 1.4, 0.25, 2.4 ).translate( 0, 3.2, 1.6 ) );
-			for ( const x of [ - 0.45, 0.45 ] ) parts.dark.push( bar( x, 3.33, 0.8, x, 3.95, 1.6 ), bar( x, 3.95, 1.6, x, 4.45, 0.9 ) );
-			parts.dark.push( new THREE.BoxGeometry( 1.5, 0.04, 0.12 ).translate( 0, 4.47, 0.9 ) );
+			parts.roof.push( new THREE.BoxGeometry( 1.4, 0.25, 2.4 ).translate( 0, 3.17, 1.6 ) );
+			for ( const x of [ - 0.45, 0.45 ] ) parts.dark.push( bar( x, 3.3, 0.8, x, 3.92, 1.6 ), bar( x, 3.92, 1.6, x, 4.42, 0.9 ) );
+			parts.dark.push( new THREE.BoxGeometry( 1.5, 0.04, 0.12 ).translate( 0, 4.44, 0.9 ) );
 
 		}
 
@@ -152,9 +191,12 @@ function section( kind, L, noseFront, noseBack, { pantograph = false, line = '' 
 	if ( line && ( nf || nb ) ) {
 
 		const front = nf;
-		const d = new THREE.Mesh( new THREE.PlaneGeometry( 1.5, 0.27 ), new THREE.MeshStandardNodeMaterial( { map: destinationTexture( line ), emissive: 0xffffff, emissiveIntensity: 0.12 } ) );
-		const y = kind === '15T' ? 2.72 : 2.35;
-		d.position.set( 0, y, ( front ? 1 : - 1 ) * ( L / 2 + 0.03 ) );
+		const tex = destinationTexture( line );
+		const d = new THREE.Mesh( new THREE.PlaneGeometry( 1.5, 0.27 ), new THREE.MeshStandardNodeMaterial( { map: tex, emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: 0.9 } ) );
+		// 15T: behind the top of the raked windscreen; T3: in the window over the front pane.
+		const y = kind === '15T' ? 3.1 : 2.32, z = kind === '15T' ? L / 2 - 0.62 : L / 2 + 0.03;
+		d.position.set( 0, y, ( front ? 1 : - 1 ) * z );
+		if ( kind === '15T' ) d.rotation.x = front ? - 0.32 : 0.32;
 		d.rotation.y = front ? 0 : Math.PI;
 		group.add( d );
 
@@ -169,8 +211,8 @@ function train( kind, line ) {
 
 	if ( kind === '15T' ) {
 
-		const L = 7.6;
-		return [ 0, 1, 2, 3 ].map( i => ( { L, gap: 0.25, model: section( '15T', L, i === 0, i === 3, { pantograph: i === 1, line: i === 0 || i === 3 ? line : '' } ) } ) );
+		const L = 10.3;
+		return [ 0, 1, 2 ].map( i => ( { L, gap: 0.25, model: section( '15T', L, i === 0, i === 2, { pantograph: i === 1, line: i === 0 ? line : '' } ) } ) );
 
 	}
 

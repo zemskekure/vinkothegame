@@ -37,7 +37,9 @@ The generated scene is committed in `public/data/`, so nothing else is needed to
 - Arcades and passages through houses wherever OpenStreetMap has them (`tools/openings.mjs`, `src/openings.js`)
 - Tram stops: raised islands with shelters, stop poles and departure boards (`src/stops.js`)
 - People (architectural scale figures, `src/figures.js`) walking the pavements and sitting at tables and benches;
-  parked and driving cars (Kenney's Car Kit, CC0, `?cars`); trams (15T and T3) on the real tracks, stopping at the stops
+  parked and driving cars (Kenney's Car Kit, CC0, `?cars`); trams (Škoda 15T in three sections and coupled Tatra T3s,
+  modelled from street photos) on the real tracks, stopping at the stops
+- Smetanovo nábřeží's railing, the Čapadlo terrace with its underpass and stairs, Divadelní under Národní
 
 These are located in the data by `tools/places.mjs` and modelled in `src/places.js`, `src/venues.js`, `src/bridges.js`,
 `src/landmarks.js` and `src/life.js`. House fronts read from street photos are described in `data/houses.json`.
