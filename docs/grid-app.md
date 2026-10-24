@@ -46,7 +46,7 @@ starts on login), simple to look at, and honest about state and cost.
   in with the owner's Claude subscription on the Mac mini.
 - The prompt is assembled from the cell: its bounds and contents, the owner's notes and open bugs, the attached
   reference images (passed as image inputs), and the standing instruction "make this cell as true to reality as
-  possible: houses, facades, signs, pavements, furniture; follow CLAUDE.md". The owner can edit it before sending.
+  possible: houses, facades, signs, pavements, furniture; follow CLAUDE.md and docs/realism-workflow.md". The owner can edit it before sending.
 - One git branch per cell session (e.g. `cell/C4-…`), so work can be reviewed and merged; show the diff summary.
 - After the session: rebuild (`node tools/build-scene.mjs` when tools/ or data/ changed, `npx vite build`), take
   new screenshots, attach them to the session record.

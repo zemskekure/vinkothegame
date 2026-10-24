@@ -66,6 +66,8 @@ wall, 6 bronze), `places.js` (dispatches to `openings.js`, `stops.js`, `bridges.
 
 ## How realism is added (the levers, cheapest first)
 
+The step-by-step workflow used on Betlémské náměstí, to repeat for every grid cell: `docs/realism-workflow.md`.
+
 1. `data/houses.json`, keyed by RÚIAN code: `colour`, `trim`, `floors`, `ground` (default/gate/blank/restaurant/
    shops/windows), `rustic` (none/banded/ornate), `grilles`, `graffiti`, `signs: false` (hide OSM name boards),
    `edges: { <edge index>: { awning, lanterns, banner: { text, board, ink } } }` (street-facing edges only), and a
