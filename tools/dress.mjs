@@ -15,7 +15,7 @@ const DISTRICT = [ 'STARÉ MĚSTO', 'PRAHA 1' ];
 
 const FONTS = { serif: 'Georgia, "Times New Roman", serif', sans: '"Helvetica Neue", Arial, sans-serif', script: '"Brush Script MT", "Segoe Script", cursive' };
 
-export function dressSquare( { places, frontFacing, frame, S, L, sign, yAtLocal, streetData, project, streetFacades, toLocal, buildingInfo } ) {
+export function dressSquare( { places, frontFacing, frame, S, L, sign, yAtLocal, streetData, project, streetFacades, toLocal, buildingInfo, inHouse = () => false } ) {
 
 	const dress = places.dress = [];
 	places.plates = [];
@@ -172,6 +172,120 @@ export function dressSquare( { places, frontFacing, frame, S, L, sign, yAtLocal,
 			places.kafka = { x, z, y: yAtLocal( x, z ) };
 
 		}
+
+	}
+
+	// --- Národní and Spálená: landmarks from street photos. `at( x, z, sx, sz, h )`: the house front nearest local
+	// point (x, z) that faces the street point (sx, sz), at the place along it nearest (x, z), h m above the ground.
+	const at = ( x, z, sx, sz, h ) => {
+
+		const f = front( x, z, sx, sz );
+		if ( ! f ) return null;
+		const [ X, Y ] = S( x, z );
+		const t = Math.max( 0.04, Math.min( 0.96, ( ( X - f.a[ 0 ] ) * f.ux + ( Y - f.a[ 1 ] ) * f.uy ) / f.len ) );
+		return { ...on( f, t, h ), code: f.code, f, t };
+
+	};
+	const put = ( p, item ) => p && dress.push( { ...p, f: undefined, t: undefined, code: undefined, ...item } );
+	const SANS = '"Helvetica Neue", Arial, sans-serif', SERIF = 'Georgia, "Times New Roman", serif';
+	{
+
+		// Kaňkův palác (Národní 16): the memorial of 17 November 1989 on its front by the corner: a bronze plaque of
+		// raised hands, candles and flowers below.
+		put( at( - 52, 311, - 52, 290, 1.65 ), { kind: 'memorial1711' } );
+		// Café Louvre (Národní 22): the red lettering across the first floor; on the ground floor the dark green
+		// shopfronts, LOUVRE over the door, the small boards of its rooms; Reduta jazz club and Rock Café next door.
+		put( at( 12, 298, 12, 280, 6.1 ), { kind: 'letters', text: 'CAFÉ  LOUVRE', h: 0.95, ink: '#c4232a', font: SERIF, weight: '700', spacing: 18, italic: true } );
+		put( at( 14, 297, 14, 280, 3.5 ), { kind: 'board', w: 3.2, h: 0.75, text: 'LOUVRE', bg: '#173326', ink: '#d9c48a', font: SERIF, weight: '700', spacing: 30, frame: 'none' } );
+		put( at( 9, 299, 9, 280, 2.95 ), { kind: 'board', w: 3.6, h: 0.32, text: 'GALERIE · KAVÁRNA · RESTAURACE · BILLIARD', bg: '#101010', ink: '#f4f1e8', font: SANS, weight: '600', spacing: 4, frame: 'none' } );
+		put( at( - 3, 301, - 3, 282, 3.5 ), { kind: 'board', w: 3.4, h: 0.62, text: 'REDUTA', sub: 'JAZZ CLUB', bg: '#173326', ink: '#e3c66b', font: SERIF, weight: '700', spacing: 12, frame: 'gold' } );
+		put( at( 3, 300, 3, 282, 3.2 ), { kind: 'letters', text: 'Rock Café', h: 0.55, ink: '#ff3b3b', font: '"Brush Script MT", "Segoe Script", cursive', weight: '700', spacing: 2, glow: true } );
+		// Palác Metro (Národní 25): KFC's big white letters on the dark band over the stone portal, the red box sign.
+		put( at( - 14, 283, - 14, 296, 4.3 ), { kind: 'board', w: 3.4, h: 1.0, text: 'KFC', bg: '#262626', ink: '#ffffff', font: SANS, weight: '800', spacing: 20, frame: 'none' } );
+		put( at( - 10, 283, - 10, 296, 2.9 ), { kind: 'board', w: 1.1, h: 0.62, text: 'KFC', bg: '#d0021b', ink: '#ffffff', font: SANS, weight: '800', spacing: 6, frame: 'none' } );
+		// Palác Chicago (Národní 32): its name in grey metal letters over the first floor.
+		put( at( 140, 270, 140, 255, 5.6 ), { kind: 'letters', text: 'CHICAGO', h: 0.55, ink: '#8f989d', font: SANS, weight: '700', spacing: 30 } );
+		// The Praha insurance house (Národní 7, Osvald Polívka): PRAHA in gold mosaic under the cornice.
+		const praha = at( - 244, 323, - 244, 340, 0 );
+		if ( praha ) {
+
+			const eave = buildingInfo.get( praha.code )?.eaveY;
+			const top = eave ? toLocal( ...S( praha.x, praha.z ), eave )[ 1 ] : praha.y + 15;
+			put( praha, { y: + ( top - 2.4 ).toFixed( 2 ), kind: 'board', w: 6.5, h: 1.1, text: 'P R A H A', bg: '#1d2e5c', ink: '#e2b64a', font: SERIF, weight: '700', spacing: 24, frame: 'gold' } );
+
+		}
+
+		// Spálená: the functionalist Olympic (its blue name on the white band, the school's blue band above, the
+		// Ypsilon café, the deli), the art nouveau Česká pojišťovna (the red cartouche with the gold lion, GENERALI).
+		put( at( 78, 452, 50, 452, 3.4 ), { kind: 'board', w: 6.4, h: 0.95, text: '›  OLYMPIC  ‹', bg: '#f4f4f0', ink: '#2b5fb4', font: SANS, weight: '800', spacing: 18, frame: 'none' } );
+		put( at( 78, 452, 50, 452, 7.2 ), { kind: 'board', w: 8.5, h: 0.62, text: 'GYMNÁZIUM A STŘEDNÍ ŠKOLA FUTURUM', bg: '#2350a8', ink: '#ffffff', font: SANS, weight: '700', spacing: 6, frame: 'none' } );
+		put( at( 78, 444, 50, 444, 3.4 ), { kind: 'board', w: 2.6, h: 0.8, text: 'Ypsilon', bg: '#efe8d6', ink: '#3a2c20', font: '"Brush Script MT", "Segoe Script", cursive', weight: '700', spacing: 2, frame: 'none' } );
+		put( at( 78, 460, 50, 460, 2.9 ), { kind: 'board', w: 3.4, h: 0.36, text: 'LAHŮDKY · CHLEBÍČKY · CUKRÁRNA', bg: '#f4f4f0', ink: '#1d2e5c', font: SANS, weight: '700', spacing: 4, frame: 'none' } );
+		put( at( 78, 486, 50, 486, 4.3 ), { kind: 'cartouche', text: 'PRVNÍ ČESKÁ VZÁJEMNÁ', sub: 'POJIŠŤOVNA' } );
+		put( at( 78, 494, 50, 494, 3.6 ), { kind: 'board', w: 3.0, h: 0.6, text: 'GENERALI', bg: '#7a1d1d', ink: '#e8c46a', font: SERIF, weight: '700', spacing: 16, frame: 'gold' } );
+		for ( const z of [ 474, 480, 492, 498 ] ) put( at( 78, z, 50, z, 7.6 ), { kind: 'mosaic', w: 2.2, h: 0.7 } );
+		// Diamant (Spálená 4): cubist pilasters at its door, its name, and (below) the cubist niche round St John.
+		const door = at( 47, 613, 30, 613, 0 );
+		if ( door ) {
+
+			put( door, { kind: 'cubistDoor', w: 2.2, h: 3.4 } );
+			put( { ...door, y: + ( door.y + 3.9 ).toFixed( 2 ) }, { kind: 'letters', text: 'DIAMANT', h: 0.32, ink: '#3a3a38', font: SANS, weight: '700', spacing: 22 } );
+
+		}
+
+	}
+
+	// Statues of St John of Nepomuk in their places (OSM): Platzer's by St Ursula's on Národní, and the one in the
+	// cubist niche by Diamant; each faces the street.
+	for ( const [ id, sx, sz, frame, near ] of [ [ 6840520600, - 188, 320, null, [ - 188, 344 ] ], [ 4758035848, 30, 604, 'cubist' ] ] ) {
+
+		const n = osm.find( e => e.type === 'node' && e.id === id );
+		if ( ! n ) continue;
+		// Against the wall nearest the mapped point that faces the street, a little out from it.
+		const [ px, pz ] = near || L( ...project( n.lon, n.lat ) ); // (St Ursula's: the point lies inside the church; its front on Národní)
+		const wall = front( px, pz, sx, sz );
+		let x = px, z = pz, rot = Math.atan2( sx - px, sz - pz );
+		if ( wall && wall.d < 9 ) {
+
+			const [ X, Y ] = S( px, pz );
+			const t = Math.max( 0.05, Math.min( 0.95, ( ( X - wall.a[ 0 ] ) * wall.ux + ( Y - wall.a[ 1 ] ) * wall.uy ) / wall.len ) );
+			const c = on( wall, t, 0 );
+			x = + ( c.x + c.n[ 0 ] * ( frame ? 0.9 : 1.2 ) ).toFixed( 2 );
+			z = + ( c.z + c.n[ 1 ] * ( frame ? 0.9 : 1.2 ) ).toFixed( 2 );
+			rot = Math.atan2( c.n[ 0 ], c.n[ 1 ] );
+
+		}
+
+		dress.push( { kind: 'saint', x, z, y: yAtLocal( x, z ), rot: + rot.toFixed( 3 ), frame } );
+
+	}
+
+	// The National Theatre: the two bronze trigas (Victory's three-horse chariots) on the pylons at the corners of
+	// its front on Národní.
+	{
+
+		const way = osm.find( e => e.type === 'way' && e.id === 7649971 );
+		const f = front( - 370, 360, - 370, 335 );
+		const eave = f && buildingInfo.get( f.code )?.eaveY;
+		if ( way && eave ) {
+
+			const nodes = new Map( osm.filter( e => e.type === 'node' ).map( e => [ e.id, e ] ) );
+			const pts = way.nodes.map( id => nodes.get( id ) ).filter( Boolean ).map( q => L( ...project( q.lon, q.lat ) ) );
+			const minZ = Math.min( ...pts.map( q => q[ 1 ] ) ), band = pts.filter( q => q[ 1 ] < minZ + 5 );
+			const y = toLocal( ...S( band[ 0 ][ 0 ], band[ 0 ][ 1 ] ), eave )[ 1 ];
+			for ( const x of [ Math.min( ...band.map( q => q[ 0 ] ) ) + 3.5, Math.max( ...band.map( q => q[ 0 ] ) ) - 3.5 ] ) dress.push( { kind: 'triga', x: + x.toFixed( 2 ), z: + ( minZ + 3.5 ).toFixed( 2 ), y: + ( y + 2.2 ).toFixed( 2 ), rot: Math.PI } );
+
+		}
+
+	}
+
+	// Metro: the pylon with the line B sign by each entrance to Národní třída station.
+	for ( const e of osm ) {
+
+		if ( e.type !== 'node' || e.tags?.railway !== 'subway_entrance' ) continue;
+		const [ x, z ] = L( ...project( e.lon, e.lat ) );
+		if ( x < - 400 || x > 290 || z < 150 || z > 700 || inHouse( ...S( x, z ) ) ) continue; // entrances inside a house (Quadrio) have no pylon
+		dress.push( { kind: 'pylon', x, z, y: yAtLocal( x, z ), rot: 0, line: 'B', name: 'Národní třída' } );
 
 	}
 

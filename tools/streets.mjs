@@ -13,7 +13,7 @@ import { buildKerbs } from './kerbs.mjs';
 
 // Artworks mapped as statues that are none: "Za pravdu" on Betlémská kaple is a shadow inscription, eight stone
 // ledges on the chapel front (src/landmarks.js).
-const NOT_STATUES = new Set( [ 4923909754, 2517769530 ] ); // and Viselec, which hangs from a roof (src/landmarks.js)
+const NOT_STATUES = new Set( [ 4923909754, 2517769530, 6840520600, 4758035848 ] ); // and Viselec, which hangs from a roof; the two St Johns of Nepomuk modelled in tools/dress.mjs
 
 const KERB_HEIGHT = 0.12;
 const RAMP_END = 8.5; // the pavement mesh covers the kerb field up to here

@@ -691,18 +691,6 @@
 		"what": "G25N auction-house plaque on the pier"
 	},
 	{
-		"front": "21649367_19",
-		"fromLeft": 0.72,
-		"height": 4.6,
-		"kind": "letters",
-		"text": "KFC",
-		"width": 3,
-		"ink": "#ffffff",
-		"font": "sans",
-		"street": "narodni",
-		"what": "big white letters on the black fascia over the arcade"
-	},
-	{
 		"front": "21644721_4",
 		"fromLeft": 0.12,
 		"height": 4.2,

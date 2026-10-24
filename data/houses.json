@@ -1033,11 +1033,11 @@
 		"signs": false
 	},
 	"21649651": {
-		"note": "Národní 3/5, Academy of Sciences: cream sandstone neo-renaissance palace. Ground floor of very heavy horizontal block rustication with stepped voussoirs over tall round-arched windows behind ornate iron grilles, on a darker vermiculated plinth (#b8ad95). Egg-and-dart cornice above, columned piano nobile. Sunlit stone is paler than the model's #c9b38e: lightened. Floors not countable from these low shots. (Street View 2026)",
-		"colour": "#e3d9c1",
-		"trim": "#ece4d0",
+		"note": "Národní 3, Akademie věd: heavy rusticated sandstone neo-renaissance palace, arched ground-floor windows with grilles, a dark wooden gate (Street View 2026)",
+		"colour": "#cdb592",
+		"trim": "#dccaa6",
 		"ground": "windows",
-		"rustic": "ornate",
+		"rustic": "banded",
 		"grilles": true,
 		"graffiti": false,
 		"signs": false
@@ -1222,9 +1222,9 @@
 		"signs": false
 	},
 	"21651221": {
-		"note": "Národní 16: pale ochre-yellow baroque palace, windows framed in red-brown with cream stucco aprons and pediments, central triangular gable with an oculus, red tiled roof. Ground floor: arched entrances and dark-glazed shop windows. (Street View 2026)",
-		"colour": "#e4cd97",
-		"trim": "#b5533f",
+		"note": "Národní 16, Kaňkův palác: ochre baroque palace with red-painted window surrounds and stucco, the 17 November 1989 memorial by the corner (Street View 2026)",
+		"colour": "#e6c98f",
+		"trim": "#c4553f",
 		"floors": 3,
 		"ground": "shops",
 		"rustic": "none",
@@ -1416,5 +1416,13 @@
 		},
 		"signs": false
 	},
-	"_about": "Hand-written descriptions of individual houses, read from street-level photos (tools/facade-views.mjs → data/raw/views/house-<code>_<edge>.jpg). Keyed by RÚIAN building code. Colours are sRGB. ground: shops | restaurant | windows | gate | blank. rustic: none | banded | ornate. edges: per-facade extras by footprint edge index (awning, banner, lanterns). signs: false keeps the OpenStreetMap shop signs off (only what the photos show)."
+	"_about": "Hand-written descriptions of individual houses, read from street-level photos (tools/facade-views.mjs → data/raw/views/house-<code>_<edge>.jpg). Keyed by RÚIAN building code. Colours are sRGB. ground: shops | restaurant | windows | gate | blank. rustic: none | banded | ornate. edges: per-facade extras by footprint edge index (awning, banner, lanterns). signs: false keeps the OpenStreetMap shop signs off (only what the photos show).",
+	"21661014": {
+		"note": "Národní 22: cream-yellow house with bay windows, CAFÉ LOUVRE in red letters across the first floor, dark green shopfronts below (Street View 2026)",
+		"colour": "#e8d5a6",
+		"trim": "#f2e7c8",
+		"ground": "shops",
+		"rustic": "none",
+		"signs": false
+	}
 }

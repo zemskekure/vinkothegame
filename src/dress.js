@@ -15,6 +15,9 @@ const D = {
 	face: plain( 0xf7f4ea, { roughness: 0.5 } )
 };
 
+// A canvas font: an 'italic …' family moves the style to the front, where canvas fonts want it.
+const fontOf = ( weight, size, font ) => font.startsWith( 'italic ' ) ? `italic ${weight} ${size}px ${font.slice( 7 )}` : `${weight} ${size}px ${font}`;
+
 // Text on a canvas sized to the text: returns the texture and the board's width for a given height.
 function lettering( lines, { h, bg, ink, font, weight = '700', spacing = 0, pad = 0.35, border, minW = 0 } ) {
 
@@ -23,7 +26,7 @@ function lettering( lines, { h, bg, ink, font, weight = '700', spacing = 0, pad 
 	let width = 0;
 	lines.forEach( ( t, i ) => {
 
-		ctx.font = `${i ? '400' : weight} ${sizes[ i ]}px ${font}`;
+		ctx.font = fontOf( i ? '400' : weight, sizes[ i ], font );
 		if ( 'letterSpacing' in ctx ) ctx.letterSpacing = `${i ? 2 : spacing}px`;
 		width = Math.max( width, ctx.measureText( t ).width );
 
@@ -51,7 +54,7 @@ function lettering( lines, { h, bg, ink, font, weight = '700', spacing = 0, pad 
 	ctx.textBaseline = 'middle';
 	lines.forEach( ( t, i ) => {
 
-		ctx.font = `${i ? '400' : weight} ${sizes[ i ]}px ${font}`;
+		ctx.font = fontOf( i ? '400' : weight, sizes[ i ], font );
 		if ( 'letterSpacing' in ctx ) ctx.letterSpacing = `${i ? 2 : spacing}px`;
 		ctx.fillText( t, W / 2, lines.length > 1 ? ( i ? H * 0.76 : H * 0.4 ) : H * 0.54 );
 
@@ -82,8 +85,8 @@ function addBoard( scene, s ) {
 function addLetters( scene, s ) {
 
 	const g = onFront( s.x, s.y, s.z, s.n );
-	const { tex, w } = lettering( [ s.text ], { h: s.h * 1.5, ink: s.ink, font: s.font, weight: s.weight, spacing: s.spacing, pad: 0.1 } );
-	const m = flat( tex, w, s.h * 1.5, { transparent: true, depthWrite: false } );
+	const { tex, w } = lettering( [ s.text ], { h: s.h * 1.5, ink: s.ink, font: s.italic ? `italic ${s.font}` : s.font, weight: s.weight, spacing: s.spacing, pad: 0.1 } );
+	const m = flat( tex, w, s.h * 1.5, { transparent: true, depthWrite: false, ...( s.glow ? { emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: 2.2 } : {} ) } );
 	m.position.z = 0.16; // clear of the ground floor's relief
 	g.add( m );
 	scene.add( g );
@@ -492,7 +495,321 @@ function addHanging( scene, s ) {
 
 }
 
-const ADD = { hanging: addHanging, board: addBoard, letters: addLetters, badge: addBadge, lantern: addLantern, flags: addFlags, portal: addPortal, canopy: addCanopy, clock: addClock };
+// The memorial of 17 November 1989 (Národní 16): a bronze plaque of raised hands, some making the V sign, with the
+// date; candles and flowers on the pavement below.
+function addMemorial1711( scene, s ) {
+
+	const g = onFront( s.x, s.y, s.z, s.n );
+	const c = document.createElement( 'canvas' );
+	c.width = 512;
+	c.height = 420;
+	const x = c.getContext( '2d' );
+	x.fillStyle = '#5b4426';
+	x.fillRect( 0, 0, 512, 420 );
+	x.fillStyle = '#a8814a';
+	for ( let k = 0; k < 8; k ++ ) {
+
+		const hx = 50 + k * 58 + ( k % 2 ) * 10, hy = 70 + ( k % 3 ) * 30;
+		x.beginPath();
+		x.ellipse( hx, hy + 70, 20, 30, 0, 0, Math.PI * 2 );
+		x.fill();
+		x.fillRect( hx - 12, hy + 90, 24, 80 );
+		for ( let f = 0; f < ( k % 3 ? 4 : 2 ); f ++ ) {
+
+			const a = k % 3 ? - 0.35 + f * 0.24 : - 0.22 + f * 0.44;
+			x.save();
+			x.translate( hx, hy + 50 );
+			x.rotate( a );
+			x.fillRect( - 4, - 55, 8, 55 );
+			x.restore();
+
+		}
+
+	}
+
+	x.fillStyle = '#d8b878';
+	x.font = '700 46px Georgia, serif';
+	x.textAlign = 'center';
+	x.fillText( '17. 11. 1989', 256, 380 );
+	const tex = new THREE.CanvasTexture( c );
+	tex.colorSpace = THREE.SRGBColorSpace;
+	const plaque = flat( tex, 0.62, 0.51, { metalness: 0.6, roughness: 0.45 } );
+	plaque.position.z = 0.05;
+	g.add( plaque );
+	const k = new Kit().add( plain( 0xf4f2ec ), box( 0.72, 0.61, 0.03, 0, - 0.305, 0.015 ) );
+	// Candles (glass lanterns) and flowers along the wall's foot.
+	for ( let i = 0; i < 9; i ++ ) {
+
+		const cx = - 0.45 + i * 0.11 + ( i % 2 ) * 0.02, cz = 0.18 + ( i % 3 ) * 0.07;
+		k.add( plain( [ 0xc8202a, 0xf2efe6, 0xc8202a ][ i % 3 ], { roughness: 0.3, transparent: true, opacity: 0.85 } ), cyl( 0.035, 0.035, 0.11, cx, - 1.65, cz, 8 ) );
+		k.add( glow( 0xffb04a, 2.5 ), ball( 0.012, cx, - 1.52, cz, 5 ) );
+
+	}
+
+	for ( let i = 0; i < 4; i ++ ) k.add( plain( [ 0xc8102e, 0xf4f4f0, 0x2a5fb0, 0xc8102e ][ i ] ), ball( 0.06, - 0.3 + i * 0.2, - 1.6, 0.35, 6 ) ).add( M.leaf, cyl( 0.01, 0.01, 0.3, - 0.3 + i * 0.2, - 1.65, 0.3, 4 ).rotateX( 1.2 ) );
+	k.build( g, { shadows: false } );
+	scene.add( g );
+
+}
+
+// The art nouveau cartouche of Česká pojišťovna: red, a gold frame and the Czech lion, the company's name.
+function addCartouche( scene, s ) {
+
+	const g = onFront( s.x, s.y, s.z, s.n );
+	const c = document.createElement( 'canvas' );
+	c.width = 768;
+	c.height = 300;
+	const x = c.getContext( '2d' );
+	x.fillStyle = '#e9e1c8';
+	x.fillRect( 0, 0, 768, 300 );
+	x.fillStyle = '#b3211e';
+	x.beginPath();
+	x.ellipse( 384, 150, 370, 140, 0, 0, Math.PI * 2 );
+	x.fill();
+	x.strokeStyle = '#d8a83a';
+	x.lineWidth = 12;
+	x.stroke();
+	x.fillStyle = '#f2e7c4';
+	x.textAlign = 'center';
+	x.font = '700 40px Georgia, serif';
+	x.fillText( s.text, 384, 110 );
+	x.font = '700 64px Georgia, serif';
+	x.fillText( s.sub, 384, 180 );
+	x.font = '400 26px Georgia, serif';
+	x.fillText( '( ZAL. R. 1827 )', 384, 225 );
+	// The lion, rampant, in gold, on the right.
+	x.fillStyle = '#e2b64a';
+	x.beginPath();
+	x.ellipse( 650, 150, 38, 55, 0.3, 0, Math.PI * 2 );
+	x.fill();
+	x.beginPath();
+	x.arc( 668, 90, 22, 0, Math.PI * 2 );
+	x.fill();
+	for ( const [ ax, ay, bx, by ] of [ [ 640, 195, 615, 250 ], [ 665, 195, 690, 250 ], [ 670, 120, 715, 100 ], [ 630, 160, 600, 120 ] ] ) {
+
+		x.lineWidth = 14;
+		x.strokeStyle = '#e2b64a';
+		x.beginPath();
+		x.moveTo( ax, ay );
+		x.lineTo( bx, by );
+		x.stroke();
+
+	}
+
+	const tex = new THREE.CanvasTexture( c );
+	tex.colorSpace = THREE.SRGBColorSpace;
+	const m = flat( tex, 3.4, 1.33 );
+	m.position.z = 0.12;
+	g.add( m );
+	new Kit().add( M.gold, box( 3.5, 1.43, 0.08, 0, - 0.715, 0.06 ) ).build( g );
+	scene.add( g );
+
+}
+
+// Polívka's mosaic panels between the windows: deep blue with gold leafy scrolls.
+const mosaicTex = ( () => {
+
+	let t = null;
+	return () => t || ( t = ( () => {
+
+		const c = document.createElement( 'canvas' );
+		c.width = 512;
+		c.height = 160;
+		const x = c.getContext( '2d' );
+		x.fillStyle = '#1f3d7a';
+		x.fillRect( 0, 0, 512, 160 );
+		x.strokeStyle = '#e2b64a';
+		x.lineWidth = 7;
+		for ( let k = 0; k < 4; k ++ ) {
+
+			x.beginPath();
+			x.arc( 64 + k * 128, 80, 44, 0.3, Math.PI * 1.7 );
+			x.stroke();
+			x.beginPath();
+			x.moveTo( 64 + k * 128, 80 );
+			x.quadraticCurveTo( 100 + k * 128, 20, 128 + k * 128, 80 );
+			x.stroke();
+
+		}
+
+		x.fillStyle = '#e2b64a';
+		for ( let k = 0; k < 40; k ++ ) x.fillRect( ( k * 53 ) % 512, ( k * 37 ) % 160, 6, 6 );
+		const tex = new THREE.CanvasTexture( c );
+		tex.colorSpace = THREE.SRGBColorSpace;
+		return tex;
+
+	} )() );
+
+} )();
+
+function addMosaic( scene, s ) {
+
+	const g = onFront( s.x, s.y, s.z, s.n );
+	const m = flat( mosaicTex(), s.w, s.h, { metalness: 0.35, roughness: 0.35 } );
+	m.position.z = 0.06;
+	g.add( m );
+	scene.add( g );
+
+}
+
+// Diamant's door (Spálená 4, 1912–13, Emil Králíček): crystalline cubist pilasters with faceted capitals either side.
+function addCubistDoor( scene, s ) {
+
+	const g = onFront( s.x, s.y, s.z, s.n );
+	const stone = plain( 0xd8d4c8, { flatShading: true, roughness: 0.85 } );
+	const k = new Kit();
+	for ( const side of [ - 1, 1 ] ) {
+
+		const x = side * s.w / 2;
+		k.add( stone, new THREE.CylinderGeometry( 0.22, 0.3, s.h, 4 ).rotateY( Math.PI / 4 ).translate( x, s.h / 2, 0.25 ) );
+		k.add( stone, new THREE.ConeGeometry( 0.48, 0.9, 4 ).rotateY( Math.PI / 4 ).rotateX( Math.PI ).translate( x, s.h + 0.45, 0.3 ) );
+		k.add( stone, new THREE.OctahedronGeometry( 0.32, 0 ).scale( 1, 1.5, 0.7 ).translate( x, s.h + 1.05, 0.3 ) );
+
+	}
+
+	k.add( stone, box( s.w + 1.2, 0.35, 0.5, 0, s.h + 1.3, 0.25 ) );
+	k.build( g );
+	scene.add( g );
+
+}
+
+// St John of Nepomuk, baroque, on a pedestal: cassock and surplice, the fur cape, biretta, a crucifix held across
+// him, the halo of five gold stars. With frame 'cubist': inside Diamant's cubist niche, a pointed, faceted arch.
+function addSaint( scene, s ) {
+
+	const g = new THREE.Group();
+	g.position.set( s.x, s.y, s.z );
+	g.rotation.y = s.rot;
+	const stone = plain( 0xbdb5a5, { roughness: 0.9 } ), dark = plain( 0x8c8578, { roughness: 0.9 } );
+	const k = new Kit();
+	k.add( stone, box( 1.3, 0.35, 1.1, 0, 0, 0 ), box( 1.0, 1.55, 0.85, 0, 0.35, 0 ), box( 1.25, 0.25, 1.05, 0, 1.9, 0 ) );
+	const b = 2.15; // the figure's feet
+	k.add( dark, new THREE.LatheGeometry( [ [ 0.0, 0 ], [ 0.42, 0 ], [ 0.36, 0.6 ], [ 0.27, 1.2 ], [ 0.0, 1.25 ] ].map( ( [ r, y ] ) => new THREE.Vector2( r, y ) ), 10 ).translate( 0, b, 0 ) );
+	k.add( stone, new THREE.LatheGeometry( [ [ 0.0, 0 ], [ 0.4, 0 ], [ 0.33, 0.45 ], [ 0.0, 0.5 ] ].map( ( [ r, y ] ) => new THREE.Vector2( r, y ) ), 10 ).translate( 0, b + 0.55, 0 ) );
+	k.add( stone, new THREE.ConeGeometry( 0.36, 0.35, 10 ).translate( 0, b + 1.33, 0 ) );
+	k.add( stone, ball( 0.15, 0, b + 1.62, 0.02, 10 ), box( 0.24, 0.12, 0.24, 0, b + 1.72, 0.02 ) );
+	k.add( dark, box( 0.04, 0.55, 0.04, 0.05, b + 0.85, 0.32 ).rotateZ( 0.3 ), box( 0.26, 0.04, 0.04, 0.05, b + 1.2, 0.33 ) );
+	for ( let i = 0; i < 5; i ++ ) {
+
+		const a = - 0.9 + i * 0.45;
+		k.add( M.gold, new THREE.OctahedronGeometry( 0.05, 0 ).translate( Math.sin( a ) * 0.3, b + 1.68 + Math.cos( a ) * 0.3, - 0.02 ) );
+
+	}
+
+	if ( s.frame === 'cubist' ) {
+
+		// The niche: two faceted piers and a pointed arch over the statue, a low cubist grille in front.
+		const white = plain( 0xe8e5dc, { flatShading: true, roughness: 0.85 } );
+		const arch = new THREE.Shape().moveTo( - 1.6, 0 ).lineTo( 1.6, 0 ).lineTo( 1.6, 4.4 ).lineTo( 0, 5.6 ).lineTo( - 1.6, 4.4 ).closePath();
+		arch.holes.push( new THREE.Path().moveTo( - 1.1, 0 ).lineTo( 1.1, 0 ).lineTo( 1.1, 4.0 ).lineTo( 0, 4.9 ).lineTo( - 1.1, 4.0 ).closePath() );
+		k.add( white, new THREE.ExtrudeGeometry( arch, { depth: 0.6, bevelEnabled: true, bevelSize: 0.12, bevelThickness: 0.12, bevelSegments: 1 } ).translate( 0, 0, - 0.75 ) );
+		for ( let i = - 3; i <= 3; i ++ ) k.add( M.iron, box( 0.03, 0.9, 0.03, i * 0.16, 0, 0.8 ) );
+		k.add( M.iron, box( 1.1, 0.04, 0.04, 0, 0.88, 0.8 ) );
+
+	}
+
+	k.build( g );
+	scene.add( g );
+
+}
+
+// A bronze triga on its pylon: Victory standing in a chariot behind three rearing horses (the National Theatre).
+function addTriga( scene, s ) {
+
+	const g = new THREE.Group();
+	g.position.set( s.x, s.y, s.z );
+	g.rotation.y = s.rot;
+	const bronze = plain( 0x3f6b55, { metalness: 0.55, roughness: 0.5, flatShading: true } );
+	const stone = plain( 0xb59a74, { roughness: 0.85 } );
+	const k = new Kit();
+	k.add( stone, box( 3.2, 2.2, 3.6, 0, - 2.2, - 0.2 ), box( 3.6, 0.3, 4.0, 0, - 0.3, - 0.2 ) );
+	for ( const hx of [ - 0.75, 0, 0.75 ] ) {
+
+		// A horse rearing forwards (+z).
+		k.add( bronze, new THREE.CapsuleGeometry( 0.28, 0.9, 3, 7 ).rotateX( Math.PI / 2 + 0.5 ).translate( hx, 1.1, 0.7 ) );
+		k.add( bronze, new THREE.CapsuleGeometry( 0.14, 0.45, 3, 6 ).rotateX( 0.35 ).translate( hx, 1.75, 1.15 ) );
+		k.add( bronze, new THREE.BoxGeometry( 0.18, 0.2, 0.42 ).rotateX( 0.4 ).translate( hx, 2.05, 1.38 ) );
+		for ( const lz of [ 0.25, 0.3 ] ) for ( const lx of [ - 0.1, 0.1 ] ) k.add( bronze, new THREE.CylinderGeometry( 0.05, 0.04, 0.85, 5 ).translate( 0, - 0.42, 0 ).rotateX( lz === 0.25 ? 0.15 : - 0.9 ).translate( hx + lx, lz === 0.25 ? 0.8 : 1.15, lz === 0.25 ? 0.25 : 1.05 ) );
+
+	}
+
+	k.add( bronze, box( 1.3, 0.7, 0.9, 0, 0.35, - 0.6 ) );
+	for ( const side of [ - 1, 1 ] ) k.add( bronze, new THREE.TorusGeometry( 0.42, 0.05, 5, 14 ).rotateY( Math.PI / 2 ).translate( side * 0.7, 0.45, - 0.6 ) );
+	// Victory: a long dress, raised arm with a wreath, wings.
+	k.add( bronze, new THREE.LatheGeometry( [ [ 0, 0 ], [ 0.3, 0 ], [ 0.22, 0.9 ], [ 0.16, 1.4 ], [ 0, 1.45 ] ].map( ( [ r, y ] ) => new THREE.Vector2( r, y ) ), 8 ).translate( 0, 1.05, - 0.6 ) );
+	k.add( bronze, ball( 0.13, 0, 2.62, - 0.6, 7 ), new THREE.CylinderGeometry( 0.04, 0.04, 0.8, 5 ).rotateX( - 0.6 ).translate( 0.15, 2.8, - 0.4 ), new THREE.TorusGeometry( 0.16, 0.03, 4, 10 ).translate( 0.15, 3.2, - 0.15 ) );
+	for ( const side of [ - 1, 1 ] ) k.add( bronze, new THREE.BoxGeometry( 0.05, 1.1, 0.5 ).rotateZ( side * 0.5 ).translate( side * 0.45, 2.3, - 0.8 ) );
+	k.build( g );
+	scene.add( g );
+
+}
+
+// The Prague metro sign: a grey post with a square box, the white M-and-arrow on the line's colour (B: yellow),
+// both faces, and the station name under it.
+const metroTex = ( () => {
+
+	const cache = {};
+	return ( line, name ) => cache[ line + name ] || ( cache[ line + name ] = ( () => {
+
+		const c = document.createElement( 'canvas' );
+		c.width = 256;
+		c.height = 320;
+		const x = c.getContext( '2d' );
+		x.fillStyle = { A: '#1b9e4b', B: '#f7c600', C: '#d4202a' }[ line ];
+		x.fillRect( 0, 0, 256, 256 );
+		x.fillStyle = '#ffffff';
+		// The M whose middle point runs down into an arrow.
+		x.beginPath();
+		x.moveTo( 48, 200 );
+		x.lineTo( 48, 56 );
+		x.lineTo( 128, 150 );
+		x.lineTo( 208, 56 );
+		x.lineTo( 208, 200 );
+		x.lineTo( 176, 200 );
+		x.lineTo( 176, 128 );
+		x.lineTo( 146, 168 );
+		x.lineTo( 166, 168 );
+		x.lineTo( 128, 222 );
+		x.lineTo( 90, 168 );
+		x.lineTo( 110, 168 );
+		x.lineTo( 80, 128 );
+		x.lineTo( 80, 200 );
+		x.closePath();
+		x.fill();
+		x.fillStyle = '#2a2d31';
+		x.fillRect( 0, 256, 256, 64 );
+		x.fillStyle = '#ffffff';
+		x.font = '700 30px "Helvetica Neue", Arial, sans-serif';
+		x.textAlign = 'center';
+		x.fillText( name, 128, 298 );
+		const t = new THREE.CanvasTexture( c );
+		t.colorSpace = THREE.SRGBColorSpace;
+		return t;
+
+	} )() );
+
+} )();
+
+function addPylon( scene, s ) {
+
+	const g = new THREE.Group();
+	g.position.set( s.x, s.y, s.z );
+	g.rotation.y = s.rot;
+	new Kit().add( plain( 0x50555b, { metalness: 0.4, roughness: 0.5 } ), box( 0.14, 2.6, 0.14, 0, 0, 0 ), box( 0.72, 0.92, 0.16, 0, 2.6, 0 ) ).build( g );
+	for ( const side of [ - 1, 1 ] ) {
+
+		const m = flat( metroTex( s.line, s.name ), 0.64, 0.8, { emissive: 0xffffff, emissiveMap: metroTex( s.line, s.name ), emissiveIntensity: 0.35 } );
+		m.position.set( 0, 3.06, side * 0.085 );
+		if ( side < 0 ) m.rotation.y = Math.PI;
+		g.add( m );
+
+	}
+
+	scene.add( g );
+
+}
+
+const ADD = { memorial1711: addMemorial1711, cartouche: addCartouche, mosaic: addMosaic, cubistDoor: addCubistDoor, saint: addSaint, triga: addTriga, pylon: addPylon, hanging: addHanging, board: addBoard, letters: addLetters, badge: addBadge, lantern: addLantern, flags: addFlags, portal: addPortal, canopy: addCanopy, clock: addClock };
 
 export function addDress( scene, places ) {
 
