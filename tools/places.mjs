@@ -895,22 +895,28 @@ export function collectPlaces( ctx ) {
 			const f = frameOf( g );
 			const local = ( [ X, Y ] ) => [ ( X - g.A[ 0 ] ) * f.ux + ( Y - g.A[ 1 ] ) * f.uy, - ( X - g.A[ 0 ] ) * f.uy + ( Y - g.A[ 1 ] ) * f.ux ];
 			let a0 = 0, a1 = f.l, l0 = - g.w / 2, l1 = g.w / 2;
+			const ends = [ [ 0, g.ya ], [ f.l, g.yb ] ];
 			for ( const h of bridgeSegs ) {
 
 				if ( used.has( h ) ) continue;
 				const fh = frameOf( h );
 				if ( Math.abs( fh.ux * f.ux + fh.uy * f.uy ) < Math.cos( 15 * Math.PI / 180 ) ) continue;
 				const [ pa, pb ] = [ local( h.A ), local( h.B ) ];
-				if ( Math.max( Math.abs( pa[ 1 ] ), Math.abs( pb[ 1 ] ) ) > 9 || Math.max( pa[ 0 ], pb[ 0 ] ) < - 2 || Math.min( pa[ 0 ], pb[ 0 ] ) > f.l + 2 ) continue;
+				if ( Math.max( Math.abs( pa[ 1 ] ), Math.abs( pb[ 1 ] ) ) > 14 || Math.max( pa[ 0 ], pb[ 0 ] ) < - 2 || Math.min( pa[ 0 ], pb[ 0 ] ) > f.l + 2 ) continue;
 				used.add( h );
+				ends.push( [ pa[ 0 ], h.ya ], [ pb[ 0 ], h.yb ] );
 				a0 = Math.min( a0, pa[ 0 ], pb[ 0 ] ); a1 = Math.max( a1, pa[ 0 ], pb[ 0 ] );
 				l0 = Math.min( l0, pa[ 1 ] - h.w / 2, pb[ 1 ] - h.w / 2 ); l1 = Math.max( l1, pa[ 1 ] + h.w / 2, pb[ 1 ] + h.w / 2 );
 
 			}
 
 			const mid = ( l0 + l1 ) / 2, at = a => [ g.A[ 0 ] + f.ux * a - f.uy * mid, g.A[ 1 ] + f.uy * a + f.ux * mid ];
-			const y = a => g.ya + ( g.yb - g.ya ) * Math.max( 0, Math.min( 1, a / f.l ) );
-			decks.push( { A: at( a0 ), B: at( a1 ), w: l1 - l0, kind: g.kind, ya: y( a0 ), yb: y( a1 ) } );
+			// Each end at the highest of the ways' ends there (an end's land search can find a lower quay).
+			const endY = a => Math.max( ...ends.filter( e => Math.abs( e[ 0 ] - a ) < 4 ).map( e => e[ 1 ] ), - 1e9 );
+			let ya = endY( a0 ), yb = endY( a1 );
+			if ( ya < - 1e8 ) ya = g.ya;
+			if ( yb < - 1e8 ) yb = g.yb;
+			decks.push( { A: at( a0 ), B: at( a1 ), w: l1 - l0, kind: g.kind, ya, yb } );
 
 		}
 

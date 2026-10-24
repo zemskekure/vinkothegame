@@ -1,274 +1,610 @@
 {
 	"_about": "Hand-written descriptions of individual houses, read from street-level photos (tools/facade-views.mjs → data/raw/views/house-<code>_<edge>.jpg). Keyed by RÚIAN building code. Colours are sRGB. ground: shops | restaurant | windows | gate | blank. rustic: none | banded | ornate. edges: per-facade extras by footprint edge index (awning, banner, lanterns). signs: false keeps the OpenStreetMap shop signs off (only what the photos show).",
-
 	"21649685": {
 		"note": "Národní / Smetanovo nábřeží: Lažanský palác (FAMU upstairs, Kavárna Slavia on the corner): neo-renaissance in pale sandstone, ornate stucco, big café windows under dark green awnings, KAVÁRNA SLAVIA lettering",
-		"colour": "#ddd3bf", "trim": "#ebe5d6", "ground": "restaurant", "rustic": "ornate",
-		"edges": { "0": { "awning": "#2f5b3c" }, "7": { "awning": "#2f5b3c" }, "9": { "awning": "#2f5b3c" } }
+		"colour": "#ddd3bf",
+		"trim": "#ebe5d6",
+		"ground": "restaurant",
+		"rustic": "ornate",
+		"edges": {
+			"0": {
+				"awning": "#2f5b3c"
+			},
+			"7": {
+				"awning": "#2f5b3c"
+			},
+			"9": {
+				"awning": "#2f5b3c"
+			}
+		}
 	},
 	"21643296": {
 		"note": "Smetanovo nábřeží 198 / Novotného lávka: Karlovy lázně club, dark red-brown front, arched ground-floor windows boarded white and tagged",
-		"colour": "#7d3e2f", "trim": "#94523f", "ground": "blank", "graffiti": true, "rustic": "none"
+		"colour": "#7d3e2f",
+		"trim": "#94523f",
+		"ground": "blank",
+		"graffiti": true,
+		"rustic": "none"
 	},
 	"21652252": {
 		"note": "Slovanský ostrov: Žofín palace, ochre-yellow neo-renaissance with white dressings",
-		"colour": "#e6c56e", "trim": "#f4ecd6", "ground": "windows", "rustic": "banded"
+		"colour": "#e6c56e",
+		"trim": "#f4ecd6",
+		"ground": "windows",
+		"rustic": "banded"
 	},
 	"21652481": {
 		"note": "Masarykovo nábřeží / Slovanský ostrov: Mánes, white functionalist gallery with ribbon windows and MÁNES lettering",
-		"colour": "#f1f0eb", "trim": "#e6e5df", "ground": "windows", "rustic": "none"
+		"colour": "#f1f0eb",
+		"trim": "#e6e5df",
+		"ground": "windows",
+		"rustic": "none"
 	},
 	"21645132": {
 		"note": "Národní 37: Platýz, classicist palace in cream with white dressings, shops below, passage to Uhelný trh",
-		"colour": "#e8dfcb", "trim": "#f5f1e6", "ground": "shops", "rustic": "banded"
+		"colour": "#e8dfcb",
+		"trim": "#f5f1e6",
+		"ground": "shops",
+		"rustic": "banded"
 	},
 	"21649553": {
 		"note": "Smetanovo nábřeží 6: Charles University, Faculty of Social Sciences (Hollar), pale cream classicist palace behind railings and trees",
-		"colour": "#e6dcc3", "trim": "#f2ecdd", "ground": "windows", "rustic": "banded"
+		"colour": "#e6dcc3",
+		"trim": "#f2ecdd",
+		"ground": "windows",
+		"rustic": "banded"
 	},
 	"21643253": {
 		"note": "Smetanovo nábřeží by Karlův most: pale cream house with a great arched gateway over the street",
-		"colour": "#ece4d2", "trim": "#f4efe4", "ground": "gate", "rustic": "none"
+		"colour": "#ece4d2",
+		"trim": "#f4efe4",
+		"ground": "gate",
+		"rustic": "none"
 	},
 	"21643288": {
 		"note": "Smetanovo nábřeží: long ochre-yellow front with plain window surrounds",
-		"colour": "#e1b56e", "trim": "#ecd6a8", "ground": "windows", "rustic": "none"
+		"colour": "#e1b56e",
+		"trim": "#ecd6a8",
+		"ground": "windows",
+		"rustic": "none"
 	},
 	"21643342": {
 		"note": "Smetanovo nábřeží: cream upper floors over a black-fronted bar",
-		"colour": "#e2d6bd", "trim": "#efe7d6", "ground": "restaurant", "rustic": "none"
+		"colour": "#e2d6bd",
+		"trim": "#efe7d6",
+		"ground": "restaurant",
+		"rustic": "none"
 	},
 	"21644420": {
 		"note": "Smetanovo nábřeží: Bellevue, red brick and sandstone neo-renaissance with a corner turret",
-		"colour": "#b2604a", "trim": "#e3d2b0", "ground": "windows", "rustic": "ornate"
+		"colour": "#b2604a",
+		"trim": "#e3d2b0",
+		"ground": "windows",
+		"rustic": "ornate"
 	},
 	"21644438": {
 		"note": "Smetanovo nábřeží: red and cream striped neo-renaissance with stucco gables",
-		"colour": "#b8655a", "trim": "#e6d4b4", "ground": "windows", "rustic": "ornate"
+		"colour": "#b8655a",
+		"trim": "#e6d4b4",
+		"ground": "windows",
+		"rustic": "ornate"
 	},
 	"21644403": {
 		"note": "Smetanovo nábřeží: red brick with ochre ornament and balconies",
-		"colour": "#b0614b", "trim": "#dcb987", "ground": "windows", "rustic": "ornate"
+		"colour": "#b0614b",
+		"trim": "#dcb987",
+		"ground": "windows",
+		"rustic": "ornate"
 	},
 	"21644390": {
 		"note": "Smetanovo nábřeží: ochre house with round-arched windows",
-		"colour": "#cfb07a", "trim": "#e4cfa2", "ground": "windows", "rustic": "banded"
+		"colour": "#cfb07a",
+		"trim": "#e4cfa2",
+		"ground": "windows",
+		"rustic": "banded"
 	},
 	"21644381": {
 		"note": "Smetanovo nábřeží: pale grey-lilac house, arched ground-floor windows and a big wooden door",
-		"colour": "#cdc6c6", "trim": "#e6e1de", "ground": "windows", "rustic": "banded"
+		"colour": "#cdc6c6",
+		"trim": "#e6e1de",
+		"ground": "windows",
+		"rustic": "banded"
 	},
 	"21645990": {
 		"note": "Uhelný trh: white corner house with a shop",
-		"colour": "#efe7d6", "trim": "#f6f1e6", "ground": "shops", "rustic": "none"
+		"colour": "#efe7d6",
+		"trim": "#f6f1e6",
+		"ground": "shops",
+		"rustic": "none"
 	},
 	"21646091": {
 		"note": "Uhelný trh: cream-yellow house with red-framed shopfronts",
-		"colour": "#f0dfae", "trim": "#f3e9cf", "ground": "shops", "rustic": "none"
+		"colour": "#f0dfae",
+		"trim": "#f3e9cf",
+		"ground": "shops",
+		"rustic": "none"
 	},
 	"21645213": {
 		"note": "Uhelný trh: red house over a yellow arcaded ground floor",
-		"colour": "#c4503a", "trim": "#e8b84a", "ground": "gate", "rustic": "none"
+		"colour": "#c4503a",
+		"trim": "#e8b84a",
+		"ground": "gate",
+		"rustic": "none"
 	},
 	"21645205": {
 		"note": "Uhelný trh: grey-beige neo-renaissance house with shops",
-		"colour": "#cbbfa8", "trim": "#ddd3c0", "ground": "shops", "rustic": "banded"
+		"colour": "#cbbfa8",
+		"trim": "#ddd3c0",
+		"ground": "shops",
+		"rustic": "banded"
 	},
 	"21645175": {
 		"note": "Uhelný trh: cream house with arched openings and dark wooden doors",
-		"colour": "#e9dfc6", "trim": "#f3ecdc", "ground": "gate", "rustic": "none"
+		"colour": "#e9dfc6",
+		"trim": "#f3ecdc",
+		"ground": "gate",
+		"rustic": "none"
 	},
 	"21649367": {
 		"note": "Národní: grey-cream front over the arcade, shops behind the piers",
-		"colour": "#d6cbb5", "trim": "#e6dfcf", "ground": "shops", "rustic": "banded"
+		"colour": "#d6cbb5",
+		"trim": "#e6dfcf",
+		"ground": "shops",
+		"rustic": "banded"
 	},
 	"21644519": {
 		"note": "Národní: ochre-brown neo-renaissance with dressed window surrounds",
-		"colour": "#b99472", "trim": "#d6bd9c", "ground": "shops", "rustic": "ornate"
+		"colour": "#b99472",
+		"trim": "#d6bd9c",
+		"ground": "shops",
+		"rustic": "ornate"
 	},
 	"21644501": {
 		"note": "Národní: salmon-orange baroque house",
-		"colour": "#d38a5c", "trim": "#ecd2b2", "ground": "shops", "rustic": "banded"
+		"colour": "#d38a5c",
+		"trim": "#ecd2b2",
+		"ground": "shops",
+		"rustic": "banded"
 	},
 	"21651191": {
 		"note": "Národní by Máj: cream house over a dark green glazed art-nouveau shopfront",
-		"colour": "#e2d8c6", "trim": "#efe9dd", "ground": "shops", "rustic": "banded"
+		"colour": "#e2d8c6",
+		"trim": "#efe9dd",
+		"ground": "shops",
+		"rustic": "banded"
 	},
 	"21649651": {
 		"note": "Národní 3: Academy of Sciences, sandstone neo-renaissance palace",
-		"colour": "#c9b38e", "trim": "#dcc9a6", "ground": "windows", "rustic": "ornate"
+		"colour": "#c9b38e",
+		"trim": "#dcc9a6",
+		"ground": "windows",
+		"rustic": "ornate"
 	},
 	"21649677": {
 		"note": "Národní: long salmon-pink baroque front",
-		"colour": "#e2b9a3", "trim": "#f0e2d5", "ground": "windows", "rustic": "none"
+		"colour": "#e2b9a3",
+		"trim": "#f0e2d5",
+		"ground": "windows",
+		"rustic": "none"
 	},
 	"48864005": {
 		"note": "Národní: St Ursula's church, salmon pink with white pilasters",
-		"colour": "#e3a99a", "trim": "#f2e6dc", "ground": "blank", "rustic": "none"
+		"colour": "#e3a99a",
+		"trim": "#f2e6dc",
+		"ground": "blank",
+		"rustic": "none"
 	},
 	"21651078": {
 		"note": "Spálená: Divadlo Ypsilon, blue-framed glazing along the ground floor",
-		"colour": "#d7d0c3", "trim": "#e7e2d8", "ground": "shops", "rustic": "none"
+		"colour": "#d7d0c3",
+		"trim": "#e7e2d8",
+		"ground": "shops",
+		"rustic": "none"
 	},
 	"21651060": {
 		"note": "Spálená: green-grey art-nouveau house with dark shopfronts",
-		"colour": "#a9b0a0", "trim": "#c7cbbd", "ground": "shops", "rustic": "banded"
+		"colour": "#a9b0a0",
+		"trim": "#c7cbbd",
+		"ground": "shops",
+		"rustic": "banded"
 	},
 	"21651035": {
 		"note": "Spálená: cream house with a dark wooden restaurant front",
-		"colour": "#efe5cf", "trim": "#f6f0e3", "ground": "restaurant", "rustic": "banded"
+		"colour": "#efe5cf",
+		"trim": "#f6f0e3",
+		"ground": "restaurant",
+		"rustic": "banded"
 	},
 	"21651027": {
 		"note": "Spálená: cream neo-renaissance with a green shopfront",
-		"colour": "#e3dccb", "trim": "#efeadf", "ground": "shops", "rustic": "banded"
+		"colour": "#e3dccb",
+		"trim": "#efeadf",
+		"ground": "shops",
+		"rustic": "banded"
 	},
 	"21651019": {
 		"note": "Spálená: pale green-grey house with a dark green shopfront",
-		"colour": "#cfd1bf", "trim": "#e2e3d6", "ground": "shops", "rustic": "none"
+		"colour": "#cfd1bf",
+		"trim": "#e2e3d6",
+		"ground": "shops",
+		"rustic": "none"
 	},
 	"21650977": {
 		"note": "Spálená: cream house with a supermarket",
-		"colour": "#e6dcc9", "trim": "#f1ebdf", "ground": "shops", "rustic": "none"
+		"colour": "#e6dcc9",
+		"trim": "#f1ebdf",
+		"ground": "shops",
+		"rustic": "none"
 	},
 	"21650969": {
 		"note": "Spálená: Restaurace U Kotvy, cream with stucco crowns",
-		"colour": "#e0d6c4", "trim": "#eee7da", "ground": "restaurant", "rustic": "banded"
+		"colour": "#e0d6c4",
+		"trim": "#eee7da",
+		"ground": "restaurant",
+		"rustic": "banded"
 	},
 	"21650934": {
 		"note": "Spálená: long ochre-yellow neo-renaissance block",
-		"colour": "#e3c063", "trim": "#efdca0", "ground": "windows", "rustic": "banded"
+		"colour": "#e3c063",
+		"trim": "#efdca0",
+		"ground": "windows",
+		"rustic": "banded"
 	},
 	"21650926": {
 		"note": "Spálená: long ochre-yellow neo-renaissance block",
-		"colour": "#e3c063", "trim": "#efdca0", "ground": "windows", "rustic": "banded"
+		"colour": "#e3c063",
+		"trim": "#efdca0",
+		"ground": "windows",
+		"rustic": "banded"
 	},
 	"21650918": {
 		"note": "Spálená: long ochre-yellow neo-renaissance block",
-		"colour": "#e3c063", "trim": "#efdca0", "ground": "windows", "rustic": "banded"
+		"colour": "#e3c063",
+		"trim": "#efdca0",
+		"ground": "windows",
+		"rustic": "banded"
 	},
 	"21652236": {
 		"note": "Masarykovo nábřeží: beige neo-baroque apartment house",
-		"colour": "#d8c8ad", "trim": "#e7dcc8", "ground": "windows", "rustic": "ornate"
+		"colour": "#d8c8ad",
+		"trim": "#e7dcc8",
+		"ground": "windows",
+		"rustic": "ornate"
 	},
 	"21652350": {
 		"note": "Masarykovo nábřeží: ochre art-nouveau house with balconies and arched ground floor",
-		"colour": "#e0b65a", "trim": "#efd9a0", "ground": "windows", "rustic": "ornate"
+		"colour": "#e0b65a",
+		"trim": "#efd9a0",
+		"ground": "windows",
+		"rustic": "ornate"
 	},
 	"21652341": {
 		"note": "Masarykovo nábřeží: pinkish-beige house with an oriel",
-		"colour": "#d8c2b3", "trim": "#e9ddd2", "ground": "windows", "rustic": "banded"
+		"colour": "#d8c2b3",
+		"trim": "#e9ddd2",
+		"ground": "windows",
+		"rustic": "banded"
 	},
 	"21652333": {
 		"note": "Masarykovo nábřeží: cream ornate apartment house with a restaurant",
-		"colour": "#dccbae", "trim": "#ebe0cc", "ground": "restaurant", "rustic": "ornate"
+		"colour": "#dccbae",
+		"trim": "#ebe0cc",
+		"ground": "restaurant",
+		"rustic": "ornate"
 	},
 	"21652325": {
 		"note": "Masarykovo nábřeží: pale grey-cream art-nouveau corner house",
-		"colour": "#dcd5c8", "trim": "#ebe6dc", "ground": "windows", "rustic": "ornate"
+		"colour": "#dcd5c8",
+		"trim": "#ebe6dc",
+		"ground": "windows",
+		"rustic": "ornate"
 	},
 	"21652384": {
 		"note": "Masarykovo nábřeží: grey-white ornate apartment house",
-		"colour": "#d6d2ca", "trim": "#e8e5df", "ground": "windows", "rustic": "ornate"
+		"colour": "#d6d2ca",
+		"trim": "#e8e5df",
+		"ground": "windows",
+		"rustic": "ornate"
 	},
 	"21652376": {
 		"note": "Masarykovo nábřeží: ochre ornate apartment house",
-		"colour": "#d8b67a", "trim": "#e9d3a8", "ground": "windows", "rustic": "ornate"
+		"colour": "#d8b67a",
+		"trim": "#e9d3a8",
+		"ground": "windows",
+		"rustic": "ornate"
 	},
 	"21652368": {
 		"note": "Masarykovo nábřeží: ochre-cream ornate house with shops",
-		"colour": "#d9bd8a", "trim": "#eadab9", "ground": "shops", "rustic": "ornate"
+		"colour": "#d9bd8a",
+		"trim": "#eadab9",
+		"ground": "shops",
+		"rustic": "ornate"
 	},
 	"21652473": {
 		"note": "Masarykovo nábřeží: ochre ornate apartment house",
-		"colour": "#d4b47c", "trim": "#e7d2aa", "ground": "windows", "rustic": "ornate"
+		"colour": "#d4b47c",
+		"trim": "#e7d2aa",
+		"ground": "windows",
+		"rustic": "ornate"
 	},
 	"21652465": {
 		"note": "Masarykovo nábřeží: plain grey apartment house",
-		"colour": "#cbc6bd", "trim": "#dfdbd3", "ground": "windows", "rustic": "banded"
+		"colour": "#cbc6bd",
+		"trim": "#dfdbd3",
+		"ground": "windows",
+		"rustic": "banded"
 	},
 	"21652457": {
 		"note": "Masarykovo nábřeží: cream-grey ornate corner house",
-		"colour": "#ddd5c6", "trim": "#ece7dd", "ground": "windows", "rustic": "ornate"
+		"colour": "#ddd5c6",
+		"trim": "#ece7dd",
+		"ground": "windows",
+		"rustic": "ornate"
 	},
 	"21675244": {
 		"note": "Masarykovo nábřeží: grey-beige house with a red brick centre and a wine bar",
-		"colour": "#cdbfa8", "trim": "#e0d6c4", "ground": "restaurant", "rustic": "ornate"
+		"colour": "#cdbfa8",
+		"trim": "#e0d6c4",
+		"ground": "restaurant",
+		"rustic": "ornate"
 	},
 	"21675236": {
 		"note": "Masarykovo nábřeží: grey art-nouveau house with restaurants",
-		"colour": "#c8c3b8", "trim": "#dedad2", "ground": "restaurant", "rustic": "ornate"
+		"colour": "#c8c3b8",
+		"trim": "#dedad2",
+		"ground": "restaurant",
+		"rustic": "ornate"
 	},
 	"21675228": {
 		"note": "Masarykovo nábřeží: yellow ornate house with restaurants",
-		"colour": "#e4c56d", "trim": "#f0dca6", "ground": "restaurant", "rustic": "ornate"
+		"colour": "#e4c56d",
+		"trim": "#f0dca6",
+		"ground": "restaurant",
+		"rustic": "ornate"
 	},
 	"21675210": {
 		"note": "Masarykovo nábřeží: yellow ornate corner house, arched restaurant fronts",
-		"colour": "#e2c470", "trim": "#efdba8", "ground": "restaurant", "rustic": "ornate"
+		"colour": "#e2c470",
+		"trim": "#efdba8",
+		"ground": "restaurant",
+		"rustic": "ornate"
 	},
 	"21675201": {
 		"note": "Masarykovo nábřeží: cream-yellow ornate house with shops",
-		"colour": "#e3cf98", "trim": "#f0e4c4", "ground": "shops", "rustic": "ornate"
+		"colour": "#e3cf98",
+		"trim": "#f0e4c4",
+		"ground": "shops",
+		"rustic": "ornate"
 	},
 	"21643768": {
 		"note": "Náprstkova: long white two-storey house with dormers and an orange tile roof, barred ground-floor windows, wall lanterns",
 		"signs": false,
-		"colour": "#ece6d8", "trim": "#f6f2e9", "floors": 2, "ground": "windows", "grilles": true, "rustic": "none",
-		"edges": { "30": { "lanterns": true }, "32": { "lanterns": true }, "34": { "lanterns": true } }
+		"colour": "#ece6d8",
+		"trim": "#f6f2e9",
+		"floors": 2,
+		"ground": "windows",
+		"grilles": true,
+		"rustic": "none",
+		"edges": {
+			"30": {
+				"lanterns": true
+			},
+			"32": {
+				"lanterns": true
+			},
+			"34": {
+				"lanterns": true
+			}
+		}
 	},
 	"21643954": {
 		"note": "Náprstkova: cream historicist house with a rusticated white ground floor, dark wooden glazed doors, restaurant with a pink awning, vertical black HOTEL banner",
 		"signs": false,
-		"colour": "#e8e0cf", "trim": "#f3eee3", "ground": "restaurant", "rustic": "banded",
+		"colour": "#e8e0cf",
+		"trim": "#f3eee3",
+		"ground": "restaurant",
+		"rustic": "banded",
 		"edges": {
-			"7": { "banner": { "text": "HOTEL", "board": "#141414", "ink": "#f2f2f2" } },
-			"9": { "lanterns": true },
-			"10": { "awning": "#b8475f" },
-			"12": { "awning": "#b8475f" }
+			"7": {
+				"banner": {
+					"text": "HOTEL",
+					"board": "#141414",
+					"ink": "#f2f2f2"
+				}
+			},
+			"9": {
+				"lanterns": true
+			},
+			"10": {
+				"awning": "#b8475f"
+			},
+			"12": {
+				"awning": "#b8475f"
+			}
 		}
 	},
 	"21643369": {
-		"note": "Náprstkova: white classicist front with large windows in plain surrounds and wall lanterns; ornate dark-green door next door",
+		"note": "Náprstkova: white classicist front, banded rusticated ground floor with round-arched fanlight windows, wall lanterns (Street View 2024)",
+		"colour": "#efebe2",
+		"trim": "#f7f4ee",
+		"ground": "windows",
+		"rustic": "banded",
 		"signs": false,
-		"colour": "#efebe2", "trim": "#f7f4ee", "ground": "windows", "rustic": "none",
-		"edges": { "15": { "lanterns": true } }
+		"edges": {
+			"15": {
+				"lanterns": true
+			}
+		}
 	},
 	"21643962": {
-		"note": "Náprstkova: pale pinkish-grey house, blank lower wall with a large graffiti mural, dark green door",
+		"note": "Náprstkova: long cream two-storey house with wall lanterns and barred windows (Street View 2024)",
+		"colour": "#e6dfcd",
+		"trim": "#f1ece0",
+		"ground": "windows",
+		"grilles": true,
+		"rustic": "none",
 		"signs": false,
-		"colour": "#e2dad3", "trim": "#ece6df", "ground": "blank", "graffiti": true, "rustic": "none"
+		"edges": {
+			"1": {
+				"lanterns": true
+			}
+		}
 	},
 	"21643971": {
-		"note": "Náprstkova: white wall with a big graffiti mural (swimmers) at the corner, framed street-art panel",
+		"note": "Náprstkova corner: white house over a café with round-arched windows under a grey-blue band, wall lanterns (Street View 2024)",
+		"colour": "#efede6",
+		"trim": "#f7f6f2",
+		"ground": "restaurant",
+		"rustic": "none",
 		"signs": false,
-		"colour": "#ebe7df", "trim": "#f2efe8", "ground": "blank", "graffiti": true, "rustic": "none"
+		"edges": {
+			"0": {
+				"lanterns": true
+			},
+			"9": {
+				"lanterns": true
+			}
+		}
 	},
 	"21643393": {
 		"note": "Náprstkova: cream house with a restaurant, red awning, menu box, potted plants",
 		"signs": false,
-		"colour": "#eadfc8", "trim": "#f3ebda", "ground": "restaurant", "rustic": "banded",
-		"edges": { "10": { "awning": "#a8323f" } }
+		"colour": "#eadfc8",
+		"trim": "#f3ebda",
+		"ground": "restaurant",
+		"rustic": "banded",
+		"edges": {
+			"10": {
+				"awning": "#a8323f"
+			}
+		}
 	},
 	"21643831": {
 		"note": "Betlémská: pale green-grey house with a big arched wooden gate in a stone surround, barred windows",
 		"signs": false,
-		"colour": "#c9d1c0", "trim": "#dfe3d6", "ground": "gate", "grilles": true, "rustic": "none"
+		"colour": "#c9d1c0",
+		"trim": "#dfe3d6",
+		"ground": "gate",
+		"grilles": true,
+		"rustic": "none"
 	},
 	"21644063": {
 		"note": "Betlémská: neo-renaissance house with dense brown stucco ornament, grey stone base covered in graffiti",
 		"signs": false,
-		"colour": "#8f6c52", "trim": "#a7856a", "ground": "blank", "graffiti": true, "rustic": "ornate"
+		"colour": "#8f6c52",
+		"trim": "#a7856a",
+		"ground": "blank",
+		"graffiti": true,
+		"rustic": "ornate"
 	},
 	"21643822": {
 		"note": "Betlémské náměstí: pale green house with a café terrace under white awnings",
 		"signs": false,
-		"colour": "#c6d2bf", "trim": "#e3e8dc", "ground": "restaurant", "rustic": "none",
-		"edges": { "0": { "awning": "#f1efe8" }, "1": { "awning": "#f1efe8" } }
+		"colour": "#c6d2bf",
+		"trim": "#e3e8dc",
+		"ground": "restaurant",
+		"rustic": "none",
+		"edges": {
+			"0": {
+				"awning": "#f1efe8"
+			},
+			"1": {
+				"awning": "#f1efe8"
+			}
+		}
 	},
 	"21643903": {
 		"note": "Betlémské náměstí: low house with the restaurant terrace and white awnings",
 		"signs": false,
-		"colour": "#ece5d6", "trim": "#f4efe6", "ground": "restaurant", "rustic": "none",
-		"edges": { "19": { "awning": "#f1efe8" } }
+		"colour": "#ece5d6",
+		"trim": "#f4efe6",
+		"ground": "restaurant",
+		"rustic": "none",
+		"edges": {
+			"19": {
+				"awning": "#f1efe8"
+			}
+		}
+	},
+	"21643407": {
+		"note": "Náprstkova: ochre house, barred ground-floor windows, tags on the lower wall (Street View 2024)",
+		"colour": "#d8b968",
+		"trim": "#e8d49a",
+		"ground": "windows",
+		"grilles": true,
+		"graffiti": true,
+		"rustic": "none"
+	},
+	"21643415": {
+		"note": "Náprstkova / Liliová: pale yellow neo-renaissance, banded rustication, shuttered shops, carved door; FOSIL Mexican restaurant in the white wing (Street View 2024)",
+		"colour": "#e9dfa5",
+		"trim": "#f4eecd",
+		"ground": "shops",
+		"rustic": "banded"
+	},
+	"21643423": {
+		"note": "Náprstkova: pale yellow historicist house with red doors and dark wooden shopfronts (Donutterie) (Street View 2023)",
+		"colour": "#ece2a6",
+		"trim": "#f5efcf",
+		"ground": "shops",
+		"rustic": "banded"
+	},
+	"21643750": {
+		"note": "Betlémské náměstí / Liliová corner: cream neo-renaissance, banded rustication, round-arched windows with red frames, white awnings (Street View 2024)",
+		"colour": "#e8dcc0",
+		"trim": "#f3ecdc",
+		"ground": "restaurant",
+		"rustic": "banded",
+		"edges": {
+			"0": {
+				"awning": "#f1efe8"
+			},
+			"11": {
+				"awning": "#f1efe8"
+			}
+		}
+	},
+	"21643814": {
+		"note": "Betlémské náměstí: Náprstek museum (U Halánků), pale yellow with white dressings, painted gable, arched gateway (Street View)",
+		"colour": "#f1df9c",
+		"trim": "#f7f0d8",
+		"ground": "gate",
+		"rustic": "none"
+	},
+	"21644586": {
+		"note": "Betlémské náměstí: cream-yellow house with the dark wooden Švejk restaurant front (Street View 2019)",
+		"colour": "#ecd9a4",
+		"trim": "#f4ead0",
+		"ground": "restaurant",
+		"rustic": "none"
+	},
+	"21644594": {
+		"note": "Betlémské náměstí 6: U Zeleného stromu, cream neo-gothic front, ornate tympanum, arched gateway (Street View)",
+		"colour": "#e9e0c8",
+		"trim": "#f3ede0",
+		"ground": "gate",
+		"rustic": "ornate"
+	},
+	"21644608": {
+		"note": "Betlémské náměstí: pinkish-beige plain house with shop windows and a wall lantern (Street View)",
+		"colour": "#dfc39f",
+		"trim": "#ecdcc4",
+		"ground": "shops",
+		"rustic": "none"
+	},
+	"21649626": {
+		"note": "Betlémské náměstí: long cream four-storey front, Galerie U Betlémské kaple, dark wooden shopfronts (Street View 2025)",
+		"colour": "#ece6d7",
+		"trim": "#f5f1e8",
+		"ground": "shops",
+		"rustic": "banded"
+	},
+	"78878535": {
+		"note": "Náprstkova: yellow wall of the chimney yard with a big round-arched wooden gate, tagged (Street View)",
+		"colour": "#e3c35f",
+		"trim": "#efd88f",
+		"ground": "gate",
+		"graffiti": true,
+		"rustic": "none"
 	}
 }
