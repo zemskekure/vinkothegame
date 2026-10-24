@@ -580,6 +580,6 @@ renderer.setAnimationLoop( () => {
 } );
 
 document.getElementById( 'loading' ).remove();
-window.__debug = { camera, isBlocked, groundHeight, walker, life, trams, holub };
+window.__debug = { camera, orbit, isBlocked, groundHeight, walker, life, trams, holub };
 window.__THREE = THREE;
 window.__ready = true;

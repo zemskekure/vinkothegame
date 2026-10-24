@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="cs">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Vínko · nastavení</title>
+	<link rel="stylesheet" href="/ui/style.css">
+</head>
+<body>
+	<header>
+		<h1><a href="/">Vínko · mřížka</a> / nastavení</h1>
+	</header>
+	<main class="cell-page">
+		<div>
+			<section class="card">
+				<h2>Kalibrace týdenního limitu</h2>
+				<p class="muted">Anthropic limit předplatného nezveřejňuje v tokenech. Napište, kolik procent týdenního limitu vám ukazuje Claude (v Claude Code <code>/usage</code> nebo v nastavení claude.ai) a odkdy ten týden běží. Aplikace to porovná s tím, co za tu dobu napočítala, a odhadne celý limit. Funguje to nejlépe, když Claude běží hlavně tady.</p>
+				<form class="row wrap" id="calibrate">
+					<label>Využito <input type="number" id="cal-pct" min="1" max="100" step="0.1" style="width:90px"> %</label>
+					<label>od <input type="datetime-local" id="cal-since"></label>
+					<button>Uložit</button>
+				</form>
+				<table class="table" id="calibrations" style="margin-top:12px"></table>
+			</section>
+			<section class="card">
+				<h2>Ceník API <small>$ za milion tokenů</small></h2>
+				<table class="table" id="prices"></table>
+				<div class="row"><button id="add-price">Přidat model</button></div>
+				<div class="row wrap" style="margin-top:12px">
+					<label>Zápis do cache (5 min) × vstup <input type="number" step="0.05" data-s="cache_write_5m" style="width:70px"></label>
+					<label>Zápis do cache (1 h) × vstup <input type="number" step="0.05" data-s="cache_write_1h" style="width:70px"></label>
+					<label>Předplatné $/měsíc <input type="number" data-s="plan_monthly" style="width:80px"></label>
+				</div>
+				<div class="row"><button id="save-prices" class="on">Uložit ceník</button><span class="saved" id="prices-saved"></span></div>
+			</section>
+		</div>
+		<div>
+			<section class="card">
+				<h2>Autopilot</h2>
+				<div class="form">
+					<label><input type="checkbox" data-s="auto_merge"> Hotovou buňku rovnou sloučit do hry (jinak čeká ke kontrole)</label>
+					<label>Zastavit při odhadu <input type="number" data-s="max_week_pct" style="width:70px"> % týdenního limitu</label>
+					<label>Nejvýš <input type="number" data-s="max_per_day" style="width:70px"> sezení za 24 h</label>
+					<label>Sezení ukončit po <input type="number" data-s="session_minutes" style="width:70px"> min</label>
+					<label>Model <input type="text" data-s="model" placeholder="výchozí Claude Code" style="width:200px"></label>
+				</div>
+				<div class="row"><button id="save-auto" class="on">Uložit</button><span class="saved" id="auto-saved"></span></div>
+			</section>
+			<section class="card">
+				<h2>Model shora</h2>
+				<p class="muted">Vyfotí celý zveřejněný model kolmo shora, buňku po buňce, pro přepínač Skutečnost / Model na mapě. Po každém sloučeném sezení se jeho buňka vyfotí sama.</p>
+				<div class="row"><button id="model-shots">Vyfotit model</button><span class="muted" id="model-state"></span></div>
+			</section>
+			<section class="card">
+				<h2>Stav</h2>
+				<dl class="kv" id="status"></dl>
+			</section>
+		</div>
+	</main>
+	<script type="module">
+		import { api, esc, usd, pct, tokens, when } from '/ui/common.js';
+
+		let v;
+		async function load( data ) {
+
+			v = data || await api( '/api/settings' );
+			document.querySelectorAll( '[data-s]' ).forEach( i => {
+
+				const val = v.settings[ i.dataset.s ];
+				if ( i.type === 'checkbox' ) i.checked = val === '1';
+				else i.value = val;
+
+			} );
+			renderPrices();
+			document.getElementById( 'calibrations' ).innerHTML = v.calibrations.length ? '<tr><th>kdy</th><th>od</th><th class="num">%</th><th class="num">napočteno</th><th class="num">limit ≈</th></tr>' + v.calibrations.map( c => `<tr>
+				<td>${when( c.at )}</td><td>${when( c.since )}</td><td class="num">${c.pct}</td><td class="num">${usd( c.cost )} · ${tokens( c.tokens )}</td><td class="num">${usd( c.cost / c.pct * 100 )}</td></tr>` ).join( '' ) : '<tr><td class="muted">Zatím nekalibrováno.</td></tr>';
+			const u = v.usage, c = v.control;
+			document.getElementById( 'status' ).innerHTML = `
+				<dt>Sezení</dt><dd>${c.sessions ? `ano, větev <code>${esc( c.base )}</code>` : 'ne (chybí GRID_WORK)'}</dd>
+				<dt>Přihlášení Claude</dt><dd>${v.oauth ? 'token nastaven' : 'bez tokenu (CLAUDE_CODE_OAUTH_TOKEN), použije se přihlášení claude na serveru'}</dd>
+				<dt>Mapillary</dt><dd>${v.mapillary ? 'token nastaven' : 'bez tokenu (nepovinné)'}</dd>
+				<dt>Týdenní limit</dt><dd>${u.budget ? `≈ ${usd( u.budget.budget )} API · tento týden ${pct( u.week.share.week )}` : 'nekalibrováno'}</dd>`;
+			document.getElementById( 'model-state' ).textContent = c.modelShots === 'running' ? 'fotí se…' : c.modelShots ? ( c.modelShots.startsWith( 'chyba' ) ? c.modelShots : `naposledy ${when( c.modelShots )}` ) : '';
+
+		}
+
+		function renderPrices() {
+
+			document.getElementById( 'prices' ).innerHTML = '<tr><th>model obsahuje</th><th>název</th><th class="num">vstup</th><th class="num">výstup</th><th class="num">čtení cache</th><th></th></tr>' + v.prices.map( ( p, i ) => `<tr data-i="${i}">
+				<td><input type="text" data-p="match" value="${esc( p.match )}" style="width:80px"></td>
+				<td><input type="text" data-p="label" value="${esc( p.label )}"></td>
+				<td class="num"><input type="number" step="any" data-p="input" value="${p.input}" style="width:70px"></td>
+				<td class="num"><input type="number" step="any" data-p="output" value="${p.output}" style="width:70px"></td>
+				<td class="num"><input type="number" step="any" data-p="cache_read" value="${p.cache_read}" style="width:70px"></td>
+				<td><button class="link" data-del="${i}">×</button></td></tr>` ).join( '' );
+			document.querySelectorAll( '[data-del]' ).forEach( b => b.onclick = () => { readPrices(); v.prices.splice( Number( b.dataset.del ), 1 ); renderPrices(); } );
+
+		}
+
+		function readPrices() {
+
+			v.prices = [ ...document.querySelectorAll( '#prices tr[data-i]' ) ].map( tr => Object.fromEntries( [ ...tr.querySelectorAll( '[data-p]' ) ].map( i => [ i.dataset.p, i.value ] ) ) );
+
+		}
+
+		const readSettings = keys => Object.fromEntries( keys.map( k => {
+
+			const i = document.querySelector( `[data-s="${k}"]` );
+			return [ k, i.type === 'checkbox' ? ( i.checked ? '1' : '0' ) : i.value ];
+
+		} ) );
+
+		document.getElementById( 'add-price' ).onclick = () => { readPrices(); v.prices.push( { match: '', label: '', input: 0, output: 0, cache_read: 0 } ); renderPrices(); };
+		document.getElementById( 'save-prices' ).onclick = async () => {
+
+			readPrices();
+			await load( await api( '/api/settings', { method: 'PUT', body: JSON.stringify( { prices: v.prices, settings: readSettings( [ 'cache_write_5m', 'cache_write_1h', 'plan_monthly' ] ) } ) } ) );
+			document.getElementById( 'prices-saved' ).textContent = 'uloženo';
+
+		};
+
+		document.getElementById( 'save-auto' ).onclick = async () => {
+
+			await load( await api( '/api/settings', { method: 'PUT', body: JSON.stringify( { settings: readSettings( [ 'auto_merge', 'max_week_pct', 'max_per_day', 'session_minutes', 'model' ] ) } ) } ) );
+			document.getElementById( 'auto-saved' ).textContent = 'uloženo';
+
+		};
+
+		// The week defaults to the last seven days.
+		const since = new Date( Date.now() - 7 * 864e5 - new Date().getTimezoneOffset() * 6e4 );
+		document.getElementById( 'cal-since' ).value = since.toISOString().slice( 0, 16 );
+		document.getElementById( 'calibrate' ).onsubmit = async e => {
+
+			e.preventDefault();
+			try {
+
+				await load( await api( '/api/calibrate', { method: 'POST', body: JSON.stringify( { pct: Number( document.getElementById( 'cal-pct' ).value ), since: new Date( document.getElementById( 'cal-since' ).value ).toISOString() } ) } ) );
+
+			} catch ( err ) {
+
+				alert( err.message );
+
+			}
+
+		};
+
+		document.getElementById( 'model-shots' ).onclick = async () => {
+
+			try {
+
+				await api( '/api/model-shots', { method: 'POST' } );
+
+			} catch ( err ) {
+
+				alert( err.message );
+
+			}
+
+			setTimeout( load, 500 );
+
+		};
+
+		await load();
+		setInterval( () => { if ( ! document.hidden && v.control.modelShots === 'running' ) load(); }, 5000 );
+	</script>
+</body>
+</html>
