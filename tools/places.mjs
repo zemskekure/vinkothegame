@@ -102,7 +102,7 @@ export function collectPlaces( ctx ) {
 
 	// A walk-in room behind a front: centred `s` m along it, as wide as asked (≤ the front), as deep as the house
 	// (≤ maxD); its door `door` m to the right (+X) of the room's centre.
-	function interior( name, style, f, s, { w = 7, maxD = 9, door = 0 } = {} ) {
+	function interior( name, style, f, s, { w = 7, maxD = 9, door = 0, h = null } = {} ) {
 
 		w = Math.min( w, f.len - 1.2, 2 * Math.min( s, f.len - s ) - 0.6 );
 		let depth = maxD;
@@ -134,7 +134,7 @@ export function collectPlaces( ctx ) {
 		}
 
 		const floorH = ctx.buildingInfo.get( f.code )?.floorH || 3.4;
-		const room = { name, style, x: c.x, z: c.z, n: c.n, w: + w.toFixed( 2 ), d: + depth.toFixed( 2 ), h: + Math.min( 3.6, Math.max( 3.0, floorH * 0.95 ) ).toFixed( 2 ), y: + ( c.y + 0.02 ).toFixed( 2 ), door: + door.toFixed( 2 ), doorW: 1.3, doorH: 2.5 };
+		const room = { name, style, x: c.x, z: c.z, n: c.n, w: + w.toFixed( 2 ), d: + depth.toFixed( 2 ), h: + ( h ?? Math.min( 3.6, Math.max( 3.0, floorH * 0.95 ) ) ).toFixed( 2 ), y: + ( c.y + 0.02 ).toFixed( 2 ), door: + door.toFixed( 2 ), doorW: 1.3, doorH: 2.5 };
 		places.interiors.push( room );
 
 		// Walkable: the room (0.3 m inside its walls) and the doorway through the front wall.
@@ -609,7 +609,7 @@ export function collectPlaces( ctx ) {
 			const end = mouth.length ? [ 0, 1 ].map( k => mouth.reduce( ( a, p ) => a + ( k ? p.Y + p.ny * 0.3 : p.X + p.nx * 0.3 ), 0 ) / mouth.length ) : under[ under.length - 1 ];
 			const [ ex, ez ] = L( ...end );
 			const ul = Math.hypot( ex - bx, ez - bz ), ua = [ ( ex - bx ) / ul, ( ez - bz ) / ul ];
-			places.tunnels.push( { a: [ bx, bz ], b: [ ex, ez ], y: + floorY.toFixed( 2 ), h: 2.8, w: 2.8 } );
+			places.tunnels.push( { a: [ bx, bz ], b: [ ex, ez ], ya: + floorY.toFixed( 2 ), yb: + floorY.toFixed( 2 ), h: 2.8, w: 2.8 } );
 			zone( ( bx + ex ) / 2, ( bz + ez ) / 2, [ ua[ 1 ], - ua[ 0 ] ], 1.25, ul / 2 + 0.6, { y: + floorY.toFixed( 2 ), ceil: + ( floorY + 2.7 ).toFixed( 2 ) } );
 			console.log( `places: Čapadlo steps ${n} × ${( ( yTop - floorY ) / n ).toFixed( 3 )} m, underpass ${ul.toFixed( 1 )} m at ${floorY.toFixed( 2 )}` );
 
@@ -635,14 +635,26 @@ export function collectPlaces( ctx ) {
 
 		}
 
-		// Walk barrier along the railing: open at the stair's landing; under it, the underpass.
-		for ( let i = 1; i < rail.length; i ++ ) {
+		// Walk barriers along the railings (this one, and the terraces' by the theatre): open at the stair's
+		// landing; under them, the underpasses.
+		for ( const line of [ rail, ...( ctx.terraces?.rails || [] ) ] ) for ( let i = 1; i < line.length; i ++ ) {
 
-			const a = rail[ i - 1 ], b = rail[ i ];
+			const a = line[ i - 1 ], b = line[ i ];
 			if ( a.river && b.river || Math.hypot( b.X - a.X, b.Y - a.Y ) > 2 ) continue;
 			if ( landing && Math.hypot( ( a.X + b.X ) / 2 - landing[ 0 ], ( a.Y + b.Y ) / 2 - landing[ 1 ] ) < 1.6 ) continue;
 			const [ x0, z0 ] = L( a.X, a.Y ), [ x1, z1 ] = L( b.X, b.Y );
-			places.barriers.push( [ x0, z0, x1, z1, a.portal && b.portal ? + ( a.quay + 2.2 ).toFixed( 2 ) : - 99 ] );
+			places.barriers.push( [ x0, z0, x1, z1, a.portal && b.portal ? + ( Math.min( a.quay, b.quay ) + 2.0 ).toFixed( 2 ) : - 99 ] );
+
+		}
+
+		// Divadelní under Národní: walkable at road level, under the deck.
+		const tun = ctx.terraces?.tunnel;
+		if ( tun ) {
+
+			const [ ax, az ] = L( ...tun.a ), [ bx, bz ] = L( ...tun.b );
+			const tl = Math.hypot( bx - ax, bz - az ), ta = [ ( bx - ax ) / tl, ( bz - az ) / tl ];
+			places.tunnels.push( { a: [ ax, az ], b: [ bx, bz ], ya: + tun.ya.toFixed( 2 ), yb: + tun.yb.toFixed( 2 ), h: + ( tun.ceil - Math.max( tun.ya, tun.yb ) ).toFixed( 2 ), w: tun.w, road: true } );
+			zone( ( ax + bx ) / 2, ( az + bz ) / 2, [ ta[ 1 ], - ta[ 0 ] ], tun.w / 2 - 0.3, tl / 2 + 1.0, { y0: + tun.ya.toFixed( 2 ), y1: + tun.yb.toFixed( 2 ), along: ta, ceil: + ( tun.ceil - 0.1 ).toFixed( 2 ) } );
 
 		}
 
@@ -674,6 +686,32 @@ export function collectPlaces( ctx ) {
 
 	}
 
+	// --- Kavárna Slavia (Národní 1, the corner of Lažanský palác): the café's tall windows run along the ground
+	// floor on Národní and round the corner onto Smetanovo nábřeží, facing the theatre and the river; the entrance
+	// is on Národní. A walk-in room behind the Národní front.
+	{
+
+		const f = edgeOf( 21649685, 7 ), g = edgeOf( 21649685, 0 );
+		if ( f ) {
+
+			const s = f.len * 0.5;
+			const front = venueFront( 'slavia', f, s, { door: 3.6 } );
+			const room = interior( 'Kavárna Slavia', 'slavia', f, s, { w: f.len - 2.2, maxD: 10, door: 3.6, h: 4.2 } );
+			if ( room ) {
+
+				// The windows show the room: open the house front along it, at window height.
+				const c = frame( f, s ), X = [ c.n[ 1 ], - c.n[ 0 ] ];
+				cutout( c.x, room.y + 0.5, c.z, X, room.w / 2 - 0.3, 0.45, room.y + 3.25 );
+				front.room = true;
+
+			}
+
+		}
+
+		if ( g ) venueFront( 'slavia', g, g.len * 0.5, { windowsOnly: true } );
+
+	}
+
 	// Fronts without street data beside them: found from the footprints, facing a point in the street.
 	for ( const [ X0, Y0, TX, TY, h, text, style ] of [
 		[ - 395, 783, - 370, 783, 7.2, 'MÁNES', 'letters' ],
@@ -682,6 +720,45 @@ export function collectPlaces( ctx ) {
 
 		const f = frontFacing( ...S( X0, Y0 ), ...S( TX, TY ) );
 		if ( f ) sign( f, f.t * f.len, h, text, style );
+
+	}
+
+	// --- The piazzetta of the National Theatre (náměstí Václava Havla): Kurt Gebauer's red Heart for Václav Havel
+	// with his signature (2016) facing the theatre, Josef Malejovský's bronze Rebirth (1983) on its round plinth at
+	// the corner by Divadelní and Nová scéna; Nová scéna's granite-clad pillars along its ground floor.
+	{
+
+		const pz = ctx.terraces?.piazzetta;
+		if ( pz ) {
+
+			const y = + pz.level.toFixed( 2 );
+			places.piazzetta = { heart: [ - 339.5, y, 392, Math.PI / 2 ], statue: [ - 341.5, y, 377.5, Math.PI / 2 + 0.4 ], pillars: [] };
+			const b = buildings.find( q => q.code === 21658722 );
+			if ( b ) {
+
+				const r = b.poly.outer;
+				for ( let i = 0; i < r.length; i ++ ) {
+
+					const [ ax, ay ] = r[ i ], [ bx, by ] = r[ ( i + 1 ) % r.length ];
+					const len = Math.hypot( bx - ax, by - ay );
+					if ( len < 8 ) continue;
+					let nx = ( by - ay ) / len, ny = - ( bx - ax ) / len;
+					if ( buildingAt( ( ax + bx ) / 2 + nx * 0.5, ( ay + by ) / 2 + ny * 0.5 ) === b.id ) { nx = - nx; ny = - ny; }
+					if ( inKept( ( ax + bx ) / 2 + nx * 1.5, ( ay + by ) / 2 + ny * 1.5 ) ) continue;
+					const n = Math.round( len / 6.5 );
+					for ( let k = 0; k <= n; k ++ ) {
+
+						const X = ax + ( bx - ax ) * k / n - nx * 0.45, Y = ay + ( by - ay ) * k / n - ny * 0.45;
+						const [ x, z ] = L( X, Y );
+						places.piazzetta.pillars.push( [ x, + ( terrainAt( X + nx, Y + ny ) + streetData.raise( streetData.at( X + nx, Y + ny ).Fk ) ).toFixed( 2 ), z, + Math.atan2( bx - ax, - ( by - ay ) ).toFixed( 3 ) ] );
+
+					}
+
+				}
+
+			}
+
+		}
 
 	}
 

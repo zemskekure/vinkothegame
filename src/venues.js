@@ -883,6 +883,143 @@ function addChampagneInterior( g, room, kit, seat ) {
 
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Kavárna Slavia (Národní 1): the corner café of Lažanský palác facing the National Theatre and the river. A row of
+// tall plate-glass windows in slim dark frames between the palace's stone piers, along Národní and round the corner;
+// the entrance on Národní. Inside: cream walls over dark wood, a herringbone parquet, rows of small tables with
+// white marble tops and bentwood chairs along the windows, opaline globe lamps, a long bar with a mirror, a black
+// grand piano, and Viktor Oliva's Absinthe Drinker on the back wall.
+
+function addSlaviaFront( scene, F ) {
+
+	const g = onFront( F.x, F.y, F.z, F.n );
+	scene.add( g );
+	const kit = new Kit();
+	const L = - F.left + 0.6, R = F.right - 0.6, top = 3.25, bay = 2.7;
+	const n = Math.max( 1, Math.round( ( R - L ) / bay ) ), bw = ( R - L ) / n;
+	const glass = new THREE.MeshStandardNodeMaterial( { color: 0x9fb2b4, roughness: 0.05, metalness: 0.2, transparent: true, opacity: F.room ? 0.18 : 0.55, depthWrite: false } );
+	const behind = lit( plain( 0x6b5338 ), 0.5 ); // where no room is modelled: a warm-lit interior seen through glass
+	for ( let k = 0; k <= n; k ++ ) kit.add( MAT.stone, box( 0.5, top + 0.35, 0.3, L + k * bw, 0, 0.05 ) );
+	for ( let k = 0; k < n; k ++ ) {
+
+		const x = L + ( k + 0.5 ) * bw, w = bw - 0.5;
+		const isDoor = ! F.windowsOnly && Math.abs( x - F.door ) < bw / 2;
+		const y0 = isDoor ? 0 : 0.45;
+		kit.add( MAT.frame, box( w, 0.08, 0.1, x, y0, 0.06 ), box( w, 0.1, 0.1, x, top - 0.1, 0.06 ), box( 0.06, top - y0, 0.1, x - w / 2 + 0.03, y0, 0.06 ), box( 0.06, top - y0, 0.1, x + w / 2 - 0.03, y0, 0.06 ) );
+		kit.add( MAT.frame, box( w, 0.05, 0.08, x, top - 0.75, 0.06 ) ); // transom
+		if ( ! isDoor ) kit.add( MAT.stone, box( w, 0.45, 0.25, x, 0, 0.0 ) ); // stone sill wall below the glass
+		if ( isDoor ) {
+
+			// Double door: dark wood frames with glass, brass push bars, a step.
+			for ( const s of [ - 1, 1 ] ) {
+
+				kit.add( MAT.frame, box( w / 2 - 0.05, 2.5, 0.06, x + s * w / 4, 0, 0.04 ) );
+				kit.add( M.brass, box( 0.03, 0.6, 0.04, x + s * 0.12, 0.9, 0.11 ) );
+
+			}
+
+			kit.add( MAT.stone, box( w + 0.4, 0.12, 0.6, x, - 0.12, 0.4 ) );
+
+		}
+
+		const pane = new THREE.Mesh( new THREE.PlaneGeometry( w - 0.1, top - y0 - 0.15 ), isDoor ? glass : glass );
+		pane.position.set( x, ( y0 + top ) / 2, 0.07 );
+		g.add( pane );
+		if ( ! F.room ) kit.add( behind, box( w, top - y0, 0.05, x, y0, - 0.4 ) );
+
+	}
+
+	kit.build( g, { shadows: false } );
+
+}
+
+// Viktor Oliva's Absinthe Drinker (1901): a man at a café table at night, the green fairy at his shoulder.
+const absinthe = tex( ( c, w, h ) => {
+
+	const sky = c.createLinearGradient( 0, 0, 0, h );
+	sky.addColorStop( 0, '#2c2a22' );
+	sky.addColorStop( 1, '#4b3b26' );
+	c.fillStyle = sky;
+	c.fillRect( 0, 0, w, h );
+	c.fillStyle = '#1a1612';
+	c.beginPath();
+	c.ellipse( w * 0.58, h * 0.42, w * 0.14, h * 0.2, 0, 0, Math.PI * 2 );
+	c.fill(); // the drinker's dark coat
+	c.fillStyle = '#c9a77c';
+	c.beginPath();
+	c.arc( w * 0.6, h * 0.22, w * 0.06, 0, Math.PI * 2 );
+	c.fill(); // his face
+	c.fillStyle = 'rgba(120,200,120,0.55)';
+	c.beginPath();
+	c.ellipse( w * 0.36, h * 0.38, w * 0.1, h * 0.28, - 0.2, 0, Math.PI * 2 );
+	c.fill(); // the green fairy
+	c.fillStyle = '#5a4630';
+	c.fillRect( w * 0.25, h * 0.7, w * 0.6, h * 0.05 ); // table
+	c.fillStyle = 'rgba(150,220,150,0.8)';
+	c.fillRect( w * 0.62, h * 0.62, w * 0.03, h * 0.08 ); // the glass
+	c.strokeStyle = '#b08a3e';
+	c.lineWidth = w * 0.04;
+	c.strokeRect( 0, 0, w, h );
+
+}, 256, 320 );
+
+function addSlaviaInterior( g, room, kit, seat ) {
+
+	const { w, d, h } = room;
+	const marble = plain( 0xf1eee8, { roughness: 0.2 } );
+	kit.add( lit( planks( 0x4a2f1d, 0x5c3b24 ), 0.22 ), box( w, 0.04, d, 0, - 0.04, - d / 2 ) );
+	kit.add( lit( roomWall( 0xece3cf, 0x3d2a1c, 1.1 ) ), box( w, h, 0.08, 0, 0, - d ), box( 0.08, h, d, - w / 2, 0, - d / 2 ), box( 0.08, h, d, w / 2, 0, - d / 2 ) );
+	kit.add( lit( plain( 0xf2ebdc ), 0.3 ), box( w, 0.06, d, 0, h, - d / 2 ) );
+	kit.add( lit( plain( 0xd9c9a8 ), 0.2 ), box( w, 0.25, 0.1, 0, h - 0.25, - d + 0.05 ) );
+
+	// Two rows of small marble tables with bentwood chairs: along the windows, and one further in.
+	for ( const z of [ - 1.1, - 3.4 ] ) {
+
+		if ( - z > d - 2.5 ) continue;
+		for ( let x = - w / 2 + 1.0; x < w / 2 - 0.8; x += 1.9 ) {
+
+			if ( Math.abs( x - room.door ) < 1.2 ) continue;
+			kit.add( marble, cyl( 0.33, 0.33, 0.03, x, 0.72, z, 20 ) );
+			kit.add( MAT.black, cyl( 0.03, 0.05, 0.72, x, 0, z, 8 ), cyl( 0.22, 0.22, 0.03, x, 0, z, 12 ) );
+			for ( const s of [ - 1, 1 ] ) {
+
+				chairAt( kit, x + s * 0.55, 0, z, s * Math.PI / 2, 'spindle' );
+				seat( x + s * 0.55, z, s * Math.PI / 2 );
+
+			}
+
+			kit.add( MAT.white, cyl( 0.05, 0.04, 0.06, x + 0.1, 0.75, z, 10 ) ); // a cup
+
+		}
+
+	}
+
+	// The bar with a mirror behind it along the left wall; the piano at the right back.
+	const bd = Math.min( 6, d - 2 );
+	kit.add( MAT.frame, box( 0.6, 1.05, bd, - w / 2 + 0.9, 0, - d + 0.5 + bd / 2 ) );
+	kit.add( marble, box( 0.7, 0.04, bd + 0.06, - w / 2 + 0.9, 1.05, - d + 0.5 + bd / 2 ) );
+	kit.add( plain( 0xc7d3d6, { roughness: 0.05, metalness: 0.9 } ), box( 0.04, 1.4, bd, - w / 2 + 0.06, 1.3, - d + 0.5 + bd / 2 ) );
+	for ( let z = - d + 0.8; z < - d + 0.5 + bd; z += 0.18 ) bottle( kit, - w / 2 + 0.3, 1.25, z, [ M.bottle, M.beer, MAT.glassWarm ][ Math.floor( - z * 5 ) % 3 ] );
+	const px = w / 2 - 1.6, pz = - d + 1.6;
+	kit.add( MAT.black, box( 1.5, 0.3, 1.9, px, 0.72, pz ), box( 1.5, 0.25, 0.4, px, 0.72, pz + 1.1 ) );
+	for ( const [ a, b ] of [ [ - 0.6, - 0.8 ], [ 0.6, - 0.8 ], [ 0, 0.8 ] ] ) kit.add( MAT.black, cyl( 0.05, 0.05, 0.72, px + a, 0, pz + b, 8 ) );
+	kit.add( MAT.white, box( 1.2, 0.03, 0.15, px, 0.98, pz + 1.15 ) ); // keys
+
+	// The Absinthe Drinker in a gilt frame on the back wall.
+	const painting = board( absinthe, 1.3, 1.62 );
+	painting.position.set( 0, 2.1, - d + 0.06 );
+	g.add( painting );
+
+	// Opaline globe lamps on brass rods, in rows.
+	for ( let x = - w / 2 + 2; x < w / 2 - 1; x += 3 ) for ( const z of [ - 1.6, - d + 2.2 ] ) {
+
+		kit.add( M.brass, cyl( 0.01, 0.01, 0.7, x, h - 0.7, z, 5 ) );
+		kit.add( M.lampShade, ball( 0.2, x, h - 0.85, z, 12 ) );
+
+	}
+
+}
+
 // The room shell's floor, walls and ceiling come from each style; this adds the front wall with the doorway and
 // lets the style furnish the room. Returns seats (scene frame).
 function addVenueInterior( scene, room ) {
@@ -901,10 +1038,20 @@ function addVenueInterior( scene, room ) {
 
 	};
 
-	const front = lit( { pub: roomWall( 0xf1e5d2, 0x5b2a1f, 1.2 ), cafe: roomWall( 0xeeece6, 0x8a9db0, 1.0 ), champagne: roomWall( 0xf3f1ec, 0xe9e6df, 0.05 ) }[ room.style ] );
 	const dl = door - doorW / 2, dr = door + doorW / 2, t = 0.08;
-	kit.add( front, box( dl + w / 2, h, t, ( - w / 2 + dl ) / 2, 0, - 0.14 ), box( w / 2 - dr, h, t, ( dr + w / 2 ) / 2, 0, - 0.14 ), box( doorW, h - doorH, t, door, doorH, - 0.14 ) );
-	( { pub: addPubInterior, cafe: addCafeInterior, champagne: addChampagneInterior } )[ room.style ]( g, room, kit, seat );
+	if ( room.style === 'slavia' ) {
+
+		// The windows are the front wall; inside, only a band above them.
+		kit.add( lit( plain( 0xece3cf ) ), box( w, h - 3.25, t, 0, 3.25, - 0.14 ) );
+
+	} else {
+
+		const front = lit( { pub: roomWall( 0xf1e5d2, 0x5b2a1f, 1.2 ), cafe: roomWall( 0xeeece6, 0x8a9db0, 1.0 ), champagne: roomWall( 0xf3f1ec, 0xe9e6df, 0.05 ) }[ room.style ] );
+		kit.add( front, box( dl + w / 2, h, t, ( - w / 2 + dl ) / 2, 0, - 0.14 ), box( w / 2 - dr, h, t, ( dr + w / 2 ) / 2, 0, - 0.14 ), box( doorW, h - doorH, t, door, doorH, - 0.14 ) );
+
+	}
+
+	( { pub: addPubInterior, cafe: addCafeInterior, champagne: addChampagneInterior, slavia: addSlaviaInterior } )[ room.style ]( g, room, kit, seat );
 	kit.build( g );
 	return seats;
 
@@ -913,7 +1060,7 @@ function addVenueInterior( scene, room ) {
 export function addVenues( scene, places, furniture ) {
 
 	const seats = [];
-	for ( const F of places.fronts || [] ) ( { pub: addPubFront, cafe: addCafeFront, champagne: addChampagneFront } )[ F.style ]?.( scene, F, furniture );
+	for ( const F of places.fronts || [] ) ( { pub: addPubFront, cafe: addCafeFront, champagne: addChampagneFront, slavia: addSlaviaFront } )[ F.style ]?.( scene, F, furniture );
 	for ( const room of places.interiors ) seats.push( ...addVenueInterior( scene, room ) );
 	const kit = new Kit();
 	for ( const t of places.terraces ) addTables( kit, t, seats );

@@ -21,6 +21,7 @@ import { collectPlaces } from './places.mjs';
 import { lonLatToSJTSK } from './geo.mjs';
 import { findOpenings, openingBox, clipToBox } from './openings.mjs';
 import { buildQuay } from './quay.mjs';
+import { buildTerraces } from './terraces.mjs';
 
 const RAW = new URL( '../data/raw/', import.meta.url );
 const OUT = new URL( '../public/data/', import.meta.url );
@@ -290,6 +291,44 @@ function rasterize( b ) {
 
 for ( const b of buildings ) rasterize( b );
 
+// Houses OpenStreetMap has (traced from the cadastre) that RÚIAN lacks, e.g. the Ursuline school's wing along
+// Voršilská: an OSM building outline less than a fifth covered by RÚIAN footprints is added.
+{
+
+	const project = await lonLatToSJTSK();
+	const osm = JSON.parse( await readFile( new URL( 'osm.json', RAW ) ) );
+	const nodes = new Map( osm.filter( e => e.type === 'node' ).map( n => [ n.id, n ] ) );
+	let added = 0;
+	for ( const w of osm ) {
+
+		const t = w.tags || {};
+		if ( w.type !== 'way' || ! t.building || t.building === 'no' || t.building === 'roof' || ( Number( t.layer ) || 0 ) < 0 || t.location === 'underground' ) continue;
+		const ring = w.nodes.map( id => nodes.get( id ) ).filter( Boolean ).map( n => project( n.lon, n.lat ) );
+		if ( ring.length < 4 ) continue;
+		ring.pop();
+		const xs = ring.map( p => p[ 0 ] ), ys = ring.map( p => p[ 1 ] );
+		if ( Math.max( ...xs ) < AREA.xmin || Math.min( ...xs ) > AREA.xmax || Math.max( ...ys ) < AREA.ymin || Math.min( ...ys ) > AREA.ymax ) continue;
+		let cells = 0, covered = 0;
+		for ( let X = Math.min( ...xs ); X < Math.max( ...xs ); X += 1 ) for ( let Y = Math.min( ...ys ); Y < Math.max( ...ys ); Y += 1 ) {
+
+			if ( ! pointInRings( [ ring ], X, Y ) ) continue;
+			cells ++;
+			if ( buildingAt( X, Y ) >= 0 ) covered ++;
+
+		}
+
+		if ( cells < 60 || covered > cells * 0.2 ) continue;
+		const b = { id: buildings.length, code: 900000000 + w.id % 100000000, floors: Number( t[ 'building:levels' ] ) || 0, use: 0, number: t[ 'addr:conscriptionnumber' ] || null, poly: { outer: ring, holes: [] }, name: t.name };
+		buildings.push( b );
+		rasterize( b );
+		added ++;
+
+	}
+
+	console.log( `buildings: ${added} added from OpenStreetMap (missing in RÚIAN)` );
+
+}
+
 function buildingAt( X, Y ) {
 
 	const c = Math.floor( ( X - AREA.xmin ) / dsm.cell ), r = Math.floor( ( AREA.ymax - Y ) / dsm.cell );
@@ -348,13 +387,13 @@ const ROOF_SLOPE = Math.tan( THREE_DEG( 40 ) );
 const ROOF_KIND = { tiles: 0, copper: 1, flat: 2, slate: 3, theatre: 4 };
 
 // Hand-modelled landmarks, by OpenStreetMap way id. style: facade style in src/shading/facade.js.
-const STYLE = { default: 0, theatre: 1, maj: 2, chapel: 3, glassBlock: 4, curtain: 5 };
+const STYLE = { default: 0, theatre: 1, maj: 2, chapel: 3, glassBlock: 4, curtain: 5, bronze: 6 };
 const LANDMARKS = {
 	7649971: { name: 'Národní divadlo', style: STYLE.theatre, roof: ROOF_KIND.theatre, statues: true },
 	25921716: { name: 'Máj', style: STYLE.maj, roof: ROOF_KIND.flat },
 	173149696: { name: 'Betlémská kaple', style: STYLE.chapel, twinGables: true },
 	27247992: { name: 'Nová scéna', style: STYLE.glassBlock, roof: ROOF_KIND.flat },
-	27247993: { name: 'provozní budova Národního divadla', style: STYLE.glassBlock, roof: ROOF_KIND.flat },
+	27247993: { name: 'provozní budova Národního divadla', style: STYLE.bronze, roof: ROOF_KIND.flat },
 	393675112: { name: 'DRN', style: STYLE.curtain, roof: ROOF_KIND.flat },
 	202220820: { name: 'Quadrio', style: STYLE.curtain, roof: ROOF_KIND.flat },
 	7649964: { name: 'Mánes', roof: ROOF_KIND.flat }
@@ -694,7 +733,12 @@ const embankment = { stone: [], posts: [], rails: [] };
 // Smetanovo nábřeží's river edge (tools/quay.mjs): the railing all along the riverside pavement, a retaining wall
 // down to the Čapadlo terrace; drawn with the embankment (same stone, same railing).
 const quay = await buildQuay( { terrain, tw, th, cell: TERRAIN_CELL, AREA, terrainAt, riverAt } );
-if ( quay ) {
+// By the National Theatre: Národní's deck over Divadelní, the piazzetta's terrace (tools/terraces.mjs).
+const terraces = await buildTerraces( { terrain, tw, th, cell: TERRAIN_CELL, AREA, terrainAt, buildingAt } );
+
+// A railing line (tools/quay.mjs format): a stone curb with the railing on top, a retaining wall down to the
+// lower level where there is one, open below `openTop` (or 2.8 m over the low side) where a passage runs under.
+function drawRail( R ) {
 
 	const push = ( ...pts ) => {
 
@@ -702,7 +746,7 @@ if ( quay ) {
 
 	};
 
-	const R = quay.rail, CURB = 0.3, THICK = 0.4;
+	const CURB = 0.3, THICK = 0.4;
 	for ( let i = 1; i < R.length; i ++ ) {
 
 		const a = R[ i - 1 ], b = R[ i ];
@@ -711,9 +755,10 @@ if ( quay ) {
 		const bx0 = a.X - a.nx * THICK, by0 = a.Y - a.ny * THICK, bx1 = b.X - b.nx * THICK, by1 = b.Y - b.ny * THICK;
 		if ( a.wall || b.wall ) {
 
-			// Retaining wall face down to the quay (both windings: double-sided).
-			// Over the underpass's mouth only a lintel, from 2.5 m above the quay.
-			const la = Math.min( a.quay, a.top ) + ( a.portal && b.portal ? 2.8 : - 0.3 ), lb = Math.min( b.quay, b.top ) + ( a.portal && b.portal ? 2.8 : - 0.3 );
+			// Retaining wall face down to the low side (both windings: double-sided); over a passage only a lintel.
+			const open = a.portal && b.portal;
+			const bottom = p => open ? ( p.openTop ?? Math.min( p.quay, p.top ) + 2.8 ) : Math.min( p.quay, p.top ) - 0.3;
+			const la = bottom( a ), lb = bottom( b );
 			push( [ a.X, a.Y, la ], [ b.X, b.Y, lb ], [ b.X, b.Y, tb ], [ a.X, a.Y, la ], [ b.X, b.Y, tb ], [ a.X, a.Y, ta ] );
 			push( [ a.X, a.Y, la ], [ b.X, b.Y, tb ], [ b.X, b.Y, lb ], [ a.X, a.Y, la ], [ a.X, a.Y, ta ], [ b.X, b.Y, tb ] );
 
@@ -739,6 +784,10 @@ if ( quay ) {
 	}
 
 }
+
+if ( quay ) drawRail( quay.rail );
+if ( terraces.tunnel ) for ( const line of terraces.rails.slice( 0, 2 ) ) for ( const p of line ) p.openTop = terraces.tunnel.ceil;
+for ( const line of terraces.rails ) drawRail( line );
 
 // Which landmark (if any) a point lies in, from the OSM outlines.
 const landmarkAt = await ( async () => {
@@ -1477,7 +1526,7 @@ const furniture = collectFurniture( streetData, {
 } );
 furniture.statue.push( ...landmarkStatues );
 
-const places = collectPlaces( { quay, openings, buildings, streetFacades, toLocal, terrainAt, buildingAt, keptIds, dsm, idGrid, AREA, ORIGIN, streetData, furniture, riverAt, buildingInfo, terrainGrid: { terrain, tw, th, cell: TERRAIN_CELL }, inPark: ( X, Y ) => parks.some( rings => pointInRings( rings, X, Y ) ), tramPaths: JSON.parse( await readFile( new URL( 'tram.json', RAW ) ) ).flatMap( f => f.geometry?.paths || [] ) } );
+const places = collectPlaces( { quay, terraces, openings, buildings, streetFacades, toLocal, terrainAt, buildingAt, keptIds, dsm, idGrid, AREA, ORIGIN, streetData, furniture, riverAt, buildingInfo, terrainGrid: { terrain, tw, th, cell: TERRAIN_CELL }, inPark: ( X, Y ) => parks.some( rings => pointInRings( rings, X, Y ) ), tramPaths: JSON.parse( await readFile( new URL( 'tram.json', RAW ) ) ).flatMap( f => f.geometry?.paths || [] ) } );
 
 // Name boards over the shop windows, one per wall position (several shops on one spot are spread along the wall).
 const signs = [];

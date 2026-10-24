@@ -40,7 +40,7 @@ export function createFacadeMaterial( cutouts = [] ) {
 	const realShop = wallC.z; // 1 / 0, -1 = unknown
 	const plaster = attribute( 'plaster', 'vec3' );
 	// Hand-modelled landmarks (tools/build-scene.mjs LANDMARKS): 1 Národní divadlo, 2 Máj, 3 Betlémská kaple, 4 Nová scéna
-	// (glass blocks), 5 modern curtain-wall offices (Quadrio, DRN).
+	// (glass blocks), 5 modern curtain-wall offices (Quadrio, DRN), 6 bronze-tinted glass (the theatre's operations building).
 	const style = wallC.w;
 	// House description (data/houses.json): trim colour (r < 0: derive it), ground floor kind (1 gate, 2 blank,
 	// 3 shops, 4 windows), window bars, rustication (−1 default, 0 none, 1 banded, 2 ornate), graffiti.
@@ -58,7 +58,8 @@ export function createFacadeMaterial( cutouts = [] ) {
 	const sChapel = step( abs( style.sub( 3 ) ), 0.5 );
 	const sGlassBlock = step( abs( style.sub( 4 ) ), 0.5 ); // Nová scéna: walls of glass blocks on a recessed glazed ground floor
 	const sCurtain = step( abs( style.sub( 5 ) ), 0.5 ); // modern offices: glass curtain wall, spandrel bands, fins
-	const modern = max( sGlassBlock, sCurtain );
+	const sBronze = step( abs( style.sub( 6 ) ), 0.5 ); // Prager's theatre buildings: bronze-tinted glass in dark frames
+	const modern = max( max( sGlassBlock, sCurtain ), sBronze );
 	const plain = float( 1 ).sub( sMaj ).sub( sChapel ).sub( modern ); // styles with classical dressings
 
 	const n = normalWorldGeometry;
@@ -264,7 +265,12 @@ export function createFacadeMaterial( cutouts = [] ) {
 	const cwCol = mix( mix( mix( cwGlass, cwShop, ground ), color( 0xc8ccd0 ), cwSpandrel ), color( 0x9aa1a7 ), max( cwMullion, cwFin ) );
 	const cwOn = sCurtain.mul( float( 1 ).sub( isParty ) );
 	wall = mix( wall, cwCol, cwOn );
-	const modernGlass = max( gbSkin.mul( float( 1 ).sub( gbJoint ) ), gbGround ).add( cwOn.mul( float( 1 ).sub( cwSpandrel ) ).mul( float( 1 ).sub( max( cwMullion, cwFin ) ) ) ).min( 1 );
+	// Bronze-tinted glass panels in a dark anodised grid (1.2 × 1.2 m), the ground floor recessed and dark.
+	const brFrame = max( gridLine( u, 1.2, 0.05 ), gridLine( h, 1.2, 0.05 ) );
+	const brGlass = mix( mix( color( 0x3a2f24 ), color( 0x56442f ), hash2D( floor( vec2( u.div( 1.2 ), h.div( 1.2 ) ) ).add( seed ) ).mul( 0.6 ) ), sceneUniforms.skyHorizon, fresnel.mul( 0.6 ).add( 0.1 ) );
+	const brOn = sBronze.mul( float( 1 ).sub( isParty ) );
+	wall = mix( wall, mix( mix( brGlass, color( 0x1d1a17 ), brFrame ), color( 0x141210 ), isStreet.mul( step( h, 4.4 ) ) ), brOn );
+	const modernGlass = max( gbSkin.mul( float( 1 ).sub( gbJoint ) ), gbGround ).add( cwOn.mul( float( 1 ).sub( cwSpandrel ) ).mul( float( 1 ).sub( max( cwMullion, cwFin ) ) ) ).add( brOn.mul( float( 1 ).sub( brFrame ) ) ).min( 1 );
 
 	let col = mix( wall, frameColor, openingAll.mul( frame ) );
 	// Iron bars over the ground-floor windows.

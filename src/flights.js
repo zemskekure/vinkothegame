@@ -11,6 +11,7 @@ const F = {
 	steel: plain( 0x4c5357, { metalness: 0.6, roughness: 0.45 } ),
 	plaster: plain( 0xd9d4ca, { roughness: 0.9, side: THREE.DoubleSide } ),
 	floor: plain( 0x6f6c66, { roughness: 0.9 } ),
+	road: plain( 0x3f4042, { roughness: 0.85 } ),
 	lamp: glow( 0xfff0d0, 1.6 )
 };
 
@@ -107,11 +108,13 @@ function addTunnel( scene, t ) {
 	const [ ax, az ] = t.a, [ bx, bz ] = t.b;
 	const len = Math.hypot( bx - ax, bz - az );
 	const g = new THREE.Group();
-	g.position.set( ax, t.y, az );
+	g.position.set( ax, t.ya, az );
+	g.rotation.order = 'YXZ';
 	g.rotation.y = Math.atan2( bx - ax, bz - az );
+	g.rotation.x = - Math.atan2( t.yb - t.ya, len ); // sloping with the road
 	const kit = new Kit();
 	const W = t.w / 2, H = t.h;
-	kit.add( F.floor, box( t.w, 0.1, len + 0.6, 0, - 0.08, len / 2 ) );
+	kit.add( t.road ? F.road : F.floor, box( t.w, 0.1, len + 0.6, 0, - 0.08, len / 2 ) );
 	for ( const side of [ - 1, 1 ] ) kit.add( F.plaster, box( 0.2, H, len + 0.6, side * ( W + 0.1 ), 0, len / 2 ) );
 	kit.add( F.plaster, box( t.w + 0.4, 0.2, len + 0.6, 0, H, len / 2 ) );
 	for ( let s = 3; s < len; s += 5 ) kit.add( F.lamp, box( 0.5, 0.05, 0.18, 0, H - 0.05, s ) );
@@ -123,7 +126,7 @@ function addTunnel( scene, t ) {
 
 	}
 
-	kit.add( F.wall, box( t.w + 0.8, 3.2, 0.6, 0, H + 0.4, - 0.3 ) );
+	if ( ! t.road ) kit.add( F.wall, box( t.w + 0.8, 3.2, 0.6, 0, H + 0.4, - 0.3 ) );
 	kit.build( g );
 	scene.add( g );
 
