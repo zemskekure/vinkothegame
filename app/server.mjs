@@ -147,7 +147,7 @@ function gridSummary() {
 		const refs = db.prepare( 'SELECT COUNT(*) AS n FROM refs WHERE cell = ?' ).get( c.id ).n;
 		return {
 			id: c.id, col: c.col, row: c.row, x0: c.x0, z0: c.z0, x1: c.x1, z1: c.z1,
-			status: s.shown, openBugs: s.openBugs, buildings: c.buildings.length, refs, streets: c.streets.slice( 0, 3 ),
+			status: s.shown, openBugs: s.openBugs, buildings: c.buildings.length, described: c.buildings.filter( b => b.note ).length, refs, streets: c.streets.slice( 0, 3 ),
 			usage: sum.byCell[ c.id ] || null, top: settings[ `top:${c.id}` ] || null
 		};
 

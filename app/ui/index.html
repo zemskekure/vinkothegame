@@ -25,6 +25,7 @@
 			<div class="legend">
 				<span><i class="dot todo"></i>k udělání</span>
 				<span><i class="dot in_progress"></i>rozpracováno</span>
+				<span><i class="dot described"></i>část domů už popsaná (x/y)</span>
 				<span><i class="dot review"></i>ke kontrole (PR)</span>
 				<span><i class="dot done"></i>hotovo</span>
 				<span><i class="dot failed"></i>selhalo</span>
@@ -85,14 +86,18 @@
 				a.href = `/cell/${c.id}`;
 				Object.assign( a.style, { left: pc( c.x0 - minX, W ), top: pc( c.z0 - minZ, H ), width: pc( c.x1 - c.x0, W ), height: pc( c.z1 - c.z0, H ) } );
 				if ( layer === 'model' && c.top ) a.style.backgroundImage = `url(${c.top})`;
+				// Houses already described in data/houses.json (from earlier photo work): a green tint by share, until
+				// the square gets a status of its own.
+				const share = c.buildings ? c.described / c.buildings : 0;
+				if ( c.status === 'todo' && share ) a.style.backgroundColor = `color-mix( in srgb, var(--done) ${Math.round( 8 + share * 40 )}%, transparent )`;
 				if ( grid.control.current?.cell === c.id ) a.classList.add( 'running' );
-				a.innerHTML = `<span>${c.id}</span>${c.openBugs ? `<span class="bugs">${c.openBugs}</span>` : ''}${c.usage ? `<span class="cost">${usd( c.usage.cost )}</span>` : ''}`;
+				a.innerHTML = `<span>${c.id}</span>${c.openBugs ? `<span class="bugs">${c.openBugs}</span>` : ''}${c.usage ? `<span class="cost">${usd( c.usage.cost )}</span>` : ''}${c.described ? `<span class="described">${c.described}/${c.buildings}</span>` : ''}`;
 				a.addEventListener( 'mousemove', e => {
 
 					tip.style.display = 'block';
 					tip.style.left = Math.min( e.clientX + 14, innerWidth - 270 ) + 'px';
 					tip.style.top = e.clientY + 14 + 'px';
-					tip.innerHTML = `<b>${c.id}</b> · ${c.buildings} domů${c.refs ? ` · ${c.refs} fotek` : ''}${c.usage ? ` · ${tokens( c.usage.tokens )} tokenů, ${usd( c.usage.cost )}` : ''}<br>${esc( c.streets.join( ', ' ) || 'bez ulic' )}`;
+					tip.innerHTML = `<b>${c.id}</b> · ${c.buildings} domů${c.described ? `, ${c.described} popsáno z fotek` : ''}${c.refs ? ` · ${c.refs} fotek` : ''}${c.usage ? ` · ${tokens( c.usage.tokens )} tokenů, ${usd( c.usage.cost )}` : ''}<br>${esc( c.streets.join( ', ' ) || 'bez ulic' )}`;
 
 				} );
 				a.addEventListener( 'mouseleave', () => tip.style.display = 'none' );
