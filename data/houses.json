@@ -1,6 +1,31 @@
 {
 	"_about": "Hand-written descriptions of individual houses, read from street-level photos (tools/facade-views.mjs → data/raw/views/house-<code>_<edge>.jpg). Keyed by RÚIAN building code. Colours are sRGB. ground: shops | restaurant | windows | gate | blank. rustic: none | banded | ornate. edges: per-facade extras by footprint edge index (awning, banner, lanterns).",
 
+	"21649685": {
+		"note": "Národní / Smetanovo nábřeží: Lažanský palác (FAMU upstairs, Kavárna Slavia on the corner): neo-renaissance in pale sandstone, ornate stucco, big café windows under dark green awnings, KAVÁRNA SLAVIA lettering",
+		"colour": "#ddd3bf", "trim": "#ebe5d6", "ground": "restaurant", "rustic": "ornate",
+		"edges": { "0": { "awning": "#2f5b3c" }, "7": { "awning": "#2f5b3c" }, "9": { "awning": "#2f5b3c" } }
+	},
+	"21643296": {
+		"note": "Smetanovo nábřeží 198 / Novotného lávka: Karlovy lázně club, dark red-brown front, arched ground-floor windows boarded white and tagged",
+		"colour": "#7d3e2f", "trim": "#94523f", "ground": "blank", "graffiti": true, "rustic": "none"
+	},
+	"21652252": {
+		"note": "Slovanský ostrov: Žofín palace, ochre-yellow neo-renaissance with white dressings",
+		"colour": "#e6c56e", "trim": "#f4ecd6", "ground": "windows", "rustic": "banded"
+	},
+	"21652481": {
+		"note": "Masarykovo nábřeží / Slovanský ostrov: Mánes, white functionalist gallery with ribbon windows and MÁNES lettering",
+		"colour": "#f1f0eb", "trim": "#e6e5df", "ground": "windows", "rustic": "none"
+	},
+	"21645132": {
+		"note": "Národní 37: Platýz, classicist palace in cream with white dressings, shops below, passage to Uhelný trh",
+		"colour": "#e8dfcb", "trim": "#f5f1e6", "ground": "shops", "rustic": "banded"
+	},
+	"21649553": {
+		"note": "Smetanovo nábřeží 6: Charles University, Faculty of Social Sciences (Hollar), pale cream classicist palace behind railings and trees",
+		"colour": "#e6dcc3", "trim": "#f2ecdd", "ground": "windows", "rustic": "banded"
+	},
 	"21643768": {
 		"note": "Náprstkova: long white two-storey house with dormers and an orange tile roof, barred ground-floor windows, wall lanterns",
 		"colour": "#ece6d8", "trim": "#f6f2e9", "floors": 2, "ground": "windows", "grilles": true, "rustic": "none",

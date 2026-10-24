@@ -15,6 +15,7 @@
 
 import { readFile } from 'node:fs/promises';
 import jpeg from 'jpeg-js';
+import { HI_TILES } from './area.mjs';
 
 const RAW = new URL( '../data/raw/', import.meta.url );
 const PHOTO_CELL = 0.125;
@@ -24,10 +25,11 @@ const CORNER = 3; // smooth-minimum size where streets meet (kerb corner radius 
 
 async function loadPhoto( AREA ) {
 
+	const [ nx, ny ] = HI_TILES;
 	const tiles = [];
-	for ( let i = 0; i < 2; i ++ ) for ( let j = 0; j < 2; j ++ ) tiles.push( { i, j, img: jpeg.decode( await readFile( new URL( `ortho-hi-${i}-${j}.jpg`, RAW ) ), { useTArray: true, maxMemoryUsageInMB: 2048 } ) } );
+	for ( let i = 0; i < nx; i ++ ) for ( let j = 0; j < ny; j ++ ) tiles.push( { i, j, img: jpeg.decode( await readFile( new URL( `ortho-hi-${i}-${j}.jpg`, RAW ) ), { useTArray: true, maxMemoryUsageInMB: 2048 } ) } );
 	const tw = tiles[ 0 ].img.width, th = tiles[ 0 ].img.height;
-	const W = tw * 2, H = th * 2;
+	const W = tw * nx, H = th * ny;
 	const lum = new Uint8Array( W * H );
 	for ( const { i, j, img } of tiles ) {
 
@@ -358,7 +360,7 @@ function measureChain( parts, photo, inBuilding ) {
 // double track's centre line).
 const TRAM_HALF = 5.6;
 
-export async function buildKerbs( { roads, AREA, inBuilding, tramPaths = [] } ) {
+export async function buildKerbs( { roads, AREA, inBuilding, tramPaths = [], islands = [] } ) {
 
 	const photo = await loadPhoto( AREA );
 	const kerbed = roads.filter( r => r.highway !== 'service' && r.highway !== 'pedestrian' && r.pts.length >= 2 );
@@ -443,6 +445,37 @@ export async function buildKerbs( { roads, AREA, inBuilding, tramPaths = [] } ) 
 			const h = Math.max( CORNER - Math.abs( a - b ), 0 ) / CORNER;
 			field[ r * W + c ] = Math.min( a, b ) - h * h * CORNER / 4;
 			paved[ r * W + c ] = Math.min( paved[ r * W + c ], band[ ( r - r0 ) * cw + c - c0 ] );
+
+		}
+
+	}
+
+	// Tram stop islands (OSM platforms in the street): raised and kerbed like a pavement. A line is an island of
+	// its width along it (rounded ends), an area its own outline.
+	for ( const isl of islands ) {
+
+		const xs = isl.pts.map( p => p[ 0 ] ), ys = isl.pts.map( p => p[ 1 ] ), m = isl.half + 2;
+		const c0 = Math.max( 0, Math.floor( ( Math.min( ...xs ) - m - AREA.xmin ) / FIELD_CELL ) ), c1 = Math.min( W - 1, Math.ceil( ( Math.max( ...xs ) + m - AREA.xmin ) / FIELD_CELL ) );
+		const r0 = Math.max( 0, Math.floor( ( AREA.ymax - Math.max( ...ys ) - m ) / FIELD_CELL ) ), r1 = Math.min( H - 1, Math.ceil( ( AREA.ymax - Math.min( ...ys ) + m ) / FIELD_CELL ) );
+		for ( let r = r0; r <= r1; r ++ ) for ( let c = c0; c <= c1; c ++ ) {
+
+			const X = AREA.xmin + c * FIELD_CELL, Y = AREA.ymax - r * FIELD_CELL;
+			let d = Infinity, inside = false;
+			const n = isl.pts.length;
+			for ( let i = 0; i < ( isl.closed ? n : n - 1 ); i ++ ) {
+
+				const [ ax, ay ] = isl.pts[ i ], [ bx, by ] = isl.pts[ ( i + 1 ) % n ];
+				const dx = bx - ax, dy = by - ay, l2 = dx * dx + dy * dy || 1;
+				const t = Math.max( 0, Math.min( 1, ( ( X - ax ) * dx + ( Y - ay ) * dy ) / l2 ) );
+				d = Math.min( d, Math.hypot( X - ax - t * dx, Y - ay - t * dy ) );
+				if ( isl.closed && ( ( ay > Y ) !== ( by > Y ) ) && X < ax + ( Y - ay ) / ( by - ay ) * dx ) inside = ! inside;
+
+			}
+
+			const signed = isl.closed ? ( inside ? d : - d ) : isl.half - d; // > 0 on the island
+			const k = r * W + c;
+			if ( signed > field[ k ] ) field[ k ] = signed;
+			if ( signed > - 1.5 ) paved[ k ] = Math.min( paved[ k ], - 1 );
 
 		}
 

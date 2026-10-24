@@ -39,7 +39,8 @@ export function createFacadeMaterial( cutouts = [] ) {
 	const realWindow = wallC.y;
 	const realShop = wallC.z; // 1 / 0, -1 = unknown
 	const plaster = attribute( 'plaster', 'vec3' );
-	// Hand-modelled landmarks (tools/build-scene.mjs LANDMARKS): 1 Národní divadlo, 2 Máj, 3 Betlémská kaple.
+	// Hand-modelled landmarks (tools/build-scene.mjs LANDMARKS): 1 Národní divadlo, 2 Máj, 3 Betlémská kaple, 4 Nová scéna
+	// (glass blocks), 5 modern curtain-wall offices (Quadrio, DRN).
 	const style = wallC.w;
 	// House description (data/houses.json): trim colour (r < 0: derive it), ground floor kind (1 gate, 2 blank,
 	// 3 shops, 4 windows), window bars, rustication (−1 default, 0 none, 1 banded, 2 ornate), graffiti.
@@ -55,7 +56,10 @@ export function createFacadeMaterial( cutouts = [] ) {
 	const sTheatre = step( abs( style.sub( 1 ) ), 0.5 );
 	const sMaj = step( abs( style.sub( 2 ) ), 0.5 );
 	const sChapel = step( abs( style.sub( 3 ) ), 0.5 );
-	const plain = float( 1 ).sub( sMaj ).sub( sChapel ); // styles with classical dressings
+	const sGlassBlock = step( abs( style.sub( 4 ) ), 0.5 ); // Nová scéna: walls of glass blocks on a recessed glazed ground floor
+	const sCurtain = step( abs( style.sub( 5 ) ), 0.5 ); // modern offices: glass curtain wall, spandrel bands, fins
+	const modern = max( sGlassBlock, sCurtain );
+	const plain = float( 1 ).sub( sMaj ).sub( sChapel ).sub( modern ); // styles with classical dressings
 
 	const n = normalWorldGeometry;
 	const tangent = vec3( n.z, 0, n.x.negate() );
@@ -90,7 +94,7 @@ export function createFacadeMaterial( cutouts = [] ) {
 	const mainCornice = float( 1 ).sub( smoothstep( 0.55, 0.75, fromTop ) );
 	const underCornice = step( fromTop, mix( float( 1.1 ), float( 1.8 ), sTheatre ) ); // no windows cut into the cornice / attic
 	// Máj: blank panel walls above the shops (its glazing is drawn separately); the chapel only has its gothic windows.
-	const solid = max( max( max( max( inPier, tooNarrow ), isParty ), underCornice ), max( sMaj.mul( step( 1, gridV ) ), sChapel ) );
+	const solid = max( max( max( max( inPier, tooNarrow ), isParty ), underCornice ), max( max( sMaj.mul( step( 1, gridV ) ), sChapel ), modern ) );
 
 	// Ground floor of street fronts: shops in most houses, one door bay per wall.
 	const hasShops = mix( step( 0.3, fract( seed.mul( 7.7 ) ) ), step( 0.5, realShop ), step( - 0.5, realShop ) ).mul( isStreet );
@@ -240,6 +244,28 @@ export function createFacadeMaterial( cutouts = [] ) {
 	wall = mix( wall, majGlass, max( majShopfront, majBand ) );
 	wall = mix( wall, color( 0xe8b030 ), max( majFrame, lineAA( fract( u.div( 1.5 ) ).sub( 0.5 ), 0.01 ).mul( majShopfront ).mul( 0.6 ) ) );
 
+	// Nová scéna: a skin of square glass blocks (≈ 0.5 m) in dark grey-green glass over the upper floors; the
+	// ground floor a dark recessed glazing behind the piers.
+	const gbCell = vec2( u.div( 0.5 ), h.div( 0.5 ) );
+	const gbJoint = max( gridLine( u, 0.5, 0.03 ), gridLine( h, 0.5, 0.03 ) );
+	const gbTone = hash2D( floor( gbCell ).add( seed ) );
+	const gbBlock = mix( mix( color( 0x1a2224 ), color( 0x2b3634 ), gbTone ), sceneUniforms.skyHorizon, fresnel.mul( 0.75 ).add( 0.14 ).mul( mix( float( 0.7 ), float( 1.1 ), gbTone ) ) );
+	const gbGround = sGlassBlock.mul( isStreet ).mul( step( h, 4.6 ) );
+	const gbSkin = sGlassBlock.mul( float( 1 ).sub( isParty ) ).mul( float( 1 ).sub( gbGround ) );
+	wall = mix( wall, mix( gbBlock, color( 0x55605d ), gbJoint.mul( 0.6 ) ), gbSkin );
+	wall = mix( wall, mix( color( 0x121518 ), color( 0x8a7a5e ), step( 0.55, hash2D( vec2( floor( u.div( 2.4 ) ), seed ) ) ).mul( 0.35 ) ), gbGround );
+	// Curtain wall: per floor a glass band and a light spandrel strip, aluminium mullions every 1.35 m, vertical
+	// fins every 2.7 m; the ground floor glazed shopfronts.
+	const cwSpandrel = step( 0.78, cellV ).mul( upper );
+	const cwMullion = lineAA( fract( u.div( 1.35 ) ).sub( 0.5 ), 0.025 );
+	const cwFin = lineAA( fract( u.div( 2.7 ) ).sub( 0.5 ), 0.05 );
+	const cwGlass = mix( mix( color( 0x22303c ), color( 0x3a4b5a ), noise2D( vec2( u.mul( 0.15 ), h.mul( 0.15 ) ) ) ), sceneUniforms.skyHorizon, fresnel.mul( 0.7 ).add( 0.12 ) );
+	const cwShop = mix( color( 0x2a2622 ), color( 0xe0c79a ), step( 0.3, hash2D( vec2( floor( u.div( 2.7 ) ), seed ) ) ).mul( 0.6 ) );
+	const cwCol = mix( mix( mix( cwGlass, cwShop, ground ), color( 0xc8ccd0 ), cwSpandrel ), color( 0x9aa1a7 ), max( cwMullion, cwFin ) );
+	const cwOn = sCurtain.mul( float( 1 ).sub( isParty ) );
+	wall = mix( wall, cwCol, cwOn );
+	const modernGlass = max( gbSkin.mul( float( 1 ).sub( gbJoint ) ), gbGround ).add( cwOn.mul( float( 1 ).sub( cwSpandrel ) ).mul( float( 1 ).sub( max( cwMullion, cwFin ) ) ) ).min( 1 );
+
 	let col = mix( wall, frameColor, openingAll.mul( frame ) );
 	// Iron bars over the ground-floor windows.
 	const bars = max( lineAA( fract( winUV.x.mul( 5 ) ).sub( 0.5 ), 0.035 ), lineAA( fract( winUV.y.mul( 4 ) ).sub( 0.5 ), 0.03 ) )
@@ -250,7 +276,7 @@ export function createFacadeMaterial( cutouts = [] ) {
 	col = mix( col, color( 0x1f1f1d ), bars );
 	mat.colorNode = col;
 
-	const glassMask = openingAll.mul( float( 1 ).sub( frame ) ).add( doorWay.mul( fanlight ) ).add( max( majShopfront, majBand ) ).min( 1 );
+	const glassMask = openingAll.mul( float( 1 ).sub( frame ) ).add( doorWay.mul( fanlight ) ).add( max( max( majShopfront, majBand ), modernGlass ) ).min( 1 );
 	mat.roughnessNode = mix( float( 0.88 ).add( grain ), float( 0.1 ), glassMask );
 
 	// Street-canyon sky occlusion: darker low down in narrow lanes.

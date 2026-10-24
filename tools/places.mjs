@@ -561,6 +561,226 @@ export function collectPlaces( ctx ) {
 
 	}
 
+	// --- landmark lettering and plaques, on the house fronts seen in street photos
+	const edgeOf = ( code, edge ) => {
+
+		const f = streetFacades.find( q => q.code === code && q.edge === edge );
+		if ( ! f ) return null;
+		const len = Math.hypot( f.b[ 0 ] - f.a[ 0 ], f.b[ 1 ] - f.a[ 1 ] );
+		return { ...f, len, ux: ( f.b[ 0 ] - f.a[ 0 ] ) / len, uy: ( f.b[ 1 ] - f.a[ 1 ] ) / len };
+
+	};
+	const LANDMARK_SIGNS = [
+		{ code: 21649685, edge: 7, at: 0.5, h: 4.9, text: 'KAVÁRNA SLAVIA', style: 'letters' },
+		{ code: 21649685, edge: 0, at: 0.6, h: 4.9, text: 'KAVÁRNA SLAVIA', style: 'letters' },
+		{ code: 21649685, edge: 1, at: 0.5, h: 3.3, text: 'FAMU', style: 'plaque' },
+		{ code: 21649553, edge: 4, at: 0.5, h: 3.4, text: 'UNIVERZITA KARLOVA · FAKULTA SOCIÁLNÍCH VĚD', style: 'plaque' },
+		{ code: 21643296, edge: 1, at: 0.5, h: 4.2, text: 'KARLOVY LÁZNĚ', style: 'neon' },
+		{ code: 21645132, edge: 34, at: 0.5, h: 4.3, text: 'PLATÝZ', style: 'letters' },
+		{ code: 21652252, edge: 31, at: 0.5, h: 4.6, text: 'ŽOFÍN', style: 'letters' }
+	];
+	for ( const s of LANDMARK_SIGNS ) {
+
+		const f = edgeOf( s.code, s.edge );
+		if ( f ) sign( f, f.len * s.at, s.h, s.text, s.style );
+		else console.warn( `places: no front ${s.code}/${s.edge} for ${s.text}` );
+
+	}
+
+	// Fronts without street data beside them: found from the footprints, facing a point in the street.
+	for ( const [ X0, Y0, TX, TY, h, text, style ] of [
+		[ - 395, 783, - 370, 783, 7.2, 'MÁNES', 'letters' ],
+		[ 72, 398, 55, 398, 6.0, 'QUADRIO', 'letters' ]
+	] ) {
+
+		const f = frontFacing( ...S( X0, Y0 ), ...S( TX, TY ) );
+		if ( f ) sign( f, f.t * f.len, h, text, style );
+
+	}
+
+	// --- Šítkov water tower (no footprint of its own; its dome in the aerial photo) and the Žofín music pavilion.
+	{
+
+		places.sitkov = { x: - 423.5, z: 780.2, y: + yAt( ...S( - 430, 786 ) ).toFixed( 2 ), rot: 0.21 };
+		const [ BX, BY ] = S( - 452, 644 );
+		const by = yAt( BX, BY );
+		places.bandstand = { x: - 452, z: 644, y: + by.toFixed( 2 ), r: 5.6, rot: Math.PI };
+		zone( - 452, 644, [ 1, 0 ], 4.6, 4.6, { y: + ( by + 0.75 ).toFixed( 2 ) } );
+		zone( - 452, 644 - 5.6 - 0.6, [ 1, 0 ], 1.1, 0.8, { y0: + ( by + 0.75 ).toFixed( 2 ), y1: + by.toFixed( 2 ), along: [ 0, - 1 ], steps: 3 } );
+	}
+
+	// --- arcades and passages through houses (tools/openings.mjs): floor heights from the pavement at their ends,
+	// walkable zones sloping between them.
+	places.openings = [];
+	const groundY = ( X, Y ) => terrainAt( X, Y ) + streetData.raise( streetData.at( X, Y ).Fk );
+	for ( const o of ctx.openings || [] ) {
+
+		const [ lx, lz ] = LV( o.ux, o.uy );
+		const across = [ lz, - lx ]; // zone u axis, so that the zone's n axis (its slope) runs along the opening
+		if ( o.kind === 'passage' ) {
+
+			const end = s => groundY( o.X + o.ux * s * ( o.len / 2 + 0.8 ), o.Y + o.uy * s * ( o.len / 2 + 0.8 ) );
+			const y0 = + end( - 1 ).toFixed( 2 ), y1 = + end( 1 ).toFixed( 2 );
+			const [ x, z ] = L( o.X, o.Y );
+			places.openings.push( { kind: 'passage', x, z, lx, lz, len: o.len, w: o.w, h: o.h, y0, y1 } );
+			zone( x, z, across, o.w / 2 - 0.15, o.len / 2 + 0.35, { y0, y1, along: [ lx, lz ] } );
+
+		} else {
+
+			const end = s => groundY( o.X + o.ux * s * ( o.len / 2 - 0.5 ) + o.nx * 0.9, o.Y + o.uy * s * ( o.len / 2 - 0.5 ) + o.ny * 0.9 );
+			const y0 = + end( - 1 ).toFixed( 2 ), y1 = + end( 1 ).toFixed( 2 );
+			const [ x, z ] = L( o.X, o.Y ), [ nx, nz ] = LV( o.nx, o.ny );
+			places.openings.push( { kind: 'arcade', x, z, lx, lz, nx, nz, len: o.len, depth: o.depth, h: o.h, y0, y1 } );
+			// From just outside the street face to 0.3 m short of the back wall.
+			const depth = o.depth - 0.3;
+			const mid = ( depth - 0.3 ) / 2;
+			zone( x - nx * mid, z - nz * mid, across, ( depth + 0.3 ) / 2, o.len / 2, { y0, y1, along: [ lx, lz ] } );
+
+		}
+
+	}
+
+	// --- bridges (OSM bridge=yes ways, clipped to the area): a deck strip per way segment at the height of the land
+	// at its ends, walkable; piers down to the river under the road decks every 25 m (src/bridges.js).
+	places.bridges = [];
+	places.piers = [];
+	const BRIDGE_W = { footway: 3.0, path: 2.5, cycleway: 2.5, pedestrian: 6, service: 4.5, residential: 7, unclassified: 7, tertiary: 7, secondary: 8, primary: 9, tram: 3.2 };
+	const clipArea = ( [ ax, ay ], [ bx, by ] ) => {
+
+		let t0 = 0, t1 = 1;
+		const dx = bx - ax, dy = by - ay;
+		for ( const [ p, q ] of [ [ - dx, ax - AREA.xmin ], [ dx, AREA.xmax - ax ], [ - dy, ay - AREA.ymin ], [ dy, AREA.ymax - ay ] ] ) {
+
+			if ( Math.abs( p ) < 1e-9 ) {
+
+				if ( q < 0 ) return null;
+				continue;
+
+			}
+
+			const r = q / p;
+			if ( p < 0 ) t0 = Math.max( t0, r );
+			else t1 = Math.min( t1, r );
+
+		}
+
+		return t1 - t0 > 1e-3 ? [ [ ax + dx * t0, ay + dy * t0 ], [ ax + dx * t1, ay + dy * t1 ] ] : null;
+
+	};
+
+	const bridgeSegs = [];
+	for ( const w of streetData.ways ) {
+
+		const t = w.tags;
+		if ( ! t.bridge || t.bridge === 'no' || t.highway === 'steps' ) continue;
+		const kind = t.railway === 'tram' ? 'tram' : t.highway;
+		if ( ! BRIDGE_W[ kind ] || w.pts.length < 2 ) continue;
+		const width = parseFloat( t.width ) || BRIDGE_W[ kind ];
+		// Deck height at an end: the land there, or the nearest land within 14 m (abutments inside the river outline).
+		const land = p => {
+
+			if ( p.X < AREA.xmin || p.X > AREA.xmax || p.Y < AREA.ymin || p.Y > AREA.ymax ) return null;
+			for ( let r = 0; r <= 14; r += 1 ) for ( let a = 0; a < ( r ? 16 : 1 ); a ++ ) {
+
+				const X = p.X + r * Math.cos( a * Math.PI / 8 ), Y = p.Y + r * Math.sin( a * Math.PI / 8 );
+				if ( ! riverAt( X, Y ) ) return groundY( X, Y );
+
+			}
+
+			return null;
+
+		};
+		const [ h0, h1 ] = [ land( w.pts[ 0 ] ), land( w.pts[ w.pts.length - 1 ] ) ];
+		if ( h0 === null && h1 === null ) continue;
+		const total = w.pts.slice( 1 ).reduce( ( a, p, i ) => a + Math.hypot( p.X - w.pts[ i ].X, p.Y - w.pts[ i ].Y ), 0 );
+		let s = 0;
+		const heightAt = d => h0 !== null && h1 !== null ? h0 + ( h1 - h0 ) * d / total : h0 ?? h1;
+		for ( let i = 1; i < w.pts.length; i ++ ) {
+
+			const a = w.pts[ i - 1 ], b = w.pts[ i ], len = Math.hypot( b.X - a.X, b.Y - a.Y );
+			const c = clipArea( [ a.X, a.Y ], [ b.X, b.Y ] );
+			if ( c && Math.hypot( c[ 1 ][ 0 ] - c[ 0 ][ 0 ], c[ 1 ][ 1 ] - c[ 0 ][ 1 ] ) > 0.3 ) {
+
+				const da = s + Math.hypot( c[ 0 ][ 0 ] - a.X, c[ 0 ][ 1 ] - a.Y ), db = s + Math.hypot( c[ 1 ][ 0 ] - a.X, c[ 1 ][ 1 ] - a.Y );
+				bridgeSegs.push( { A: c[ 0 ], B: c[ 1 ], w: width, kind, ya: heightAt( da ), yb: heightAt( db ) } );
+
+			}
+
+			s += len;
+
+		}
+
+	}
+
+	for ( const g of bridgeSegs ) {
+
+		const [ ax, az ] = L( ...g.A ), [ bx, bz ] = L( ...g.B );
+		const len = Math.hypot( bx - ax, bz - az ), lx = ( bx - ax ) / len, lz = ( bz - az ) / len;
+		const y0 = + g.ya.toFixed( 2 ), y1 = + g.yb.toFixed( 2 );
+		places.bridges.push( { x0: + ax.toFixed( 2 ), z0: + az.toFixed( 2 ), x1: + bx.toFixed( 2 ), z1: + bz.toFixed( 2 ), w: g.w, y0, y1, kind: g.kind } );
+		zone( ( ax + bx ) / 2, ( az + bz ) / 2, [ lz, - lx ], g.w / 2, len / 2 + 0.2, { y0, y1, along: [ lx, lz ] } );
+		if ( g.w >= 6 ) for ( let d = 12; d < len; d += 25 ) {
+
+			const X = g.A[ 0 ] + ( g.B[ 0 ] - g.A[ 0 ] ) * d / len, Y = g.A[ 1 ] + ( g.B[ 1 ] - g.A[ 1 ] ) * d / len;
+			if ( riverAt( X, Y ) ) places.piers.push( [ ...L( X, Y ), + ( y0 + ( y1 - y0 ) * d / len ).toFixed( 2 ), + Math.atan2( lx, lz ).toFixed( 3 ) ] );
+
+		}
+
+	}
+
+	ctx.onBridge = ( X, Y ) => bridgeSegs.some( g => {
+
+		const dx = g.B[ 0 ] - g.A[ 0 ], dy = g.B[ 1 ] - g.A[ 1 ], l2 = dx * dx + dy * dy;
+		const t = Math.max( 0, Math.min( 1, ( ( X - g.A[ 0 ] ) * dx + ( Y - g.A[ 1 ] ) * dy ) / l2 ) );
+		return Math.hypot( X - g.A[ 0 ] - t * dx, Y - g.A[ 1 ] - t * dy ) < g.w / 2 + 1;
+
+	} );
+	console.log( `places: ${bridgeSegs.length} bridge deck segments, ${places.piers.length} piers` );
+
+	// --- tram stops: each platform's axis, length and the side its tracks are on, for the shelter, the stop sign
+	// and the departure board (src/stops.js).
+	places.stops = [];
+	const trams = ( ctx.tramPaths || [] ).flatMap( p => p.slice( 1 ).map( ( b, i ) => [ p[ i ], b ] ) );
+	for ( const p of streetData.platforms || [] ) {
+
+		const pts = p.pts;
+		// Axis: the longest edge's direction; extent along it and across it.
+		let best = null;
+		for ( let i = 0; i + 1 < pts.length; i ++ ) {
+
+			const l = Math.hypot( pts[ i + 1 ][ 0 ] - pts[ i ][ 0 ], pts[ i + 1 ][ 1 ] - pts[ i ][ 1 ] );
+			if ( ! best || l > best.l ) best = { l, ux: ( pts[ i + 1 ][ 0 ] - pts[ i ][ 0 ] ) / l, uy: ( pts[ i + 1 ][ 1 ] - pts[ i ][ 1 ] ) / l };
+
+		}
+
+		const { ux, uy } = best;
+		const us = pts.map( ( [ X, Y ] ) => X * ux + Y * uy ), ns = pts.map( ( [ X, Y ] ) => - X * uy + Y * ux );
+		const u0 = Math.min( ...us ), u1 = Math.max( ...us ), n0 = Math.min( ...ns ), n1 = Math.max( ...ns );
+		const cu = ( u0 + u1 ) / 2, cn = p.closed ? ( n0 + n1 ) / 2 : ns.reduce( ( a, v ) => a + v, 0 ) / ns.length;
+		const CX = cu * ux - cn * uy, CY = cu * uy + cn * ux;
+		const width = p.closed ? n1 - n0 : p.half * 2;
+		// Tracks: nearest tram line to the platform's middle; n points towards it.
+		let tn = 1, td = Infinity;
+		for ( const [ [ ax, ay ], [ bx, by ] ] of trams ) {
+
+			const dx = bx - ax, dy = by - ay, l2 = dx * dx + dy * dy || 1;
+			const t = Math.max( 0, Math.min( 1, ( ( CX - ax ) * dx + ( CY - ay ) * dy ) / l2 ) );
+			const d = Math.hypot( CX - ax - t * dx, CY - ay - t * dy );
+			if ( d < td ) {
+
+				td = d;
+				tn = ( - ( ax + t * dx - CX ) * uy + ( ay + t * dy - CY ) * ux ) >= 0 ? 1 : - 1;
+
+			}
+
+		}
+
+		if ( td > 25 ) continue; // a bus stop
+		const [ x, z ] = L( CX, CY ), [ lx, lz ] = LV( ux, uy ), [ nx, nz ] = LV( - uy * tn, ux * tn );
+		places.stops.push( { name: p.name, x, z, lx, lz, nx, nz, len: + ( u1 - u0 ).toFixed( 2 ), width: + Math.max( 1.6, width ).toFixed( 2 ), y: + Math.max( ...[ - 0.6, 0, 0.6 ].map( o => groundY( CX - uy * tn * o, CY + ux * tn * o ) ) ).toFixed( 2 ), island: p.island, shelter: p.shelter, bench: p.bench, bin: p.bin, board: p.board } );
+
+	}
+
 	places.life = streetLife( ctx, L );
 	return places;
 
@@ -770,7 +990,7 @@ function tramRoutes( ctx, L ) {
 	const stops = [];
 	for ( const n of streetData.nodes.values() ) if ( n.tags.railway === 'tram_stop' || ( n.tags.public_transport === 'stop_position' && n.tags.tram === 'yes' ) ) stops.push( n );
 
-	const inside = ( X, Y ) => X > AREA.xmin + 5 && X < AREA.xmax - 5 && Y > AREA.ymin + 5 && Y < AREA.ymax - 5 && ! riverAt( X, Y );
+	const inside = ( X, Y ) => X > AREA.xmin + 5 && X < AREA.xmax - 5 && Y > AREA.ymin + 5 && Y < AREA.ymax - 5 && ( ! riverAt( X, Y ) || ctx.onBridge?.( X, Y ) );
 	const out = [];
 	for ( const route of routes ) {
 

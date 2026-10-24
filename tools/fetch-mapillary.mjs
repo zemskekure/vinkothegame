@@ -8,8 +8,8 @@ const TOKEN = process.env.MAPILLARY_TOKEN;
 if ( ! TOKEN ) throw new Error( 'MAPILLARY_TOKEN is not set' );
 
 // WGS 84 bounds of the play area (see area.mjs), split into tiles small enough for the API.
-const BBOX = { west: 14.4105, south: 50.0800, east: 14.4215, north: 50.0870 };
-const TILES = 8;
+const BBOX = { west: 14.4080, south: 50.0757, east: 14.4245, north: 50.0875 };
+const TILES = 11;
 const FIELDS = 'id,captured_at,is_pano,camera_type,computed_compass_angle,computed_geometry,computed_altitude,sequence,width,height';
 
 async function get( params ) {
@@ -40,7 +40,7 @@ for ( let i = 0; i < TILES; i ++ ) {
 		const bbox = [ BBOX.west + i * dx, BBOX.south + j * dy, BBOX.west + ( i + 1 ) * dx, BBOX.south + ( j + 1 ) * dy ]
 			.map( v => v.toFixed( 6 ) ).join( ',' );
 		const data = await get( { bbox, fields: FIELDS, limit: 2000 } );
-		for ( const im of data ) images.set( im.id, im );
+		for ( const im of data ) if ( im.computed_geometry ) images.set( im.id, im );
 		if ( data.length >= 2000 ) console.warn( `tile ${i},${j} hit the 2000 limit` );
 
 	}

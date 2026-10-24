@@ -285,7 +285,7 @@ addDecor( scene, data.decor );
 addEmbankment( scene, embankmentBuf, data.embankment );
 
 // Signature places (rotunda, pub, café, champagne bar, museum gate, stairs) and street life (people, cars).
-const { seats } = addPlaces( scene, places, data.furniture );
+const { seats } = addPlaces( scene, places, data.furniture, data.waterLevel );
 // Models: Kenney's Mini Characters and Car Kit (CC0); textures resolve next to them.
 const gltfLoader = new GLTFLoader();
 const loadModel = async ( path, dir ) => gltfLoader.parseAsync( await load( path, 'arrayBuffer', '' ), dir );

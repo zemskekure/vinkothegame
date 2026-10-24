@@ -4,7 +4,8 @@
 // All coordinates are S-JTSK / Krovak East North (EPSG:5514), metres.
 
 import { mkdir, writeFile } from 'node:fs/promises';
-import { AREA } from './area.mjs';
+import jpeg from 'jpeg-js';
+import { AREA, HI_TILES } from './area.mjs';
 
 const OUT = new URL( '../data/raw/', import.meta.url );
 const AGS = 'https://ags.cuzk.cz/arcgis/rest/services';
@@ -91,30 +92,11 @@ async function exportRaster( service, name, cellSize ) {
 
 }
 
-async function exportOrtho( cellSize ) {
+// Orthophoto tiles (the service caps images at 4096 px): nx × ny tiles of the play area at `cellSize`, decoded.
+async function orthoTiles( cellSize, nx, ny ) {
 
-	const width = Math.round( ( xmax - xmin ) / cellSize );
-	const height = Math.round( ( ymax - ymin ) / cellSize );
-
-	const buf = await get( `${AGS1}/ORTOFOTO/MapServer/export`, {
-		bbox: envelope,
-		bboxSR: 5514,
-		imageSR: 5514,
-		size: `${width},${height}`,
-		format: 'jpg',
-		f: 'image'
-	} );
-
-	await writeFile( new URL( 'ortho.jpg', OUT ), buf );
-	console.log( `ortho: ${width}x${height} (${( buf.length / 1e6 ).toFixed( 1 )} MB)` );
-
-}
-
-// High-resolution orthophoto (12.5 cm) for ground detail, in 2 × 2 tiles (the service caps images at 4096 px).
-async function exportOrthoTiles( cellSize ) {
-
-	const nx = 2, ny = 2;
 	const tw = ( xmax - xmin ) / nx, th = ( ymax - ymin ) / ny;
+	const tiles = [];
 	for ( let i = 0; i < nx; i ++ ) for ( let j = 0; j < ny; j ++ ) {
 
 		const bbox = [ xmin + i * tw, ymax - ( j + 1 ) * th, xmin + ( i + 1 ) * tw, ymax - j * th ];
@@ -123,6 +105,33 @@ async function exportOrthoTiles( cellSize ) {
 			size: `${Math.round( tw / cellSize )},${Math.round( th / cellSize )}`,
 			format: 'jpg', f: 'image'
 		} );
+		tiles.push( { i, j, buf } );
+
+	}
+
+	return tiles;
+
+}
+
+// Overview orthophoto (25 cm), stitched into one image.
+async function exportOrtho( cellSize ) {
+
+	const tiles = await orthoTiles( cellSize, 1, 2 );
+	const imgs = tiles.map( t => ( { ...t, img: jpeg.decode( t.buf, { useTArray: true, maxMemoryUsageInMB: 2048 } ) } ) );
+	const W = imgs[ 0 ].img.width, th = imgs[ 0 ].img.height, H = imgs.reduce( ( a, t ) => a + t.img.height, 0 );
+	const data = Buffer.alloc( W * H * 4 );
+	for ( const { j, img } of imgs ) data.set( img.data.subarray( 0, W * img.height * 4 ), j * th * W * 4 );
+	const buf = jpeg.encode( { data, width: W, height: H }, 92 ).data;
+	await writeFile( new URL( 'ortho.jpg', OUT ), buf );
+	console.log( `ortho: ${W}x${H} (${( buf.length / 1e6 ).toFixed( 1 )} MB)` );
+
+}
+
+// High-resolution orthophoto (12.5 cm) for ground detail, as ortho-hi-<i>-<j>.jpg tiles (read by tools/kerbs.mjs).
+async function exportOrthoTiles( cellSize ) {
+
+	for ( const { i, j, buf } of await orthoTiles( cellSize, ...HI_TILES ) ) {
+
 		await writeFile( new URL( `ortho-hi-${i}-${j}.jpg`, OUT ), buf );
 		console.log( `ortho tile ${i},${j}: ${( buf.length / 1e6 ).toFixed( 1 )} MB` );
 

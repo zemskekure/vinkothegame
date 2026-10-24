@@ -132,7 +132,25 @@ export async function loadStreets( { AREA, buildingDist, inBuilding, tramPaths }
 	const nearestOpen = segmentIndex( openWays, () => 0 );
 
 	// Kerbed carriageways (tools/kerbs.mjs): measured from the house fronts and the aerial photo.
-	const kerbs = await buildKerbs( { roads, AREA, inBuilding, tramPaths } );
+	// --- tram stop platforms (street level; the metro's are underground)
+	const platforms = [];
+	for ( const w of ways ) {
+
+		const t = w.tags;
+		if ( ! ( t.railway === 'platform' || t.public_transport === 'platform' || t.highway === 'platform' ) ) continue;
+		if ( ( Number( t.layer ) || 0 ) < 0 || ( Number( t.level ) || 0 ) < 0 || w.pts.length < 2 ) continue;
+		if ( ! w.pts.some( p => inArea( p.X, p.Y ) ) ) continue;
+		const closed = w.nodes[ 0 ] === w.nodes[ w.nodes.length - 1 ];
+		platforms.push( {
+			id: w.id, name: t.name || '', pts: w.pts.map( p => [ p.X, p.Y ] ), closed, half: ( parseFloat( t.width ) || 2.6 ) / 2,
+			// On the pavement (a stop at the kerb) or an island of its own in the street.
+			island: t.footway !== 'sidewalk' && t.highway !== 'footway',
+			shelter: t.shelter === 'yes', bench: t.bench === 'yes', bin: t.bin === 'yes', board: t.departures_board === 'yes' || t.passenger_information_display === 'yes'
+		} );
+
+	}
+
+	const kerbs = await buildKerbs( { roads, AREA, inBuilding, tramPaths, islands: platforms.filter( p => p.island ) } );
 	const unkerbed = r => r.highway === 'service' || r.highway === 'pedestrian';
 
 	// Field values at a point: Fk = signed distance to a kerb line (> 0 on the raised pavement, 100: none near),
@@ -155,7 +173,31 @@ export async function loadStreets( { AREA, buildingDist, inBuilding, tramPaths }
 
 	const raise = Fk => Fk > 0 && Fk < RAMP_END ? KERB_HEIGHT : 0;
 
-	return { roads, nodes, ways, at, raise, nearestRoad, inArea, kerbs, KERB_HEIGHT, RAMP_END };
+	// On a tram stop island (paved in plain concrete slabs, not mosaic).
+	const islands = platforms.filter( p => p.island ).map( p => {
+
+		const xs = p.pts.map( q => q[ 0 ] ), ys = p.pts.map( q => q[ 1 ] );
+		return { ...p, bbox: [ Math.min( ...xs ) - p.half, Math.min( ...ys ) - p.half, Math.max( ...xs ) + p.half, Math.max( ...ys ) + p.half ] };
+
+	} );
+	const onPlatform = ( X, Y ) => islands.some( p => {
+
+		if ( X < p.bbox[ 0 ] || Y < p.bbox[ 1 ] || X > p.bbox[ 2 ] || Y > p.bbox[ 3 ] ) return false;
+		if ( p.closed ) return true;
+		for ( let i = 0; i + 1 < p.pts.length; i ++ ) {
+
+			const [ ax, ay ] = p.pts[ i ], [ bx, by ] = p.pts[ i + 1 ];
+			const dx = bx - ax, dy = by - ay, l2 = dx * dx + dy * dy || 1;
+			const t = Math.max( 0, Math.min( 1, ( ( X - ax ) * dx + ( Y - ay ) * dy ) / l2 ) );
+			if ( Math.hypot( X - ax - t * dx, Y - ay - t * dy ) < p.half + 0.3 ) return true;
+
+		}
+
+		return false;
+
+	} );
+
+	return { roads, nodes, ways, at, raise, nearestRoad, inArea, kerbs, platforms, onPlatform, KERB_HEIGHT, RAMP_END };
 
 }
 

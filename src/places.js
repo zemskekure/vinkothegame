@@ -6,6 +6,10 @@
 import * as THREE from 'three/webgpu';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { Kit, M, plain, glow, box, cyl, ball, onFront, textTexture, board, rubbleStone, roofTiles, ashlar, planks, tiles, roomWall } from './kit.js';
+import { addOpenings } from './openings.js';
+import { addStops } from './stops.js';
+import { addBridges } from './bridges.js';
+import { addLandmarks } from './landmarks.js';
 import { addVenues } from './venues.js';
 
 // ---------------------------------------------------------------------------
@@ -141,14 +145,19 @@ function addSign( scene, s ) {
 	const styles = {
 		pub: { lines: [ [ s.text, 150 ] ], bg: '#1e3b2b', ink: '#dcb65c', border: '#dcb65c', font: 'Georgia, serif', h: 0.62 },
 		cafe: { lines: [ [ s.text, 150 ] ], bg: '#151515', ink: '#f2efe8', font: '"Helvetica Neue", Arial, sans-serif', weight: '300', spacing: 28, h: 0.5 },
-		champagne: { lines: [ [ s.text, 140 ] ], bg: '#0f0f10', ink: '#d8b45e', border: '#d8b45e', font: 'Didot, "Bodoni 72", Georgia, serif', weight: '400', spacing: 16, h: 0.52 }
+		champagne: { lines: [ [ s.text, 140 ] ], bg: '#0f0f10', ink: '#d8b45e', border: '#d8b45e', font: 'Didot, "Bodoni 72", Georgia, serif', weight: '400', spacing: 16, h: 0.52 },
+		// Lettering straight on the wall (Kavárna Slavia, Mánes…), an institution's plaque, a neon sign.
+		letters: { lines: [ [ s.text, 150 ] ], ink: '#3a3327', font: 'Georgia, "Times New Roman", serif', spacing: 24, h: 0.55, bare: true },
+		plaque: { lines: [ [ s.text, 120 ] ], bg: '#1f2d4d', ink: '#ffffff', font: '"Helvetica Neue", Arial, sans-serif', weight: '600', spacing: 6, h: 0.42 },
+		neon: { lines: [ [ s.text, 150 ] ], ink: '#ff5fb0', font: '"Helvetica Neue", Arial, sans-serif', weight: '700', spacing: 10, h: 0.6, bare: true, glow: true }
 	};
 	const st = styles[ s.style ];
 	const w = Math.max( 1.8, s.text.length * st.h * 0.44 );
 	const tex = textTexture( st.lines, { w: 1024, h: Math.round( 1024 * st.h / w ), bg: st.bg, ink: st.ink, border: st.border, font: st.font, weight: st.weight || '700', spacing: st.spacing || 0 } );
-	const b = board( tex, w, st.h );
-	b.position.z = 0.09;
+	const b = board( tex, w, st.h, st.bare ? { transparent: true, material: { depthWrite: false, ...( st.glow ? { emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: 1.6 } : {} ) } } : {} );
+	b.position.z = st.bare ? 0.04 : 0.09;
 	g.add( b );
+	if ( st.bare ) return;
 	new Kit().add( s.style === 'champagne' ? M.gold : M.woodDark, box( w + 0.12, st.h + 0.12, 0.07, 0, - ( st.h + 0.12 ) / 2, 0.03 ) ).build( g );
 	if ( s.style === 'champagne' || s.style === 'cafe' ) {
 
@@ -295,7 +304,7 @@ function addStairs( scene, S ) {
 
 // ---------------------------------------------------------------------------
 
-export function addPlaces( scene, places, furniture = {} ) {
+export function addPlaces( scene, places, furniture = {}, waterLevel = 0 ) {
 
 	if ( ! places ) return { seats: [] };
 	const seats = [ ...( places.seats || [] ) ];
@@ -305,6 +314,10 @@ export function addPlaces( scene, places, furniture = {} ) {
 	if ( places.lights?.length ) addFestoons( scene, places.lights );
 	if ( places.gate ) addMuseumGate( scene, places.gate );
 	if ( places.stairs ) addStairs( scene, places.stairs );
+	addOpenings( scene, places.openings );
+	addStops( scene, places.stops );
+	addBridges( scene, places.bridges, places.piers, waterLevel );
+	addLandmarks( scene, places, waterLevel );
 	return { seats };
 
 }

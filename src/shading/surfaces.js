@@ -163,7 +163,9 @@ export function createGroundMaterial( surfaceTex, surface2Tex, bounds, detailTex
 	let col = surfaceColour( openSurface );
 	col = mix( col, mix( surfaceColour( roadSurface ), railCol, rail ), road );
 	const kerbBand = smoothstep( KERB + 0.28, KERB + 0.24, Fk ).mul( pavement );
-	col = mix( col, mix( mosaic, band, kerbBand ), pavement );
+	// Tram stop islands: light concrete slabs instead of mosaic.
+	const island = float( 1 ).sub( s2.a );
+	col = mix( col, mix( mix( mosaic, band, kerbBand ), paving.mul( 1.25 ), island ), pavement );
 	col = mix( col, grass, park.mul( float( 1 ).sub( pavement ) ) );
 	col = mix( col, ashlar, steep );
 	col = mix( col, kerbCol, max( kerbTop, kerbFace ) );

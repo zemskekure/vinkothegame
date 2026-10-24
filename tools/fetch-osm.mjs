@@ -4,8 +4,8 @@
 
 import { writeFile, mkdir } from 'node:fs/promises';
 
-const BBOX = { west: 14.4105, south: 50.0800, east: 14.4215, north: 50.0870 };
-const TILES = 2;
+const BBOX = { west: 14.4080, south: 50.0757, east: 14.4245, north: 50.0875 };
+const TILES = 3;
 
 const elements = new Map();
 const dx = ( BBOX.east - BBOX.west ) / TILES, dy = ( BBOX.north - BBOX.south ) / TILES;
