@@ -377,13 +377,13 @@ function addPubFront( scene, F ) {
 
 	// A green bench before the window, a Staropramen A-board by the door.
 	const cx1 = arches[ 1 ];
-	ext.add( MAT.green, box( 1.6, 0.05, 0.38, cx1, 0.45, 0.65 ), box( 1.6, 0.04, 0.05, cx1, 0.1, 0.65 ) );
-	for ( const s of [ - 0.7, 0.7 ] ) ext.add( MAT.greenDark, box( 0.05, 0.45, 0.38, cx1 + s, 0, 0.65 ) );
+	ext.add( MAT.green, box( 1.6, 0.05, 0.34, cx1, 0.45, 0.45 ), box( 1.6, 0.04, 0.05, cx1, 0.1, 0.45 ) );
+	for ( const s of [ - 0.7, 0.7 ] ) ext.add( MAT.greenDark, box( 0.05, 0.45, 0.34, cx1 + s, 0, 0.45 ) );
 	const aBoard = board( textTexture( [ [ 'Staropramen', 64, 60 ], [ 'polévka · guláš', 44, 170 ], [ 'pivo 10° 12°', 44, 240 ] ], { w: 256, h: 340, bg: '#1d1d1d', ink: '#f1efe6', font: 'Georgia, serif', weight: '600' } ), 0.52, 0.7, { material: { side: THREE.DoubleSide } } );
-	aBoard.position.set( arches[ 0 ] - r - 0.5, 0.42, 0.8 );
+	aBoard.position.set( arches[ 0 ] - r - 0.5, 0.42, 0.5 );
 	aBoard.rotation.x = - 0.15;
 	g.add( aBoard );
-	ext.add( plain( 0xc0392b ), box( 0.56, 0.12, 0.05, arches[ 0 ] - r - 0.5, 0.75, 0.82 ) );
+	ext.add( plain( 0xc0392b ), box( 0.56, 0.12, 0.05, arches[ 0 ] - r - 0.5, 0.75, 0.52 ) );
 
 	kit.build( g );
 	ext.build( g );

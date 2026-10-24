@@ -74,7 +74,7 @@ function addRotunda( scene, R ) {
 		let t = r;
 		const dc = dx * ax + dz * az, disc = dc * dc - ( ax * ax + az * az ) + ( ar + 0.1 ) ** 2;
 		if ( disc >= 0 ) t = Math.max( t, dc + Math.sqrt( disc ) );
-		ring.push( [ dx * ( t + 1.0 ), dz * ( t + 1.0 ), a ] );
+		ring.push( [ dx * ( t + 0.7 ), dz * ( t + 0.7 ), a ] );
 
 	}
 

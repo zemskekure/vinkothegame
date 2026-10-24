@@ -1262,7 +1262,13 @@ function polylineDistance( paths, range ) {
 
 }
 
-const streetData = await loadStreets( { AREA, buildingDist, inBuilding: ( X, Y ) => keptIds.has( buildingAt( X, Y ) ) } );
+// Kerbs follow the house fronts; the free-standing rotunda is not one (the street runs round it at full width).
+const streetData = await loadStreets( { AREA, buildingDist, inBuilding: ( X, Y ) => {
+
+	const id = buildingAt( X, Y );
+	return keptIds.has( id ) && ! HAND_MODELLED.has( buildings[ id ]?.code );
+
+} } );
 const surface2 = new Uint8Array( sw * sh * 4 );
 const tramDist = polylineDistance( JSON.parse( await readFile( new URL( 'tram.json', RAW ) ) ).flatMap( f => f.geometry?.paths || [] ), 6 );
 const parks = JSON.parse( await readFile( new URL( 'greenery.json', RAW ) ) ).flatMap( f => f.geometry?.rings ? [ f.geometry.rings ] : [] );
@@ -1368,6 +1374,8 @@ const places = collectPlaces( { buildings, streetFacades, toLocal, terrainAt, bu
 // Name boards over the shop windows, one per wall position (several shops on one spot are spread along the wall).
 const signs = [];
 const used = new Map();
+// OSM points that are out of date or that the modelled venues replace.
+const STALE_SIGNS = new Set( [ 'R. M. Rilke', 'Champagneria', 'Standard Cafe', 'Hostinec u Rotundy' ] );
 for ( const sg of pendingSigns ) {
 
 	const info = buildingInfo.get( sg.b.code );
@@ -1378,6 +1386,7 @@ for ( const sg of pendingSigns ) {
 	// The signature places carry their own signs (tools/places.mjs).
 	const [ sx, , sz ] = toLocal( ax + ( bx - ax ) * sg.t, ay + ( by - ay ) * sg.t, 0 );
 	if ( [ ...places.signs, ...places.fronts ].some( p => Math.hypot( p.x - sx, p.z - sz ) < ( p.width ? p.width / 2 + 3 : 9 ) ) ) continue;
+	if ( STALE_SIGNS.has( sg.name ) ) continue;
 	const key = `${sg.b.code}_${sg.i}`;
 	const slot = used.get( key ) || 0;
 	used.set( key, slot + 1 );

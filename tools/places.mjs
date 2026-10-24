@@ -261,11 +261,12 @@ export function collectPlaces( ctx ) {
 
 	}
 
-	// --- Standard Café (Karoliny Světlé 321/23): black awnings over two grey-blue shopfronts with shutters and the
+	// --- Standard Café (Karoliny Světlé 25): black awnings over two grey-blue shopfronts with shutters and the
 	// door between them, barrel planters, folding wooden tables and white bistro tables on the paving.
 	{
 
-		const f = frontFacing( ...S( - 277.5, 138.3 ), ...S( - 268, 138.3 ), { number: 321 } );
+		// Karoliny Světlé 25, where OSM still has the former R. M. Rilke restaurant.
+		const f = frontFacing( ...S( - 277.7, 121.9 ), ...S( - 268, 121.9 ) );
 		const s = Math.max( 4, Math.min( f.len - 4, f.t * f.len ) );
 		interior( 'Standard', 'cafe', f, s, { w: 6.5, maxD: 8 } );
 		venueFront( 'cafe', f, s );
@@ -273,12 +274,13 @@ export function collectPlaces( ctx ) {
 
 	}
 
-	// --- Champagneria (Průchodní 4): on the little square with the big tree at the Bartolomějská end of Průchodní.
-	// A weathered ochre wall with bare stone and graffiti faces the square from the north, the doorway at its east
-	// end by the lane; tables with parasols along it.
+	// --- Champagneria (Průchodní 4): where Průchodní opens onto the little square with the big tree at its
+	// Bartolomějská end. A weathered ochre wall with bare stone and graffiti along the lane, the doorway at its north
+	// end; tables with parasols along it.
 	{
 
-		const f = frontFacing( ...S( - 56, 137.4 ), ...S( - 56, 148 ) );
+		// House 291's wall along the lane where it opens onto the square (it faces east); the door at its north end.
+		const f = frontFacing( ...S( - 49.4, 140.6 ), ...S( - 44, 140.6 ) );
 		const s = f.t * f.len;
 		const front = venueFront( 'champagne', f, s );
 		const doorX = front.right - 1.0, w = Math.min( 6.5, front.left + front.right - 1.2 ), roomX = doorX - ( w / 2 - 1.0 );
@@ -639,7 +641,7 @@ function streetLife( ctx, L ) {
 		const meanWidth = chain.pts.reduce( ( s, _, i ) => s + width( i ), 0 ) / chain.pts.length;
 		if ( meanWidth < 4.2 || chain.pts.length < 10 ) continue;
 		const lanes = chain.oneway ? [ [ chain.oneway, 0 ] ] : [ [ 1, - 1.5 ], [ - 1, 1.5 ] ];
-		const parkRight = meanWidth - 2.2 >= ( chain.oneway ? 3 : 6 );
+		const parkRight = meanWidth - 2.2 >= ( chain.oneway ? 3.6 : 6 );
 		const parkLeft = parkRight && meanWidth - 4.4 >= ( chain.oneway ? 3 : 6 );
 		const laneShift = ( parkRight ? 1.1 : 0 ) - ( parkLeft ? 1.1 : 0 );
 		for ( const [ dir, off ] of lanes ) {
@@ -661,7 +663,7 @@ function streetLife( ctx, L ) {
 				if ( since < 5.6 ) continue;
 				since = 0;
 				const p = line[ i ];
-				if ( ! p || blocked( p[ 0 ], p[ 1 ] ) || ctx.inPark( p[ 0 ], p[ 1 ] ) || rnd() > 0.65 ) continue;
+				if ( ! p || blocked( p[ 0 ], p[ 1 ] ) || ctx.inPark( p[ 0 ], p[ 1 ] ) || rnd() > 0.5 ) continue;
 				const [ x, z ] = L( p[ 0 ], p[ 1 ] );
 				const q = line[ i + 1 ] || p;
 				const rot = Math.atan2( q[ 0 ] - p[ 0 ], - ( q[ 1 ] - p[ 1 ] ) ); // model faces +z → along the street
