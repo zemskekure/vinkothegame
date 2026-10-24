@@ -1000,7 +1000,7 @@ export function collectPlaces( ctx ) {
 	places.life = streetLife( ctx, L );
 	places.barriers ||= [];
 	collectWalls( { places, project: ctx.project, L, S, yAtLocal, streetData, AREA } );
-	dressSquare( { places, frontFacing, frame, S, L, sign, yAtLocal, streetData, project: ctx.project } );
+	dressSquare( { places, frontFacing, frame, S, L, sign, yAtLocal, streetData, project: ctx.project, streetFacades } );
 
 	return places;
 

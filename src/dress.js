@@ -324,9 +324,10 @@ function addPlates( scene, plates ) {
 
 	if ( ! plates.length ) return;
 	const SIZE = { cp: [ 0.3, 0.22, 132, 96 ], or: [ 0.22, 0.17, 100, 76 ], street: [ 0.74, 0.24, 360, 116 ] };
-	const AW = 2048;
+	const AW = 2048, MAXH = 2048;
 	let x = 0, y = 0, rowH = 0;
-	const cells = plates.map( p => {
+	const cells = [];
+	for ( const p of plates ) {
 
 		const [ , , cw, ch ] = SIZE[ p.kind ];
 		if ( x + cw > AW ) {
@@ -337,12 +338,20 @@ function addPlates( scene, plates ) {
 
 		}
 
-		const cell = { x, y, w: cw, h: ch };
+		if ( y + ch > MAXH ) break; // page full: the rest go on another texture
+		cells.push( { x, y, w: cw, h: ch } );
 		x += cw + 2;
 		rowH = Math.max( rowH, ch );
-		return cell;
 
-	} );
+	}
+
+	if ( cells.length < plates.length ) {
+
+		addPlates( scene, plates.slice( cells.length ) );
+		plates = plates.slice( 0, cells.length );
+
+	}
+
 	const AH = THREE.MathUtils.ceilPowerOfTwo( y + rowH );
 	const canvas = document.createElement( 'canvas' );
 	canvas.width = AW;
@@ -460,7 +469,30 @@ function addWalls( scene, walls ) {
 
 }
 
-const ADD = { board: addBoard, letters: addLetters, badge: addBadge, lantern: addLantern, flags: addFlags, portal: addPortal, canopy: addCanopy, clock: addClock };
+// A sign hanging from an iron bracket at right angles to the wall: a board lettered on both faces, so it reads from
+// either direction along the street.
+function addHanging( scene, s ) {
+
+	const g = onFront( s.x, s.y, s.z, s.n );
+	const { tex } = lettering( s.sub ? [ s.text, s.sub ] : [ s.text ], { h: s.h, bg: s.bg, ink: s.ink, font: s.font, weight: '700', minW: s.w, pad: 0.15 } );
+	const out = s.w / 2 + 0.25;
+	for ( const side of [ - 1, 1 ] ) {
+
+		const face = flat( tex, s.w, s.h );
+		face.rotation.y = side * Math.PI / 2;
+		face.position.set( side * 0.026, - s.h / 2 - 0.08, out );
+		g.add( face );
+
+	}
+
+	new Kit().add( M.woodDark, box( 0.05, s.h + 0.04, s.w + 0.04, 0, - s.h - 0.1, out ) )
+		.add( M.iron, box( 0.04, 0.04, s.w + 0.45, 0, 0, ( s.w + 0.45 ) / 2 ), box( 0.02, 0.08, 0.02, 0, - 0.08, out - s.w / 2 + 0.05 ), box( 0.02, 0.08, 0.02, 0, - 0.08, out + s.w / 2 - 0.05 ),
+			box( 0.03, 0.55, 0.03, 0, - 0.55, 0.04 ).rotateX( 0.75 ).translate( 0, 0, 0.32 ) ).build( g );
+	scene.add( g );
+
+}
+
+const ADD = { hanging: addHanging, board: addBoard, letters: addLetters, badge: addBadge, lantern: addLantern, flags: addFlags, portal: addPortal, canopy: addCanopy, clock: addClock };
 
 export function addDress( scene, places ) {
 

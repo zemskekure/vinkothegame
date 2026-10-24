@@ -10,10 +10,12 @@
 import { readFileSync } from 'node:fs';
 
 // The streets and the square the plates are put up in (local frame bounds).
-const PLATES_AREA = { x0: - 190, x1: 70, z0: - 60, z1: 140 };
+const PLATES_AREA = { x0: - 400, x1: 240, z0: - 80, z1: 350 }; // Betlémské náměstí and the streets round it, to Národní
 const DISTRICT = [ 'STARÉ MĚSTO', 'PRAHA 1' ];
 
-export function dressSquare( { places, frontFacing, frame, S, L, sign, yAtLocal, streetData, project } ) {
+const FONTS = { serif: 'Georgia, "Times New Roman", serif', sans: '"Helvetica Neue", Arial, sans-serif', script: '"Brush Script MT", "Segoe Script", cursive' };
+
+export function dressSquare( { places, frontFacing, frame, S, L, sign, yAtLocal, streetData, project, streetFacades } ) {
 
 	const dress = places.dress = [];
 	places.plates = [];
@@ -100,6 +102,37 @@ export function dressSquare( { places, frontFacing, frame, S, L, sign, yAtLocal,
 		dress.push( { kind: 'canopy', x, z, y: yAtLocal( x, z ), rot: 0, w: 13.5, d: 4.6, text: 'RISTORANTE ITALIANO   ·   Oliva Nera   ·   ', cloth: '#e8dcc0', ink: '#5a4630' } );
 		const cx = - 57.2, cz = 60.6;
 		dress.push( { kind: 'clock', x: cx, z: cz, y: yAtLocal( cx, cz ) } );
+
+	}
+
+	// --- Signs read off street photos, street by street (data/signs.json): each on a house front (RÚIAN code and
+	// edge), its centre a fraction across the front from the left as seen from the street, at a height above the
+	// pavement.
+	const SIGNS = JSON.parse( readFileSync( new URL( '../data/signs.json', import.meta.url ) ) );
+	let signsPlaced = 0;
+	for ( const g of SIGNS ) {
+
+		const [ code, edge ] = g.front.split( '_' ).map( Number );
+		const q = streetFacades.find( f => f.code === code && f.edge === edge );
+		if ( ! q ) {
+
+			console.warn( `dress: no front ${g.front} for "${g.text}"` );
+			continue;
+
+		}
+
+		const len = Math.hypot( q.b[ 0 ] - q.a[ 0 ], q.b[ 1 ] - q.a[ 1 ] );
+		const f = { ...q, len, ux: ( q.b[ 0 ] - q.a[ 0 ] ) / len, uy: ( q.b[ 1 ] - q.a[ 1 ] ) / len };
+		// Seen from the street (looking along −n), is the front's first end on the left?
+		const aIsLeft = f.ux * - f.n[ 1 ] + f.uy * f.n[ 0 ] > 0;
+		const t = Math.max( 0.02, Math.min( 0.98, aIsLeft ? g.fromLeft : 1 - g.fromLeft ) );
+		const p = on( f, t, g.height );
+		const font = FONTS[ g.font ] || FONTS.serif, text = g.text, sub = g.sub || undefined;
+		if ( g.kind === 'letters' ) dress.push( { kind: 'letters', ...p, text, h: Math.max( 0.18, Math.min( 0.6, g.width / Math.max( 3, text.length * 0.7 ) ) ), ink: g.ink || '#333333', font, weight: '700', spacing: 8 } );
+		else if ( g.kind === 'hanging' ) dress.push( { kind: 'hanging', ...p, w: Math.min( 1.2, g.width || 0.8 ), h: Math.min( 1.0, ( g.width || 0.8 ) * 0.7 ), text, sub, bg: g.bg || '#2b2b2b', ink: g.ink || '#f2ead6', font } );
+		else if ( g.kind === 'plaque' ) dress.push( { kind: 'board', ...p, w: Math.min( 0.9, g.width || 0.6 ), h: 0.42, text, sub, bg: g.bg || '#1d1d1d', ink: g.ink || '#ffffff', font, weight: '600', spacing: 2, frame: 'none' } );
+		else dress.push( { kind: 'board', ...p, w: Math.max( 1, g.width || 2.5 ), h: sub ? 0.72 : 0.58, text, sub, bg: g.bg || '#222222', ink: g.ink || '#f2ead6', font, weight: '700', spacing: 8, frame: 'none' } );
+		signsPlaced ++;
 
 	}
 
@@ -190,6 +223,6 @@ export function dressSquare( { places, frontFacing, frame, S, L, sign, yAtLocal,
 
 	}
 
-	console.log( `dress: ${dress.length} signs and fixtures on Betlémské náměstí, ${numbers} house numbers, ${names} street name plates` );
+	console.log( `dress: ${dress.length} signs and fixtures (${signsPlaced} from street photos), ${numbers} house numbers, ${names} street name plates` );
 
 }
