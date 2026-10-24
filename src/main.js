@@ -11,6 +11,7 @@ import { addPlaces } from './places.js';
 import { addLife } from './life.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { createMinimap } from './minimap.js';
+import { addTrams } from './trams.js';
 
 async function load( name, type = 'arrayBuffer', dir = 'data/' ) {
 
@@ -288,6 +289,7 @@ const { seats } = addPlaces( scene, places, data.furniture );
 // Models: Kenney's Mini Characters and Car Kit (CC0); textures resolve next to them.
 const gltfLoader = new GLTFLoader();
 const loadModel = async ( path, dir ) => gltfLoader.parseAsync( await load( path, 'arrayBuffer', '' ), dir );
+const trams = addTrams( scene, places?.life?.trams, groundHeight );
 const life = await addLife( scene, places?.life, { seats, benches: data.furniture.bench, groundHeight, loadModel, camera } );
 
 // ---------------------------------------------------------------------------
@@ -361,6 +363,16 @@ const minimap = createMinimap( {
 } );
 if ( isTouch ) document.getElementById( 'hud' ).style.maxWidth = 'calc(100vw - 172px)';
 
+// Start in front of Hostinec U Rotundy, looking at it from across the pavement.
+function startAt() {
+
+	const F = places?.fronts?.find( f => f.style === 'pub' );
+	if ( ! F ) return '-20,40,0.6';
+	const x = F.x + F.n[ 0 ] * 6.5, z = F.z + F.n[ 1 ] * 6.5;
+	return `${ x.toFixed( 1 ) },${ z.toFixed( 1 ) },${ Math.atan2( F.n[ 0 ], F.n[ 1 ] ).toFixed( 3 ) }`;
+
+}
+
 let walking = false;
 const touch = matchMedia( '(pointer: coarse)' ).matches || navigator.maxTouchPoints > 0 && ! matchMedia( '(pointer: fine)' ).matches;
 function setMode( walk ) {
@@ -381,7 +393,7 @@ function setMode( walk ) {
 	if ( walk ) {
 
 		// Back where you left off, or at the start.
-		const [ x, z, yaw ] = walker.placed ? [ walker.pos.x, walker.pos.z, walker.yaw ] : ( params.get( 'at' ) || '-20,40,0.6' ).split( ',' ).map( Number );
+		const [ x, z, yaw ] = walker.placed ? [ walker.pos.x, walker.pos.z, walker.yaw ] : ( params.get( 'at' ) || startAt() ).split( ',' ).map( Number );
 		walker.teleport( x, z, yaw );
 		walker.placed = true;
 
@@ -402,7 +414,7 @@ window.addEventListener( 'keydown', e => {
 	if ( e.code === 'KeyM' ) setMode( ! walking );
 
 } );
-setMode( params.has( 'walk' ) );
+setMode( ! params.has( 'overview' ) ); // start on foot; ?overview for the view from above
 
 // ?view=x,y,z,tx,ty,tz aims the overview camera (handy for sharing a viewpoint).
 if ( params.has( 'view' ) && ! walking ) {
@@ -461,6 +473,7 @@ renderer.setAnimationLoop( () => {
 	timer.update();
 	const dt = Math.min( timer.getDelta(), 0.1 );
 	life.update( dt );
+	trams.update( dt );
 
 	if ( walking ) {
 
@@ -485,6 +498,6 @@ renderer.setAnimationLoop( () => {
 } );
 
 document.getElementById( 'loading' ).remove();
-window.__debug = { camera, isBlocked, groundHeight, walker, life };
+window.__debug = { camera, isBlocked, groundHeight, walker, life, trams };
 window.__THREE = THREE;
 window.__ready = true;

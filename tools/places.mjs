@@ -703,6 +703,137 @@ function streetLife( ctx, L ) {
 	}
 
 	console.log( `places: ${walks.length} walking lines, ${drives.length} driving lanes, ${parked.length / 4} parked cars` );
-	return { walks, drives, parked };
+	return { walks, drives, parked, trams: tramRoutes( ctx, L ) };
+
+}
+
+// Tram routes: ZABAGED gives one centre line per double track, in pieces meeting at junctions. Pieces are joined into
+// through routes (turning less than 50° at a junction), each run both ways on its right-hand track (1.5 m off the
+// centre), cut to the modelled area and to dry land (the bridge deck over the Vltava is not modelled); stops where
+// OSM has a tram stop.
+function tramRoutes( ctx, L ) {
+
+	const { AREA, riverAt, streetData } = ctx;
+	const pieces = ( ctx.tramPaths || [] ).filter( p => p.length >= 2 );
+	const nodes = [];
+	const nodeOf = ( [ X, Y ] ) => {
+
+		let n = nodes.find( q => Math.hypot( q.X - X, q.Y - Y ) < 2.5 );
+		if ( ! n ) nodes.push( n = { X, Y, edges: [] } );
+		return n;
+
+	};
+
+	pieces.forEach( ( p, k ) => {
+
+		const a = nodeOf( p[ 0 ] ), b = nodeOf( p[ p.length - 1 ] );
+		a.edges.push( { k, to: b, pts: p } );
+		b.edges.push( { k, to: a, pts: [ ...p ].reverse() } );
+
+	} );
+
+	const heading = ( p, end ) => {
+
+		const [ a, b ] = end ? [ p[ p.length - 2 ], p[ p.length - 1 ] ] : [ p[ 0 ], p[ 1 ] ];
+		return Math.atan2( b[ 1 ] - a[ 1 ], b[ 0 ] - a[ 0 ] );
+
+	};
+
+	const routes = [];
+	const walk = ( node, used, pts ) => {
+
+		let extended = false;
+		for ( const e of node.edges ) {
+
+			if ( used.has( e.k ) ) continue;
+			if ( pts.length ) {
+
+				let turn = heading( e.pts, false ) - heading( pts, true );
+				turn = Math.atan2( Math.sin( turn ), Math.cos( turn ) );
+				if ( Math.abs( turn ) > 50 * Math.PI / 180 ) continue;
+
+			}
+
+			extended = true;
+			walk( e.to, new Set( [ ...used, e.k ] ), [ ...pts, ...( pts.length ? e.pts.slice( 1 ) : e.pts ) ] );
+
+		}
+
+		if ( ! extended && pts.length ) routes.push( pts );
+
+	};
+
+	for ( const n of nodes ) if ( n.edges.length === 1 ) walk( n, new Set(), [] );
+
+	const stops = [];
+	for ( const n of streetData.nodes.values() ) if ( n.tags.railway === 'tram_stop' || ( n.tags.public_transport === 'stop_position' && n.tags.tram === 'yes' ) ) stops.push( n );
+
+	const inside = ( X, Y ) => X > AREA.xmin + 5 && X < AREA.xmax - 5 && Y > AREA.ymin + 5 && Y < AREA.ymax - 5 && ! riverAt( X, Y );
+	const out = [];
+	for ( const route of routes ) {
+
+		// Densify to 2 m, offset to the right-hand track.
+		const dense = [];
+		for ( let i = 1; i < route.length; i ++ ) {
+
+			const [ ax, ay ] = route[ i - 1 ], [ bx, by ] = route[ i ];
+			const n = Math.max( 1, Math.ceil( Math.hypot( bx - ax, by - ay ) / 2 ) );
+			for ( let k = i === 1 ? 0 : 1; k <= n; k ++ ) dense.push( [ ax + ( bx - ax ) * k / n, ay + ( by - ay ) * k / n ] );
+
+		}
+
+		const track = dense.map( ( p, i ) => {
+
+			const a = dense[ Math.max( 0, i - 2 ) ], b = dense[ Math.min( dense.length - 1, i + 2 ) ];
+			const l = Math.hypot( b[ 0 ] - a[ 0 ], b[ 1 ] - a[ 1 ] ) || 1;
+			return [ p[ 0 ] + ( b[ 1 ] - a[ 1 ] ) / l * 1.5, p[ 1 ] - ( b[ 0 ] - a[ 0 ] ) / l * 1.5 ];
+
+		} );
+
+		// The longest run inside the area, on land.
+		let best = [], run = [];
+		for ( const p of track ) {
+
+			if ( inside( ...p ) ) run.push( p );
+			else {
+
+				if ( run.length > best.length ) best = run;
+				run = [];
+
+			}
+
+		}
+
+		if ( run.length > best.length ) best = run;
+		if ( best.length < 40 ) continue;
+
+		let s = 0;
+		const at = [ 0 ];
+		for ( let i = 1; i < best.length; i ++ ) at.push( s += Math.hypot( best[ i ][ 0 ] - best[ i - 1 ][ 0 ], best[ i ][ 1 ] - best[ i - 1 ][ 1 ] ) );
+		const stopAt = [];
+		for ( const st of stops ) {
+
+			let bi = - 1, bd = 9;
+			best.forEach( ( p, i ) => {
+
+				const d = Math.hypot( p[ 0 ] - st.X, p[ 1 ] - st.Y );
+				if ( d < bd ) {
+
+					bd = d;
+					bi = i;
+
+				}
+
+			} );
+			if ( bi >= 0 && ! stopAt.some( v => Math.abs( v - at[ bi ] ) < 20 ) ) stopAt.push( + at[ bi ].toFixed( 1 ) );
+
+		}
+
+		out.push( { pts: best.flatMap( ( [ X, Y ] ) => L( X, Y ) ), stops: stopAt.sort( ( a, b ) => a - b ) } );
+
+	}
+
+	console.log( `places: ${out.length} tram routes, ${out.reduce( ( n, r ) => n + r.stops.length, 0 )} stops` );
+	return out;
 
 }

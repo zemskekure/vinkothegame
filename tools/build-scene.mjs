@@ -1369,7 +1369,7 @@ const furniture = collectFurniture( streetData, {
 } );
 furniture.statue.push( ...landmarkStatues );
 
-const places = collectPlaces( { buildings, streetFacades, toLocal, terrainAt, buildingAt, keptIds, dsm, idGrid, AREA, ORIGIN, streetData, furniture, riverAt, buildingInfo, terrainGrid: { terrain, tw, th, cell: TERRAIN_CELL }, inPark: ( X, Y ) => parks.some( rings => pointInRings( rings, X, Y ) ) } );
+const places = collectPlaces( { buildings, streetFacades, toLocal, terrainAt, buildingAt, keptIds, dsm, idGrid, AREA, ORIGIN, streetData, furniture, riverAt, buildingInfo, terrainGrid: { terrain, tw, th, cell: TERRAIN_CELL }, inPark: ( X, Y ) => parks.some( rings => pointInRings( rings, X, Y ) ), tramPaths: JSON.parse( await readFile( new URL( 'tram.json', RAW ) ) ).flatMap( f => f.geometry?.paths || [] ) } );
 
 // Name boards over the shop windows, one per wall position (several shops on one spot are spread along the wall).
 const signs = [];

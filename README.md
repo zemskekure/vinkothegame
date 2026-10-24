@@ -10,10 +10,9 @@ npm install
 npm run dev
 ```
 
-Open the printed URL (http://localhost:5173). Drag to orbit, scroll to zoom; press **M** (or the button) to walk
-the streets in third person: click to steer the camera with the mouse, **WASD** to walk, **Shift** to run, the wheel
-to zoom, **V** for first person. The minimap (bottom left) turns with the camera and marks the places below.
-Add `?webgl` to the URL to force WebGL 2, `?walk` to start on foot.
+Open the printed URL (http://localhost:5173). You start on foot in front of Hostinec U Rotundy, in third person: click to steer the camera with the mouse, **WASD** to walk, **Shift** to run, the wheel
+to zoom, **V** for first person; **M** (or the button) for the view from above (drag to orbit, scroll to zoom). The minimap (bottom left) turns with the camera and marks the places below.
+Add `?webgl` to the URL to force WebGL 2, `?overview` to start with the view from above.
 
 On a phone: the joystick bottom left walks (push to the rim to run), drag anywhere else to look.
 
@@ -28,7 +27,7 @@ The generated scene is committed in `public/data/`, so nothing else is needed to
 - The **chimney courtyard** off Náprstkova
 - The **stairs** from Národní down to Divadelní
 - People (architectural scale figures, `src/figures.js`) walking the pavements and sitting at tables and benches;
-  parked and driving cars (Kenney's Car Kit, CC0)
+  parked and driving cars (Kenney's Car Kit, CC0); trams (stylised Tatra T3) on the real tracks, stopping at the stops
 
 These are located in the data by `tools/places.mjs` and modelled in `src/places.js` and `src/life.js`.
 
