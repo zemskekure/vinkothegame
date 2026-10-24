@@ -264,6 +264,7 @@ export function createJobs( { db, grid, data, live, work, base, env, gameURL, pr
 		if ( co.code ) return fail( `git checkout: ${co.out.trim()}` );
 
 		// Before: the published game.
+		update( id, { step: 'fotky před' } );
 		const shots = { before: await shoot( id, gameURL, cell, 'before' ) };
 		update( id, { shots: JSON.stringify( shots ) } );
 
@@ -334,6 +335,7 @@ export function createJobs( { db, grid, data, live, work, base, env, gameURL, pr
 		} );
 
 		// After: the branch's build, served by the app at /preview/.
+		update( id, { step: 'fotky po' } );
 		shots.after = await shoot( id, previewURL, cell, 'after' );
 		update( id, { shots: JSON.stringify( shots ) } );
 

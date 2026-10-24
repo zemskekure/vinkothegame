@@ -66,7 +66,7 @@ export async function takeShots( baseURL, shots, { auth, log = () => {} } = {} )
 			}
 
 			await page.waitForTimeout( s.kind === 'street' ? 2500 : 1500 );
-			await page.screenshot( { path: s.file, type: 'jpeg', quality: 82 } );
+			await page.screenshot( { path: s.file, type: 'jpeg', quality: 82, timeout: 180000 } );
 
 		}
 
