@@ -53,7 +53,7 @@ const grid = loadGrid( Number( ENV.GRID_CELL || 100 ) );
 const BASE = WORK ? ENV.GRID_BRANCH || execFileSync( 'git', [ 'rev-parse', '--abbrev-ref', 'HEAD' ], { cwd: WORK } ).toString().trim() : null;
 const jobs = createJobs( {
 	db, grid, data: DATA, live: REPO, work: WORK, base: BASE, password: PASSWORD,
-	env: Object.fromEntries( [ 'CLAUDE_CODE_OAUTH_TOKEN', 'MAPILLARY_TOKEN', 'CLAUDE_BIN', 'PATH', 'GMAPS_KEY', 'STREETVIEW_DIR', 'SQUARE_BASE', 'SQUARE_WORKTREES' ].filter( k => ENV[ k ] ).map( k => [ k, ENV[ k ] ] ) ),
+	env: Object.fromEntries( [ 'CLAUDE_CODE_OAUTH_TOKEN', 'MAPILLARY_TOKEN', 'CLAUDE_BIN', 'PATH', 'GMAPS_KEY', 'GH_TOKEN', 'STREETVIEW_DIR', 'SQUARE_BASE', 'SQUARE_WORKTREES' ].filter( k => ENV[ k ] ).map( k => [ k, ENV[ k ] ] ) ),
 	gameURL: `http://127.0.0.1:${PORT}/game/`, previewURL: `http://127.0.0.1:${PORT}/preview/`
 } );
 
