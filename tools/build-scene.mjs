@@ -391,7 +391,7 @@ const STYLE = { default: 0, theatre: 1, maj: 2, chapel: 3, glassBlock: 4, curtai
 const LANDMARKS = {
 	7649971: { name: 'Národní divadlo', style: STYLE.theatre, roof: ROOF_KIND.theatre, statues: true },
 	25921716: { name: 'Máj', style: STYLE.maj, roof: ROOF_KIND.flat },
-	173149696: { name: 'Betlémská kaple', style: STYLE.chapel, twinGables: true },
+	173149696: { name: 'Betlémská kaple', style: STYLE.chapel, twinGables: 'south' },
 	27247992: { name: 'Nová scéna', style: STYLE.glassBlock, roof: ROOF_KIND.flat },
 	27247993: { name: 'provozní budova Národního divadla', style: STYLE.bronze, roof: ROOF_KIND.flat },
 	393675112: { name: 'DRN', style: STYLE.curtain, roof: ROOF_KIND.flat },
@@ -805,6 +805,7 @@ const landmarkAt = await ( async () => {
 
 } )();
 const landmarkStatues = [];
+const twinGableFronts = [];
 
 
 // Hand-written house descriptions read from street photos (data/houses.json), and the street decorations they
@@ -980,10 +981,14 @@ for ( const b of buildings ) {
 	if ( landmark?.twinGables ) {
 
 		// Two steep parallel gable roofs whose gables face the longest street front (Betlémská kaple).
+		// twinGables 'south': the gables face south (Betlémská kaple, onto its square): the southernmost wall
+		// running east–west.
+		const south = landmark.twinGables === 'south';
 		const fronts = edges[ 0 ].map( ( p, i, arr ) => [ p, arr[ ( i + 1 ) % arr.length ] ] )
-			.filter( ( [ p, q ] ) => streetDistance( ( p.X + q.X ) / 2, ( p.Y + q.Y ) / 2 ) < 25 );
+			.filter( ( [ p, q ] ) => south ? Math.abs( q.X - p.X ) > 0.7 * Math.hypot( q.X - p.X, q.Y - p.Y ) : streetDistance( ( p.X + q.X ) / 2, ( p.Y + q.Y ) / 2 ) < 25 );
 		const [ fa, fb ] = ( fronts.length ? fronts : [ [ edges[ 0 ][ 0 ], edges[ 0 ][ 1 ] ] ] ).reduce( ( best, e ) => {
 
+			if ( south ) return e[ 0 ].Y + e[ 1 ].Y < best[ 0 ].Y + best[ 1 ].Y ? e : best;
 			return e[ 1 ].edgeLen > best[ 1 ].edgeLen ? e : best;
 
 		} );
@@ -999,6 +1004,20 @@ for ( const b of buildings ) {
 
 		};
 		kind = ROOF_KIND.tiles;
+		// The gable walls, windows and spire are modelled by hand (src/landmarks.js): the front, its outward side,
+		// and the gables' run along it.
+		const cx = edges[ 0 ].reduce( ( a, p ) => a + p.X, 0 ) / edges[ 0 ].length, cy = edges[ 0 ].reduce( ( a, p ) => a + p.Y, 0 ) / edges[ 0 ].length;
+		let nx = ty, ny = - tx;
+		if ( ( ( fa.X + fb.X ) / 2 - cx ) * nx + ( ( fa.Y + fb.Y ) / 2 - cy ) * ny < 0 ) {
+
+			nx = - nx;
+			ny = - ny;
+
+		}
+
+		const at = v => [ tx * v + nx * ( fa.X * nx + fa.Y * ny ), ty * v + ny * ( fa.X * nx + fa.Y * ny ) ];
+		const local = ( [ X, Y ], H ) => toLocal( X, Y, H ).map( c => + c.toFixed( 2 ) );
+		twinGableFronts.push( { a: local( at( vmin ), ground ), b: local( at( vmin + 2 * half ), ground ), eave: + ( toLocal( fa.X, fa.Y, eaveY )[ 1 ] ).toFixed( 2 ), n: [ + nx.toFixed( 4 ), + ( - ny ).toFixed( 4 ) ], slope } );
 
 	}
 
@@ -1528,7 +1547,11 @@ const furniture = collectFurniture( streetData, {
 } );
 furniture.statue.push( ...landmarkStatues );
 
-const places = collectPlaces( { quay, terraces, openings, buildings, streetFacades, toLocal, terrainAt, buildingAt, keptIds, dsm, idGrid, AREA, ORIGIN, streetData, furniture, riverAt, buildingInfo, terrainGrid: { terrain, tw, th, cell: TERRAIN_CELL }, inPark: ( X, Y ) => parks.some( rings => pointInRings( rings, X, Y ) ), tramPaths: JSON.parse( await readFile( new URL( 'tram.json', RAW ) ) ).flatMap( f => f.geometry?.paths || [] ) } );
+const places = collectPlaces( { project: await lonLatToSJTSK(), quay, terraces, openings, buildings, streetFacades, toLocal, terrainAt, buildingAt, keptIds, dsm, idGrid, AREA, ORIGIN, streetData, furniture, riverAt, buildingInfo, terrainGrid: { terrain, tw, th, cell: TERRAIN_CELL }, inPark: ( X, Y ) => parks.some( rings => pointInRings( rings, X, Y ) ), tramPaths: JSON.parse( await readFile( new URL( 'tram.json', RAW ) ) ).flatMap( f => f.geometry?.paths || [] ) } );
+places.chapel = twinGableFronts[ 0 ] ? { ...twinGableFronts[ 0 ], spire: [ - 36.5, 42.8 ] } : null; // spire: from the aerial photo
+// Awnings on fronts away from the street network (on squares), placed by places.mjs.
+decor.awnings.push( ...places.awnings );
+delete places.awnings;
 
 // Name boards over the shop windows, one per wall position (several shops on one spot are spread along the wall).
 const signs = [];

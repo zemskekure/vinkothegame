@@ -514,15 +514,20 @@
 		}
 	},
 	"21643903": {
-		"note": "Betlémské náměstí: low house with the restaurant terrace and white awnings",
+		"note": "Betlémské náměstí 1: U Halánků, the Náprstek museum: warm yellow, red roof, purple exhibition banners (Street View 2023–24)",
 		"signs": false,
-		"colour": "#ece5d6",
-		"trim": "#f4efe6",
-		"ground": "restaurant",
+		"colour": "#e8c46c",
+		"trim": "#f6ecd0",
+		"floors": 2,
+		"ground": "gate",
 		"rustic": "none",
 		"edges": {
 			"19": {
-				"awning": "#f1efe8"
+				"banner": {
+					"text": "NÁPRSTKOVO MUZEUM",
+					"board": "#6b2465",
+					"ink": "#ffffff"
+				}
 			}
 		}
 	},
@@ -550,25 +555,29 @@
 		"rustic": "banded"
 	},
 	"21643750": {
-		"note": "Betlémské náměstí / Liliová corner: cream neo-renaissance, banded rustication, round-arched windows with red frames, white awnings (Street View 2024)",
-		"colour": "#e8dcc0",
-		"trim": "#f3ecdc",
+		"note": "Betlémské náměstí 2: five-storey historicist block in pinkish sandstone, arched ground floor with red awnings, restaurant U Betlémské kaple (Street View 2023)",
+		"signs": false,
+		"colour": "#dcb996",
+		"trim": "#ead7bf",
+		"floors": 5,
 		"ground": "restaurant",
 		"rustic": "banded",
 		"edges": {
 			"0": {
-				"awning": "#f1efe8"
+				"awning": "#b3322c"
 			},
 			"11": {
-				"awning": "#f1efe8"
+				"awning": "#b3322c"
 			}
 		}
 	},
 	"21643814": {
-		"note": "Betlémské náměstí: Náprstek museum (U Halánků), pale yellow with white dressings, painted gable, arched gateway (Street View)",
-		"colour": "#f1df9c",
-		"trim": "#f7f0d8",
-		"ground": "gate",
+		"note": "Betlémské náměstí 10: white four-storey house with dormers, Oliva Nera's terrace in the square in front (Street View 2023–25)",
+		"signs": false,
+		"colour": "#f1eee6",
+		"trim": "#faf8f2",
+		"floors": 4,
+		"ground": "restaurant",
 		"rustic": "none"
 	},
 	"21644586": {
@@ -576,14 +585,16 @@
 		"colour": "#ecd9a4",
 		"trim": "#f4ead0",
 		"ground": "restaurant",
-		"rustic": "none"
+		"rustic": "none",
+		"signs": false
 	},
 	"21644594": {
 		"note": "Betlémské náměstí 6: U Zeleného stromu, cream neo-gothic front, ornate tympanum, arched gateway (Street View)",
 		"colour": "#e9e0c8",
 		"trim": "#f3ede0",
 		"ground": "gate",
-		"rustic": "ornate"
+		"rustic": "ornate",
+		"signs": false
 	},
 	"21644608": {
 		"note": "Betlémské náměstí: pinkish-beige plain house with shop windows and a wall lantern (Street View)",
@@ -597,7 +608,8 @@
 		"colour": "#ece6d7",
 		"trim": "#f5f1e8",
 		"ground": "shops",
-		"rustic": "banded"
+		"rustic": "banded",
+		"signs": false
 	},
 	"78878535": {
 		"note": "Náprstkova: yellow wall of the chimney yard with a big round-arched wooden gate, tagged (Street View)",
@@ -606,5 +618,23 @@
 		"ground": "gate",
 		"graffiti": true,
 		"rustic": "none"
+	},
+	"21643776": {
+		"note": "Betlémské náměstí 3: white three-storey house with dormers in the red roof (Street View 2023)",
+		"signs": false,
+		"colour": "#f3f1ec",
+		"trim": "#fbfaf6",
+		"floors": 3,
+		"ground": "windows",
+		"rustic": "none"
+	},
+	"21643806": {
+		"note": "Betlémské náměstí 9: Hotel Betlem Club, white with a pale ground floor, name and flags (Street View 2025)",
+		"signs": false,
+		"colour": "#f2f0ea",
+		"trim": "#fbfaf5",
+		"floors": 4,
+		"ground": "windows",
+		"rustic": "banded"
 	}
 }

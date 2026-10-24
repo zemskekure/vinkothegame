@@ -9,6 +9,9 @@ import { hash2D, noise2D } from './shading/common.js';
 // ---------------------------------------------------------------------------
 // Materials
 
+// The sun, late afternoon from the south-west (scene frame: +x east, +z south; azimuth from +z towards +x).
+export const SUN = new THREE.Vector3().setFromSphericalCoords( 1, THREE.MathUtils.degToRad( 55 ), THREE.MathUtils.degToRad( 315 ) );
+
 export const plain = ( hex, opts = {} ) => new THREE.MeshStandardNodeMaterial( { color: hex, roughness: 0.8, ...opts } );
 export const glow = ( hex, intensity = 1.5 ) => new THREE.MeshStandardNodeMaterial( { color: hex, emissive: hex, emissiveIntensity: intensity, roughness: 0.4 } );
 

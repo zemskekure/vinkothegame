@@ -17,6 +17,8 @@ const STAIRS_WAY = 1201817510;
 // Čapadlo by the Faculty of Social Sciences: steps beside it, the underpass, the metal stair from the terrace.
 const CAPADLO = { steps: 137806765, underpass: 1201427940, metal: 34056146 };
 
+import { dressSquare } from './dress.mjs';
+
 export function collectPlaces( ctx ) {
 
 	const { buildings, streetFacades, toLocal, terrainAt, buildingAt, keptIds, dsm, AREA, ORIGIN, streetData, furniture, riverAt } = ctx;
@@ -995,6 +997,8 @@ export function collectPlaces( ctx ) {
 	}
 
 	places.life = streetLife( ctx, L );
+	dressSquare( { places, frontFacing, frame, S, L, sign, yAtLocal, streetData, project: ctx.project } );
+
 	return places;
 
 }

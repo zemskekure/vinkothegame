@@ -12,6 +12,7 @@ import { addLife } from './life.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { createMinimap } from './minimap.js';
 import { addTrams } from './trams.js';
+import { SUN } from './kit.js';
 
 async function load( name, type = 'arrayBuffer', dir = 'data/' ) {
 
@@ -59,8 +60,8 @@ await renderer.init();
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 0.2, 20000 );
 
-// Late-afternoon sun from the south-west.
-const sunDir = new THREE.Vector3().setFromSphericalCoords( 1, THREE.MathUtils.degToRad( 55 ), THREE.MathUtils.degToRad( 225 ) );
+// Late-afternoon sun from the south-west (src/kit.js).
+const sunDir = SUN.clone();
 
 const sky = new SkyMesh();
 sky.scale.setScalar( 10000 );
@@ -419,13 +420,11 @@ const minimap = createMinimap( {
 } );
 if ( isTouch ) document.getElementById( 'hud' ).style.maxWidth = 'calc(100vw - 172px)';
 
-// Start in front of Hostinec U Rotundy, looking at it from across the pavement.
+// Start on Betlémské náměstí, at the west end of the square by Oliva Nera's terrace, looking at the chapel.
 function startAt() {
 
-	const F = places?.fronts?.find( f => f.style === 'pub' );
-	if ( ! F ) return '-20,40,0.6';
-	const x = F.x + F.n[ 0 ] * 6.5, z = F.z + F.n[ 1 ] * 6.5;
-	return `${ x.toFixed( 1 ) },${ z.toFixed( 1 ) },${ Math.atan2( F.n[ 0 ], F.n[ 1 ] ).toFixed( 3 ) }`;
+	const [ x, z, tx, tz ] = [ - 78, 68, - 42, 52 ];
+	return `${x},${z},${Math.atan2( - ( tx - x ), - ( tz - z ) ).toFixed( 3 )}`;
 
 }
 
