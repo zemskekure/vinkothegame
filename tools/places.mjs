@@ -274,13 +274,12 @@ export function collectPlaces( ctx ) {
 
 	}
 
-	// --- Champagneria (Průchodní 4): where Průchodní opens onto the little square with the big tree at its
-	// Bartolomějská end. A weathered ochre wall with bare stone and graffiti along the lane, the doorway at its north
-	// end; tables with parasols along it.
+	// --- Champagneria (Průchodní 4): at the Konviktská end of Průchodní, on the wall facing the little square with
+	// the trees, where the lane begins. A weathered ochre wall with bare stone and graffiti, the doorway at its south
+	// end by the lane; tables with parasols along it.
 	{
 
-		// House 291's wall along the lane where it opens onto the square (it faces east); the door at its north end.
-		const f = frontFacing( ...S( - 49.4, 140.6 ), ...S( - 44, 140.6 ) );
+		const f = frontFacing( ...S( - 40.8, 108.8 ), ...S( - 50, 108.8 ) );
 		const s = f.t * f.len;
 		const front = venueFront( 'champagne', f, s );
 		const doorX = front.right - 1.0, w = Math.min( 6.5, front.left + front.right - 1.2 ), roomX = doorX - ( w / 2 - 1.0 );
