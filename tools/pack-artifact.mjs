@@ -28,3 +28,25 @@ for ( const name of await readdir( new URL( 'data/', DIST ) ) ) {
 	console.log( `${name}: ${( raw.length / 1e6 ).toFixed( 1 )} MB → ${( packed.length / 1e6 ).toFixed( 1 )} MB` );
 
 }
+
+// Models (public/models): .glb packed like the data, textures and licences copied.
+const MODELS = new URL( 'models/', DIST );
+for ( const dir of await readdir( MODELS ) ) {
+
+	await mkdir( new URL( `models/${dir}/Textures/`, OUT ), { recursive: true } );
+	for ( const name of await readdir( new URL( `${dir}/`, MODELS ) ) ) {
+
+		const src = new URL( `${dir}/${name}`, MODELS );
+		if ( name === 'Textures' ) {
+
+			for ( const tex of await readdir( new URL( `${dir}/Textures/`, MODELS ) ) ) await copyFile( new URL( `${dir}/Textures/${tex}`, MODELS ), new URL( `models/${dir}/Textures/${tex}`, OUT ) );
+
+		} else if ( name.endsWith( '.glb' ) ) {
+
+			await writeFile( new URL( `models/${dir}/${name}.gz.txt`, OUT ), gzipSync( await readFile( src ), { level: 9 } ).toString( 'base64' ) );
+
+		} else await copyFile( src, new URL( `models/${dir}/${name}`, OUT ) );
+
+	}
+
+}

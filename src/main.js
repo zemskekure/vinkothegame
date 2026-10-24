@@ -9,13 +9,14 @@ import { addSigns } from './signs.js';
 import { addDecor, addEmbankment } from './decor.js';
 import { addPlaces } from './places.js';
 import { addLife } from './life.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-async function load( name, type = 'arrayBuffer' ) {
+async function load( name, type = 'arrayBuffer', dir = 'data/' ) {
 
-	if ( ! window.PACKED_DATA ) return ( await fetch( `data/${name}` ) )[ type ]();
+	if ( ! window.PACKED_DATA ) return ( await fetch( `${dir}${name}` ) )[ type ]();
 
 	// Hosted build: gzipped, base64-encoded text files (see tools/pack-artifact.mjs).
-	const text = await ( await fetch( `data/${name}.gz.txt` ) ).text();
+	const text = await ( await fetch( `${dir}${name}.gz.txt` ) ).text();
 	const bytes = Uint8Array.from( atob( text ), c => c.charCodeAt( 0 ) );
 	const unpacked = new Response( new Blob( [ bytes ] ).stream().pipeThrough( new DecompressionStream( 'gzip' ) ) );
 	return unpacked[ type ]();
@@ -283,7 +284,10 @@ addEmbankment( scene, embankmentBuf, data.embankment );
 
 // Signature places (rotunda, pub, café, champagne bar, museum gate, stairs) and street life (people, cars).
 const { seats } = addPlaces( scene, places );
-const life = addLife( scene, places?.life, { seats, benches: data.furniture.bench, groundHeight } );
+// Models: Kenney's Mini Characters and Car Kit (CC0); textures resolve next to them.
+const gltfLoader = new GLTFLoader();
+const loadModel = async ( path, dir ) => gltfLoader.parseAsync( await load( path, 'arrayBuffer', '' ), dir );
+const life = await addLife( scene, places?.life, { seats, benches: data.furniture.bench, groundHeight, loadModel, camera } );
 
 // ---------------------------------------------------------------------------
 // Controls: orbit (overview) and walking at street level
@@ -394,7 +398,7 @@ function nearestStreet( x, z ) {
 
 }
 
-document.getElementById( 'credit' ).textContent = data.attribution + ' · fasády podle fotek © Mapillary (CC BY-SA) · rendering after Slop New York (MIT, Mr.doob)';
+document.getElementById( 'credit' ).textContent = data.attribution + ' · fasády podle fotek © Mapillary (CC BY-SA) · postavy a auta: Kenney (CC0) · rendering after Slop New York (MIT, Mr.doob)';
 
 // ---------------------------------------------------------------------------
 
@@ -438,4 +442,5 @@ renderer.setAnimationLoop( () => {
 
 document.getElementById( 'loading' ).remove();
 window.__debug = { camera, isBlocked, groundHeight, walker, life };
+window.__THREE = THREE;
 window.__ready = true;

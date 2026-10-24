@@ -1,17 +1,22 @@
-// Street life: stylised people and cars (simple solids in a muted palette, not realistic models).
-//   - People walk the pavement lines and pedestrian lanes from tools/places.mjs (to the end and back), swinging
-//     arms and legs; others sit on benches, at the café / pub / bar tables and on the bar stools.
-//   - Cars stand at the kerbs where there is room to park, and a few drive the streets in their lanes
-//     (right-hand traffic), slowing behind the car ahead, re-entering at the start of a lane when they reach its end.
+// Street life with Kenney's low-poly models (CC0, kenney.nl: Mini Characters, Car Kit; public/models/).
+//   - People walk the pavement lines and pedestrian lanes from tools/places.mjs (to the end and back) with the
+//     characters' walk animation; others sit on benches, at the café / pub / bar tables and on the bar stools.
+//     Animated characters are costly, so a pool of them follows the people nearest the camera; the rest of the
+//     crowd keeps moving unseen and comes into view as the camera nears.
+//   - Cars stand at the kerbs where there is room to park (instanced, one batch per model), and a few drive the
+//     streets in their lanes (right-hand traffic), slowing behind the car ahead, re-entering at the start of a lane
+//     when they reach its end.
 
 import * as THREE from 'three/webgpu';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js';
 
-const COATS = [ 0x2c3e5c, 0xb8862e, 0x9b4a32, 0x2f6f6a, 0x3a3d40, 0xe6dccb, 0x6b7340, 0x6e2a35, 0x4f6d8f, 0xc9b79c, 0x8a5a7a, 0x1e2a33 ];
-const TROUSERS = [ 0x2b2d31, 0x3c4f6e, 0x1b1c1e, 0xb7a68a, 0x4a4036, 0x5b6470 ];
-const SKIN = [ 0xf1c9a5, 0xe0ac84, 0xc68a62, 0x9b6a48, 0x6e4a33, 0xf5d6bd ];
-const HAIR = [ 0x2a1f19, 0x4a3324, 0x8a6a3e, 0xd9c08a, 0xa8a49c, 0x1a1a1a, 0x7a3a1e ];
-const CARS = [ 0xf0efea, 0xf0efea, 0x3a3d40, 0x1d1f21, 0x9ba1a6, 0xa8443a, 0x2f6f6a, 0x2c3e5c, 0xc9a13b, 0x8fa38a, 0x4b6b3c, 0xe8e0c8 ];
+const PEOPLE = [ 'female-a', 'female-b', 'female-c', 'female-d', 'female-e', 'female-f', 'male-a', 'male-b', 'male-c', 'male-d', 'male-e', 'male-f' ];
+const CARS = { sedan: 5, 'hatchback-sports': 3, suv: 3, van: 2, taxi: 1, delivery: 1, 'sedan-sports': 2, 'suv-luxury': 2 }; // model: weight
+const PERSON_HEIGHT = 1.45; // chibi figures: big heads, short legs
+const CAR_LENGTH = 4.1;
+const POOL_PER_TYPE = 5; // animated characters per model (12 models)
+const VIEW_RADIUS = 75;
 
 const rnd = ( () => {
 
@@ -19,9 +24,6 @@ const rnd = ( () => {
 	return () => ( s = ( s * 16807 ) % 2147483647 ) / 2147483647;
 
 } )();
-const pick = list => list[ Math.floor( rnd() * list.length ) ];
-
-const mat = ( opts ) => new THREE.MeshStandardNodeMaterial( { roughness: 0.75, ...opts } );
 
 // Polylines (flat x, z arrays) with cumulative lengths, sampled by distance.
 function makePath( flat ) {
@@ -59,171 +61,48 @@ function sample( path, s, out ) {
 
 }
 
-// ---------------------------------------------------------------------------
-// People: legs and arms pivot at hip and shoulder; one instanced mesh per body part.
+// One model's meshes merged into a single geometry (node transforms applied), scaled and standing on y = 0.
+function mergedModel( gltf, length ) {
 
-const BODY = {
-	leg: new THREE.CylinderGeometry( 0.075, 0.06, 0.84, 7 ).translate( 0, - 0.42, 0 ),
-	torso: new THREE.CylinderGeometry( 0.17, 0.215, 0.64, 9 ).translate( 0, 0.32, 0 ),
-	arm: new THREE.CylinderGeometry( 0.05, 0.042, 0.6, 6 ).translate( 0, - 0.3, 0 ),
-	head: new THREE.SphereGeometry( 0.115, 12, 8 ),
-	hair: new THREE.SphereGeometry( 0.125, 12, 6, 0, Math.PI * 2, 0, Math.PI * 0.55 ).translate( 0, 0.012, - 0.01 )
-};
+	const geos = [];
+	let material = null;
+	gltf.scene.updateMatrixWorld( true );
+	gltf.scene.traverse( o => {
 
-class People {
+		if ( ! o.isMesh ) return;
+		const g = o.geometry.clone().applyMatrix4( o.matrixWorld );
+		for ( const name of Object.keys( g.attributes ) ) if ( ! [ 'position', 'normal', 'uv' ].includes( name ) ) g.deleteAttribute( name );
+		geos.push( g.index ? g.toNonIndexed() : g );
+		material = material || o.material;
 
-	constructor( scene, count ) {
+	} );
 
-		this.count = count;
-		const make = ( geo, n ) => {
-
-			const m = new THREE.InstancedMesh( geo, mat( {} ), n );
-			m.castShadow = true;
-			m.frustumCulled = false;
-			scene.add( m );
-			return m;
-
-		};
-
-		this.legs = make( BODY.leg, count * 2 );
-		this.arms = make( BODY.arm, count * 2 );
-		this.torso = make( BODY.torso, count );
-		this.head = make( BODY.head, count );
-		this.hair = make( BODY.hair, count );
-		const c = new THREE.Color();
-		for ( let i = 0; i < count; i ++ ) {
-
-			const coat = pick( COATS ), trousers = pick( TROUSERS );
-			for ( const k of [ 0, 1 ] ) {
-
-				this.legs.setColorAt( i * 2 + k, c.setHex( trousers ) );
-				this.arms.setColorAt( i * 2 + k, c.setHex( coat ) );
-
-			}
-
-			this.torso.setColorAt( i, c.setHex( coat ) );
-			this.head.setColorAt( i, c.setHex( pick( SKIN ) ) );
-			this.hair.setColorAt( i, c.setHex( pick( HAIR ) ) );
-
-		}
-
-		this.m = new THREE.Matrix4();
-		this.part = new THREE.Matrix4();
-		this.rot = new THREE.Matrix4();
-
-	}
-
-	// pose: legs / arms angles (rad, forward positive), hip height above y, lean.
-	set( i, x, y, z, yaw, legA, armA, hip, scale = 1 ) {
-
-		const base = this.m.makeRotationY( yaw ).setPosition( x, y, z );
-		if ( scale !== 1 ) base.multiply( this.part.makeScale( scale, scale, scale ) );
-		const put = ( mesh, j, px, py, pz, angle ) => {
-
-			this.part.makeTranslation( px, py, pz );
-			if ( angle ) this.part.multiply( this.rot.makeRotationX( - angle ) );
-			mesh.setMatrixAt( j, this.part.premultiply( base ) );
-
-		};
-
-		put( this.legs, i * 2, - 0.1, hip, 0, legA[ 0 ] );
-		put( this.legs, i * 2 + 1, 0.1, hip, 0, legA[ 1 ] );
-		put( this.torso, i, 0, hip - 0.04, 0, 0 );
-		put( this.arms, i * 2, - 0.235, hip + 0.56, 0, armA[ 0 ] );
-		put( this.arms, i * 2 + 1, 0.235, hip + 0.56, 0, armA[ 1 ] );
-		put( this.head, i, 0, hip + 0.76, 0, 0 );
-		put( this.hair, i, 0, hip + 0.76, 0, 0 );
-
-	}
-
-	flush() {
-
-		for ( const m of [ this.legs, this.arms, this.torso, this.head, this.hair ] ) m.instanceMatrix.needsUpdate = true;
-
-	}
-
-}
-
-// ---------------------------------------------------------------------------
-// Cars: body and roof in the car's colour, glass cabin, wheels, head and tail lights. +z is forward.
-
-function carGeometries() {
-
-	const box = ( w, h, d, x, y, z ) => new THREE.BoxGeometry( w, h, d ).translate( x, y + h / 2, z );
-	const body = mergeGeometries( [
-		box( 1.76, 0.5, 4.0, 0, 0.3, 0 ),
-		box( 1.7, 0.16, 3.1, 0, 0.8, - 0.15 ),
-		box( 1.5, 0.07, 1.85, 0, 1.38, - 0.3 ),
-		...[ [ - 0.72, 0.6 ], [ 0.72, 0.6 ], [ - 0.72, - 1.2 ], [ 0.72, - 1.2 ] ].map( ( [ x, z ] ) => box( 0.07, 0.45, 0.08, x, 0.95, z ) )
-	] );
-	const glass = box( 1.5, 0.43, 1.75, 0, 0.95, - 0.3 );
-	const wheels = mergeGeometries( [ [ - 0.82, 1.28 ], [ 0.82, 1.28 ], [ - 0.82, - 1.28 ], [ 0.82, - 1.28 ] ].map( ( [ x, z ] ) => new THREE.CylinderGeometry( 0.31, 0.31, 0.22, 12 ).rotateZ( Math.PI / 2 ).translate( x, 0.31, z ) ) );
-	const head = mergeGeometries( [ - 0.6, 0.6 ].map( x => box( 0.32, 0.12, 0.04, x, 0.62, 2.0 ) ) );
-	const tail = mergeGeometries( [ - 0.65, 0.65 ].map( x => box( 0.26, 0.1, 0.04, x, 0.66, - 2.0 ) ) );
-	return { body, glass, wheels, head, tail };
-
-}
-
-class Cars {
-
-	constructor( scene, count ) {
-
-		const g = carGeometries();
-		const make = ( geo, material ) => {
-
-			const m = new THREE.InstancedMesh( geo, material, count );
-			m.castShadow = true;
-			m.receiveShadow = true;
-			m.frustumCulled = false;
-			scene.add( m );
-			return m;
-
-		};
-
-		this.meshes = [
-			this.body = make( g.body, mat( { roughness: 0.35, metalness: 0.2 } ) ),
-			make( g.glass, mat( { color: 0x23313b, roughness: 0.08, metalness: 0.4 } ) ),
-			make( g.wheels, mat( { color: 0x1a1a1a, roughness: 0.9 } ) ),
-			make( g.head, mat( { color: 0xfff4dc, emissive: 0xfff0d0, emissiveIntensity: 0.6 } ) ),
-			make( g.tail, mat( { color: 0x9a1f1f, emissive: 0x7a1010, emissiveIntensity: 0.5 } ) )
-		];
-		const c = new THREE.Color();
-		for ( let i = 0; i < count; i ++ ) this.body.setColorAt( i, c.setHex( pick( CARS ) ) );
-		this.m = new THREE.Matrix4();
-		this.q = new THREE.Quaternion();
-		this.e = new THREE.Euler();
-		this.one = new THREE.Vector3( 1, 1, 1 );
-		this.p = new THREE.Vector3();
-
-	}
-
-	set( i, x, y, z, yaw, pitch = 0 ) {
-
-		this.q.setFromEuler( this.e.set( pitch, yaw, 0, 'YXZ' ) );
-		this.m.compose( this.p.set( x, y, z ), this.q, this.one );
-		for ( const mesh of this.meshes ) mesh.setMatrixAt( i, this.m );
-
-	}
-
-	flush() {
-
-		for ( const mesh of this.meshes ) mesh.instanceMatrix.needsUpdate = true;
-
-	}
+	const geometry = mergeGeometries( geos );
+	geometry.computeBoundingBox();
+	const b = geometry.boundingBox;
+	const s = length / ( b.max.z - b.min.z );
+	geometry.translate( - ( b.min.x + b.max.x ) / 2, - b.min.y, - ( b.min.z + b.max.z ) / 2 ).scale( s, s, s );
+	const m = new THREE.MeshStandardNodeMaterial( { map: material.map, roughness: 0.6, metalness: 0.1 } );
+	return { geometry, material: m };
 
 }
 
 // ---------------------------------------------------------------------------
 
-export function addLife( scene, life, { seats = [], benches = [], groundHeight } ) {
+export async function addLife( scene, life, { seats = [], benches = [], groundHeight, loadModel, camera } ) {
 
 	if ( ! life ) return { update() {} };
 
-	// Walkers, spread over the lines by length.
+	const [ peopleModels, carModels ] = await Promise.all( [
+		Promise.all( PEOPLE.map( n => loadModel( `models/people/character-${n}.glb`, 'models/people/' ) ) ),
+		Promise.all( Object.keys( CARS ).map( n => loadModel( `models/cars/${n}.glb`, 'models/cars/' ) ) )
+	] );
+
+	// --- agents: walkers spread over the lines by length, sitters on most chairs and stools and some benches
 	const walks = life.walks.map( makePath ).filter( p => p.length > 8 );
 	const total = walks.reduce( ( s, p ) => s + p.length, 0 );
-	const walkerCount = Math.min( 220, Math.round( total / 14 ) );
-	const walkers = [];
+	const agents = [];
+	const walkerCount = Math.min( 260, Math.round( total / 12 ) );
 	for ( let i = 0; i < walkerCount; i ++ ) {
 
 		let r = rnd() * total, path = walks[ 0 ];
@@ -240,71 +119,203 @@ export function addLife( scene, life, { seats = [], benches = [], groundHeight }
 
 		}
 
-		walkers.push( { path, s: r, dir: rnd() < 0.5 ? 1 : - 1, speed: 1.0 + rnd() * 0.55, side: ( rnd() - 0.5 ) * 0.5, phase: rnd() * 6, scale: 0.92 + rnd() * 0.14 } );
+		agents.push( { walk: true, path, s: r, dir: rnd() < 0.5 ? 1 : - 1, speed: 1.0 + rnd() * 0.5, side: ( rnd() - 0.5 ) * 0.5, type: Math.floor( rnd() * PEOPLE.length ), x: 0, y: 0, z: 0, yaw: 0, slot: null } );
 
 	}
 
-	// Sitters: most chairs and stools, some bench places (two to a bench).
-	const sitters = [];
-	for ( const [ x, y, z, rot ] of seats ) if ( rnd() < 0.7 ) sitters.push( { x, y, z, yaw: rot } );
+	for ( const [ x, y, z, rot ] of seats ) if ( rnd() < 0.75 ) agents.push( { walk: false, x, y, z, yaw: rot, type: Math.floor( rnd() * PEOPLE.length ), slot: null } );
 	for ( let i = 0; i < benches.length; i += 5 ) {
 
 		const [ x, y, z, rot ] = benches.slice( i, i + 5 );
 		for ( const ox of [ - 0.45, 0.45 ] ) {
 
-			if ( rnd() > 0.35 ) continue;
 			// Bench model: seat along local x, sitters face its −z.
-			sitters.push( { x: x + Math.cos( rot ) * ox, y, z: z - Math.sin( rot ) * ox, yaw: rot + Math.PI } );
+			if ( rnd() < 0.35 ) agents.push( { walk: false, x: x + Math.cos( rot ) * ox, y: y + 0.04, z: z - Math.sin( rot ) * ox, yaw: rot + Math.PI, type: Math.floor( rnd() * PEOPLE.length ), slot: null } );
 
 		}
 
 	}
 
-	const people = new People( scene, walkers.length + sitters.length );
-	sitters.forEach( ( p, k ) => {
+	// --- the pool of animated characters, POOL_PER_TYPE of each model
+	const slots = [];
+	peopleModels.forEach( ( gltf, type ) => {
 
-		const i = walkers.length + k;
-		const swing = ( rnd() - 0.5 ) * 0.2;
-		people.set( i, p.x, p.y, p.z, p.yaw, [ 1.35 + swing, 1.35 - swing ], [ 0.5, 0.45 ], 0.47, 0.95 + rnd() * 0.1 );
+		const box = new THREE.Box3().setFromObject( gltf.scene );
+		const scale = PERSON_HEIGHT / ( box.max.y - box.min.y );
+		const clip = name => gltf.animations.find( a => a.name === name );
+		for ( let k = 0; k < POOL_PER_TYPE; k ++ ) {
+
+			const root = cloneSkinned( gltf.scene );
+			root.scale.setScalar( scale );
+			root.traverse( o => {
+
+				if ( o.isMesh ) {
+
+					o.castShadow = true;
+					o.frustumCulled = false;
+
+				}
+
+			} );
+			root.visible = false;
+			scene.add( root );
+			const mixer = new THREE.AnimationMixer( root );
+			// The 'sit' clip sits on the floor (hips 0.026 model units up): lift to a 0.47 m seat.
+			slots.push( { type, root, mixer, walk: mixer.clipAction( clip( 'walk' ) ), sit: mixer.clipAction( clip( 'sit' ) ), sitLift: 0.47 - 0.026 * scale, agent: null } );
+
+		}
 
 	} );
 
-	// Cars: parked ones are placed once; the moving ones after them.
+	// --- cars: one instanced batch per model; parked ones placed once, the moving ones after them in each batch
 	const drives = life.drives.map( makePath ).filter( p => p.length > 25 );
-	const parked = life.parked;
-	const movingCount = Math.min( 18, drives.length );
-	const cars = new Cars( scene, parked.length / 4 + movingCount );
-	for ( let i = 0; i < parked.length; i += 4 ) cars.set( i / 4, parked[ i ], parked[ i + 1 ], parked[ i + 2 ], parked[ i + 3 ] );
-	const firstMoving = parked.length / 4;
+	const carTypes = Object.keys( CARS );
+	const weights = carTypes.map( n => CARS[ n ] ), wsum = weights.reduce( ( a, b ) => a + b, 0 );
+	const pickCar = () => {
+
+		let r = rnd() * wsum;
+		for ( let i = 0; i < weights.length; i ++ ) if ( ( r -= weights[ i ] ) < 0 ) return i;
+		return 0;
+
+	};
+
+	const parked = [];
+	for ( let i = 0; i < life.parked.length; i += 4 ) parked.push( { type: pickCar(), p: life.parked.slice( i, i + 4 ) } );
 	const movers = [];
-	for ( let k = 0; k < movingCount; k ++ ) movers.push( { path: drives[ Math.floor( rnd() * drives.length ) ], s: 0, speed: 0, cruise: 6 + rnd() * 3 } );
-	for ( const m of movers ) m.s = rnd() * m.path.length * 0.8;
+	for ( let k = 0; k < Math.min( 18, drives.length ); k ++ ) {
+
+		const path = drives[ Math.floor( rnd() * drives.length ) ];
+		movers.push( { type: pickCar(), path, s: rnd() * path.length * 0.8, speed: 0, cruise: 6 + rnd() * 3 } );
+
+	}
+
+	const batches = carModels.map( ( gltf, type ) => {
+
+		const { geometry, material } = mergedModel( gltf, CAR_LENGTH );
+		const count = parked.filter( c => c.type === type ).length + movers.filter( c => c.type === type ).length;
+		const mesh = new THREE.InstancedMesh( geometry, material, Math.max( 1, count ) );
+		mesh.count = count;
+		mesh.castShadow = mesh.receiveShadow = true;
+		mesh.frustumCulled = false;
+		scene.add( mesh );
+		return { mesh, next: 0 };
+
+	} );
+
+	const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), one = new THREE.Vector3( 1, 1, 1 ), v = new THREE.Vector3();
+	const placeCar = ( batch, i, x, y, z, yaw, pitch = 0 ) => {
+
+		q.setFromEuler( e.set( pitch, yaw, 0, 'YXZ' ) );
+		batch.mesh.setMatrixAt( i, m4.compose( v.set( x, y, z ), q, one ) );
+
+	};
+
+	for ( const c of parked ) {
+
+		const b = batches[ c.type ];
+		placeCar( b, b.next ++, c.p[ 0 ], c.p[ 1 ], c.p[ 2 ], c.p[ 3 ] );
+
+	}
+
+	for ( const m of movers ) {
+
+		m.batch = batches[ m.type ];
+		m.index = m.batch.next ++;
+
+	}
+
+	// ---------------------------------------------------------------------------
 
 	const at = { x: 0, z: 0, dx: 0, dz: 1 }, at2 = { x: 0, z: 0, dx: 0, dz: 1 };
-	let time = 0;
+	let assignTimer = 0, lastX = Infinity, lastZ = Infinity;
+
+	// Hand the pool to the people nearest the camera.
+	function assign() {
+
+		const cx = camera.position.x, cz = camera.position.z;
+		for ( const a of agents ) a.d = Math.hypot( a.x - cx, a.z - cz );
+		const wanted = agents.filter( a => a.d < VIEW_RADIUS ).sort( ( a, b ) => a.d - b.d );
+		const keep = new Set();
+		const free = new Map( PEOPLE.map( ( _, t ) => [ t, [] ] ) );
+		const budget = new Map( PEOPLE.map( ( _, t ) => [ t, POOL_PER_TYPE ] ) );
+		for ( const a of wanted ) {
+
+			if ( budget.get( a.type ) <= 0 ) continue;
+			budget.set( a.type, budget.get( a.type ) - 1 );
+			keep.add( a );
+
+		}
+
+		for ( const s of slots ) {
+
+			if ( s.agent && ! keep.has( s.agent ) ) {
+
+				s.agent.slot = null;
+				s.agent = null;
+				s.root.visible = false;
+
+			}
+
+			if ( ! s.agent ) free.get( s.type ).push( s );
+
+		}
+
+		for ( const a of keep ) {
+
+			if ( a.slot ) continue;
+			const s = free.get( a.type ).pop();
+			if ( ! s ) continue;
+			s.agent = a;
+			a.slot = s;
+			s.root.visible = true;
+			s.mixer.stopAllAction();
+			const action = a.walk ? s.walk : s.sit;
+			action.reset().play();
+			action.time = rnd() * action.getClip().duration;
+			if ( a.walk ) action.timeScale = a.speed / 1.2;
+
+		}
+
+	}
 
 	function update( dt ) {
 
-		time += dt;
+		// Walkers move whether seen or not.
+		for ( const a of agents ) {
 
-		walkers.forEach( ( w, i ) => {
+			if ( ! a.walk ) continue;
+			a.s += a.dir * a.speed * dt;
+			if ( a.s > a.path.length - 0.5 ) a.dir = - 1;
+			if ( a.s < 0.5 ) a.dir = 1;
+			sample( a.path, a.s, at );
+			a.x = at.x - at.dz * a.side * a.dir;
+			a.z = at.z + at.dx * a.side * a.dir;
+			a.yaw = Math.atan2( at.dx * a.dir, at.dz * a.dir );
 
-			w.s += w.dir * w.speed * dt;
-			if ( w.s > w.path.length - 0.5 ) w.dir = - 1;
-			if ( w.s < 0.5 ) w.dir = 1;
-			sample( w.path, w.s, at );
-			const x = at.x - at.dz * w.side * w.dir, z = at.z + at.dx * w.side * w.dir;
-			const yaw = Math.atan2( at.dx * w.dir, at.dz * w.dir );
-			const ph = time * w.speed * 5.2 + w.phase;
-			const leg = Math.sin( ph ) * 0.42;
-			const bob = Math.abs( Math.cos( ph ) ) * 0.035;
-			people.set( i, x, groundHeight( x, z ) + bob, z, yaw, [ leg, - leg ], [ - leg * 0.8, leg * 0.8 ], 0.86, w.scale );
+		}
 
-		} );
+		// Re-pick the nearest people twice a second, or at once after a jump (switching to walking, teleporting).
+		assignTimer -= dt;
+		if ( assignTimer <= 0 || Math.hypot( camera.position.x - lastX, camera.position.z - lastZ ) > 10 ) {
 
-		people.flush();
+			assignTimer = 0.5;
+			lastX = camera.position.x;
+			lastZ = camera.position.z;
+			assign();
 
-		movers.forEach( ( m, k ) => {
+		}
+
+		for ( const s of slots ) {
+
+			const a = s.agent;
+			if ( ! a ) continue;
+			s.root.position.set( a.x, a.walk ? groundHeight( a.x, a.z ) : a.y + s.sitLift, a.z );
+			s.root.rotation.y = a.yaw;
+			s.mixer.update( dt );
+
+		}
+
+		for ( const m of movers ) {
 
 			// Slow down behind a car ahead on the same lane.
 			let gap = Infinity;
@@ -329,16 +340,15 @@ export function addLife( scene, life, { seats = [], benches = [], groundHeight }
 			sample( m.path, m.s, at );
 			sample( m.path, Math.min( m.path.length, m.s + 3.5 ), at2 );
 			const y = groundHeight( at.x, at.z ), y2 = groundHeight( at2.x, at2.z );
-			cars.set( firstMoving + k, at.x, y, at.z, Math.atan2( at.dx, at.dz ), - Math.atan2( y2 - y, 3.5 ) );
+			placeCar( m.batch, m.index, at.x, y, at.z, Math.atan2( at.dx, at.dz ), - Math.atan2( y2 - y, 3.5 ) );
 
-		} );
+		}
 
-		cars.flush();
+		for ( const b of batches ) b.mesh.instanceMatrix.needsUpdate = true;
 
 	}
 
-	cars.flush();
 	update( 0 );
-	return { update, walkers: walkers.length, sitters: sitters.length, cars: parked.length / 4 + movingCount };
+	return { update, slots, agents, people: agents.length, cars: parked.length + movers.length };
 
 }
