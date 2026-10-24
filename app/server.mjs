@@ -30,6 +30,7 @@ import { openDB, getSettings, setSetting } from './db.mjs';
 import { summary, costSince, weeklyBudget } from './stats.mjs';
 import { findTranscripts, readTranscript } from './usage.mjs';
 import { createJobs } from './jobs.mjs';
+import { apiSpent } from './square.mjs';
 import { readEnv } from './env.mjs';
 
 const DATA = process.env.GRID_DATA || join( homedir(), 'vinko-grid-data' );
@@ -53,7 +54,7 @@ const grid = loadGrid( Number( ENV.GRID_CELL || 100 ) );
 const BASE = WORK ? ENV.GRID_BRANCH || execFileSync( 'git', [ 'rev-parse', '--abbrev-ref', 'HEAD' ], { cwd: WORK } ).toString().trim() : null;
 const jobs = createJobs( {
 	db, grid, data: DATA, live: REPO, work: WORK, base: BASE, password: PASSWORD,
-	env: Object.fromEntries( [ 'CLAUDE_CODE_OAUTH_TOKEN', 'MAPILLARY_TOKEN', 'CLAUDE_BIN', 'PATH', 'GMAPS_KEY', 'GH_TOKEN', 'STREETVIEW_DIR', 'SQUARE_BASE', 'SQUARE_WORKTREES' ].filter( k => ENV[ k ] ).map( k => [ k, ENV[ k ] ] ) ),
+	env: Object.fromEntries( [ 'CLAUDE_CODE_OAUTH_TOKEN', 'MAPILLARY_TOKEN', 'CLAUDE_BIN', 'PATH', 'GMAPS_KEY', 'GH_TOKEN', 'ANTHROPIC_API_KEY', 'SQUARE_USE_API', 'SQUARE_API_CAP', 'SQUARE_API_PER_RUN', 'STREETVIEW_DIR', 'SQUARE_BASE', 'SQUARE_WORKTREES' ].filter( k => ENV[ k ] ).map( k => [ k, ENV[ k ] ] ) ),
 	gameURL: `http://127.0.0.1:${PORT}/game/`, previewURL: `http://127.0.0.1:${PORT}/preview/`
 } );
 
@@ -129,6 +130,7 @@ function control() {
 	const current = jobs.current() || db.prepare( "SELECT * FROM sessions WHERE state IN ('running', 'building') ORDER BY id DESC LIMIT 1" ).get();
 	return {
 		sessions: !! WORK, base: BASE, squareBase: ENV.SQUARE_BASE || 'origin/main',
+		api: ENV.SQUARE_USE_API === '1' && ENV.ANTHROPIC_API_KEY ? { spent: apiSpent( db ), cap: Number( ENV.SQUARE_API_CAP || 70 ) } : null,
 		autopilot: s.autopilot === '1', autoMerge: s.auto_merge === '1',
 		pausedUntil: s.paused_until > now() ? s.paused_until : null, pausedReason: s.paused_reason || null,
 		queued: db.prepare( "SELECT id, cell FROM sessions WHERE state = 'queued' ORDER BY id" ).all(),

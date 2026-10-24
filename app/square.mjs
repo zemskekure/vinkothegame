@@ -72,11 +72,16 @@ export async function runSquare( { db, grid, data, live, env, id, budget = 40, s
 
 	};
 
+	// Who pays for the reviewer: the subscription (CLAUDE_CODE_OAUTH_TOKEN), or with SQUARE_USE_API=1 the API key's
+	// prepaid credit, capped in total by SQUARE_API_CAP dollars (default 70) and per run by SQUARE_API_PER_RUN (10).
+	const useAPI = env.SQUARE_USE_API === '1' && !! env.ANTHROPIC_API_KEY;
 	const childEnv = extra => {
 
 		// A Claude Code session started from inside another one would otherwise think it is nested.
 		const e = { ...process.env, ...env, SQUARE_WORK: work, STREETVIEW_DIR: photos, ...extra };
 		for ( const k of Object.keys( e ) ) if ( k.startsWith( 'CLAUDECODE' ) || k === 'CLAUDE_CODE_ENTRYPOINT' ) delete e[ k ];
+		if ( useAPI ) delete e.CLAUDE_CODE_OAUTH_TOKEN;
+		else delete e.ANTHROPIC_API_KEY;
 		return e;
 
 	};
@@ -163,7 +168,17 @@ export async function runSquare( { db, grid, data, live, env, id, budget = 40, s
 	const args = [ '-p', '--output-format', 'stream-json', '--verbose', '--permission-mode', 'acceptEdits',
 		'--add-dir', work, '--add-dir', photos, '--allowedTools', 'Read Write Glob Grep Task', '--disallowedTools', 'Edit Bash NotebookEdit WebFetch WebSearch' ];
 	if ( settings.model ) args.push( '--model', settings.model );
+	if ( useAPI ) {
+
+		const left = Number( env.SQUARE_API_CAP || 70 ) - apiSpent( db );
+		if ( left < 1 ) return fail( `API credit for squares used up ($${apiSpent( db ).toFixed( 2 )} of $${env.SQUARE_API_CAP || 70})` );
+		args.push( '--max-budget-usd', Math.min( left, Number( env.SQUARE_API_PER_RUN || 10 ) ).toFixed( 2 ) );
+		note( `Platí API kredit (zbývá $${left.toFixed( 2 )})` );
+
+	}
+
 	const result = await claude( args, reviewPrompt( square, work ), Number( settings.session_minutes || 60 ) * 60e3 );
+	if ( useAPI ) update( { api_cost: result?.total_cost_usd || 0 } );
 	if ( cancelled() ) return fail( 'Zastaveno ručně.' );
 	const transcript = countTranscript( result?.session_id );
 	if ( transcript ) saveUsage( db, id, transcript );
@@ -214,7 +229,7 @@ export async function runSquare( { db, grid, data, live, env, id, budget = 40, s
 	step( 'pull request' );
 	const push = await git( [ 'push', '-u', 'origin', branch ] );
 	if ( push.code ) return fail( `git push: ${push.out.trim()}` );
-	const usage = summaryOf( db, id );
+	const usage = { ...summaryOf( db, id ), api: useAPI ? db.prepare( 'SELECT api_cost FROM sessions WHERE id = ?' ).get( id ).api_cost : null };
 	const body = prBody( { square, cell, merged, review, inventory, fetched, used, usage, minutes: ( Date.now() - started ) / 60e3, shots, id } );
 	const pr = await run( 'gh', [ 'pr', 'create', '--base', base.replace( /^origin\//, '' ), '--head', branch, '--title', title, '--body', body ], { quiet: true } );
 	const link = ( pr.out.match( /https:\/\/github\.com\/\S+\/pull\/\d+/ ) || [] )[ 0 ];
@@ -325,6 +340,9 @@ function countTranscript( session ) {
 
 }
 
+// What square runs have charged to the API credit so far (Claude Code's own figure per run).
+export const apiSpent = db => db.prepare( 'SELECT COALESCE( SUM( api_cost ), 0 ) AS s FROM sessions' ).get().s;
+
 function saveUsage( db, id, counter ) {
 
 	db.prepare( 'DELETE FROM usage WHERE session = ?' ).run( id );
@@ -432,6 +450,7 @@ function prBody( { square, cell, merged, review, inventory, fetched, used, usage
 		`## Reviewer's issues\n${( merged.issues || [] ).map( i => `- ${i}` ).join( '\n' ) || '-'}`,
 		`## Cost\n- Tokens: ${n( usage.tokens )} (input ${n( usage.input )}, output ${n( usage.output )}, cache read ${n( usage.cache_read )}, cache write ${n( usage.cache_write_5m + usage.cache_write_1h )}; ${usage.messages} messages, main session and subagents)`
 			+ `\n- API-equivalent cost: $${usage.cost.toFixed( 2 )} (${( usage.cost / usage.plan * 100 ).toFixed( 1 )} % of the $${usage.plan} monthly plan's price${usage.week != null ? `, ≈ ${usage.week.toFixed( 1 )} % of the weekly limit` : '; weekly limit not calibrated yet'})`
+			+ ( usage.api != null ? `\n- Charged to the API credit: $${usage.api.toFixed( 2 )}` : '\n- Paid by the subscription' )
 			+ `\n- Street View images: ${used} used, ${fetched} fetched in this run (≈ $${( fetched * 0.007 ).toFixed( 2 )} at list price); kept outside git`
 			+ `\n- Time: ${Math.round( minutes )} min`,
 		`## Screenshots\nIn the grid app (session ${id}): ${shots.map( s => `${s.label} \`${s.query}\`` ).join( ', ' ) || 'none'}. Not committed.`

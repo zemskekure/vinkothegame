@@ -116,7 +116,7 @@
 			const c = grid.control, el = document.getElementById( 'control' );
 			if ( ! c.sessions ) {
 
-				el.innerHTML = '<h2>Claude</h2><p class="muted">Klikněte na čtverec v mapě a pak nahoře na <b>▶ Projet čtverec</b>. Běží jeden po druhém.</p>' + ( c.current ? `<p>Teď běží: <a href="/sezeni/${c.current.id}">${c.current.cell}</a> · ${esc( c.current.step || '' )}</p>` : '' );
+				el.innerHTML = '<h2>Claude</h2><p class="muted">Klikněte na čtverec v mapě a pak nahoře na <b>▶ Projet čtverec</b>. Běží jeden po druhém.</p>' + ( c.api ? `<p>API kredit: <b>$${c.api.spent.toFixed( 2 )}</b> z $${c.api.cap} utraceno</p>` : '<p class="muted">Platí předplatné.</p>' ) + ( c.current ? `<p>Teď běží: <a href="/sezeni/${c.current.id}">${c.current.cell}</a> · ${esc( c.current.step || '' )}</p>` : '' );
 				return;
 
 			}
