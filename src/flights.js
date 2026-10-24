@@ -115,14 +115,29 @@ function addTunnel( scene, t ) {
 	const kit = new Kit();
 	const W = t.w / 2, H = t.h;
 	kit.add( t.road ? F.road : F.floor, box( t.w, 0.1, len + 0.6, 0, - 0.08, len / 2 ) );
-	for ( const side of [ - 1, 1 ] ) kit.add( F.plaster, box( 0.2, H, len + 0.6, side * ( W + 0.1 ), 0, len / 2 ) );
-	kit.add( F.plaster, box( t.w + 0.4, 0.2, len + 0.6, 0, H, len / 2 ) );
+	for ( const side of [ - 1, 1 ] ) kit.add( F.plaster, box( 0.2, t.road ? H : H - W, len + 0.6, side * ( W + 0.1 ), 0, len / 2 ) );
+	if ( t.road ) kit.add( F.plaster, box( t.w + 0.4, 0.2, len + 0.6, 0, H, len / 2 ) );
 	for ( let s = 3; s < len; s += 5 ) kit.add( F.lamp, box( 0.5, 0.05, 0.18, 0, H - 0.05, s ) );
-	// Portal frames: stone jambs and lintel at each mouth, the street's wall above the uphill one.
+	// Portals: a road tunnel's square stone frames; a footway's round-arched stone mouths (Čapadlo, after street
+	// photos): a stone face with a semicircular opening at each end.
 	for ( const s of [ 0, len ] ) {
 
-		for ( const side of [ - 1, 1 ] ) kit.add( F.wall, box( 0.35, H + 0.4, 0.5, side * ( W + 0.18 ), - 0.1, s ) );
-		kit.add( F.wall, box( t.w + 0.7, 0.45, 0.5, 0, H, s ) );
+		if ( t.road ) {
+
+			for ( const side of [ - 1, 1 ] ) kit.add( F.wall, box( 0.35, H + 0.4, 0.5, side * ( W + 0.18 ), - 0.1, s ) );
+			kit.add( F.wall, box( t.w + 0.7, 0.45, 0.5, 0, H, s ) );
+			continue;
+
+		}
+
+		const R = W, spring = H - R, F0 = W + 0.8, top = H + 0.8;
+		const face = new THREE.Shape().moveTo( - F0, - 0.1 ).lineTo( F0, - 0.1 ).lineTo( F0, top ).lineTo( - F0, top ).closePath();
+		const hole = new THREE.Path().moveTo( - R, - 0.1 ).lineTo( - R, spring ).absarc( 0, spring, R, Math.PI, 0, true ).lineTo( R, - 0.1 ).closePath();
+		face.holes.push( hole );
+		kit.add( F.wall, new THREE.ExtrudeGeometry( face, { depth: 0.6, bevelEnabled: false, curveSegments: 16 } ).translate( 0, 0, s - 0.3 ) );
+		// The vault inside follows the arch.
+		const vault = new THREE.CylinderGeometry( R, R, len, 16, 1, true, - Math.PI / 2, Math.PI ).rotateX( Math.PI / 2 ).translate( 0, spring, len / 2 );
+		if ( s === 0 ) kit.add( F.plaster, vault );
 
 	}
 

@@ -160,7 +160,7 @@ export async function buildQuay( { terrain, tw, th, cell, AREA, terrainAt, river
 	for ( const p of rail ) {
 
 		if ( ! p.wall ) continue;
-		for ( let d = 0.4; d <= 3.5; d += 0.4 ) for ( const o of [ - 0.5, 0, 0.5 ] ) {
+		for ( let d = 0.4; d <= 7; d += 0.4 ) for ( const o of [ - 0.5, 0, 0.5 ] ) {
 
 			const X = p.X + p.nx * d - p.ny * o, Y = p.Y + p.ny * d + p.nx * o;
 			if ( ! riverAt( X, Y ) ) setCell( X, Y, v => Math.min( v, p.quay ) );

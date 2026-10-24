@@ -310,7 +310,10 @@ export function addPlaces( scene, places, furniture = {}, waterLevel = 0 ) {
 	if ( ! places ) return { seats: [] };
 	const seats = [ ...( places.seats || [] ) ];
 	if ( places.rotunda ) addRotunda( scene, places.rotunda );
-	for ( const s of places.signs ) addSign( scene, s );
+	// The venues' own signs (modelled from photos); generic lettering and plaques only with ?signs.
+	const generic = new Set( [ 'letters', 'plaque', 'neon' ] );
+	const showGeneric = new URLSearchParams( location.search ).has( 'signs' );
+	for ( const s of places.signs ) if ( showGeneric || ! generic.has( s.style ) ) addSign( scene, s );
 	seats.push( ...addVenues( scene, places, furniture ) );
 	if ( places.lights?.length ) addFestoons( scene, places.lights );
 	if ( places.gate ) addMuseumGate( scene, places.gate );

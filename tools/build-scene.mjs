@@ -746,11 +746,12 @@ function drawRail( R ) {
 
 	};
 
-	const CURB = 0.3, THICK = 0.4;
 	for ( let i = 1; i < R.length; i ++ ) {
 
 		const a = R[ i - 1 ], b = R[ i ];
 		if ( a.river || b.river || Math.hypot( b.X - a.X, b.Y - a.Y ) > 2 ) continue;
+		// A heavy stone parapet (the piazzetta) or a low curb under an iron railing.
+		const CURB = a.parapet ? 1.0 : 0.3, THICK = a.parapet ? 0.6 : 0.4;
 		const ta = a.top + CURB, tb = b.top + CURB;
 		const bx0 = a.X - a.nx * THICK, by0 = a.Y - a.ny * THICK, bx1 = b.X - b.nx * THICK, by1 = b.Y - b.ny * THICK;
 		if ( a.wall || b.wall ) {
@@ -770,6 +771,7 @@ function drawRail( R ) {
 		push( [ bx0, by0, ta ], [ bx1, by1, tb ], [ bx1, by1, b.top - 0.2 ], [ bx0, by0, ta ], [ bx1, by1, b.top - 0.2 ], [ bx0, by0, a.top - 0.2 ] );
 		push( [ bx0, by0, ta ], [ bx1, by1, b.top - 0.2 ], [ bx1, by1, tb ], [ bx0, by0, ta ], [ bx0, by0, a.top - 0.2 ], [ bx1, by1, b.top - 0.2 ] );
 
+		if ( a.parapet ) continue;
 		// Railing on the curb's centre line, a post every 2 m.
 		const cx0 = a.X - a.nx * THICK / 2, cy0 = a.Y - a.ny * THICK / 2, cx1 = b.X - b.nx * THICK / 2, cy1 = b.Y - b.ny * THICK / 2;
 		const p0 = toLocal( cx0, cy0, ta + 0.95 + BASE_HEIGHT ), p1 = toLocal( cx1, cy1, tb + 0.95 + BASE_HEIGHT );

@@ -4,7 +4,7 @@
 //     dipped down to Divadelní there. Národní's deck is raised back to its level, with walls and railings at both
 //     portals, and the tunnel is walkable below.
 //   - The piazzetta of the National Theatre (náměstí Václava Havla) is a level granite terrace about 4 m above
-//     Divadelní: levelled, with a retaining wall, parapet and railing along its Divadelní side.
+//     Divadelní: levelled, with a retaining wall and a heavy stone parapet (no railing) along its Divadelní side.
 //
 // Returns railing lines in the format of tools/quay.mjs (drawn and made walk barriers the same way), the tunnel,
 // and the piazzetta (outline and level). S-JTSK metres; heights relative to BASE_HEIGHT like the terrain grid.
@@ -128,7 +128,7 @@ export async function buildTerraces( { terrain, tw, th, cell, AREA, terrainAt, b
 			for ( let s = 0; s <= l + 1e-6; s += 1 ) {
 
 				const X = ax + ( bx - ax ) * s / l - nx * 0.3, Y = ay + ( by - ay ) * s / l - ny * 0.3;
-				line.push( { X, Y, nx, ny, top: level, quay: Math.min( level - 0.5, terrainAt( X + nx * 3.5, Y + ny * 3.5 ) ), wall: true } );
+				line.push( { X, Y, nx, ny, top: level, quay: Math.min( level - 0.5, terrainAt( X + nx * 3.5, Y + ny * 3.5 ) ), wall: true, parapet: true } );
 
 			}
 

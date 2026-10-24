@@ -142,6 +142,18 @@ export async function findOpenings( { AREA, buildingAt, buildings = [] } ) {
 
 			if ( ! arcade ) {
 
+				// A passage goes through a house: the house is on both sides of it along most of its length (OSM lines
+				// running along a house front, or clipping its corner, would put a portal out in the street).
+				let both = 0, n = 0;
+				for ( let s = s0 + 0.5; s <= s1 - 0.5; s += 0.5 ) {
+
+					const X = ax + ux * s, Y = ay + uy * s, o = width / 2 + 0.6;
+					n ++;
+					if ( inside( X - uy * o, Y + ux * o ) && inside( X + uy * o, Y - ux * o ) ) both ++;
+
+				}
+
+				if ( runLen < 3 || ! n || both < n * 0.6 ) continue;
 				openings.push( { kind: 'passage', way: w.id, name: t.name, X: mx, Y: my, ux, uy, len: + runLen.toFixed( 2 ), w: width, h: width > 4 ? 4.6 : 3.6 } );
 				continue;
 

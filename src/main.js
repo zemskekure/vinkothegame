@@ -280,7 +280,8 @@ if ( places?.gate ) {
 }
 
 addFurniture( scene, data.furniture );
-addSigns( scene, data.signs || [], renderer );
+// Generic name boards from OpenStreetMap: off until the city gets its own signs and logos (?signs shows them).
+if ( params.has( 'signs' ) ) addSigns( scene, data.signs || [], renderer );
 addDecor( scene, data.decor );
 addEmbankment( scene, embankmentBuf, data.embankment );
 

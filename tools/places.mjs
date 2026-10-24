@@ -732,8 +732,8 @@ export function collectPlaces( ctx ) {
 		if ( pz ) {
 
 			const y = + pz.level.toFixed( 2 );
-			places.piazzetta = { heart: [ - 339.5, y, 392, Math.PI / 2 ], statue: [ - 341.5, y, 377.5, Math.PI / 2 + 0.4 ], pillars: [] };
-			const b = buildings.find( q => q.code === 21658722 );
+			places.piazzetta = { heart: [ - 303, y, 377.5, 0 ], statue: [ - 342.5, y, 377, Math.PI / 2 + 0.4 ], pillars: [] };
+			const b = null; // Nová scéna overhangs its recessed ground floor (no free-standing pillars, street photos)
 			if ( b ) {
 
 				const r = b.poly.outer;
@@ -873,6 +873,49 @@ export function collectPlaces( ctx ) {
 			s += len;
 
 		}
+
+	}
+
+	// Ways side by side on one bridge (the road and its footways) make one deck: cluster parallel overlapping
+	// segments and give each cluster one deck over them all, in the frame of its longest segment.
+	{
+
+		const frameOf = g => {
+
+			const l = Math.hypot( g.B[ 0 ] - g.A[ 0 ], g.B[ 1 ] - g.A[ 1 ] );
+			return { l, ux: ( g.B[ 0 ] - g.A[ 0 ] ) / l, uy: ( g.B[ 1 ] - g.A[ 1 ] ) / l };
+
+		};
+
+		const used = new Set(), decks = [];
+		for ( const g of [ ...bridgeSegs ].sort( ( a, b ) => frameOf( b ).l - frameOf( a ).l ) ) {
+
+			if ( used.has( g ) ) continue;
+			used.add( g );
+			const f = frameOf( g );
+			const local = ( [ X, Y ] ) => [ ( X - g.A[ 0 ] ) * f.ux + ( Y - g.A[ 1 ] ) * f.uy, - ( X - g.A[ 0 ] ) * f.uy + ( Y - g.A[ 1 ] ) * f.ux ];
+			let a0 = 0, a1 = f.l, l0 = - g.w / 2, l1 = g.w / 2;
+			for ( const h of bridgeSegs ) {
+
+				if ( used.has( h ) ) continue;
+				const fh = frameOf( h );
+				if ( Math.abs( fh.ux * f.ux + fh.uy * f.uy ) < Math.cos( 15 * Math.PI / 180 ) ) continue;
+				const [ pa, pb ] = [ local( h.A ), local( h.B ) ];
+				if ( Math.max( Math.abs( pa[ 1 ] ), Math.abs( pb[ 1 ] ) ) > 9 || Math.max( pa[ 0 ], pb[ 0 ] ) < - 2 || Math.min( pa[ 0 ], pb[ 0 ] ) > f.l + 2 ) continue;
+				used.add( h );
+				a0 = Math.min( a0, pa[ 0 ], pb[ 0 ] ); a1 = Math.max( a1, pa[ 0 ], pb[ 0 ] );
+				l0 = Math.min( l0, pa[ 1 ] - h.w / 2, pb[ 1 ] - h.w / 2 ); l1 = Math.max( l1, pa[ 1 ] + h.w / 2, pb[ 1 ] + h.w / 2 );
+
+			}
+
+			const mid = ( l0 + l1 ) / 2, at = a => [ g.A[ 0 ] + f.ux * a - f.uy * mid, g.A[ 1 ] + f.uy * a + f.ux * mid ];
+			const y = a => g.ya + ( g.yb - g.ya ) * Math.max( 0, Math.min( 1, a / f.l ) );
+			decks.push( { A: at( a0 ), B: at( a1 ), w: l1 - l0, kind: g.kind, ya: y( a0 ), yb: y( a1 ) } );
+
+		}
+
+		bridgeSegs.length = 0;
+		bridgeSegs.push( ...decks );
 
 	}
 
