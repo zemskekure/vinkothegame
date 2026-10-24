@@ -380,5 +380,5 @@ renderer.setAnimationLoop( () => {
 } );
 
 document.getElementById( 'loading' ).remove();
-window.__debug = { camera, isBlocked, groundHeight };
+window.__debug = { camera, isBlocked, groundHeight, walker };
 window.__ready = true;

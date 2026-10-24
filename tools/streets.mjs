@@ -9,6 +9,7 @@
 
 import { readFile } from 'node:fs/promises';
 import { lonLatToSJTSK } from './geo.mjs';
+import { buildKerbs } from './kerbs.mjs';
 
 const KERB_HEIGHT = 0.12;
 const RAMP_END = 8.5; // the pavement mesh covers the kerb field up to here
@@ -19,7 +20,7 @@ const OPEN_WAYS = new Set( [ 'pedestrian', 'footway', 'living_street', 'path', '
 const SETT = /sett|cobblestone/;
 const surfaceValue = s => s === 'asphalt' || s === 'concrete' ? 1 : SETT.test( s || 'sett' ) ? 0 : 0.5; // 0.5 = paving stones
 
-export async function loadStreets( { AREA, buildingDist, riverAt = () => false } ) {
+export async function loadStreets( { AREA, buildingDist, inBuilding } ) {
 
 	const project = await lonLatToSJTSK();
 	const osm = JSON.parse( await readFile( new URL( '../data/raw/osm.json', import.meta.url ) ) );
@@ -66,14 +67,11 @@ export async function loadStreets( { AREA, buildingDist, riverAt = () => false }
 
 		// Keep at least a narrow pavement between the carriageway and the houses.
 		const half = w.pts.map( p => Math.max( 1.3, Math.min( width / 2, buildingDist( p.X, p.Y ) - ( kerbed ? 1.0 : 0.3 ) ) ) );
-		const sidewalkWidth = parseFloat( t[ 'sidewalk:width' ] || t[ 'sidewalk:both:width' ] ) || 1.8;
-		roads.push( { pts: w.pts, half, kerbed, left, right, sidewalkWidth, asphalt: surfaceValue( t.surface ), name: t.name, highway: t.highway } );
+		const sidewalkTagged = Object.keys( t ).some( k => k.startsWith( 'sidewalk' ) );
+		const sidewalkWidthTag = parseFloat( t[ 'sidewalk:width' ] || t[ 'sidewalk:both:width' ] ) || 0;
+		roads.push( { pts: w.pts, half, kerbed, left, right, sidewalkTagged, sidewalkWidthTag, asphalt: surfaceValue( t.surface ), name: t.name, highway: t.highway } );
 
 	}
-
-	// --- separately mapped pavements (footway=sidewalk): raised strips of their width
-	const sidewalks = ways.filter( w => w.tags.highway === 'footway' && w.tags.footway === 'sidewalk' && w.pts.some( p => inArea( p.X, p.Y, 30 ) ) )
-		.map( w => ( { pts: w.pts, half: ( parseFloat( w.tags.width ) || 2.4 ) / 2, surface: w.tags.surface } ) );
 
 	// --- open (pedestrian) areas and their surface
 	const openWays = ways.filter( w => OPEN_WAYS.has( w.tags.highway ) && w.tags.surface && w.pts.some( p => inArea( p.X, p.Y, 30 ) ) );
@@ -132,88 +130,22 @@ export async function loadStreets( { AREA, buildingDist, riverAt = () => false }
 
 	const nearestRoad = segmentIndex( roads, ( r, i ) => r.half[ i ] );
 	const nearestOpen = segmentIndex( openWays, () => 0 );
-	const nearestSidewalk = segmentIndex( sidewalks, s => s.half );
 
-	// Field values at a point: F = signed distance to any carriageway edge (< 0 on the road),
-	// Fk = the same for carriageways with kerbs (> 0 on the raised pavement side).
-	const nearRiver = ( X, Y ) => {
+	// Kerbed carriageways (tools/kerbs.mjs): measured from the house fronts and the aerial photo.
+	const kerbs = await buildKerbs( { roads, AREA, inBuilding } );
+	const unkerbed = r => r.highway === 'service' || r.highway === 'pedestrian';
 
-		for ( const d of [ 6, 12, 20 ] ) for ( let k = 0; k < 8; k ++ ) {
-
-			if ( riverAt( X + Math.cos( k * Math.PI / 4 ) * d, Y + Math.sin( k * Math.PI / 4 ) * d ) ) return true;
-
-		}
-
-		return false;
-
-	};
-
+	// Field values at a point: Fk = signed distance to a kerb line (> 0 on the raised pavement, 100: none near),
+	// F = signed distance to any carriageway edge (< 0 on the road).
 	function at( X, Y ) {
 
+		const k = kerbs.sdf( X, Y );
+		const Fk = k > 100 ? 100 : k;
 		const r = nearestRoad( X, Y );
+		const u = nearestRoad( X, Y, unkerbed );
 		const o = nearestOpen( X, Y );
-		let F = r.f, Fk = 100; // Fk 100: no kerbed pavement anywhere near
-
-		// Streets with kerbs: in the Old Town the pavements hug the house walls, so the kerb line runs at the
-		// pavement's width from the wall (tagged, or a typical 1.8 m, at most 30 % of the street's width) on
-		// each side that has one; a side without a pavement is carriageway right up to the houses.
-		if ( r.seg && r.d < 14 ) {
-
-			const road = roads[ r.seg.item ];
-			if ( road.kerbed ) {
-
-				if ( r.left ? road.left : road.right ) {
-
-					const bd = buildingDist( X, Y );
-					if ( r.f > 0 && bd > 10 ) {
-
-						// No houses on this side (an embankment, a square): the kerb follows the carriageway edge.
-						Fk = Math.min( r.f, 6 );
-
-					} else {
-
-						const cx = r.seg.a.X + ( r.seg.b.X - r.seg.a.X ) * r.t, cy = r.seg.a.Y + ( r.seg.b.Y - r.seg.a.Y ) * r.t;
-						const width = Math.min( road.sidewalkWidth, 0.6 * buildingDist( cx, cy ) );
-						Fk = width - bd;
-
-					}
-
-					F = Fk;
-
-				} else {
-
-					F = - 0.5;
-
-				}
-
-			}
-
-		}
-
-		// Riverside promenade: outside the carriageway, away from the houses and close to the river (the embankments
-		// are not mapped as pavements), raised with a kerb along the road.
-		if ( r.seg && r.f > 0.2 && Fk === 100 && buildingDist( X, Y ) > 4 && nearRiver( X, Y ) ) {
-
-			Fk = Math.min( r.f, 6 );
-			F = Fk;
-
-		}
-
-		// Separately mapped pavements: raised strips around their centre line, joined to the wall-hugging ones.
-		const sw = nearestSidewalk( X, Y );
-		if ( sw.seg && - sw.f > 0 ) {
-
-			Fk = Fk === 100 ? - sw.f : Math.max( Fk, - sw.f );
-			F = Math.max( F, - sw.f );
-
-		} else if ( sw.seg && sw.f < 3 && Fk === 100 ) {
-
-			Fk = - sw.f; // just outside a mapped pavement: its kerb
-
-		}
-
 		return {
-			F,
+			F: Math.min( Fk, u.f ),
 			Fk,
 			roadAsphalt: r.seg ? roads[ r.seg.item ].asphalt : 0,
 			openSurface: o.seg && o.d < 15 ? surfaceValue( openWays[ o.seg.item ].tags.surface ) : 0
@@ -223,7 +155,7 @@ export async function loadStreets( { AREA, buildingDist, riverAt = () => false }
 
 	const raise = Fk => Fk > 0 && Fk < RAMP_END ? KERB_HEIGHT : 0;
 
-	return { roads, nodes, ways, at, raise, nearestRoad, inArea, KERB_HEIGHT, RAMP_END };
+	return { roads, nodes, ways, at, raise, nearestRoad, inArea, kerbs, KERB_HEIGHT, RAMP_END };
 
 }
 
@@ -273,6 +205,7 @@ export function buildPavementMesh( streets, { AREA, toLocal, heightAt, inBuildin
 			const corners = [ [ i, j ], [ i + 1, j ], [ i + 1, j + 1 ], [ i, j + 1 ] ];
 			const f = corners.map( ( [ a, b ] ) => field[ b * ( W + 1 ) + a ] );
 			if ( Math.max( ...f ) <= 0 || Math.min( ...f ) >= streets.RAMP_END ) continue;
+			if ( Math.max( ...f ) >= 100 && Math.min( ...f ) <= 0 ) continue; // the end of a pavement band: no kerb
 			const cx = AREA.xmin + ( i + 0.5 ) * STEP, cy = AREA.ymax - ( j + 0.5 ) * STEP;
 			if ( inBuilding( cx, cy ) && corners.every( ( [ a, b ] ) => inBuilding( AREA.xmin + a * STEP, AREA.ymax - b * STEP ) ) ) continue;
 

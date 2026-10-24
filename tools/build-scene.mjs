@@ -536,6 +536,66 @@ const riverAt = ( X, Y ) => {
 
 };
 
+// The terrain model (and the smoothing) slope the last metres of land down towards the water, where in reality the
+// street runs level to the embankment wall. Within 14 m of the river, the land is held up to the level of the land
+// behind it: cells are raised to the mean of their neighbours further from the water, from 14 m in to the edge.
+{
+
+	const BANK = 14;
+	const dist = new Uint8Array( tw * th ).fill( 255 );
+	let front = [];
+	for ( let i = 0; i < tw * th; i ++ ) if ( riverMask[ i ] ) {
+
+		dist[ i ] = 0;
+		front.push( i );
+
+	}
+
+	for ( let d = 1; d <= BANK + 1 && front.length; d ++ ) {
+
+		const next = [];
+		for ( const i of front ) {
+
+			const r = Math.floor( i / tw ), c = i % tw;
+			for ( const [ dr, dc ] of [ [ - 1, 0 ], [ 1, 0 ], [ 0, - 1 ], [ 0, 1 ], [ - 1, - 1 ], [ - 1, 1 ], [ 1, - 1 ], [ 1, 1 ] ] ) {
+
+				const rr = r + dr, cc = c + dc;
+				if ( rr < 0 || cc < 0 || rr >= th || cc >= tw || dist[ rr * tw + cc ] !== 255 ) continue;
+				dist[ rr * tw + cc ] = d;
+				next.push( rr * tw + cc );
+
+			}
+
+		}
+
+		front = next;
+
+	}
+
+	for ( let d = BANK; d >= 1; d -- ) {
+
+		for ( let i = 0; i < tw * th; i ++ ) {
+
+			if ( dist[ i ] !== d ) continue;
+			const r = Math.floor( i / tw ), c = i % tw;
+			let sum = 0, n = 0;
+			for ( let dr = - 1; dr <= 1; dr ++ ) for ( let dc = - 1; dc <= 1; dc ++ ) {
+
+				const rr = r + dr, cc = c + dc;
+				if ( rr < 0 || cc < 0 || rr >= th || cc >= tw || dist[ rr * tw + cc ] <= d ) continue;
+				sum += terrain[ rr * tw + cc ];
+				n ++;
+
+			}
+
+			if ( n ) terrain[ i ] = Math.max( terrain[ i ], sum / n );
+
+		}
+
+	}
+
+}
+
 if ( ! Number.isFinite( waterLevel ) ) waterLevel = terrain.reduce( ( m, v ) => Math.min( m, v ), Infinity );
 waterLevel += 0.1;
 for ( let i = 0; i < tw * th; i ++ ) if ( riverMask[ i ] ) terrain[ i ] = waterLevel - 2.5;
@@ -1192,7 +1252,7 @@ function polylineDistance( paths, range ) {
 
 }
 
-const streetData = await loadStreets( { AREA, buildingDist, riverAt } );
+const streetData = await loadStreets( { AREA, buildingDist, inBuilding: ( X, Y ) => keptIds.has( buildingAt( X, Y ) ) } );
 const surface2 = new Uint8Array( sw * sh * 4 );
 const tramDist = polylineDistance( JSON.parse( await readFile( new URL( 'tram.json', RAW ) ) ).flatMap( f => f.geometry?.paths || [] ), 6 );
 const parks = JSON.parse( await readFile( new URL( 'greenery.json', RAW ) ) ).flatMap( f => f.geometry?.rings ? [ f.geometry.rings ] : [] );
