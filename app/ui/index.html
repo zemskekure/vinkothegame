@@ -34,6 +34,11 @@
 			</div>
 		</div>
 		<div>
+			<section class="card">
+				<h2>Živě <small id="live-head"></small></h2>
+				<div class="live-money" id="live-money"></div>
+				<pre class="console" id="console"></pre>
+			</section>
 			<section class="card" id="control"></section>
 			<section class="card">
 				<h2>Spotřeba</h2>
@@ -195,6 +200,31 @@
 
 		await load();
 		setInterval( () => { if ( ! document.hidden ) load(); }, 8000 );
+
+		// The live console, every 3 s: what the running square is doing and what it has cost so far.
+		async function live() {
+
+			if ( document.hidden ) return;
+			const L = await api( '/api/live' ).catch( () => null );
+			if ( ! L ) return;
+			const s = L.session, c = L.control;
+			const mins = s?.started ? Math.round( ( Date.now() - Date.parse( s.started ) ) / 60e3 ) : 0;
+			document.getElementById( 'live-head' ).innerHTML = s ? `${L.running ? '● běží' : 'poslední'} <a href="/sezeni/${s.id}">${s.cell}</a> · ${esc( s.step || STATE[ s.state ] || s.state )}${L.running ? ` · ${mins} min` : ''}${L.queued.length ? ` · ve frontě ${L.queued.map( q => q.cell ).join( ', ' )}` : ''}` : 'nic neběží';
+			document.getElementById( 'live-money' ).innerHTML = [
+				s ? `Tento běh: <b>${tokens( s.tokens || 0 )}</b> tokenů${s.api_cost != null ? ` · API <b>${usd( s.api_cost )}</b>` : s.estimate ? ` · ≈ <b>${usd( s.estimate )}</b> (odhad)` : ''}${s.images ? ` · ${s.images} fotek` : ''}` : '',
+				`API kredit celkem: <b>${c.api ? `${usd( c.api.spent )} / ${usd( c.api.cap )}` : 'vypnuto'}</b>`,
+				`Google dnes: <b>${c.google.today}</b> fotek ≈ ${usd( c.google.todayCost )} · celkem ${usd( c.google.cost )}`,
+				c.stopped ? '<b style="color:#d64533">ZASTAVENO</b>' : ''
+			].filter( Boolean ).join( '<br>' );
+			const box = document.getElementById( 'console' );
+			const atBottom = box.scrollTop + box.clientHeight >= box.scrollHeight - 20;
+			box.textContent = L.events.map( e => ( { app: '· ', tool: '→ ', text: '» ', result: '■ ' }[ e.kind ] || '' ) + e.text.replace( /\s+/g, ' ' ).slice( 0, 220 ) ).join( '\n' );
+			if ( atBottom ) box.scrollTop = box.scrollHeight;
+
+		}
+
+		live();
+		setInterval( live, 3000 );
 	</script>
 </body>
 </html>

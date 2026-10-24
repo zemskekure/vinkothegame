@@ -109,6 +109,9 @@ export function openDB( file ) {
 
 	}
 
+	// The square reviewer runs on Claude Code's default model on the API, which the first table didn't price.
+	db.prepare( 'INSERT OR IGNORE INTO prices (match, label, input, output, cache_read, sort) VALUES (?, ?, ?, ?, ?, ?)' ).run( 'sonnet', 'Sonnet', 3, 15, 0.3, 1 );
+
 	for ( const [ k, v ] of Object.entries( SETTINGS ) ) db.prepare( 'INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)' ).run( k, v );
 
 	// The session that built most of the model before the app existed, measured from its transcript

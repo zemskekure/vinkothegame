@@ -319,6 +319,23 @@ async function route( req, res ) {
 
 	if ( m === 'GET' && p === '/api/grid' ) return send( res, 200, gridSummary() );
 
+	// The live console: the running session's latest events and what it has used so far, and the money totals.
+	if ( m === 'GET' && p === '/api/live' ) {
+
+		const c = control();
+		const costs = summary( db ).costs;
+		const cur = c.current && db.prepare( 'SELECT * FROM sessions WHERE id = ?' ).get( c.current.id );
+		const last = cur || db.prepare( "SELECT * FROM sessions WHERE kind IN ('cell', 'square') ORDER BY id DESC LIMIT 1" ).get();
+		const ev = last ? jobs.events( last.id ) : { events: [] };
+		return send( res, 200, {
+			control: c, running: !! cur,
+			session: last ? { id: last.id, cell: last.cell, state: last.state, step: last.step, started: last.started, images: last.images, api_cost: last.api_cost, ...( costs.get( last.id ) ? { tokens: costs.get( last.id ).tokens, estimate: costs.get( last.id ).cost } : {} ) } : null,
+			events: ev.events.slice( - 60 ),
+			queued: db.prepare( "SELECT id, cell FROM sessions WHERE state = 'queued' ORDER BY id" ).all()
+		} );
+
+	}
+
 	if ( p === '/api/settings' ) {
 
 		if ( m === 'PUT' ) {
@@ -456,10 +473,10 @@ async function route( req, res ) {
 		const s = db.prepare( 'SELECT * FROM sessions WHERE id = ?' ).get( id );
 		if ( ! s ) throw new HttpError( 404, 'not found' );
 		if ( ! sub && m === 'GET' ) return send( res, 200, { ...sessionView( s, summary( db ).costs ), control: control() } );
-		if ( sub === '/events' && m === 'GET' ) return send( res, 200, needJobs().events( id, Number( url.searchParams.get( 'after' ) || 0 ) ) );
+		if ( sub === '/events' && m === 'GET' ) return send( res, 200, jobs.events( id, Number( url.searchParams.get( 'after' ) || 0 ) ) );
 		if ( sub === '/cancel' && m === 'POST' ) {
 
-			needJobs().cancel( id );
+			jobs.cancel( id );
 			return send( res, 200, { ok: true } );
 
 		}
