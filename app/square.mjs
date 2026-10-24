@@ -117,7 +117,7 @@ export async function runSquare( { db, grid, data, live, env, id, budget = 40, s
 
 	};
 
-	update( { state: 'running', started: now(), branch, step: 'příprava' } );
+	update( { state: 'running', started: now(), branch, step: 'příprava', pid: process.pid } );
 	setStatus( square, 'in_progress' );
 
 	// A fresh worktree off the base branch. A leftover worktree of an earlier run is removed only when it is clean

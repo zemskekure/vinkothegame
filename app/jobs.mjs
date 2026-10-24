@@ -26,8 +26,26 @@ export function createJobs( { db, grid, data, live, work, base, env, gameURL, pr
 	let current = null; // { id, child, cancelled }
 	let busy = false;
 
-	// Sessions cut off by a server restart can't be resumed.
-	db.prepare( "UPDATE sessions SET state = 'failed', error = 'Server se restartoval během sezení.', ended = ? WHERE state IN ('running', 'building')" ).run( now() );
+	// Sessions cut off by a server restart can't be resumed; a square run started by hand (its own process) goes on.
+	const alive = pid => {
+
+		try {
+
+			return !! pid && pid !== process.pid && process.kill( pid, 0 );
+
+		} catch {
+
+			return false;
+
+		}
+
+	};
+
+	for ( const s of db.prepare( "SELECT id, pid FROM sessions WHERE state IN ('running', 'building')" ).all() ) {
+
+		if ( ! alive( s.pid ) ) db.prepare( "UPDATE sessions SET state = 'failed', error = 'Server se restartoval během sezení.', ended = ? WHERE id = ?" ).run( now(), s.id );
+
+	}
 
 	const session = id => db.prepare( 'SELECT * FROM sessions WHERE id = ?' ).get( id );
 	const update = ( id, fields ) => {
