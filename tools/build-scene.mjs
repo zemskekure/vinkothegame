@@ -861,6 +861,22 @@ for ( const o of openings ) {
 
 }
 
+// Nová scéna stands over an open undercroft along Národní: from the tram stop a few granite steps lead up under
+// the overhang to the level of the piazzetta, and two wide walk-throughs pass under the building to the square
+// behind (owner's Street View screenshots, Sept 2025). The front's corners from RÚIAN (scene frame).
+{
+
+	const SC = ( x, z ) => [ x + ORIGIN.x, ORIGIN.y - z ];
+	const [ ax, ay ] = SC( - 326.4, 343.5 ), [ bx, by ] = SC( - 292.5, 344.7 );
+	const len = Math.hypot( bx - ax, by - ay ), ux = ( bx - ax ) / len, uy = ( by - ay ) / len;
+	const [ nx, ny ] = uy > 0 ? [ uy, - ux ] : [ - uy, ux ]; // out to Národní (north, +Y)
+	openings.push( { kind: 'arcade', undercroft: true, modern: true, X: ( ax + bx ) / 2, Y: ( ay + by ) / 2, ux, uy, nx: ny > 0 ? nx : - nx, ny: Math.abs( ny ), len: + len.toFixed( 2 ), depth: 7, h: 4.6 } );
+	for ( const o of openings ) if ( o.modern && o.kind === 'passage' ) Object.assign( o, { w: 7, h: 4.6 } );
+	openingBoxes.length = 0;
+	openingBoxes.push( ...openings.map( o => ( { o, box: openingBox( o, 0.05, 0.4 ) } ) ) );
+
+}
+
 const landmarkStatues = [];
 const twinGableFronts = [];
 

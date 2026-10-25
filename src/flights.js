@@ -64,6 +64,26 @@ function addTrench( scene, f ) {
 
 }
 
+// Open granite steps across a square's edge, no walls or railings (the piazzetta from Národní). Each step is a solid
+// block down to well below the pavement, so no gap shows under a sagging survey surface.
+function addOpen( scene, f ) {
+
+	const g = flightGroup( f );
+	const kit = new Kit();
+	const [ bx, , bz ] = f.bottom, [ tx, ty, tz ] = f.top;
+	const len = Math.hypot( tx - bx, tz - bz ), drop = ty - f.bottom[ 1 ], N = f.steps;
+	for ( let k = 1; k <= N; k ++ ) {
+
+		const s0 = len * ( k - 1 ) / N, s1 = k === N ? len + 0.3 : len * k / N;
+		kit.add( F.granite, box( f.w, drop * k / N + 1.2, s1 - s0 + 0.02, 0, - 1.2, ( s0 + s1 ) / 2 ) );
+
+	}
+
+	kit.build( g );
+	scene.add( g );
+
+}
+
 // Steel stair along the wall: open treads on two stringers, handrails, a landing out to the pavement, posts.
 function addMetal( scene, f ) {
 
@@ -149,7 +169,7 @@ function addTunnel( scene, t ) {
 
 export function addFlights( scene, flights = [], tunnels = [] ) {
 
-	for ( const f of flights ) ( f.kind === 'metal' ? addMetal : addTrench )( scene, f );
+	for ( const f of flights ) ( f.kind === 'metal' ? addMetal : f.kind === 'open' ? addOpen : addTrench )( scene, f );
 	for ( const t of tunnels ) addTunnel( scene, t );
 
 }

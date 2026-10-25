@@ -144,7 +144,32 @@ export async function buildTerraces( { terrain, tw, th, cell, AREA, terrainAt, b
 
 		}
 
-		out.piazzetta = { ring, level };
+		// The square's edges onto Národní (facing north, no house in front) meet the pavement a step lower; beside
+		// Divadelní's tunnel portal the survey model sags there, so the pavement in front is filled up to the
+		// pavement's height further out. src: where those edges are, for the steps up (tools/places.mjs).
+		const fronts = [];
+		for ( let i = 0; i < ring.length; i ++ ) {
+
+			const [ ax, ay ] = ring[ i ], [ bx, by ] = ring[ ( i + 1 ) % ring.length ];
+			const l = Math.hypot( bx - ax, by - ay );
+			if ( l < 4 ) continue;
+			let nx = ( by - ay ) / l, ny = - ( bx - ax ) / l;
+			if ( inRing( ( ax + bx ) / 2 + nx * 0.5, ( ay + by ) / 2 + ny * 0.5 ) ) { nx = - nx; ny = - ny; }
+			if ( ny < 0.7 || buildingAt( ( ax + bx ) / 2 + nx * 2, ( ay + by ) / 2 + ny * 2 ) >= 0 ) continue;
+			const far = [ 0.25, 0.5, 0.75 ].map( t => terrainAt( ax + ( bx - ax ) * t + nx * 7, ay + ( by - ay ) * t + ny * 7 ) ).sort( ( p, q ) => p - q )[ 1 ];
+			if ( level - far < 0.2 || level - far > 1.5 ) continue;
+			for ( let s = - 0.5; s <= l + 0.5; s += 0.5 ) for ( let d = 0; d <= 6; d += 0.5 ) {
+
+				const i2 = idx( ax + ( bx - ax ) * s / l + nx * d, ay + ( by - ay ) * s / l + ny * d );
+				if ( i2 >= 0 ) terrain[ i2 ] = Math.max( terrain[ i2 ], far );
+
+			}
+
+			fronts.push( { a: [ ax, ay ], b: [ bx, by ], n: [ nx, ny ], foot: far } );
+
+		}
+
+		out.piazzetta = { ring, level, fronts };
 
 	}
 

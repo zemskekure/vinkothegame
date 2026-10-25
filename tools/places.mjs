@@ -750,6 +750,17 @@ export function collectPlaces( ctx ) {
 
 			const y = + pz.level.toFixed( 2 );
 			places.piazzetta = { heart: [ - 303, y, 377.5, 0 ], statue: [ - 342.5, y, 377, Math.PI / 2 + 0.4 ], pillars: [] };
+			// Open granite steps up from Národní's pavement along the square's north edges (tools/terraces.mjs).
+			for ( const f of pz.fronts || [] ) {
+
+				const [ ax, az ] = L( ...f.a ), [ bx, bz ] = L( ...f.b ), [ nx, nz ] = LV( ...f.n );
+				const len = Math.hypot( bx - ax, bz - az ), RUN = 2.0, steps = Math.max( 2, Math.round( ( y - f.foot ) / 0.15 ) );
+				const mx = ( ax + bx ) / 2, mz = ( az + bz ) / 2;
+				places.flights.push( { kind: 'open', top: [ + mx.toFixed( 2 ), y, + mz.toFixed( 2 ) ], bottom: [ + ( mx + nx * RUN ).toFixed( 2 ), + f.foot.toFixed( 2 ), + ( mz + nz * RUN ).toFixed( 2 ) ], steps, w: + ( len + 0.6 ).toFixed( 2 ) } );
+				zone( mx + nx * RUN / 2, mz + nz * RUN / 2, [ ( bx - ax ) / len, ( bz - az ) / len ], len / 2 + 0.3, RUN / 2, { y0: + f.foot.toFixed( 2 ), y1: y, along: [ - nx, - nz ], steps } );
+				console.log( `places: piazzetta steps from Národní, ${steps} × ${( ( y - f.foot ) / steps ).toFixed( 3 )} m over ${len.toFixed( 1 )} m` );
+
+			}
 			const b = null; // Nová scéna overhangs its recessed ground floor (no free-standing pillars, street photos)
 			if ( b ) {
 
@@ -794,14 +805,35 @@ export function collectPlaces( ctx ) {
 	// walkable zones sloping between them.
 	places.openings = [];
 	const groundY = ( X, Y ) => terrainAt( X, Y ) + streetData.raise( streetData.at( X, Y ).Fk );
+	const pzLevel = ctx.terraces?.piazzetta?.level;
+	// Nová scéna's undercroft first (zones are looked up in order): 4 steps just inside its street face from the
+	// pavement up to the piazzetta's level, level floor behind.
+	for ( const o of ( ctx.openings || [] ).filter( o => o.undercroft && pzLevel !== undefined ) ) {
+
+		const [ x, z ] = L( o.X, o.Y ), [ lx, lz ] = LV( o.ux, o.uy ), [ nx, nz ] = LV( o.nx, o.ny );
+		const foot = Math.max( ...[ - 0.4, - 0.2, 0, 0.2, 0.4 ].map( t => groundY( o.X + o.ux * t * o.len + o.nx * 1.5, o.Y + o.uy * t * o.len + o.ny * 1.5 ) ) );
+		const level = + pzLevel.toFixed( 2 ), STRIP = 1.6, steps = Math.max( 2, Math.round( ( level - foot ) / 0.16 ) );
+		places.openings.push( { kind: 'arcade', undercroft: true, x, z, lx, lz, nx, nz, len: o.len, depth: o.depth, h: o.h, y0: level, y1: level, foot: + foot.toFixed( 2 ), steps, strip: STRIP } );
+		// From 1 m out on the pavement (the front is not quite straight) to the top step.
+		zone( x - nx * ( STRIP - 1 ) / 2, z - nz * ( STRIP - 1 ) / 2, [ lx, lz ], o.len / 2, ( STRIP + 1 ) / 2 + 0.05, { y0: + foot.toFixed( 2 ), y1: level, along: [ - nx, - nz ], steps } );
+		const back = ( o.depth - STRIP ) / 2;
+		zone( x - nx * ( STRIP + back ), z - nz * ( STRIP + back ), [ lx, lz ], o.len / 2, back, { y0: level, y1: level, along: [ - nx, - nz ], ceil: + ( level + o.h - 0.2 ).toFixed( 2 ) } );
+		console.log( `places: Nová scéna undercroft, ${steps} steps × ${( ( level - foot ) / steps ).toFixed( 3 )} m` );
+
+	}
+
 	for ( const o of ctx.openings || [] ) {
+
+		if ( o.undercroft ) continue;
 
 		const [ lx, lz ] = LV( o.ux, o.uy );
 		const across = [ lz, - lx ]; // zone u axis, so that the zone's n axis (its slope) runs along the opening
 		if ( o.kind === 'passage' ) {
 
 			const end = s => groundY( o.X + o.ux * s * ( o.len / 2 + 0.8 ), o.Y + o.uy * s * ( o.len / 2 + 0.8 ) );
-			const y0 = + end( - 1 ).toFixed( 2 ), y1 = + end( 1 ).toFixed( 2 );
+			// Under Nová scéna the walk-throughs are level with the piazzetta (the undercroft's steps take the rise).
+			let y0 = + end( - 1 ).toFixed( 2 ), y1 = + end( 1 ).toFixed( 2 );
+			if ( o.modern && pzLevel !== undefined ) y0 = y1 = + pzLevel.toFixed( 2 );
 			const [ x, z ] = L( o.X, o.Y );
 			places.openings.push( { kind: 'passage', x, z, lx, lz, len: o.len, w: o.w, h: o.h, y0, y1, ...( o.modern ? { modern: true } : {} ) } );
 			zone( x, z, across, o.w / 2 - 0.15, o.len / 2 + 0.35, { y0, y1, along: [ lx, lz ], ceil: + ( Math.max( y0, y1 ) + o.h - 0.2 ).toFixed( 2 ) } );

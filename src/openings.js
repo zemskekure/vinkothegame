@@ -48,7 +48,8 @@ const M = {
 	lamp: glow( 0xffdcaa, 1.8 ),
 	// Under the modern theatre buildings: dark stone-clad walls and a dark ceiling.
 	modernSide: plain( 0x3a3936, { roughness: 0.6, side: THREE.DoubleSide } ),
-	modernCeiling: plain( 0x242424, { roughness: 0.8, side: THREE.DoubleSide } )
+	modernCeiling: plain( 0x242424, { roughness: 0.8, side: THREE.DoubleSide } ),
+	step: plain( 0x9e9a92, { roughness: 0.85, side: THREE.DoubleSide } )
 };
 
 // A quad from four corners (counter-clockwise seen from the front).
@@ -151,7 +152,31 @@ function addPassage( shared, o ) {
 
 }
 
+// Nová scéna's undercroft: granite steps up just inside the street face, a level floor behind, dark stone-clad back
+// wall and ends, a dark ceiling under the building.
+function addUndercroft( shared, o ) {
+
+	const X = new THREE.Vector3( o.nz, 0, - o.nx );
+	const kit = new FramedKit( shared, { ...o, lx: X.x, lz: X.z }, new THREE.Vector3( o.nx, 0, o.nz ) );
+	const L = o.len / 2, D = o.depth, top = o.y0, N = o.steps, S = o.strip;
+	for ( let k = 1; k <= N; k ++ ) {
+
+		const y = o.foot + ( top - o.foot ) * k / N, base = o.foot - 1.2;
+		kit.add( M.step, new THREE.BoxGeometry( 2 * L, y - base, S / N + 0.02 ).translate( 0, ( y + base ) / 2, - ( k - 0.5 ) * S / N ) );
+
+	}
+
+	kit.add( M.step, quad( [ - L, top, - S ], [ L, top, - S ], [ L, top, - D ], [ - L, top, - D ] ) );
+	kit.add( M.modernSide, quad( [ - L, top - 0.2, - D ], [ L, top - 0.2, - D ], [ L, top + o.h, - D ], [ - L, top + o.h, - D ] ) );
+	kit.add( M.modernCeiling, quad( [ - L, top + o.h, - D ], [ L, top + o.h, - D ], [ L, top + o.h, 0.3 ], [ - L, top + o.h, 0.3 ] ) );
+	for ( const s of [ - 1, 1 ] ) kit.add( M.modernSide, quad( [ s * L, o.foot - 0.2, 0 ], [ s * L, o.foot - 0.2, - D ], [ s * L, top + o.h, - D ], [ s * L, top + o.h, 0 ] ) );
+	for ( let k = 1; k < 4; k ++ ) kit.add( M.lamp, new THREE.SphereGeometry( 0.14, 10, 6 ).translate( - L + k * L / 2, top + o.h - 0.2, - D / 2 ) );
+
+}
+
 function addArcade( scene, shared, o, others ) {
+
+	if ( o.undercroft ) return addUndercroft( shared, o );
 
 	// Frame: z out to the street, x along the street front (x × y = z).
 	const X = new THREE.Vector3( o.nz, 0, - o.nx );
