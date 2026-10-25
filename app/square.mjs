@@ -30,7 +30,7 @@ function stamp() {
 
 }
 
-export const reviewPrompt = ( square, work ) => `Follow docs/review-brief.md for square ${square}. The inventory is at ${work}/inventory.json. Street View is the primary reference; owner photos are supplements. Describe visible ground-floor openings, balconies, style, roof and signs, and draw original SVG fronts for every distinctive ground floor that the evidence supports. Match each sign's actual size, placement, colour and lettering style; a generic name board is not an acceptable substitute. Use owner photos to guide drawn details, never as raw photo overlays. Report layout problems with photo evidence; do not change geometry. Include visualIssues as an array, empty only if no mismatch is known. Write ${work}/review.json and SVGs in ${work}/fronts/. Do not edit the repository.`;
+export const reviewPrompt = ( square, work ) => `Follow docs/review-brief.md for square ${square}. The inventory is at ${work}/inventory.json. Street View is the primary reference; owner photos are supplements. Read the photos through ${work}/marked/ (front boundaries labelled <code>_<edge> and metre ticks): describe each facade under the front the marks put it on. Describe visible ground-floor openings, balconies, style, roof and signs, and draw original SVG fronts for every distinctive ground floor that the evidence supports. Match each sign's actual size, placement, colour and lettering style; a generic name board is not an acceptable substitute. Use owner photos to guide drawn details, never as raw photo overlays. Report layout problems with photo evidence; do not change geometry. Include visualIssues as an array, empty only if no mismatch is known. Write ${work}/review.json and SVGs in ${work}/fronts/. Do not edit the repository.`;
 
 const correctionPrompt = ( square, work, proof ) => `Second pass for ${square}. Read ${work}/review-pass1.json, the model/photo pairs in ${proof}/index.html, and ${proof}/proof.json. Compare the model with Street View from the same camera positions, using owner photos as supplements. For each prominent frontage, inspect the photographed ground-floor rhythm, material, entrance and real signs beside the model. If it still looks generic, revise its SVG; do not count a text label alone as a correction. Match the game's drawn style without raw photo overlays. Correct the visual description and drawings once. Write a complete corrected ${work}/review.json, including unchanged houses and signs, and list every remaining prominent visual mismatch in visualIssues with its front and photo evidence. If none remain, write visualIssues: []. Report layout problems separately. Follow docs/review-brief.md. Do not edit the repository or try to guess geometry.`;
 
@@ -167,6 +167,10 @@ export async function runSquare( { db, grid, data, live, env, id, budget = 40, s
 	const used = streetViews + ownPhotos;
 	update( { images: used, images_fetched: fetched } );
 	if ( ! used ) return fail( 'no photos for this square (GMAPS_KEY missing or no Street View coverage)' );
+	// Copies of the photos with each RÚIAN front's ends and metre ticks drawn on, so the reviewer puts every facade
+	// under the right front (tools/square-marks.mjs; <work>/marked/, outside git).
+	const marks = await run( 'node', [ 'tools/square-marks.mjs', square ], { quiet: true } );
+	if ( marks.code ) note( 'marking the photos failed; the reviewer reads the plain photos' );
 
 	// The reviewer: headless Claude Code, reading only, writing one file outside the repository.
 	step( 'review' );
@@ -251,7 +255,9 @@ export async function runSquare( { db, grid, data, live, env, id, budget = 40, s
 	catch ( e ) { return fail( `final proof failed: ${e.message}` ); }
 	const shots = final.shots;
 	update( { shots: JSON.stringify( { before: first.shots, after: shots, proof: final.proof, pairs: final.proof.pairs.map( p => ( { ...p, referenceUrl: `/files/shots/${id}/pass2/proof/${p.reference}`, modelUrl: `/files/shots/${id}/pass2/proof/${p.model}` } ) ), proofUrl: `/files/shots/${id}/pass2/proof/index.html` } ) } );
-	if ( review.visualIssues.length ) return fail( `${review.visualIssues.length} unresolved visual mismatch(es): ${review.visualIssues.map( v => `${v.front}: ${v.what}` ).join( '; ' )}. Inspect the final photo pairs and correct the tile before creating a PR.` );
+	// Remaining mismatches don't stop the tile: they go into the pull request, which the owner reviews and approves
+	// with the photo pairs in front of him (every tile so far had a few after the correction pass).
+	if ( review.visualIssues.length ) note( `${review.visualIssues.length} visual mismatch(es) left, listed in the PR` );
 
 	// Only the data and the built scene go into the commit.
 	step( 'commit' );
@@ -497,6 +503,7 @@ function prBody( { square, cell, merged, review, inventory, fetched, streetViews
 		`<details><summary>Houses</summary>\n\n${houses.join( '\n' ) || '-'}\n</details>`,
 		`<details><summary>Signs</summary>\n\n${signs.join( '\n' ) || '-'}\n</details>`,
 		`## Reviewer's issues\n${( merged.issues || [] ).map( i => `- ${i}` ).join( '\n' ) || '-'}`,
+		`## Still different from the photos\n${( review.visualIssues || [] ).map( v => `- ${v.front}: ${v.what}` ).join( '\n' ) || 'Nothing listed.'}`,
 		`## Layout issues for owner approval\n${( merged.layoutIssues || [] ).map( i => `- ${i.kind}: ${i.where} — ${i.evidence}` ).join( '\n' ) || 'None reported.'}`,
 		`## Photo and walk proof\n${proof.pairs.length} same-position pairs (${proof.pairs.filter( p => p.source === 'Street View' ).length} Street View, ${proof.pairs.filter( p => p.source === 'Owner photo' ).length} owner photos). ${proof.clear}/${proof.openings} mapped passages and arcades clear in the collision test. See the grid app session ${id} for side-by-side images and blocked positions.`,
 		`## Cost\n- Tokens: ${n( usage.tokens )} (input ${n( usage.input )}, output ${n( usage.output )}, cache read ${n( usage.cache_read )}, cache write ${n( usage.cache_write_5m + usage.cache_write_1h )}; ${usage.messages} messages, main session and subagents)`
