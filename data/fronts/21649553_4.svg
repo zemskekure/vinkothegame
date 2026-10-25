@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 3110 550">
+  <rect width="3110" height="550" fill="#d9cca2"/>
+  <rect y="2" width="3110" height="350" fill="#e4d8b0"/>
+  <rect y="416" width="3110" height="134" fill="#beb5a5"/>
+  <path d="M0 48H3110M0 112H3110M0 406H3110M0 421H3110M0 528H3110" stroke="#a89f8d" stroke-width="7"/>
+  <path d="M0 16H3110M0 92H3110" stroke="#f4eedf" stroke-width="9"/>
+  <text x="1530" y="84" text-anchor="end" font-family="sans-serif" font-size="40" letter-spacing="16" fill="#b8644a">FAKULTA SOCIÁLNÍCH VĚD UK</text>
+  <path d="M115 420V177Q115 102 237.5 102Q360 102 360 177V420Z" fill="#d1c5ad" stroke="#f4ead6" stroke-width="16"/>
+  <path d="M137 411V182Q137 137 237.5 137Q338 137 338 182V411Z" fill="#3f4d4c" stroke="#f5f1e6" stroke-width="13"/>
+  <path d="M237.5 145V411M142 266H333" stroke="#e9e8df" stroke-width="11"/>
+  <path d="M144 182L229.5 274V184ZM245.5 185L332 284V185Z" fill="#85999a" opacity="0.55"/>
+  <path d="M135 420H340" stroke="#a39580" stroke-width="9"/>
+  <path d="M480 420V177Q480 102 602.5 102Q725 102 725 177V420Z" fill="#d1c5ad" stroke="#f4ead6" stroke-width="16"/>
+  <path d="M502 411V182Q502 137 602.5 137Q703 137 703 182V411Z" fill="#3f4d4c" stroke="#f5f1e6" stroke-width="13"/>
+  <path d="M602.5 145V411M507 266H698" stroke="#e9e8df" stroke-width="11"/>
+  <path d="M509 182L594.5 274V184ZM610.5 185L697 284V185Z" fill="#85999a" opacity="0.55"/>
+  <path d="M500 420H705" stroke="#a39580" stroke-width="9"/>
+  <path d="M845 420V177Q845 102 967.5 102Q1090 102 1090 177V420Z" fill="#d1c5ad" stroke="#f4ead6" stroke-width="16"/>
+  <path d="M867 411V182Q867 137 967.5 137Q1068 137 1068 182V411Z" fill="#3f4d4c" stroke="#f5f1e6" stroke-width="13"/>
+  <path d="M967.5 145V411M872 266H1063" stroke="#e9e8df" stroke-width="11"/>
+  <path d="M874 182L959.5 274V184ZM975.5 185L1062 284V185Z" fill="#85999a" opacity="0.55"/>
+  <path d="M865 420H1070" stroke="#a39580" stroke-width="9"/>
+  <path d="M1210 420V177Q1210 102 1332.5 102Q1455 102 1455 177V420Z" fill="#d1c5ad" stroke="#f4ead6" stroke-width="16"/>
+  <path d="M1232 411V182Q1232 137 1332.5 137Q1433 137 1433 182V411Z" fill="#3f4d4c" stroke="#f5f1e6" stroke-width="13"/>
+  <path d="M1332.5 145V411M1237 266H1428" stroke="#e9e8df" stroke-width="11"/>
+  <path d="M1239 182L1324.5 274V184ZM1340.5 185L1427 284V185Z" fill="#85999a" opacity="0.55"/>
+  <path d="M1230 420H1435" stroke="#a39580" stroke-width="9"/>
+  <path d="M1575 420V177Q1575 102 1697.5 102Q1820 102 1820 177V420Z" fill="#d1c5ad" stroke="#f4ead6" stroke-width="16"/>
+  <path d="M1597 411V182Q1597 137 1697.5 137Q1798 137 1798 182V411Z" fill="#3f4d4c" stroke="#f5f1e6" stroke-width="13"/>
+  <path d="M1697.5 145V411M1602 266H1793" stroke="#e9e8df" stroke-width="11"/>
+  <path d="M1604 182L1689.5 274V184ZM1705.5 185L1792 284V185Z" fill="#85999a" opacity="0.55"/>
+  <path d="M1595 420H1800" stroke="#a39580" stroke-width="9"/>
+  <path d="M2670 420V177Q2670 102 2792.5 102Q2915 102 2915 177V420Z" fill="#d1c5ad" stroke="#f4ead6" stroke-width="16"/>
+  <path d="M2692 411V182Q2692 137 2792.5 137Q2893 137 2893 182V411Z" fill="#3f4d4c" stroke="#f5f1e6" stroke-width="13"/>
+  <path d="M2792.5 145V411M2697 266H2888" stroke="#e9e8df" stroke-width="11"/>
+  <path d="M2699 182L2784.5 274V184ZM2800.5 185L2887 284V185Z" fill="#85999a" opacity="0.55"/>
+  <path d="M2690 420H2895" stroke="#a39580" stroke-width="9"/>
+  <path d="M10 487Q40 466 77 488L112 462M305 506Q332 486 366 505M1473 505Q1524 477 1579 497M1807 493Q1860 477 1908 499" fill="none" stroke="#aaa396" stroke-width="5"/>
+  <rect x="2200" y="110" width="55" height="43" fill="#263b73" stroke="#eee9d9" stroke-width="5"/>
+  <text x="2227" y="140" text-anchor="middle" font-family="sans-serif" font-size="25" fill="#f4f1e5">6</text>
+  <g transform="translate(365 0)">
+  <path d="M1940 420V177Q1940 102 2062.5 102Q2185 102 2185 177V420Z" fill="#d1c5ad" stroke="#f4ead6" stroke-width="16"/>
+  <path d="M1962 411V182Q1962 137 2062.5 137Q2163 137 2163 182V411Z" fill="#3f4d4c" stroke="#f5f1e6" stroke-width="13"/>
+  <path d="M2062.5 145V411M1967 266H2158" stroke="#e9e8df" stroke-width="11"/>
+  <path d="M1969 182L2054.5 274V184ZM2070.5 185L2157 284V185Z" fill="#85999a" opacity="0.55"/>
+  <path d="M1960 420H2165" stroke="#a39580" stroke-width="9"/>
+  </g>
+  <g transform="translate(-365 0)">
+  <path d="M2305 418V183Q2305 85 2427.5 85Q2550 85 2550 183V418Z" fill="#d5c9ad" stroke="#f5eedf" stroke-width="16"/>
+  <path d="M2328 418V188Q2328 128 2427.5 128Q2527 128 2527 188V418Z" fill="#4b3531" stroke="#77615a" stroke-width="8"/>
+  <path d="M2427.5 187V418M2343 220H2405V310H2343ZM2450 220H2512V310H2450Z" fill="none" stroke="#251c1d" stroke-width="9"/>
+  <path d="M2345 352H2403M2452 352H2510" stroke="#9d8370" stroke-width="4"/>
+  <circle cx="2447.5" cy="344" r="7" fill="#b5a077"/>
+  </g>
+  <rect x="2585" y="190" width="50" height="120" fill="#151515"/>
+  <text x="2610" y="262" text-anchor="middle" font-family="sans-serif" font-size="20" fill="#f2f2ee" transform="rotate(-90 2610 250)">Hollar</text>
+  <rect x="1915" y="120" width="40" height="28" fill="#c9433a" stroke="#f3eee2" stroke-width="3"/>
+</svg>

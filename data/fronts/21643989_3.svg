@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1390 420">
+  <rect width="1390" height="420" fill="#ecebe4"/>
+  <path d="M0 60H505M0 120H505M0 180H40M230 180H505M0 240H40M230 240H505M0 300H40M230 300H505M0 360H40M230 360H505" stroke="#d6d3c9" stroke-width="4"/>
+  <rect width="505" height="22" fill="#e2dfd5"/>
+  <path d="M40 410V250A95 95 0 0 1 230 250V410Z" fill="#f4f3ee"/>
+  <path d="M55 410V252A80 80 0 0 1 215 252V410Z" fill="#4a3a2c"/>
+  <path d="M68 250A67 67 0 0 1 202 250Z" fill="#2c3134"/>
+  <rect x="70" y="262" width="58" height="140" fill="#3b2e24"/>
+  <rect x="142" y="262" width="58" height="140" fill="#3b2e24"/>
+  <rect x="500" width="12" height="420" fill="#6f7172"/>
+  <rect x="512" width="878" height="420" fill="#efede6"/>
+  <rect x="512" width="878" height="20" fill="#e3dcc4"/>
+  <text x="560" y="185" font-family="Georgia, serif" font-weight="bold" font-size="200" letter-spacing="6" fill="#222222">duende</text>
+  <rect x="535" y="215" width="115" height="195" fill="#b3261e"/>
+  <path d="M548 228H637V310H548ZM548 322H637V398H548Z" fill="none" stroke="#8a1c16" stroke-width="5"/>
+  <rect x="560" y="300" width="60" height="44" fill="#f2f0ea"/>
+  <rect x="660" y="215" width="200" height="195" fill="#6b4a2c"/>
+  <rect x="672" y="226" width="176" height="184" fill="#2a221c"/>
+  <path d="M672 236L700 252L728 236L756 252L784 236L812 252L840 236" fill="none" stroke="#7d6a4a" stroke-width="2"/>
+  <polygon points="684,238 700,262 708,240" fill="#d8402f"/>
+  <polygon points="716,240 728,264 740,242" fill="#e7c23a"/>
+  <polygon points="748,242 760,264 772,240" fill="#3f8a4c"/>
+  <polygon points="780,238 792,262 804,242" fill="#3b62b0"/>
+  <polygon points="812,242 824,262 836,238" fill="#d8402f"/>
+  <rect x="870" y="215" width="115" height="195" fill="#b3261e"/>
+  <path d="M883 228H972V310H883ZM883 322H972V398H883Z" fill="none" stroke="#8a1c16" stroke-width="5"/>
+  <rect x="992" y="300" width="90" height="105" fill="#262a2a"/>
+  <path d="M1002 318H1070M1002 336H1062M1002 354H1072M1002 372H1056" stroke="#e8e6dc" stroke-width="3"/>
+  <rect x="1040" y="215" width="48" height="22" fill="#f6f5f0"/>
+  <text x="1064" y="232" text-anchor="middle" font-family="sans-serif" font-size="15" fill="#222222">Ende</text>
+  <rect y="406" width="1390" height="14" fill="#c9c6bd"/>
+</svg>

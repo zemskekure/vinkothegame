@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1360 420">
+<rect x="0" y="0" width="1360" height="420" fill="#ebe6da"/>
+<path d="M0 60H820M1340 60H1360M0 102H820M1340 102H1360M0 144H820M1340 144H1360M0 186H820M1340 186H1360M0 228H820M1340 228H1360M0 270H820M1340 270H1360M0 312H820M1340 312H1360M0 354H820M1340 354H1360M0 396H820M1340 396H1360" stroke="#d6d0c2" stroke-width="3" fill="none"/>
+<rect x="0" y="0" width="1360" height="16" fill="#f3efe6"/>
+<path d="M0 16H1360" stroke="#cfc8b8" stroke-width="4"/>
+<rect x="20" y="142" width="120" height="196" fill="#f4f1ea"/>
+<rect x="28" y="150" width="104" height="180" fill="#323b3f"/>
+<path d="M54 150V330M80 150V330M106 150V330M28 180H132M28 210H132M28 240H132M28 270H132M28 300H132" stroke="#f0ede6" stroke-width="5" fill="none"/>
+<rect x="16" y="336" width="128" height="10" fill="#f4f1ea"/>
+<rect x="290" y="150" width="44" height="30" fill="#b9b3a6"/>
+<path d="M294 158H330M294 166H330M294 174H330" stroke="#8f897d" stroke-width="2"/>
+<rect x="588" y="222" width="64" height="98" fill="#d7d2c6" stroke="#a9a397" stroke-width="3"/>
+<path d="M600 240L640 300M606 290L636 250" stroke="#7a7a8a" stroke-width="2"/>
+<rect x="700" y="140" width="52" height="190" fill="#2e5a3c" stroke="#1d3a27" stroke-width="3"/>
+<circle cx="726" cy="160" r="10" fill="#e9e4d6"/>
+<path d="M710 190H742M710 205H742M710 220H736M710 240H742M710 255H730M710 290H742" stroke="#dfe6dc" stroke-width="2"/>
+<path d="M770 60H812V72" stroke="#222" stroke-width="4" fill="none"/>
+<circle cx="790" cy="108" r="32" fill="#f3d22e" stroke="#2a2a2a" stroke-width="2"/>
+<g font-family="sans-serif" fill="#1d1d1b" text-anchor="middle"><text x="790" y="96" font-size="9">KINO</text><text x="790" y="112" font-size="12" font-weight="bold">Ponrepo</text><text x="790" y="126" font-size="9">CAFE</text></g>
+<path d="M830 420V215A245 245 0 0 1 1320 215V420Z" fill="#f2eee6" stroke="#d2cbbd" stroke-width="4"/>
+<path d="M880 215L830 215M899 130L854 109M953 63L922 23M1032 25L1020 -24M1118 25L1130 -24M1197 63L1228 23M1251 130L1296 109M1270 215L1320 215M830 257H880M1270 257H1320M830 299H880M1270 299H1320M830 341H880M1270 341H1320M830 383H880M1270 383H1320" stroke="#d2cbbd" stroke-width="4" fill="none"/>
+<path d="M880 420V215A195 195 0 0 1 1270 215V420Z" fill="#1f5c42"/>
+<path d="M896 412V215A179 179 0 0 1 1254 215V412Z" fill="#2a3538"/>
+<path d="M880 215H1270M1000 215V412M1150 215V412M1075 215V412M1075 215V35" stroke="#1f5c42" stroke-width="12" fill="none"/>
+<path d="M1010 235L1060 335V255ZM1160 235L1240 365V255Z" fill="#6f8a8c" opacity="0.35"/>
+<rect x="1052" y="300" width="8" height="40" fill="#c9a64a"/>
+<rect x="1090" y="300" width="8" height="40" fill="#c9a64a"/>
+<rect x="1012" y="262" width="36" height="46" fill="#f4f2ea"/>
+<rect x="0" y="404" width="1360" height="16" fill="#d9d3c6"/>
+</svg>
