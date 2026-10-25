@@ -443,42 +443,31 @@ function mergeBody( gltf, spec ) {
 		for ( let i = 0; i < count; i += 3 ) {
 
 			const t = [ 0, 1, 2 ].map( k => vo + ( g.index ? g.index.getX( i + k ) : i + k ) );
-			if ( BLOCK_HEADS && t.every( k => dominant[ k ] ) ) continue;
 			index.push( ...t );
 
 		}
 
 	}
 
-	let headUV = null;
-	// The box head: the dropped head's extent in the head bone's frame, a little slimmer than the hair was.
+	// The modelled head keeps its shape; the photo face is stretched over its front, PS1 style: projected straight on
+	// from the front (+z in the body's rest pose), ear to ear and chin to hairline; the rest of the head is hair.
+	const headUV = [];
 	if ( BLOCK_HEADS && headBone >= 0 ) {
 
-		const inv = skeleton.boneInverses[ headBone ].clone().multiply( Winv ), toBody = inv.clone().invert();
 		const box = new THREE.Box3();
-		for ( let i = 0; i < dominant.length; i ++ ) if ( dominant[ i ] ) box.expandByPoint( v.fromArray( position, i * 3 ).applyMatrix4( inv ) );
-		// A blocky head: no taller than 1.2 times its width, keeping the top where the crown was.
-		const size = box.getSize( new THREE.Vector3() ).multiplyScalar( 0.88 ), mid = box.getCenter( new THREE.Vector3() );
-		const up = new THREE.Vector3( 0, 1, 0 ).transformDirection( inv ), ax = [ 'x', 'y', 'z' ].reduce( ( a, b ) => Math.abs( up[ b ] ) > Math.abs( up[ a ] ) ? b : a );
-		const width = Math.max( ...[ 'x', 'y', 'z' ].filter( k => k !== ax ).map( k => size[ k ] ) ), tall = Math.min( size[ ax ], 1.2 * width );
-		mid[ ax ] += Math.sign( up[ ax ] ) * ( size[ ax ] - tall ) / 2;
-		size[ ax ] = tall;
-		box.setFromCenterAndSize( mid, size );
-		const h = headBox( box.min, box.max, l => l.applyMatrix4( toBody ) );
-		const vo = position.length / 3;
-		position.push( ...h.pos );
-		normal.push( ...h.nor );
-		slot.push( ...h.slot );
-		for ( let i = 0; i < h.slot.length; i ++ ) {
+		for ( let i = 0; i < dominant.length; i ++ ) if ( dominant[ i ] ) box.expandByPoint( v.fromArray( position, i * 3 ) );
+		const chin = box.min.y, hairline = box.min.y + ( box.max.y - box.min.y ) * 0.8;
+		const x0 = box.min.x + ( box.max.x - box.min.x ) * 0.06, x1 = box.max.x - ( box.max.x - box.min.x ) * 0.06;
+		for ( let i = 0; i < dominant.length; i ++ ) {
 
-			color.push( 1, 1, 1 );
-			skinIndex.push( headBone, 0, 0, 0 );
-			skinWeight.push( 1, 0, 0, 0 );
+			if ( ! dominant[ i ] ) continue;
+			const x = position[ i * 3 ], y = position[ i * 3 + 1 ], nz = normal[ i * 3 + 2 ];
+			const face = nz > 0.2 && y <= hairline;
+			slot[ i ] = face ? SLOT.face : SLOT.hair;
+			color[ i * 3 ] = color[ i * 3 + 1 ] = color[ i * 3 + 2 ] = 1;
+			headUV.push( i, Math.min( 1, Math.max( 0, ( x - x0 ) / ( x1 - x0 ) ) ), Math.min( 1, Math.max( 0, ( hairline - y ) / ( hairline - chin ) ) ) );
 
 		}
-
-		index.push( ...h.index.map( i => i + vo ) );
-		headUV = { from: vo, uvs: h.uvs }; // replaces the box projection there
 
 	}
 
@@ -487,7 +476,7 @@ function mergeBody( gltf, spec ) {
 	geometry.setAttribute( 'position', new THREE.BufferAttribute( P, 3 ) );
 	geometry.setAttribute( 'normal', new THREE.BufferAttribute( Nn, 3 ) );
 	const UV = boxUV( P, Nn, 1 / 1.75 * ( new THREE.Box3().setFromArray( P ).getSize( v ).y ) );
-	if ( headUV ) UV.set( headUV.uvs, headUV.from * 2 );
+	for ( let k = 0; k < headUV.length; k += 3 ) UV.set( [ headUV[ k + 1 ], headUV[ k + 2 ] ], headUV[ k ] * 2 );
 	geometry.setAttribute( 'uv', new THREE.BufferAttribute( UV, 2 ) );
 	geometry.setAttribute( 'color', new THREE.BufferAttribute( new Float32Array( color ), 3 ) );
 	geometry.setAttribute( 'slot', new THREE.BufferAttribute( new Float32Array( slot ), 1 ) );
