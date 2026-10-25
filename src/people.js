@@ -123,7 +123,7 @@ export async function loadWardrobe() {
 
 	if ( manifest ) await Promise.all( Object.keys( tiles ).flatMap( kind => ( manifest[ kind ] || [] ).map( async entry => {
 
-		const { file, sex } = typeof entry === 'string' ? { file: entry } : entry;
+		const { file, sex, part } = typeof entry === 'string' ? { file: entry } : entry;
 		try {
 
 			const img = new Image();
@@ -138,10 +138,10 @@ export async function loadWardrobe() {
 					const cheeks = mean( x, y, 0.22, 0.55, 0.32, 0.68 ).map( ( v, i ) => ( v + mean( x, y, 0.68, 0.55, 0.78, 0.68 )[ i ] ) / 2 );
 					info = { skin: cheeks, hair: mean( x, y, 0.3, 0, 0.7, 0.05 ) };
 
-				}
+				} else info = { mean: mean( x, y, 0, 0, 1, 1 ), own: true }; // a photo of hair, cloth or skin in its own colours
 
 			} );
-			if ( t >= 0 ) tiles[ kind ].push( { t, file, sex, ...info } );
+			if ( t >= 0 ) tiles[ kind ].push( { t, file, sex, part, ...info } );
 
 		} catch ( e ) {
 
@@ -215,10 +215,47 @@ export function dress( rnd, sex, wardrobe ) {
 
 		if ( rnd() > p ) return [ 0, 0, 0, 0 ];
 		const k = lin( pick( rnd, list ) ).multiplyScalar( 0.9 + rnd() * 0.2 );
-		if ( tiles.length && rnd() < pt ) return [ 1 - ( 1 - k.r ) * 0.5, 1 - ( 1 - k.g ) * 0.5, 1 - ( 1 - k.b ) * 0.5, 2 + pick( rnd, tiles ).t ];
+		if ( tiles.length && rnd() < pt ) {
+
+			// A photographed fabric keeps its own colour (a little lighter or darker); a drawn pattern is tinted.
+			const tile = pick( rnd, tiles );
+			if ( tile.own ) {
+
+				const v = 0.85 + rnd() * 0.2;
+				return [ v, v, v, 2 + tile.t ];
+
+			}
+
+			return [ 1 - ( 1 - k.r ) * 0.5, 1 - ( 1 - k.g ) * 0.5, 1 - ( 1 - k.b ) * 0.5, 2 + tile.t ];
+
+		}
+
 		return [ k.r, k.g, k.b, 1 ];
 
 	};
+
+	// The photographed tile (hair, skin) nearest a colour, tinted so that on average it is that colour.
+	const matched = ( tiles, colour ) => {
+
+		let best = null, bd = Infinity;
+		for ( const tile of tiles ) {
+
+			const d = tile.mean.reduce( ( a, v, i ) => a + ( v - colour[ i ] ) ** 2, 0 );
+			if ( d < bd ) {
+
+				bd = d;
+				best = tile;
+
+			}
+
+		}
+
+		return [ ...colour.slice( 0, 3 ).map( ( v, i ) => Math.min( 1.6, v / Math.max( 0.02, best.mean[ i ] ) ) ), 2 + best.t ];
+
+	};
+
+	const sexed = list => list.filter( x => ! x.sex || x.sex === sex );
+	const fabrics = part => sexed( T.clothes.filter( x => ! x.part || x.part === part ) );
 
 	const faces = T.faces.filter( f => ! f.sex || f.sex === sex ), face = pick( rnd, faces.length ? faces : T.faces );
 	let skin, hair;
@@ -234,10 +271,14 @@ export function dress( rnd, sex, wardrobe ) {
 
 	}
 
-	if ( T.heads.length ) hair = [ ...hair.slice( 0, 3 ), 2 + pick( rnd, T.heads ).t ];
+	// Photographed hair and skin, matched to the face's own colours; otherwise any hair tile tinted by the hair.
+	const photoHeads = T.heads.filter( x => x.own ), photoSkin = T.skin.filter( x => x.own );
+	if ( photoHeads.length && hair[ 3 ] === 1 ) hair = matched( photoHeads, hair );
+	else if ( T.heads.length ) hair = [ ...hair.slice( 0, 3 ), 2 + pick( rnd, T.heads ).t ];
+	if ( face.skin && photoSkin.length ) skin = matched( photoSkin, skin );
 	// A photo face as it is; the drawn one in the skin colour.
 	const look = face.skin ? [ 1, 1, 1, 2 + face.t ] : [ ...( skin[ 3 ] === 1 ? skin.slice( 0, 3 ) : lin( SKIN[ 2 ] ).toArray() ), 2 + face.t ];
-	return [ paint( TOPS, 0.9, T.clothes, 0.35 ), paint( BOTTOMS, 0.75, T.clothes, 0.2 ), hair, skin, look ];
+	return [ paint( TOPS, 0.9, fabrics( 'top' ), 0.35 ), paint( BOTTOMS, 0.75, fabrics( 'bottom' ), 0.3 ), hair, skin, look ];
 
 }
 

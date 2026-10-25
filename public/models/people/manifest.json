@@ -161,7 +161,120 @@
 			"sex": "f"
 		}
 	],
-	"heads": [],
-	"clothes": [],
-	"skin": []
+	"heads": [
+		{
+			"file": "hair_01.jpg"
+		},
+		{
+			"file": "hair_02.jpg"
+		},
+		{
+			"file": "hair_03.jpg"
+		},
+		{
+			"file": "hair_04.jpg"
+		},
+		{
+			"file": "hair_05.jpg"
+		},
+		{
+			"file": "hair_06.jpg"
+		},
+		{
+			"file": "hair_07.jpg"
+		},
+		{
+			"file": "hair_08.jpg"
+		},
+		{
+			"file": "hair_09.jpg"
+		},
+		{
+			"file": "hair_10.jpg"
+		}
+	],
+	"clothes": [
+		{
+			"file": "beige_trench_coat.jpg",
+			"part": "top"
+		},
+		{
+			"file": "black_tracksuit.jpg",
+			"part": "bottom"
+		},
+		{
+			"file": "blue_denim.jpg",
+			"part": "bottom"
+		},
+		{
+			"file": "brown_corduroy.jpg",
+			"part": "bottom"
+		},
+		{
+			"file": "faded_black_jeans.jpg",
+			"part": "bottom"
+		},
+		{
+			"file": "floral_granny_dress.jpg",
+			"part": "top",
+			"sex": "f"
+		},
+		{
+			"file": "green_army_parka.jpg",
+			"part": "top"
+		},
+		{
+			"file": "grey_wool_trousers.jpg",
+			"part": "bottom"
+		},
+		{
+			"file": "hi_vis_orange.jpg",
+			"part": "top"
+		},
+		{
+			"file": "leopard_print.jpg",
+			"part": "top"
+		},
+		{
+			"file": "navy_suit.jpg",
+			"part": "bottom"
+		},
+		{
+			"file": "pink_anorak_nylon.jpg",
+			"part": "top"
+		},
+		{
+			"file": "red_cotton_tshirt.jpg",
+			"part": "top"
+		},
+		{
+			"file": "striped_breton.jpg",
+			"part": "top"
+		},
+		{
+			"file": "waiter_black_waistcoat.jpg",
+			"part": "top"
+		},
+		{
+			"file": "white_shirt_cotton.jpg",
+			"part": "top"
+		}
+	],
+	"skin": [
+		{
+			"file": "dark.jpg"
+		},
+		{
+			"file": "light.jpg"
+		},
+		{
+			"file": "medium.jpg"
+		},
+		{
+			"file": "sunburnt_red.jpg"
+		},
+		{
+			"file": "tanned.jpg"
+		}
+	]
 }
