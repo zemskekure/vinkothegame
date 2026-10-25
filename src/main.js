@@ -13,11 +13,14 @@ import { addShopfronts } from './fronts.js';
 import ICONS from '../data/icons.json';
 import { addLife } from './life.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { createMinimap } from './minimap.js';
 import { addTrams } from './trams.js';
 import { onLegie } from './bridges.js';
 import { SUN, ANIMATE } from './kit.js';
 import { HOLUB_SUN, PIXEL_SCALE, holubLook, startHolub } from './holub/game.js';
+import { startStory } from './holub/story.js';
+import { startDay } from './holub/sky.js';
 
 async function load( name, type = 'arrayBuffer', dir = 'data/' ) {
 
@@ -457,8 +460,9 @@ addEmbankment( scene, embankmentBuf, data.embankment );
 const { seats } = addPlaces( scene, places, data.furniture, data.waterLevel );
 // Local icons: big lettering, sculptures, domed corner towers (data/icons.json).
 addIcons( scene, ICONS, groundHeight, data.buildings );
-// Models: Kenney's Mini Characters and Car Kit (CC0); textures resolve next to them.
-const gltfLoader = new GLTFLoader();
+// Models: Quaternius' people and Kenney's Car Kit (CC0); textures resolve next to them. The people are
+// meshopt-compressed.
+const gltfLoader = new GLTFLoader().setMeshoptDecoder( MeshoptDecoder );
 const loadModel = async ( path, dir ) => gltfLoader.parseAsync( await load( path, 'arrayBuffer', '' ), dir );
 const life = await addLife( scene, places?.life, { seats, benches: data.furniture.bench, groundHeight, loadModel, camera, cars: params.has( 'cars' ) } ); // cars hidden for now (?cars shows them)
 
@@ -645,6 +649,9 @@ window.addEventListener( 'keydown', e => {
 } );
 // The pigeon (?holub) instead of the walker: on Betlémské náměstí by the terrace, facing the chapel.
 const holub = HOLUB ? startHolub( { scene, camera, dom: renderer.domElement, roofGeo, bounds, groundHeight, waterLevel: data.waterLevel, places, furniture: data.furniture, life, start: [ - 74, 66, Math.atan2( 30, - 14 ) ], indoors: ( x, z ) => { const zn = zoneAt( x, z ); return !! zn && zn.y !== undefined && zn.ceil === undefined; } } ) : null;
+// The pigeon's first day (egg, tutorial) and the clock that moves the sun and the light.
+const story = holub ? startStory( { scene, camera, holub, start: [ - 74, 66 ] } ) : null;
+const day = holub ? startDay( { renderer, scene, sky, sun, hemi, centre } ) : null;
 if ( HOLUB ) {
 
 	orbit.enabled = false;
@@ -691,7 +698,7 @@ function nearestStreet( x, z ) {
 
 }
 
-document.getElementById( 'credit' ).textContent = data.attribution + ' · fasády podle fotek © Mapillary (CC BY-SA) · auta: Kenney (CC0) · rendering after Slop New York (MIT, Mr.doob)';
+document.getElementById( 'credit' ).textContent = data.attribution + ' · fasády podle fotek © Mapillary (CC BY-SA) · lidé: Quaternius (CC0) · auta: Kenney (CC0) · rendering after Slop New York (MIT, Mr.doob)';
 
 // ---------------------------------------------------------------------------
 
@@ -716,6 +723,8 @@ renderer.setAnimationLoop( () => {
 	if ( holub ) {
 
 		holub.update( dt );
+		story.update( dt );
+		day.update( dt );
 		minimap.update( holub.pos.x, holub.pos.z, holub.yaw, holub.heading );
 		labelTimer -= dt;
 		if ( labelTimer <= 0 ) {

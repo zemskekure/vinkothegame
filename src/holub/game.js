@@ -105,6 +105,17 @@ function scatterFood( scene, spots, surfaceAt, rnd ) {
 
 export function startHolub( { scene, camera, dom, roofGeo, bounds, groundHeight, waterLevel, places, furniture, life, start, indoors = () => false } ) {
 
+	// What happens, for the story (src/holub/story.js): 'peck' (food name), 'takeoff', 'land' (height above the street),
+	// 'walk' (metres), 'drop', 'hit'.
+	const listeners = [];
+	const emit = ( type, value ) => {
+
+		for ( const f of listeners ) f( type, value );
+
+	};
+	// While locked (inside the egg), input moves nothing; the story drives the camera.
+	let locked = false;
+
 	let seed = 7;
 	const rnd = () => ( ( seed = ( seed * 16807 ) % 2147483647 ) / 2147483647 );
 	const roofAt = roofGrid( roofGeo, bounds );
@@ -417,6 +428,15 @@ export function startHolub( { scene, camera, dom, roofGeo, bounds, groundHeight,
 
 	function update( dt ) {
 
+		if ( locked ) {
+
+			bird.visible = false;
+			aim.visible = false;
+			return;
+
+		}
+
+		bird.visible = true;
 		poopCooldown -= dt;
 		poop = Math.max( 0, poop - dt * 2.5 );
 		toastTimer -= dt;
@@ -443,6 +463,7 @@ export function startHolub( { scene, camera, dom, roofGeo, bounds, groundHeight,
 				mode = 'fly';
 				vel.copy( fwd ).multiplyScalar( 2.5 ).setY( 3.2 );
 				say( 'Frrr!' );
+				emit( 'takeoff' );
 
 			} else if ( mode === 'walk' && ( ix || iz ) && pecking <= 0 ) {
 
@@ -451,6 +472,7 @@ export function startHolub( { scene, camera, dom, roofGeo, bounds, groundHeight,
 				heading = Math.atan2( want.x, want.z );
 				if ( ! tryMove( pos.x + want.x * speed * dt, pos.z ) ) speed *= 0.5;
 				if ( ! tryMove( pos.x, pos.z + want.z * speed * dt ) ) speed *= 0.5;
+				emit( 'walk', speed * dt );
 
 			} else if ( mode === 'sit' && ( ix || iz ) ) mode = 'walk';
 
@@ -474,6 +496,7 @@ export function startHolub( { scene, camera, dom, roofGeo, bounds, groundHeight,
 						food.splice( i, 1 );
 						score.food ++;
 						showScore();
+						emit( 'peck', food.length ? 1 : 0 );
 						if ( ! food.length ) say( 'Všechno snědeno! Holub roku.' );
 
 					}
@@ -515,6 +538,7 @@ export function startHolub( { scene, camera, dom, roofGeo, bounds, groundHeight,
 
 					mode = 'walk';
 					vel.set( 0, 0, 0 );
+					emit( 'land', roofAt( pos.x, pos.z ) - groundHeight( pos.x, pos.z ) );
 
 				}
 
@@ -545,6 +569,7 @@ export function startHolub( { scene, camera, dom, roofGeo, bounds, groundHeight,
 					d.checked.add( a );
 					score.hits ++;
 					showScore();
+					emit( 'hit' );
 					say( [ 'Zásah!', 'Na hlavu!', 'Prý to nosí štěstí.', 'Bingo!' ][ score.hits % 4 ] );
 					scene.remove( d.m );
 					drops.splice( i, 1 );
@@ -604,7 +629,38 @@ export function startHolub( { scene, camera, dom, roofGeo, bounds, groundHeight,
 
 	}
 
-	return { update, pos, keys, look: ( y, p ) => {
+	// Crumbs the story puts down (round a point), the same kind as the leftovers in the streets.
+	const addFood = ( x, z, n, spread = 0.8 ) => {
+
+		const more = scatterFood( scene, Array.from( { length: n }, () => [ x + ( rnd() - 0.5 ) * spread * 2, z + ( rnd() - 0.5 ) * spread * 2 ] ), surfaceAt, rnd );
+		food.push( ...more );
+		return more;
+
+	};
+
+	return { update, pos, keys, on: f => listeners.push( f ), addFood, surfaceAt, roofAt, say,
+		set locked( v ) {
+
+			locked = v;
+			if ( v ) keys.clear();
+
+		}, get locked() {
+
+			return locked;
+
+		}, place: ( x, z, h ) => {
+
+			pos.set( x, surfaceAt( x, z ), z );
+			heading = h;
+			yaw = h + Math.PI;
+			mode = 'walk';
+			vel.set( 0, 0, 0 );
+
+		}, get mode() {
+
+			return mode;
+
+		}, look: ( y, p ) => {
 
 		yaw = y;
 		pitch = p;

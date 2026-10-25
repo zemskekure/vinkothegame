@@ -1,0 +1,6 @@
+The character models in this folder (animated-men/, animated-women/, modular-men/, modular-women/, posed-humans/)
+are by Quaternius (https://quaternius.com) and are dedicated to the public domain under CC0 1.0 Universal:
+https://creativecommons.org/publicdomain/zero/1.0/
+They are not under the Quaternius Asset License. Sources, dates and checksums: PROVENANCE.md.
+
+The face images (faces/) are generated images of fictional people made for this game; see PROVENANCE.md.
