@@ -399,7 +399,8 @@ const GF_DEFAULT_FRAME = { door: 'wood', gate: 'wood', shop: 'dark', window: 'wh
 const GF_WIDTH = { door: [ 1.0, 1.3, 1.8 ], gate: [ 2.6, 3.0, 3.6 ], shop: [ 1.8, 2.6, 4.2 ], window: [ 0.9, 1.2, 1.5 ], garage: [ 2.4, 2.8, 3.4 ], niche: [ 1.4, 1.8, 2.2 ], blank: [ 1, 2, 4 ] };
 const GF_MIN_PIER = 0.45;
 const groundFloors = [], groundFloorRow = new Map();
-// Where a real passage or arcade cuts a described front: [ u0, u1 ] ranges per front key (see the wall loop).
+// Where a real passage or arcade cuts a described front: [ u0, u1, depth ] ranges per front key (see the wall
+// loop); depth is how far an arcade's back wall, with the shops along it, stands behind the front (0: a passage).
 const frontCuts = new Map();
 
 function layoutGroundFloor( items, len ) {
@@ -1222,17 +1223,17 @@ for ( const b of buildings ) {
 			const v = ( P, uu ) => wallData.push( P[ 0 ], P[ 1 ], P[ 2 ], uu, a.edgeLen, wallBase - BASE_HEIGHT, eaveY - BASE_HEIGHT, floorH, seed, kind, cr, cg, cb, bay, win, shop, wallStyle, tr, tg, tb, houseGround, grilles, rustic, graffiti );
 
 			// Arcades and passages (tools/openings.mjs): the wall stops at their ceiling where it crosses them.
-			const pieces = [ [ 0, 1, 0 ] ];
+			const pieces = [ [ 0, 1, 0, 0 ] ];
 			for ( const { o, box } of openingBoxes ) {
 
 				const r = clipToBox( box, a.X, a.Y, c.X, c.Y );
 				if ( ! r ) continue;
 				for ( let k = pieces.length - 1; k >= 0; k -- ) {
 
-					const [ t0, t1, h ] = pieces[ k ];
+					const [ t0, t1, h, deep ] = pieces[ k ];
 					const lo = Math.max( t0, r[ 0 ] ), hi = Math.min( t1, r[ 1 ] );
 					if ( hi - lo < 1e-4 ) continue;
-					const parts = [ [ t0, lo, h ], [ lo, hi, Math.max( h, o.h ) ], [ hi, t1, h ] ].filter( ( [ p0, p1 ] ) => p1 - p0 > 1e-4 );
+					const parts = [ [ t0, lo, h, deep ], [ lo, hi, Math.max( h, o.h ), o.kind === 'arcade' ? o.depth : 0 ], [ hi, t1, h, deep ] ].filter( ( [ p0, p1 ] ) => p1 - p0 > 1e-4 );
 					pieces.splice( k, 1, ...parts );
 
 				}
@@ -1240,7 +1241,7 @@ for ( const b of buildings ) {
 			}
 
 			// Four corners per quad, two indexed triangles facing outwards.
-			for ( const [ t0, t1, cut ] of pieces ) {
+			for ( const [ t0, t1, cut, deep ] of pieces ) {
 
 				const P = t => [ a.X + ( c.X - a.X ) * t, a.Y + ( c.Y - a.Y ) * t ];
 				const [ PX, PY ] = P( t0 ), [ QX, QY ] = P( t1 );
@@ -1250,7 +1251,7 @@ for ( const b of buildings ) {
 
 					const key = `${b.code}_${a.edge}`, ua = uA + ( uC - uA ) * t0, ub = uA + ( uC - uA ) * t1;
 					if ( ! frontCuts.has( key ) ) frontCuts.set( key, [] );
-					frontCuts.get( key ).push( [ Math.min( ua, ub ), Math.max( ua, ub ) ] );
+					frontCuts.get( key ).push( [ Math.min( ua, ub ), Math.max( ua, ub ), deep ] );
 
 				}
 
@@ -1313,12 +1314,20 @@ for ( const b of buildings ) {
 
 					const key = `${b.code}_${i}`;
 					const overlayHeight = Math.min( extra.shopfrontHeight ?? 4.2, floorH );
-					const cuts = ( frontCuts.get( key ) || [] ).map( ( [ u0, u1 ] ) => aIsLeft ? [ u0, u1 ] : [ len - u1, len - u0 ] )
-						.map( ( [ u0, u1 ] ) => [ Math.max( 0, u0 ), Math.min( len, u1 ) ] ).filter( ( [ u0, u1 ] ) => u1 > u0 ).sort( ( a, b ) => a[ 0 ] - b[ 0 ] );
+					const cuts = ( frontCuts.get( key ) || [] ).map( ( [ u0, u1, deep ] ) => aIsLeft ? [ u0, u1, deep ] : [ len - u1, len - u0, deep ] )
+						.map( ( [ u0, u1, deep ] ) => [ Math.max( 0, u0 ), Math.min( len, u1 ), deep ] ).filter( ( [ u0, u1 ] ) => u1 > u0 ).sort( ( a, b ) => a[ 0 ] - b[ 0 ] );
+					// [ from, to, depth ]: a passage leaves its stretch of the drawing out; under an arcade the
+					// drawing moves back onto the arcade's back wall, where the shop windows are.
 					const visible = [];
 					let u = 0;
-					for ( const [ u0, u1 ] of cuts ) { if ( u0 > u + 0.01 ) visible.push( [ + u.toFixed( 2 ), + u0.toFixed( 2 ) ] ); u = Math.max( u, u1 ); }
-					if ( u < len - 0.01 ) visible.push( [ + u.toFixed( 2 ), + len.toFixed( 2 ) ] );
+					for ( const [ u0, u1, deep ] of cuts ) {
+
+						if ( u0 > u + 0.01 ) visible.push( [ + u.toFixed( 2 ), + u0.toFixed( 2 ), 0 ] );
+						if ( deep > 0 && u1 > Math.max( u, u0 ) + 0.01 ) visible.push( [ + Math.max( u, u0 ).toFixed( 2 ), + u1.toFixed( 2 ), + deep.toFixed( 2 ) ] );
+						u = Math.max( u, u1 );
+
+					}
+					if ( u < len - 0.01 ) visible.push( [ + u.toFixed( 2 ), + len.toFixed( 2 ), 0 ] );
 					decor.shopfronts.push( { front: key, file: extra.shopfront, at: at( 0.5, 0, overlayHeight / 2 ), rot, width: + len.toFixed( 2 ), height: + overlayHeight.toFixed( 2 ), visible } );
 
 				}
