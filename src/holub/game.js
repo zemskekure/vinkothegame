@@ -145,7 +145,7 @@ export function startHolub( { scene, camera, dom, roofGeo, bounds, groundHeight,
 	const pos = new THREE.Vector3( start[ 0 ], 0, start[ 1 ] );
 	pos.y = surfaceAt( pos.x, pos.z );
 	const vel = new THREE.Vector3();
-	let mode = 'walk', heading = start[ 2 ], yaw = start[ 2 ] + Math.PI, pitch = 0.3, dist = 0.95, idle = 0;
+	let turnRate = 0, lookedAt = 0, mode = 'walk', heading = start[ 2 ], yaw = start[ 2 ] + Math.PI, pitch = 0.3, dist = 0.95, idle = 0;
 	let peck = 0, pecking = 0, poop = 0, poopCooldown = 0, bank = 0, lastYaw = yaw;
 	const keys = new Set();
 	const score = { food: 0, drops: 0, hits: 0 };
@@ -156,7 +156,7 @@ export function startHolub( { scene, camera, dom, roofGeo, bounds, groundHeight,
 
 	// --- HUD
 	const hud = document.getElementById( 'hud' );
-	hud.innerHTML = `<h1>Letím jak holub</h1><p id="help">Klikni do obrazu · myš rozhlížení · WASD chůze / let · mezerník vzlétnout a mávat · C dolů / sednout · E zobnout · Q bobek · Shift rychleji</p><p id="score"></p>`;
+	hud.innerHTML = `<h1>Letím jak holub</h1><p id="help">Klikni do obrazu · myš kamera · WASD chůze, v letu A/D zatáčení, W rychleji, S pomaleji · mezerník vzlétnout a mávat · C dolů / sednout · E zobnout · Q bobek · Shift rychleji</p><p id="score"></p>`;
 	const scoreEl = document.getElementById( 'score' );
 	const toast = document.createElement( 'div' );
 	Object.assign( toast.style, { position: 'fixed', left: '50%', top: '18%', transform: 'translateX(-50%)', font: '700 26px/1 system-ui, sans-serif', color: '#fff3d6', textShadow: '0 2px 0 #3b2412, 0 0 12px #000', opacity: 0, transition: 'opacity .3s', pointerEvents: 'none' } );
@@ -189,6 +189,7 @@ export function startHolub( { scene, camera, dom, roofGeo, bounds, groundHeight,
 		if ( document.pointerLockElement !== dom ) return;
 		yaw -= e.movementX * 0.0024;
 		pitch = THREE.MathUtils.clamp( pitch + e.movementY * 0.0024, - 0.9, 1.35 );
+		lookedAt = performance.now();
 
 	} );
 	dom.addEventListener( 'wheel', e => {
@@ -451,7 +452,6 @@ export function startHolub( { scene, camera, dom, roofGeo, bounds, groundHeight,
 			ix = stick.x;
 			iz = stick.y;
 			// In flight, the stick also turns: sideways steers the view (and so the bird) round.
-			if ( mode === 'fly' || mode === 'glide' ) yaw -= stick.x * 1.6 * dt;
 
 		}
 		let speed = 0;
@@ -507,14 +507,13 @@ export function startHolub( { scene, camera, dom, roofGeo, bounds, groundHeight,
 
 		} else {
 
-			// Flight: steer where you look (a little below it, so a level view flies level), W for speed, Space to
-			// flap upwards, C to come down; without wingbeats, a slow sinking glide.
+			// Flight, steered by the keys alone (the mouse only moves the camera round the bird): A/D turn the bird, W
+			// flies faster, S slower, Space flaps upwards, C comes down; without wingbeats, a slow sinking glide.
 			const flapping = keys.has( 'Space' ) || iz > 0;
-			const flightPitch = THREE.MathUtils.clamp( pitch - 0.3, - 0.8, 0.9 );
-			want.set( - Math.sin( yaw ) * Math.cos( flightPitch ), - Math.sin( flightPitch ), - Math.cos( yaw ) * Math.cos( flightPitch ) );
+			turnRate += ( - ix * 1.9 - turnRate ) * Math.min( 1, 6 * dt );
+			heading += turnRate * dt;
 			const target = iz > 0 ? ( fast ? 19 : 11 ) : ( iz < 0 ? 2 : 6 );
-			want.multiplyScalar( target ).addScaledVector( right, ix * 4 );
-			if ( iz <= 0 ) want.y = Math.min( want.y, - 1.3 );
+			want.set( Math.sin( heading ) * target, iz <= 0 ? - 1.3 : 0, Math.cos( heading ) * target );
 			vel.lerp( want, Math.min( 1, 1.8 * dt ) );
 			if ( keys.has( 'Space' ) ) vel.y += 11 * dt;
 			if ( keys.has( 'KeyC' ) ) vel.y -= 10 * dt;
@@ -545,9 +544,14 @@ export function startHolub( { scene, camera, dom, roofGeo, bounds, groundHeight,
 			}
 
 			pos.y = ny;
-			if ( Math.hypot( vel.x, vel.z ) > 0.3 ) heading = Math.atan2( vel.x, vel.z );
-			const turn = THREE.MathUtils.euclideanModulo( yaw - lastYaw + Math.PI, Math.PI * 2 ) - Math.PI;
-			bank += ( THREE.MathUtils.clamp( - turn / dt * 0.25 - ix * 0.35, - 0.8, 0.8 ) - bank ) * Math.min( 1, 5 * dt );
+			bank += ( THREE.MathUtils.clamp( turnRate * 0.35, - 0.8, 0.8 ) - bank ) * Math.min( 1, 5 * dt );
+			// The camera swings back behind the bird when the mouse has been still for a moment.
+			if ( performance.now() - lookedAt > 1200 ) {
+
+				const d = THREE.MathUtils.euclideanModulo( heading + Math.PI - yaw + Math.PI, Math.PI * 2 ) - Math.PI;
+				yaw += d * Math.min( 1, 2.2 * dt );
+
+			}
 			speed = vel.length();
 
 		}
