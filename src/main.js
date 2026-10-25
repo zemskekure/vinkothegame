@@ -15,6 +15,7 @@ import { addLife } from './life.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { createMinimap } from './minimap.js';
 import { addTrams } from './trams.js';
+import { onLegie } from './bridges.js';
 import { SUN, ANIMATE } from './kit.js';
 import { HOLUB_SUN, PIXEL_SCALE, holubLook, startHolub } from './holub/game.js';
 
@@ -113,6 +114,55 @@ terrainGeo.rotateX( - Math.PI / 2 );
 terrainGeo.translate( centre.x, 0, centre.z );
 const tp = terrainGeo.attributes.position;
 for ( let i = 0; i < tp.count; i ++ ) tp.setY( i, heights[ i ] );
+// Retaining walls (tools/quay.mjs: the náplavka's wall under Smetanovo nábřeží, Čapadlo's lane): the 1 m grid would
+// ramp across a wall's foot. Grid points within 1.5 m of the wall line move onto it (the high ones from behind, the
+// low ones from in front), and the triangles still spanning from the top to the foot are dropped: the ground meets
+// the wall face in a straight line on both sides.
+{
+
+	const gx0 = tp.getX( 0 ), gz0 = tp.getZ( 0 ), mark = new Uint8Array( tp.count ), mids = new Float32Array( tp.count );
+	for ( const [ x0, z0, x1, z1, nx, nz, top, low ] of data.cliffs || [] ) {
+
+		const dx = x1 - x0, dz = z1 - z0, l2 = dx * dx + dz * dz, mid = ( top + low ) / 2;
+		if ( ! l2 ) continue;
+		const c0 = Math.max( 0, Math.floor( ( Math.min( x0, x1 ) - 1.6 - gx0 ) / T.cell ) ), c1 = Math.min( T.width - 1, Math.ceil( ( Math.max( x0, x1 ) + 1.6 - gx0 ) / T.cell ) );
+		const r0 = Math.max( 0, Math.floor( ( Math.min( z0, z1 ) - 1.6 - gz0 ) / T.cell ) ), r1 = Math.min( T.height - 1, Math.ceil( ( Math.max( z0, z1 ) + 1.6 - gz0 ) / T.cell ) );
+		for ( let r = r0; r <= r1; r ++ ) for ( let c = c0; c <= c1; c ++ ) {
+
+			const i = r * T.width + c, x = gx0 + c * T.cell, z = gz0 + r * T.cell;
+			if ( mark[ i ] ) continue;
+			const t = ( ( x - x0 ) * dx + ( z - z0 ) * dz ) / l2;
+			if ( t < - 0.01 || t > 1.01 ) continue;
+			const d = ( x - x0 ) * nx + ( z - z0 ) * nz, y = heights[ i ];
+			if ( Math.abs( d ) >= 1.5 ) continue;
+			const to = y > mid ? - 0.02 : 0.02;
+			tp.setXYZ( i, x - nx * ( d - to ), y, z - nz * ( d - to ) );
+			mark[ i ] = 1;
+			mids[ i ] = mid;
+
+		}
+
+	}
+
+	const index = terrainGeo.index.array, kept = [];
+	for ( let k = 0; k < index.length; k += 3 ) {
+
+		const v = [ index[ k ], index[ k + 1 ], index[ k + 2 ] ], m = v.find( i => mark[ i ] );
+		if ( m !== undefined ) {
+
+			const mid = mids[ m ];
+			if ( v.some( i => heights[ i ] > mid ) && v.some( i => heights[ i ] < mid ) ) continue;
+
+		}
+
+		kept.push( ...v );
+
+	}
+
+	if ( kept.length < index.length ) terrainGeo.setIndex( kept );
+
+}
+
 terrainGeo.computeVertexNormals();
 
 const S = data.surface;
@@ -159,10 +209,13 @@ function terrainHeight( x, z ) {
 // Walking surface: street level plus the raised pavement (kerb field in surface2's blue channel).
 // Walkable zones from tools/places.mjs (rooms, doorways, stairs): oriented rectangles with their own floor height.
 const zones = data.places?.zones || [];
-function zoneAt( x, z ) {
+// An underpass zone (`under`: Čapadlo under Smetanovo nábřeží) is the ground only for someone below its ceiling
+// (y: the asker's height), not for the street above it, where trams and everyone else stay.
+function zoneAt( x, z, y = Infinity ) {
 
 	for ( const zn of zones ) {
 
+		if ( zn.under && y > zn.ceil ) continue;
 		const dx = x - zn.x, dz = z - zn.z;
 		if ( Math.abs( dx * zn.ux + dz * zn.uz ) < zn.hu && Math.abs( - dx * zn.uz + dz * zn.ux ) < zn.hn ) return zn;
 
@@ -183,15 +236,56 @@ function zoneHeight( zn, x, z ) {
 
 }
 
-function groundHeight( x, z ) {
+// Next to a retaining wall (the cliffs above), the ground is the wall's top on its high side and its foot on the
+// low side, not the 1 m grid's ramp between them. On a 0.5 m grid of the wall segments within 2 m.
+const cliffGrid = new Map();
+for ( const seg of data.cliffs || [] ) {
 
-	const zn = zoneAt( x, z );
+	const [ x0, z0, x1, z1 ] = seg;
+	for ( let x = Math.min( x0, x1 ) - 2; x <= Math.max( x0, x1 ) + 2; x += 0.5 ) for ( let z = Math.min( z0, z1 ) - 2; z <= Math.max( z0, z1 ) + 2; z += 0.5 ) {
+
+		const key = Math.floor( ( z - bounds.minZ ) / 0.5 ) * 100000 + Math.floor( ( x - bounds.minX ) / 0.5 );
+		if ( ! cliffGrid.has( key ) ) cliffGrid.set( key, [] );
+		cliffGrid.get( key ).push( seg );
+
+	}
+
+}
+
+function cliffClamp( x, z, h ) {
+
+	const segs = cliffGrid.get( Math.floor( ( z - bounds.minZ ) / 0.5 ) * 100000 + Math.floor( ( x - bounds.minX ) / 0.5 ) );
+	if ( ! segs ) return h;
+	let best = null, bd = 2;
+	for ( const seg of segs ) {
+
+		const [ x0, z0, x1, z1 ] = seg, dx = x1 - x0, dz = z1 - z0, l2 = dx * dx + dz * dz || 1;
+		const t = Math.max( 0, Math.min( 1, ( ( x - x0 ) * dx + ( z - z0 ) * dz ) / l2 ) );
+		const dd = Math.hypot( x - x0 - t * dx, z - z0 - t * dz );
+		if ( dd < bd ) {
+
+			bd = dd;
+			best = seg;
+
+		}
+
+	}
+
+	if ( ! best ) return h;
+	const [ x0, z0, , , nx, nz, top, low ] = best;
+	return ( x - x0 ) * nx + ( z - z0 ) * nz < 0 ? Math.max( h, top ) : Math.min( h, low );
+
+}
+
+function groundHeight( x, z, y ) {
+
+	const zn = zoneAt( x, z, y );
 	if ( zn ) return zoneHeight( zn, x, z );
 	const col = Math.min( S.width - 1, Math.max( 0, Math.floor( ( x - bounds.minX ) / S.cell ) ) );
 	const row = Math.min( S.height - 1, Math.max( 0, Math.floor( ( z - bounds.minZ ) / S.cell ) ) );
 	const Fk = ( 128 - surface2[ ( row * S.width + col ) * 4 + 2 ] ) / 25;
 	const raise = Fk > 0 && Fk < 8.5 ? data.kerbHeight : 0;
-	return terrainHeight( x, z ) + raise;
+	return cliffClamp( x, z, terrainHeight( x, z ) ) + raise;
 
 }
 
@@ -374,19 +468,20 @@ function barrierAt( x, z, y ) {
 
 }
 
-// The walker's height (set once it exists), for the barriers.
-let walkerHeight = () => 0;
+// The walker's height (set once it stands somewhere), for the barriers and the underpass zones.
+let walkerHeight = () => Infinity;
 
 // Ceiling over a walkable zone (underpass, passages, arcades): the third-person camera stays below it.
-const ceilingAt = ( x, z ) => zoneAt( x, z )?.ceil ?? Infinity;
+const ceilingAt = ( x, z ) => zoneAt( x, z, walkerHeight() )?.ceil ?? Infinity;
 
 function isBlocked( x, z ) {
 
 	const col = Math.floor( ( x - bounds.minX ) / fp.cell ), row = Math.floor( ( z - bounds.minZ ) / fp.cell );
 	if ( col < 0 || row < 0 || col >= fp.width || row >= fp.height ) return true;
-	if ( barrierAt( x, z, walkerHeight() ) ) return true;
-	if ( zoneAt( x, z ) ) return false;
-	if ( groundHeight( x, z ) < data.waterLevel + 1 ) return true; // stay out of the river
+	const y = walkerHeight();
+	if ( barrierAt( x, z, y ) ) return true;
+	if ( zoneAt( x, z, y ) ) return false;
+	if ( groundHeight( x, z, y ) < data.waterLevel + 1 ) return true; // stay out of the river
 	const i = row * fp.width + col;
 	return ( footprintBits[ i >> 3 ] >> ( i & 7 ) ) & 1;
 
@@ -402,11 +497,11 @@ function cameraBlocked( x, z ) {
 
 }
 
-const walker = new Walker( camera, renderer.domElement, groundHeight, isBlocked, scene, cameraBlocked, ceilingAt );
-walkerHeight = () => walker.y + 0.5;
+const walker = new Walker( camera, renderer.domElement, ( x, z ) => groundHeight( x, z, walkerHeight() ), isBlocked, scene, cameraBlocked, ceilingAt );
+walkerHeight = () => walker.placed ? walker.y + 0.5 : Infinity;
 
 // Trams and their overhead line (poles kept out of houses).
-const trams = addTrams( scene, places?.life?.trams, groundHeight, cameraBlocked );
+const trams = addTrams( scene, places?.life?.trams, groundHeight, ( x, z ) => cameraBlocked( x, z ) || onLegie( places?.legie, x, z ) );
 
 const hud = {
 	mode: document.getElementById( 'mode' ),

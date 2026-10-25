@@ -717,6 +717,29 @@ function terrainAt( X, Y ) {
 
 }
 
+// Smetanovo nábřeží's river edge (tools/quay.mjs): the straight railing along the riverside pavement, the
+// náplavka below it, Čapadlo; measured on the terrain model, so before the embankment that it shapes.
+const quay = await buildQuay( { terrain, tw, th, cell: TERRAIN_CELL, AREA, riverAt, dtmAt: ( X, Y ) => sample( dtm, X, Y ) - BASE_HEIGHT } );
+
+// Most Legií's deck (tools/places.mjs builds it on the ZABAGED axis): no embankment parapet or railing across it.
+const legieAxis = ( ( b => b.features || b )( JSON.parse( await readFile( new URL( 'bridges.json', RAW ) ) ) ) ).find( f => f.attributes?.jmeno === 'most Legií' )?.geometry?.paths?.[ 0 ] || [];
+const underLegie = ( X, Y ) => {
+
+	const east = legieAxis.reduce( ( m, p ) => p[ 0 ] > m[ 0 ] ? p : m, [ - Infinity, 0 ] );
+	if ( X > east[ 0 ] ) return false;
+	for ( let i = 1; i < legieAxis.length; i ++ ) {
+
+		const [ ax, ay ] = legieAxis[ i - 1 ], [ bx, by ] = legieAxis[ i ], dx = bx - ax, dy = by - ay, l2 = dx * dx + dy * dy || 1;
+		const t = Math.max( 0, Math.min( 1, ( ( X - ax ) * dx + ( Y - ay ) * dy ) / l2 ) );
+		if ( Math.hypot( X - ax - t * dx, Y - ay - t * dy ) < ( X > east[ 0 ] - 40 ? 11.8 : 8.6 ) ) return true;
+
+	}
+
+	return false;
+
+};
+if ( quay ) quay.rail = quay.lines[ 0 ] = quay.rail.filter( p => ! underLegie( p.X, p.Y ) );
+
 // River embankment: a dressed-stone wall from below the water up to the street along the official river outline,
 // wherever the bank stands more than 2.5 m above the water, topped by a stone parapet with an iron railing.
 // Stone: non-indexed triangles; railing: a post every 2 m and a top rail per stretch.
@@ -754,6 +777,20 @@ const embankment = { stone: [], posts: [], rails: [] };
 				}
 
 				const h0 = terrainAt( x0 + nx * 1.5, y0 + ny * 1.5 ), h1 = terrainAt( x1 + nx * 1.5, y1 + ny * 1.5 );
+				// Along Smetanovo nábřeží: the náplavka's edge is a plain stone wall with a flush coping and no railing;
+				// where the street runs to the water, the wall goes up under the street's own railing (tools/quay.mjs).
+				if ( underLegie( mx, my ) ) continue;
+				const front = quay?.edge( mx + nx * 1.5, my + ny * 1.5 );
+				if ( front ) {
+
+					const t0 = h0 + 0.05, t1 = h1 + 0.05, low = waterLevel - 1;
+					const ix0 = x0 + nx * THICK, iy0 = y0 + ny * THICK, ix1 = x1 + nx * THICK, iy1 = y1 + ny * THICK;
+					push( [ x0, y0, low ], [ x1, y1, low ], [ x1, y1, t1 ], [ x0, y0, low ], [ x1, y1, t1 ], [ x0, y0, t0 ] );
+					push( [ x0, y0, t0 ], [ x1, y1, t1 ], [ ix1, iy1, t1 ], [ x0, y0, t0 ], [ ix1, iy1, t1 ], [ ix0, iy0, t0 ] );
+					continue;
+
+				}
+
 				if ( Math.min( h0, h1 ) - waterLevel < 2.5 ) continue;
 
 				const low = waterLevel - 1, t0 = h0 + PARAPET, t1 = h1 + PARAPET;
@@ -780,9 +817,6 @@ const embankment = { stone: [], posts: [], rails: [] };
 
 }
 
-// Smetanovo nábřeží's river edge (tools/quay.mjs): the railing all along the riverside pavement, a retaining wall
-// down to the Čapadlo terrace; drawn with the embankment (same stone, same railing).
-const quay = await buildQuay( { terrain, tw, th, cell: TERRAIN_CELL, AREA, terrainAt, riverAt } );
 // By the National Theatre: Národní's deck over Divadelní, the piazzetta's terrace (tools/terraces.mjs).
 const terraces = await buildTerraces( { terrain, tw, th, cell: TERRAIN_CELL, AREA, terrainAt, buildingAt } );
 
@@ -837,7 +871,7 @@ function drawRail( R ) {
 
 }
 
-if ( quay ) drawRail( quay.rail );
+if ( quay ) for ( const line of quay.lines ) drawRail( line );
 if ( terraces.tunnel ) for ( const line of terraces.rails.slice( 0, 2 ) ) for ( const p of line ) p.openTop = terraces.tunnel.ceil;
 for ( const line of terraces.rails ) drawRail( line );
 
@@ -1677,7 +1711,7 @@ for ( let r = 0; r < sh; r ++ ) {
 
 
 const inKeptBuilding = ( X, Y ) => keptIds.has( buildingAt( X, Y ) );
-const pavement = buildPavementMesh( streetData, { AREA, toLocal, heightAt: terrainAt, inBuilding: ( X, Y ) => inKeptBuilding( X, Y ) || !! quay?.beyond( X, Y ) } );
+const pavement = buildPavementMesh( streetData, { AREA, toLocal, heightAt: quay ? ( X, Y ) => quay.clamp( X, Y, terrainAt( X, Y ) ) : terrainAt, inBuilding: ( X, Y ) => inKeptBuilding( X, Y ) || !! quay?.beyond( X, Y ), cut: quay?.beyond } );
 console.log( `pavements: ${pavement.positions.length / 3} vertices, ${( pavement.kerbLength / 1000 ).toFixed( 1 )} km of kerb` );
 
 const furniture = collectFurniture( streetData, {
@@ -1692,9 +1726,18 @@ const furniture = collectFurniture( streetData, {
 		return h > 4 && h < 30 ? h : 9;
 
 	}, tramPaths: JSON.parse( await readFile( new URL( 'tram.json', RAW ) ) ).flatMap( f => f.geometry?.paths || [] ) } );
+// Street lamps mapped on bridge decks over the Vltava would stand on the river bed (the decks are modelled in
+// places.mjs with their own lamps): leave them out.
+{
+
+	const L = furniture.lamp, kept = [];
+	for ( let i = 0; i < L.length; i += 5 ) if ( L[ i + 1 ] > waterLevel + 0.5 ) kept.push( ...L.slice( i, i + 5 ) );
+	furniture.lamp = kept;
+
+}
 furniture.statue.push( ...landmarkStatues );
 
-const places = collectPlaces( { project: await lonLatToSJTSK(), quay, terraces, openings, buildings, streetFacades, toLocal, terrainAt, buildingAt, keptIds, dsm, idGrid, AREA, ORIGIN, streetData, furniture, riverAt, buildingInfo, terrainGrid: { terrain, tw, th, cell: TERRAIN_CELL }, inPark: ( X, Y ) => parks.some( rings => pointInRings( rings, X, Y ) ), tramPaths: JSON.parse( await readFile( new URL( 'tram.json', RAW ) ) ).flatMap( f => f.geometry?.paths || [] ) } );
+const places = collectPlaces( { project: await lonLatToSJTSK(), quay, terraces, openings, buildings, streetFacades, toLocal, terrainAt, buildingAt, keptIds, dsm, idGrid, AREA, ORIGIN, streetData, furniture, riverAt, buildingInfo, zabagedBridges: JSON.parse( await readFile( new URL( 'bridges.json', RAW ) ) ), terrainGrid: { terrain, tw, th, cell: TERRAIN_CELL }, inPark: ( X, Y ) => parks.some( rings => pointInRings( rings, X, Y ) ), tramPaths: JSON.parse( await readFile( new URL( 'tram.json', RAW ) ) ).flatMap( f => f.geometry?.paths || [] ) } );
 places.chapel = twinGableFronts[ 0 ] ? { ...twinGableFronts[ 0 ], spire: [ - 36.5, 42.8 ] } : null; // spire: from the aerial photo
 // Awnings on fronts away from the street network (on squares), placed by places.mjs.
 decor.awnings.push( ...places.awnings );
@@ -1793,6 +1836,13 @@ await writeFile( new URL( 'scene.json', OUT ), JSON.stringify( {
 	kerbHeight: streetData.KERB_HEIGHT,
 	decor,
 	embankment: { posts: embankment.posts, rails: embankment.rails },
+	// Wall lines the terrain mesh is snapped to (src/main.js): x0, z0, x1, z1, the low side's direction, top, foot.
+	cliffs: ( quay?.lines || [] ).flatMap( line => line.slice( 1 ).map( ( b, i ) => [ line[ i ], b ] ) ).filter( ( [ a, b ] ) => a.wall && b.wall && ! ( a.portal && b.portal ) && Math.hypot( b.X - a.X, b.Y - a.Y ) < 2 ).map( ( [ a, b ] ) => {
+
+		const [ x0, , z0 ] = toLocal( a.X, a.Y, 0 ), [ x1, , z1 ] = toLocal( b.X, b.Y, 0 );
+		return [ x0, z0, x1, z1, a.nx, - a.ny, Math.min( a.top, b.top ), Math.max( a.quay, b.quay ) ].map( v => + v.toFixed( 3 ) );
+
+	} ),
 	places,
 	streets
 } ) );

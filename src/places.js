@@ -8,7 +8,7 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { Kit, M, plain, glow, box, cyl, ball, onFront, textTexture, board, rubbleStone, roofTiles, ashlar, planks, tiles, roomWall } from './kit.js';
 import { addOpenings } from './openings.js';
 import { addStops } from './stops.js';
-import { addBridges } from './bridges.js';
+import { addBridges, addLegie } from './bridges.js';
 import { addLandmarks } from './landmarks.js';
 import { addDress } from './dress.js';
 import { addFlights } from './flights.js';
@@ -322,6 +322,7 @@ export function addPlaces( scene, places, furniture = {}, waterLevel = 0 ) {
 	addOpenings( scene, places.openings );
 	addStops( scene, places.stops );
 	addBridges( scene, places.bridges, places.piers, waterLevel );
+	addLegie( scene, places.legie, waterLevel );
 	addLandmarks( scene, places, waterLevel );
 	addDress( scene, places );
 	addFlights( scene, places.flights, places.tunnels );
