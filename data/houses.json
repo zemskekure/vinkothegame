@@ -2239,7 +2239,7 @@
 		}
 	},
 	"21651221": {
-		"note": "Národní 16, Kaňkův palác: ochre baroque palace with red-painted window surrounds and stucco, the 17 November 1989 memorial by the corner (Street View 2026)",
+		"note": "Národní 16 / Kaňkův palác: yellow-ochre facade with red window surrounds, richly moulded panels and arched ground-floor openings on the Národní side; short Mikulandská edges are only partly visible (Street View 2025-09).",
 		"colour": "#e6c98f",
 		"trim": "#c4553f",
 		"floors": 3,
@@ -2248,6 +2248,109 @@
 		"grilles": false,
 		"graffiti": false,
 		"signs": false
+	},
+	"21651230": {
+		"note": "Mikulandská west side: cream classicist front with dressed upper windows and a tall arched passage entrance; the street view is oblique and the passage geometry needs its own walk check (Street View 2025-09).",
+		"colour": "#d5cebd",
+		"trim": "#e5dfd3"
+	},
+	"21651248": {
+		"note": "Mikulandská short front: cream plaster and moulded surrounds, a black KAMERA fascia above timber-framed ground-floor openings (Street View 2025-09).",
+		"colour": "#d9d2c2",
+		"trim": "#eee8dc",
+		"edges": {
+			"6": {
+				"ground": [
+					{
+						"kind": "shop",
+						"frame": "wood",
+						"glazed": true
+					},
+					{
+						"kind": "door",
+						"frame": "wood"
+					},
+					{
+						"kind": "window",
+						"frame": "wood"
+					}
+				],
+				"shopfront": "21651248_6.svg"
+			}
+		},
+		"signs": false
+	},
+	"21651256": {
+		"note": "Mikulandská no. 6: grey-blue ornate stucco, red patterned portal, iron-grilled windows and the navy Dům U dvou zlatých lvů entrance at the end next to KAMERA (Street View 2025-09; owner photo 2019).",
+		"colour": "#b9c2c4",
+		"trim": "#d4d9d5",
+		"rustic": "ornate",
+		"edges": {
+			"2": {
+				"ground": [
+					{
+						"kind": "gate",
+						"frame": "dark"
+					},
+					{
+						"kind": "window",
+						"frame": "dark",
+						"bars": true
+					},
+					{
+						"kind": "door",
+						"frame": "wood"
+					},
+					{
+						"kind": "gate",
+						"frame": "red"
+					},
+					{
+						"kind": "window",
+						"frame": "dark",
+						"bars": true
+					}
+				],
+				"shopfront": "21651256_2.svg"
+			}
+		},
+		"signs": false
+	},
+	"21651264": {
+		"note": "Mikulandská west side: long warm-beige plaster front with arched ground-floor windows, a tall timber portal, pedimented upper windows and a small curved balcony; photographed in two oblique halves (Street View 2025-09).",
+		"colour": "#d4c7b0",
+		"trim": "#e4dbce",
+		"rustic": "banded"
+	},
+	"21651388": {
+		"note": "Mikulandská east side: light grey ornate facade with moulded windows, a carved entrance surround and red patterned door; ground-floor plaster is tagged. Oblique views do not isolate every short edge (Street View 2025-09).",
+		"colour": "#c9cfcd",
+		"trim": "#e0e4df",
+		"rustic": "ornate",
+		"graffiti": true
+	},
+	"21651396": {
+		"note": "Mikulandská corner: cream plaster with dusty rose surrounds and stucco; the Pilsner Urquell neon and oak-framed entrance remain visible on the Mikulandská side (Street View 2025-09; owner photo 2019).",
+		"colour": "#e6d6b3",
+		"trim": "#b86d64",
+		"floors": 3,
+		"rustic": "banded",
+		"edges": {
+			"4": {
+				"ground": [
+					{
+						"kind": "shop",
+						"frame": "dark",
+						"arch": true,
+						"glazed": true
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					}
+				]
+			}
+		}
 	},
 	"21652228": {
 		"note": "Národní 2, National Theatre (already hand-modelled): warm sandstone neo-renaissance front, ground-floor arcade of five round arches, upper loggia of five arches between paired Corinthian columns with balustrade, attic balustrade topped by a row of statues. (Street View 2026)",

@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 420">
+  <rect width="720" height="420" fill="#cec8b9"/>
+  <rect y="83" width="720" height="337" fill="#d9d2c3"/>
+  <path d="M0 84H720M0 116H720M0 402H720" stroke="#aa9e8d" stroke-width="5"/>
+  <path d="M0 202H95M0 315H95M628 202H720M628 315H720M234 202H272M234 315H272M454 202H484M454 315H484" stroke="#b5ab9b" stroke-width="3"/>
+  <rect x="18" y="5" width="684" height="80" fill="#928a7b"/>
+  <rect x="23" y="7" width="674" height="67" fill="#101113"/>
+  <path d="M23 7H697M23 74H697" stroke="#363638" stroke-width="4"/>
+  <text x="440" y="44" text-anchor="middle" font-family="sans-serif" font-size="19" letter-spacing="2" fill="#c7c4ba">KAMERA</text>
+  <path d="M95 129H234V391H95ZM272 129H454V391H272ZM484 129H628V391H484Z" fill="#e8dfce" stroke="#afa492" stroke-width="9"/>
+  <path d="M104 139H225V379H104ZM282 139H444V379H282ZM493 139H619V379H493Z" fill="#4b392e"/>
+  <path d="M112 145H216V372H112ZM291 145H435V372H291ZM501 145H610V372H501Z" fill="#222a2b"/>
+  <path d="M112 145L216 243V145ZM291 145L435 267V145ZM501 145L610 249V145Z" fill="#627575" opacity="0.35"/>
+  <path d="M112 145H216M291 145H435M501 145H610" stroke="#b59b7a" stroke-width="7"/>
+  <path d="M164 145V372M362 145V372M556 145V372" stroke="#745945" stroke-width="7"/>
+  <path d="M112 265H216M291 252H435M501 265H610" stroke="#604b3c" stroke-width="5"/>
+  <rect x="309" y="158" width="109" height="67" fill="#b6a794" opacity="0.52"/>
+  <rect x="309" y="267" width="109" height="105" fill="#7b6049"/>
+  <circle cx="420" cy="300" r="5" fill="#d4c3a2"/>
+  <path d="M95 129H234M272 129H454M484 129H628" stroke="#f1e9da" stroke-width="10"/>
+  <path d="M85 114H244M262 114H464M474 114H638" stroke="#9c9080" stroke-width="8"/>
+  <path d="M0 396H720" stroke="#b7ac9d" stroke-width="12"/>
+</svg>
