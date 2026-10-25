@@ -20,6 +20,7 @@ const RAMP_END = 8.5; // the pavement mesh covers the kerb field up to here
 const CAR_ROADS = new Set( [ 'primary', 'secondary', 'tertiary', 'unclassified', 'residential', 'living_street', 'service',
 	'primary_link', 'secondary_link', 'tertiary_link' ] );
 const OPEN_WAYS = new Set( [ 'pedestrian', 'footway', 'living_street', 'path', 'steps', 'service', 'residential' ] );
+const CARRIAGEWAY = new Set( [ 'service', 'residential' ] );
 
 const SETT = /sett|cobblestone/;
 const surfaceValue = s => s === 'asphalt' || s === 'concrete' ? 1 : SETT.test( s || 'sett' ) ? 0 : 0.5; // 0.5 = paving stones
@@ -166,11 +167,23 @@ export async function loadStreets( { AREA, buildingDist, inBuilding, tramPaths }
 		const r = nearestRoad( X, Y );
 		const u = nearestRoad( X, Y, unkerbed );
 		const o = nearestOpen( X, Y );
+		// Where carriageways overlap (a crossing), setts win over asphalt: the cobbled crossing of Národní with
+		// Spálená and Na Perštýně, rather than a patchwork of whichever centreline is nearest.
+		let asphalt = r.seg ? roads[ r.seg.item ].asphalt : 0;
+		if ( r.seg && r.f < 0 ) {
+
+			const s = nearestRoad( X, Y, item => item.asphalt < asphalt );
+			if ( s.seg && s.f < 0 ) asphalt = roads[ s.seg.item ].asphalt;
+
+		}
+
 		return {
 			F: Math.min( Fk, u.f ),
 			Fk,
-			roadAsphalt: r.seg ? roads[ r.seg.item ].asphalt : 0,
-			openSurface: o.seg && o.d < 15 ? surfaceValue( openWays[ o.seg.item ].tags.surface ) : 0
+			roadAsphalt: asphalt,
+			// null: no open area mapped near. A carriageway (residential, service) is no reason to pave a raised
+			// pavement in its setts: the wide pavement corners at crossings stay mosaic.
+			openSurface: o.seg && o.d < 15 && ! ( Fk > 0 && Fk < RAMP_END && CARRIAGEWAY.has( openWays[ o.seg.item ].tags.highway ) ) ? surfaceValue( openWays[ o.seg.item ].tags.surface ) : null
 		};
 
 	}

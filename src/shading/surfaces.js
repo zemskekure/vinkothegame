@@ -98,15 +98,21 @@ export function createGroundMaterial( surfaceTex, surface2Tex, bounds, detailTex
 	const KERB = 0.22;
 	const road = smoothstep( 0.06, - 0.06, F );
 	const kerbTop = smoothstep( - 0.02, 0.02, Fk ).mul( smoothstep( KERB + 0.02, KERB - 0.02, Fk ) );
-	const pavement = smoothstep( KERB - 0.02, KERB + 0.02, Fk ).mul( smoothstep( 4.2, 3.8, Fk ) ).mul( float( 1 ).sub( park ) );
+	// Mosaic on the raised pavement: a strip along the kerb; where no square or pedestrian area with its own surface
+	// is mapped (OSM), all of it, so the wide corners at crossings are mosaic too rather than setts.
+	const unmapped = smoothstep( 22 / 255, 34 / 255, s2.g ).mul( smoothstep( 58 / 255, 46 / 255, s2.g ) );
+	const pavementWidth = mix( float( 4.2 ), float( 8.6 ), unmapped );
+	const pavement = smoothstep( KERB - 0.02, KERB + 0.02, Fk ).mul( smoothstep( pavementWidth, pavementWidth.sub( 0.4 ), Fk ) ).mul( float( 1 ).sub( park ) );
 	const steep = smoothstep( 0.8, 0.6, normalWorldGeometry.y );
 	const kerbFace = steep.mul( smoothstep( 0.5, 0.3, abs( Fk ) ) );
 
-	// Granite setts ("kostky"), as on Náprstkova: light cool-grey granite, about 16 × 14 cm, in staggered rows,
-	// slightly domed, with dark mossy joints.
-	const setRow = wz.div( 0.14 );
+	// Granite setts ("kostky"): light cool-grey granite, slightly domed, with dark mossy joints.
+	// Laid in segmental arcs ("Bogenpflaster"), as on Spálená and the Národní crossing: small cubes of about
+	// 11 × 10 cm in rows that bow across 2 m wide arcs.
+	const arcX = fract( wx.div( 2.0 ) ).sub( 0.5 );
+	const setRow = wz.add( float( 1 ).sub( arcX.mul( arcX ).mul( 4 ) ).mul( 0.5 ) ).div( 0.10 );
 	const setRowIdx = floor( setRow );
-	const setCol = wx.div( 0.16 ).add( hash2D( vec2( setRowIdx, 3.1 ) ) );
+	const setCol = wx.div( 0.11 ).add( hash2D( vec2( setRowIdx, 3.1 ) ) );
 	const setId = vec2( floor( setCol ), setRowIdx );
 	const setFade = float( 1 ).sub( smoothstep( 0.35, 0.9, fwidth( setRow ) ) );
 	const setRnd = hash2D( setId );
@@ -157,7 +163,9 @@ export function createGroundMaterial( surfaceTex, surface2Tex, bounds, detailTex
 		.mul( float( 1 ).sub( max( gridLine( positionWorld.y, 0.45, 0.02 ), gridLine( wx.add( wz ), 0.9, 0.02 ) ).mul( 0.4 ) ) );
 
 	// Surface codes: 0 setts, 0.5 paving stones, 1 asphalt.
-	const surfaceColour = code => mix( mix( cobbles, paving, step( 0.25, code ) ), asphaltCol, step( 0.75, code ) );
+	// The maps are filtered, so a boundary between asphalt and setts passes through the paving code on the way:
+	// paving stones only right at 0.5, else a short blend, so no strip of slabs appears along the boundary.
+	const surfaceColour = code => mix( mix( cobbles, asphaltCol, smoothstep( 0.55, 0.65, code ) ), paving, float( 1 ).sub( smoothstep( 0.03, 0.08, abs( code.sub( 0.5 ) ) ) ) );
 	const roadSurface = s2.r, openSurface = s2.g;
 
 	let col = surfaceColour( openSurface );

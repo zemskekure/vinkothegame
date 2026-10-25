@@ -1388,7 +1388,7 @@ const streets = JSON.parse( await readFile( new URL( 'streets.json', RAW ) ) )
 //               B  128 − F × 25, F = signed distance to a carriageway edge (< 0 on the road)
 //               A  distance to a tram track centreline × 50   (rails)
 // surface2.bin  R  carriageway surface: 255 asphalt, 128 paving stones, 0 setts
-//               G  pedestrian / open area surface, same coding
+//               G  pedestrian / open area surface, same coding; 40 where no open area is mapped near
 //               B  128 − Fk × 25, Fk = signed distance to a kerbed carriageway edge (> 0 on raised pavement)
 
 const SURF_CELL = 1;
@@ -1520,7 +1520,7 @@ for ( let r = 0; r < sh; r ++ ) {
 		surface[ i + 2 ] = clamp( 128 - st.F * 25 );
 		surface[ i + 3 ] = clamp( tramDist[ r * sw + c ] * 50 );
 		surface2[ i ] = clamp( st.roadAsphalt * 255 );
-		surface2[ i + 1 ] = clamp( st.openSurface * 255 );
+		surface2[ i + 1 ] = st.openSurface === null ? 40 : clamp( st.openSurface * 255 );
 		surface2[ i + 2 ] = clamp( 128 - st.Fk * 25 );
 		surface2[ i + 3 ] = streetData.onPlatform( X, Y ) ? 0 : 255; // pavement kind: 0 tram stop island, 255 mosaic
 
