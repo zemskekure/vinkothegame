@@ -1178,8 +1178,13 @@ for ( const b of buildings ) {
 			const uA = readsAtoC ? sA : a.edgeLen - sA, uC = readsAtoC ? sC : a.edgeLen - sC;
 
 			const wallParams = ringIndex === 0 ? facadeParams.forWall( b.code, a.edge ) : null;
-			const [ cr, cg, cb ] = house?.colour ? srgb( house.colour ) : measured.colour || [ - 1, - 1, - 1 ];
-			const [ tr, tg, tb ] = house?.trim ? srgb( house.trim ) : [ - 1, - 1, - 1 ];
+			// One RÚIAN building can join houses that look nothing alike (DRN's glass corner on Národní and the
+			// baroque houses behind it on Mikulandská), so a front can name its own style, colours and stucco.
+			const look = ringIndex === 0 ? house?.edges?.[ a.edge ] : null;
+			const wallStyle = STYLE[ look?.style ] ?? style;
+			const colour = look?.colour ?? house?.colour, trim = look?.trim ?? house?.trim;
+			const [ cr, cg, cb ] = colour ? srgb( colour ) : measured.colour || [ - 1, - 1, - 1 ];
+			const [ tr, tg, tb ] = trim ? srgb( trim ) : [ - 1, - 1, - 1 ];
 			const houseGround = GROUND[ house?.ground ] ?? 0;
 			// Window bars in the low bit; above it the row of this front's described ground floor (0 = none).
 			let grilles = house?.grilles ? 1 : 0;
@@ -1198,7 +1203,8 @@ for ( const b of buildings ) {
 
 			}
 
-			const rustic = house?.rustic ? RUSTIC[ house.rustic ] : - 1, graffiti = house?.graffiti ? 1 : 0;
+			const rusticName = look?.rustic ?? house?.rustic;
+			const rustic = rusticName ? RUSTIC[ rusticName ] : - 1, graffiti = house?.graffiti ? 1 : 0;
 			const bay = wallParams?.bay || 0, win = wallParams?.window || 0;
 			let shop = ringIndex === 0 && shopEdges.has( `${b.code}_${a.edge}` ) ? 1 : wallParams ? ( wallParams.shop ? 1 : 0 ) : - 1;
 			if ( house?.ground ) shop = house.ground === 'restaurant' || house.ground === 'shops' ? 1 : 0;
@@ -1213,7 +1219,7 @@ for ( const b of buildings ) {
 
 			}
 
-			const v = ( P, uu ) => wallData.push( P[ 0 ], P[ 1 ], P[ 2 ], uu, a.edgeLen, wallBase - BASE_HEIGHT, eaveY - BASE_HEIGHT, floorH, seed, kind, cr, cg, cb, bay, win, shop, style, tr, tg, tb, houseGround, grilles, rustic, graffiti );
+			const v = ( P, uu ) => wallData.push( P[ 0 ], P[ 1 ], P[ 2 ], uu, a.edgeLen, wallBase - BASE_HEIGHT, eaveY - BASE_HEIGHT, floorH, seed, kind, cr, cg, cb, bay, win, shop, wallStyle, tr, tg, tb, houseGround, grilles, rustic, graffiti );
 
 			// Arcades and passages (tools/openings.mjs): the wall stops at their ceiling where it crosses them.
 			const pieces = [ [ 0, 1, 0 ] ];

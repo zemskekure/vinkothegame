@@ -117,6 +117,25 @@ async function prepare() {
 		return best.n;
 
 	};
+	// Google reports its panorama positions several metres off in these narrow streets (7 m on Mikulandská,
+	// inside the houses on one side), while the car drove down the middle. A camera point more than 1.5 m from the
+	// nearest street centreline (ČÚZK) is pulled across to within 1.5 m of it, keeping its place along the street.
+	const onStreet = ( X, Y ) => {
+
+		let best = { d: Infinity, X, Y };
+		for ( const [ [ ax, ay ], [ bx, by ] ] of segs ) {
+
+			const dx = bx - ax, dy = by - ay, t = Math.max( 0, Math.min( 1, ( ( X - ax ) * dx + ( Y - ay ) * dy ) / ( dx * dx + dy * dy || 1 ) ) );
+			const d = Math.hypot( X - ax - t * dx, Y - ay - t * dy );
+			if ( d < best.d ) best = { d, X: ax + t * dx, Y: ay + t * dy };
+
+		}
+
+		if ( best.d <= 1.5 || best.d > 15 ) return { X, Y, moved: 0 };
+		const k = 1.5 / best.d;
+		return { X: best.X + ( X - best.X ) * k, Y: best.Y + ( Y - best.Y ) * k, moved: best.d - 1.5 };
+
+	};
 	const number = new Map( B.map( b => [ b.attributes.kod, b.attributes.cisladomovni ] ) );
 
 	// Address points and named places, by the house they are in.
@@ -194,8 +213,32 @@ async function prepare() {
 		for ( const t of spots ) {
 
 			const file = `${f.front}${spots.length > 1 ? ( t < 0.5 ? 'a' : 'b' ) : ''}.jpg`;
-			const cached = existsSync( path.join( PHOTOS, file ) );
+			let cached = existsSync( path.join( PHOTOS, file ) );
 			const viewPath = path.join( PHOTOS, `${file}.view.json` );
+			if ( cached && existsSync( viewPath ) ) {
+
+				const view = JSON.parse( await readFile( viewPath ) );
+				// Views taken before camera points were put back on the street: with a key, fetch them again aimed
+				// from the corrected point; without one, at least render the model from there.
+				if ( view.source === 'Street View' && view.reported === undefined ) {
+
+					const fix = onStreet( view.x + ORIGIN.x, ORIGIN.y - view.z );
+					if ( fix.moved > 0.5 && KEY && images < budget ) {
+
+						cached = false;
+
+					} else {
+
+						view.reported = [ view.x, view.z ];
+						[ view.x, view.z ] = local( fix.X, fix.Y ).map( v => + v.toFixed( 2 ) );
+						await writeFile( viewPath, JSON.stringify( view ) );
+
+					}
+
+				}
+
+			}
+
 			if ( cached && existsSync( viewPath ) ) {
 
 				const view = JSON.parse( await readFile( viewPath ) );
@@ -235,7 +278,9 @@ async function prepare() {
 			}
 
 			if ( ! meta ) continue;
-			const target = toLL( TX, TY ), cam = [ meta.location.lng, meta.location.lat ];
+			const reported = project( meta.location.lng, meta.location.lat );
+			const fix = onStreet( ...reported );
+			const target = toLL( TX, TY ), cam = toLL( fix.X, fix.Y );
 			const dist = Math.max( 3, Math.hypot( ( cam[ 0 ] - target[ 0 ] ) * 71500, ( cam[ 1 ] - target[ 1 ] ) * 111200 ) );
 			const span = spots.length > 1 ? f.len / 2 : f.len;
 			const fov = Math.max( 60, Math.min( 110, 2 * Math.atan( span / 2 / dist ) * 180 / Math.PI + 20 ) ).toFixed( 0 );
@@ -249,9 +294,8 @@ async function prepare() {
 
 			}
 			f.photos.push( file );
-			const [ CX, CY ] = project( cam[ 0 ], cam[ 1 ] );
-			const [ x, z ] = local( CX, CY );
-			const view = { file, x: + x.toFixed( 2 ), z: + z.toFixed( 2 ), yaw: + ( - bearing( cam, target ) * Math.PI / 180 ).toFixed( 4 ), pitch: + pitch, fov: + fov, source: 'Street View', date: meta.date || null };
+			const [ x, z ] = local( fix.X, fix.Y );
+			const view = { file, x: + x.toFixed( 2 ), z: + z.toFixed( 2 ), reported: local( ...reported ).map( v => + v.toFixed( 2 ) ), yaw: + ( - bearing( cam, target ) * Math.PI / 180 ).toFixed( 4 ), pitch: + pitch, fov: + fov, source: 'Street View', date: meta.date || null };
 			f.views.push( view );
 			await writeFile( viewPath, JSON.stringify( view ) );
 

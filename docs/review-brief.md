@@ -107,6 +107,8 @@ Write `review.json` in the square's work folder, next to `inventory.json`: an ob
   `npm run build` rasterizes these checked SVG drawings into ignored PNG textures for the game.
   Set `shopfrontHeight` only when the pictured ground floor is taller than the normal 4.2 m overlay, so the
   drawing covers the underlying procedural openings.
+- One RÚIAN building can join houses that look nothing alike (a glass corner office and the baroque houses behind
+  it). An edge can then carry its own `style`, `colour`, `trim` and `rustic`, which win over the house's.
 - Owner photos can clarify signs, doors and material details when Street View is ambiguous. Translate those
   details into original SVG drawings that match the game's painted style; do not place raw photo patches on facades.
 - Report layout problems in `layoutIssues`, with the exact photo evidence. Geometry is **not** changed by review.
