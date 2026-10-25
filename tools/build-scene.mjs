@@ -1691,8 +1691,7 @@ const furniture = collectFurniture( streetData, {
 		for ( let dy = - 2; dy <= 2; dy += 1 ) for ( let dx = - 2; dx <= 2; dx += 1 ) h = Math.max( h, sample( dsmRaw, X + dx, Y + dy ) - sample( dtm, X + dx, Y + dy ) );
 		return h > 4 && h < 30 ? h : 9;
 
-	}
-} );
+	}, tramPaths: JSON.parse( await readFile( new URL( 'tram.json', RAW ) ) ).flatMap( f => f.geometry?.paths || [] ) } );
 furniture.statue.push( ...landmarkStatues );
 
 const places = collectPlaces( { project: await lonLatToSJTSK(), quay, terraces, openings, buildings, streetFacades, toLocal, terrainAt, buildingAt, keptIds, dsm, idGrid, AREA, ORIGIN, streetData, furniture, riverAt, buildingInfo, terrainGrid: { terrain, tw, th, cell: TERRAIN_CELL }, inPark: ( X, Y ) => parks.some( rings => pointInRings( rings, X, Y ) ), tramPaths: JSON.parse( await readFile( new URL( 'tram.json', RAW ) ) ).flatMap( f => f.geometry?.paths || [] ) } );
