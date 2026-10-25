@@ -17,6 +17,8 @@ import { createMinimap } from './minimap.js';
 import { addTrams } from './trams.js';
 import { SUN, ANIMATE } from './kit.js';
 import { HOLUB_SUN, PIXEL_SCALE, holubLook, startHolub } from './holub/game.js';
+import { startStory } from './holub/story.js';
+import { startDay } from './holub/sky.js';
 
 async function load( name, type = 'arrayBuffer', dir = 'data/' ) {
 
@@ -506,6 +508,9 @@ window.addEventListener( 'keydown', e => {
 } );
 // The pigeon (?holub) instead of the walker: on Betlémské náměstí by the terrace, facing the chapel.
 const holub = HOLUB ? startHolub( { scene, camera, dom: renderer.domElement, roofGeo, bounds, groundHeight, waterLevel: data.waterLevel, places, furniture: data.furniture, life, start: [ - 74, 66, Math.atan2( 30, - 14 ) ], indoors: ( x, z ) => { const zn = zoneAt( x, z ); return !! zn && zn.y !== undefined && zn.ceil === undefined; } } ) : null;
+// The pigeon's first day (egg, tutorial) and the clock that moves the sun and the light.
+const story = holub ? startStory( { scene, camera, holub, start: [ - 74, 66 ] } ) : null;
+const day = holub ? startDay( { renderer, scene, sky, sun, hemi, centre } ) : null;
 if ( HOLUB ) {
 
 	orbit.enabled = false;
@@ -577,6 +582,8 @@ renderer.setAnimationLoop( () => {
 	if ( holub ) {
 
 		holub.update( dt );
+		story.update( dt );
+		day.update( dt );
 		minimap.update( holub.pos.x, holub.pos.z, holub.yaw, holub.heading );
 		labelTimer -= dt;
 		if ( labelTimer <= 0 ) {
