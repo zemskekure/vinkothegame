@@ -36,6 +36,7 @@ import { apiSpent } from './square.mjs';
 import { readEnv } from './env.mjs';
 
 const GAME_SETTINGS_KEYS = [ 'people', 'look', 'day', 'pigeon' ];
+const GAME_SETTINGS_OPTIONAL = [ 'art' ]; // the art direction, from the game's studio (/game/?studio)
 const DATA = process.env.GRID_DATA || join( homedir(), 'vinko-grid-data' );
 mkdirSync( DATA, { recursive: true } );
 const ENV = { ...readEnv( join( DATA, '.env' ) ), ...process.env };
@@ -372,8 +373,8 @@ async function route( req, res ) {
 
 	if ( m === 'GET' && p === '/api/grid' ) return send( res, 200, gridSummary() );
 
-	// The game's settings (people, look, day, the pigeon's start), edited on the game's admin page (/game/?admin),
-	// which loads them from here over the defaults shipped with the game. One JSON file in the data directory.
+	// The game's settings (people, look, day, the pigeon's start), edited on the game's admin page (/game/?admin), and
+	// the optional art direction (art) from its studio (/game/?studio); the game loads them from here over the defaults shipped with the game. One JSON file in the data directory.
 	if ( p === '/api/game-settings' ) {
 
 		const file = join( DATA, 'game-settings.json' );
@@ -402,7 +403,9 @@ async function route( req, res ) {
 			if ( ! settings || typeof settings !== 'object' || Array.isArray( settings ) ) throw new HttpError( 400, 'expected a JSON object' );
 			const missing = GAME_SETTINGS_KEYS.filter( k => ! settings[ k ] || typeof settings[ k ] !== 'object' || Array.isArray( settings[ k ] ) );
 			if ( missing.length ) throw new HttpError( 400, `missing or not objects: ${missing.join( ', ' )}` );
-			const unknown = Object.keys( settings ).filter( k => ! GAME_SETTINGS_KEYS.includes( k ) && k !== 'version' );
+			const bad = GAME_SETTINGS_OPTIONAL.filter( k => k in settings && ( ! settings[ k ] || typeof settings[ k ] !== 'object' || Array.isArray( settings[ k ] ) ) );
+			if ( bad.length ) throw new HttpError( 400, `not objects: ${bad.join( ', ' )}` );
+			const unknown = Object.keys( settings ).filter( k => ! GAME_SETTINGS_KEYS.includes( k ) && ! GAME_SETTINGS_OPTIONAL.includes( k ) && k !== 'version' );
 			if ( unknown.length ) throw new HttpError( 400, `unknown keys: ${unknown.join( ', ' )}` );
 			// Written next to the file and renamed over it, so a reader never sees half a file.
 			const tmp = `${file}.${process.pid}.${Date.now()}.tmp`;
