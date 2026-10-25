@@ -750,6 +750,32 @@ export function collectPlaces( ctx ) {
 
 			const y = + pz.level.toFixed( 2 );
 			places.piazzetta = { heart: [ - 303, y, 377.5, 0 ], statue: [ - 342.5, y, 377, Math.PI / 2 + 0.4 ], pillars: [] };
+			// The way in from Národní and its tram stop: between the theatre and Nová scéna the square opens onto the
+			// pavement, a few wide granite steps up across its whole width (owner's Street View screenshots, Sept
+			// 2025). Every edge of the square that meets a street less than 1.5 m below gets such a flight.
+			for ( let i = 0; i < pz.ring.length; i ++ ) {
+
+				const [ ax, ay ] = pz.ring[ i ], [ bx, by ] = pz.ring[ ( i + 1 ) % pz.ring.length ];
+				const len = Math.hypot( bx - ax, by - ay );
+				if ( len < 6 ) continue;
+				let [ nx, nz ] = LV( ( by - ay ) / len, - ( bx - ax ) / len );
+				const [ mx, mz ] = L( ( ax + bx ) / 2, ( ay + by ) / 2 );
+				const [ cx, cz ] = L( ( ax + bx ) / 2 + ( by - ay ) / len * 0.5, ( ay + by ) / 2 - ( bx - ax ) / len * 0.5 );
+				if ( inKept( ...S( cx, cz ) ) ) continue;
+				// n out of the square: the side whose ground is lower.
+				if ( yAtLocal( mx + nx * 4, mz + nz * 4 ) > yAtLocal( mx - nx * 4, mz - nz * 4 ) ) { nx = - nx; nz = - nz; }
+				// The pavement in front (the highest ground a few metres out: the road beyond can dip, as into the tunnel).
+				const foot = Math.max( ...[ 1, 2, 3, 4 ].map( d => yAtLocal( mx + nx * d, mz + nz * d ) ) ), drop = y - foot;
+				if ( drop < 0.25 || drop > 1.5 || inKept( ...S( mx + nx * 4, mz + nz * 4 ) ) ) continue;
+				// Same tread count everywhere so neighbouring edges form one flight; risers take up the difference.
+				const steps = 6, run = steps * 0.4;
+				const top = [ + mx.toFixed( 2 ), y, + mz.toFixed( 2 ) ];
+				const bottom = [ + ( mx + nx * run ).toFixed( 2 ), + foot.toFixed( 2 ), + ( mz + nz * run ).toFixed( 2 ) ];
+				places.flights.push( { top, bottom, steps, w: + ( len - 0.4 ).toFixed( 2 ), kind: 'open' } );
+				zone( mx + nx * run / 2, mz + nz * run / 2, [ - nz, nx ], ( len - 0.4 ) / 2, run / 2 + 0.2, { y0: bottom[ 1 ], y1: y, along: [ - nx, - nz ], steps } );
+				console.log( `places: piazzetta steps ${steps} × ${( drop / steps ).toFixed( 3 )} m, ${len.toFixed( 1 )} m wide` );
+
+			}
 			const b = null; // Nová scéna overhangs its recessed ground floor (no free-standing pillars, street photos)
 			if ( b ) {
 
