@@ -4,8 +4,10 @@
 // step, pecking, flapping and gliding, sitting fluffed up with the legs tucked away, and lifting the tail.
 
 import * as THREE from 'three/webgpu';
+import { snapVertex } from './ps1.js';
 
-const mat = ( hex, extra = {} ) => new THREE.MeshStandardNodeMaterial( { color: hex, roughness: 0.8, flatShading: true, ...extra } );
+// Its vertices snap to the console's screen grid like everything else alive in the game (src/holub/ps1.js).
+const mat = ( hex, extra = {} ) => Object.assign( new THREE.MeshStandardNodeMaterial( { color: hex, roughness: 0.8, flatShading: true, ...extra } ), { vertexNode: snapVertex() } );
 const P = {
 	body: mat( 0x8c95a4 ),
 	back: mat( 0x9aa3b2 ),

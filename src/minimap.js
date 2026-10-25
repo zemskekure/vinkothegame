@@ -143,6 +143,7 @@ export function createMinimap( { bounds, surface, surface2, S, isHouse, terrainH
 
 	return {
 		update,
+		map, // the whole area at S.cell metres a pixel, north up (the admin page draws on it)
 		setVisible: on => {
 
 			view.style.display = on ? 'block' : 'none';

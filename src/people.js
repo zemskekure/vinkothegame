@@ -16,12 +16,18 @@
 // face photos a drawn pixel face stands in.
 
 import * as THREE from 'three/webgpu';
-import { attribute, select, texture, uv, vec2, float } from 'three/tsl';
+import { attribute, select, texture, uv, vec2, float, pow } from 'three/tsl';
 import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js';
+import { snapVertex } from './holub/ps1.js';
 
 export const SLOT = { keep: 0, top: 1, bottom: 2, hair: 3, skin: 4, face: 5 };
 const LOOKS = [ 'lookTop', 'lookBottom', 'lookHair', 'lookSkin', 'lookFace' ];
 const BLOCK_HEADS = ! new URLSearchParams( location.search ).has( 'modelheads' ); // ?modelheads keeps the modelled heads
+// In the pigeon game (?holub) the people are drawn like the rest of its late-90s picture: faceted (one normal per
+// triangle), their vertices snapped to the console's coarse screen grid (src/holub/ps1.js), and their colours cut
+// to a few levels a channel. The walking view keeps them smooth.
+const PS1 = window.GAME === 'holub' || /[?&](holub|admin)(=|&|$)/.test( location.search );
+const PS1_LEVELS = 12;
 
 export const BODIES = [
 	[ 'm', 'animated-men/longsleeve' ], [ 'm', 'animated-men/shirt' ], [ 'm', 'animated-men/casual' ], [ 'm', 'animated-men/suit' ],
@@ -254,7 +260,17 @@ function lookMaterial( wardrobe, look ) {
 	const t = mode.sub( 2 ).max( 0 ).round();
 	const cell = vec2( t.mod( GRID ), t.div( GRID ).floor() );
 	const tex = texture( wardrobe.map, cell.add( uv().fract().clamp( 0.004, 0.996 ) ).div( GRID ) ).rgb.mul( l.xyz );
-	m.colorNode = select( mode.lessThan( 0.5 ), base, select( mode.lessThan( 1.5 ), l.xyz, tex ) );
+	const colour = select( mode.lessThan( 0.5 ), base, select( mode.lessThan( 1.5 ), l.xyz, tex ) );
+	m.colorNode = colour;
+	if ( PS1 ) {
+
+		// Quantised in display (gamma) space, so the dark clothes keep their steps too.
+		m.colorNode = pow( pow( colour.max( 0 ), float( 1 / 2.2 ) ).mul( PS1_LEVELS ).round().div( PS1_LEVELS ), float( 2.2 ) );
+		m.flatShading = true;
+		m.vertexNode = snapVertex();
+
+	}
+
 	return m;
 
 }

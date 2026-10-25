@@ -22,6 +22,7 @@ import { HOLUB_SUN, PIXEL_SCALE, holubLook, startHolub } from './holub/game.js';
 import { startStory } from './holub/story.js';
 import { ps1Look } from './holub/ps1.js';
 import { startDay } from './holub/sky.js';
+import { SETTINGS } from './settings.js';
 
 async function load( name, type = 'arrayBuffer', dir = 'data/' ) {
 
@@ -53,7 +54,9 @@ const [ data, wallsBuf, wallIdxBuf, roofsBuf, roofIdxBuf, terrainBuf, surfaceBuf
 const { bounds } = data;
 const params = new URLSearchParams( location.search );
 // Letím jak holub: the pigeon game on the same city (src/holub/), from its own page or with ?holub.
-const HOLUB = window.GAME === 'holub' || params.has( 'holub' );
+// ?admin is the game's settings page (src/admin.js): the pigeon game with the map and the settings beside it.
+const ADMIN = params.has( 'admin' );
+const HOLUB = window.GAME === 'holub' || params.has( 'holub' ) || ADMIN;
 if ( HOLUB ) SUN.copy( HOLUB_SUN );
 
 // ---------------------------------------------------------------------------
@@ -648,11 +651,13 @@ window.addEventListener( 'keydown', e => {
 	if ( e.code === 'KeyM' && ! HOLUB ) setMode( ! walking );
 
 } );
-// The pigeon (?holub) instead of the walker: on Betlémské náměstí by the terrace, facing the chapel.
-const holub = HOLUB ? startHolub( { scene, camera, dom: renderer.domElement, roofGeo, bounds, groundHeight, waterLevel: data.waterLevel, places, furniture: data.furniture, life, start: [ - 74, 66, Math.atan2( 30, - 14 ) ], indoors: ( x, z ) => { const zn = zoneAt( x, z ); return !! zn && zn.y !== undefined && zn.ceil === undefined; } } ) : null;
+// The pigeon (?holub) instead of the walker: by default on Betlémské náměstí by the terrace, facing the chapel
+// (game settings, `pigeon.start`: x, z, heading).
+const holubStart = SETTINGS.pigeon.start;
+const holub = HOLUB ? startHolub( { scene, camera, dom: renderer.domElement, roofGeo, bounds, groundHeight, waterLevel: data.waterLevel, places, furniture: data.furniture, life, start: holubStart, indoors: ( x, z ) => { const zn = zoneAt( x, z ); return !! zn && zn.y !== undefined && zn.ceil === undefined; } } ) : null;
 // The pigeon's first day (egg, tutorial) and the clock that moves the sun and the light.
-const story = holub ? startStory( { scene, camera, holub, start: [ - 74, 66 ] } ) : null;
-const day = holub ? startDay( { renderer, scene, sky, sun, hemi, centre } ) : null;
+const story = holub ? startStory( { scene, camera, holub, start: holubStart } ) : null;
+const day = holub ? startDay( { renderer, scene, sky, sun, hemi, centre, hour: SETTINGS.day.startHour, minutes: SETTINGS.day.minutes, tune: SETTINGS.look } ) : null;
 if ( HOLUB ) {
 
 	orbit.enabled = false;
@@ -717,6 +722,9 @@ let labelTimer = 0;
 // The pigeon game is shown as a late-90s console picture (src/holub/ps1.js); ?hd turns that off.
 const ps1 = HOLUB && ! params.has( 'hd' ) ? ps1Look( { renderer, scene, camera } ) : null;
 if ( ps1 ) renderer.setPixelRatio( 1 );
+
+// The admin page: the settings and the map from above beside the running game.
+if ( ADMIN ) ( await import( './admin.js' ) ).startAdmin( { bounds, map: minimap.map, life, ps1, day, holub } );
 
 renderer.setAnimationLoop( () => {
 

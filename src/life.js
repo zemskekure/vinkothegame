@@ -11,6 +11,7 @@
 import * as THREE from 'three/webgpu';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { BODIES, dress, loadWardrobe, useWardrobe, prepareBody, preparePosed, makeSkinned, makeBatch } from './people.js';
+import { SETTINGS } from './settings.js';
 
 const CARS = { sedan: 5, 'hatchback-sports': 3, suv: 3, van: 2, taxi: 1, delivery: 1, 'sedan-sports': 2, 'suv-luxury': 2 }; // model: weight
 const CAR_LENGTH = 4.1;
@@ -108,32 +109,48 @@ export async function addLife( scene, life, { seats = [], benches = [], groundHe
 	// a few people standing about in pairs
 	const walks = life.walks.map( makePath ).filter( p => p.length > 8 );
 	const total = walks.reduce( ( s, p ) => s + p.length, 0 );
-	// More people round Betlémské náměstí and the streets off it than out at the edges: each line weighted by its
-	// length and by how close its middle is to the square.
-	for ( const p of walks ) {
+	// Where people walk (game settings, `people.spawnZones`): every piece of every line is weighted by its length and
+	// by how close it is to the zones (each zone adds `weight` at its centre, falling off over `r` metres). By default
+	// one zone on Betlémské náměstí: more people round the square and the streets off it than out at the edges.
+	// `placeWalkers( zones )` deals the walkers out again, so the admin page can show a change at once.
+	let pieces = [], weightSum = 0;
+	const weigh = zones => {
 
-		const m = p.pts[ p.pts.length >> 1 ];
-		p.weight = p.length * ( 1 + 4 * Math.exp( - Math.hypot( m[ 0 ] + 74, m[ 1 ] - 66 ) / 180 ) );
+		pieces = [];
+		weightSum = 0;
+		for ( const p of walks ) for ( let i = 1; i < p.pts.length; i ++ ) {
 
-	}
-
-	const weightSum = walks.reduce( ( s, p ) => s + p.weight, 0 );
-	const agents = [];
-	const along = () => {
-
-		let r = rnd() * weightSum;
-		for ( const p of walks ) {
-
-			if ( r < p.weight ) return [ p, rnd() * p.length ];
-			r -= p.weight;
+			const len = p.cum[ i ] - p.cum[ i - 1 ];
+			if ( len <= 0 ) continue;
+			const mx = ( p.pts[ i ][ 0 ] + p.pts[ i - 1 ][ 0 ] ) / 2, mz = ( p.pts[ i ][ 1 ] + p.pts[ i - 1 ][ 1 ] ) / 2;
+			let w = 1;
+			for ( const zn of zones ) w += Math.max( 0, zn.weight || 0 ) * Math.exp( - Math.hypot( mx - zn.x, mz - zn.z ) / Math.max( 1, zn.r || 1 ) );
+			weightSum += len * w;
+			pieces.push( { p, s0: p.cum[ i - 1 ], len, upto: weightSum } );
 
 		}
 
-		return [ walks[ 0 ], 0 ];
+	};
+
+	weigh( SETTINGS.people.spawnZones || [] );
+	const along = () => {
+
+		const r = rnd() * weightSum;
+		let lo = 0, hi = pieces.length - 1;
+		while ( lo < hi ) {
+
+			const mid = ( lo + hi ) >> 1;
+			if ( pieces[ mid ].upto > r ) hi = mid; else lo = mid + 1;
+
+		}
+
+		const piece = pieces[ lo ];
+		return piece ? [ piece.p, piece.s0 + rnd() * piece.len ] : [ walks[ 0 ], 0 ];
 
 	};
 
-	const walkerCount = Math.min( 220, Math.round( total / 12 ) );
+	const agents = [];
+	const walkerCount = Math.max( 0, Math.round( SETTINGS.people.walkers ?? Math.min( 220, total / 12 ) ) );
 	for ( let i = 0; i < walkerCount; i ++ ) {
 
 		const [ path, s ] = along(), body = pickBody(), sex = bodies[ body ].spec.sex;
@@ -166,14 +183,14 @@ export async function addLife( scene, life, { seats = [], benches = [], groundHe
 
 	};
 
-	for ( const [ x, y, z, rot, h = 0.45 ] of seats ) if ( rnd() < 0.75 ) sitAt( x, y, z, rot, h, 0.06 );
+	for ( const [ x, y, z, rot, h = 0.45 ] of seats ) if ( rnd() < SETTINGS.people.seatedShare ) sitAt( x, y, z, rot, h, 0.06 );
 	for ( let i = 0; i < benches.length; i += 5 ) {
 
 		const [ x, y, z, rot ] = benches.slice( i, i + 5 );
 		for ( const ox of [ - 0.45, 0.45 ] ) {
 
 			// Bench model: seat along local x, sitters face its −z; the hips over the back third of the seat.
-			if ( rnd() >= 0.35 ) continue;
+			if ( rnd() >= SETTINGS.people.benchShare ) continue;
 			const yaw = rot + Math.PI, fx = Math.sin( yaw ), fz = Math.cos( yaw );
 			const sex = rnd() < 0.5 ? 0 : 1, seat = posed[ sex ].seat( 'Sitting' );
 			const a = posedPerson( 0, y, 0, yaw, 'Sitting', sex );
@@ -188,7 +205,7 @@ export async function addLife( scene, life, { seats = [], benches = [], groundHe
 
 	// People standing about: pairs talking at the edge of a pavement, someone looking up at the houses.
 	const sample0 = { x: 0, z: 0, dx: 0, dz: 1 };
-	for ( let i = 0; i < 28; i ++ ) {
+	for ( let i = 0; i < SETTINGS.people.standing; i ++ ) {
 
 		const [ path, s ] = along();
 		sample( path, s, sample0 );
@@ -406,7 +423,14 @@ export async function addLife( scene, life, { seats = [], benches = [], groundHe
 
 	}
 
+	function placeWalkers( zones ) {
+
+		weigh( zones );
+		for ( const a of walkers ) [ a.path, a.s ] = along();
+
+	}
+
 	update( 0 );
-	return { update, agents, bodies, people: agents.length, cars: parked.length + movers.length };
+	return { update, placeWalkers, walks, agents, bodies, people: agents.length, cars: parked.length + movers.length };
 
 }

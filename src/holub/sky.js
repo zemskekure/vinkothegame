@@ -1,10 +1,9 @@
 // A day over Prague for the pigeon: the sun crosses the sky from the east, sets behind the Petřín side (west-north-
-// west on a summer evening), and at night a cool moon lights the roofs. One game day takes DAY_MINUTES of real time;
-// it starts in the golden hour the game was made in. T jumps the clock (keyboard) to see the next part of the day.
+// west on a summer evening), and at night a cool moon lights the roofs. One game day takes `minutes` of real time
+// (game settings, `day`); by default it starts in the golden hour the game was made in. T jumps the clock (keyboard)
+// to see the next part of the day.
 
 import * as THREE from 'three/webgpu';
-
-const DAY_MINUTES = 16;
 
 // Colour stops through the day (hour → sun colour, sun strength, sky light, ground bounce, fog, exposure).
 const STOPS = [
@@ -22,9 +21,12 @@ const STOPS = [
 const ca = new THREE.Color(), cb = new THREE.Color();
 const mixHex = ( a, b, t, out ) => out.copy( ca.setHex( a ) ).lerp( cb.setHex( b ), t );
 
-export function startDay( { renderer, scene, sky, sun, hemi, centre, hour = 18.6 } ) {
+// `tune` (game settings, `look`) adjusts the day's own light: sun (× strength), exposure (×), fog (× density: the
+// fog comes nearer) and fogColour ('#rrggbb' instead of the day's colour; empty keeps the day's).
+export function startDay( { renderer, scene, sky, sun, hemi, centre, hour = 18.6, minutes = 16, tune = {} } ) {
 
 	let time = hour;
+	const fogNear = scene.fog?.near ?? 0, fogFar = scene.fog?.far ?? 1;
 	const dir = new THREE.Vector3();
 	const label = document.createElement( 'div' );
 	Object.assign( label.style, { position: 'fixed', right: '14px', top: '12px', font: '600 14px system-ui, sans-serif', color: '#fff3d6', textShadow: '0 1px 2px #000', pointerEvents: 'none' } );
@@ -37,7 +39,7 @@ export function startDay( { renderer, scene, sky, sun, hemi, centre, hour = 18.6
 
 	function update( dt ) {
 
-		time = ( time + dt * 24 / ( DAY_MINUTES * 60 ) ) % 24;
+		if ( minutes > 0 ) time = ( time + dt * 24 / ( minutes * 60 ) ) % 24; // 0: the clock stands
 
 		// The sun: rises at 6, highest (58°) at 13, sets at 20.5; azimuth from east through south to west-north-west.
 		const day = ( time - 6 ) / 14.5;
@@ -56,8 +58,18 @@ export function startDay( { renderer, scene, sky, sun, hemi, centre, hour = 18.6
 		mixHex( a.sky, b.sky, t, hemi.color );
 		mixHex( a.ground, b.ground, t, hemi.groundColor );
 		hemi.intensity = a.hi + ( b.hi - a.hi ) * t;
-		if ( scene.fog ) mixHex( a.fog, b.fog, t, scene.fog.color );
-		renderer.toneMappingExposure = a.exp + ( b.exp - a.exp ) * t;
+		if ( scene.fog ) {
+
+			if ( /^#[0-9a-f]{6}$/i.test( tune.fogColour || '' ) ) scene.fog.color.set( tune.fogColour );
+			else mixHex( a.fog, b.fog, t, scene.fog.color );
+			const k = Math.max( 0.05, tune.fog ?? 1 );
+			scene.fog.near = fogNear / k;
+			scene.fog.far = fogFar / k;
+
+		}
+
+		sun.intensity *= tune.sun ?? 1;
+		renderer.toneMappingExposure = ( a.exp + ( b.exp - a.exp ) * t ) * ( tune.exposure ?? 1 );
 
 		const hh = Math.floor( time ), mm = Math.floor( ( time - hh ) * 60 );
 		label.textContent = `${up ? '☀️' : '🌙'} ${hh}:${String( mm ).padStart( 2, '0' )}`;
@@ -67,6 +79,18 @@ export function startDay( { renderer, scene, sky, sun, hemi, centre, hour = 18.6
 	return { update, get hour() {
 
 		return time;
+
+	}, set hour( h ) {
+
+		time = ( ( h % 24 ) + 24 ) % 24;
+
+	}, set minutes( m ) {
+
+		minutes = m;
+
+	}, set tune( t ) {
+
+		tune = t;
 
 	}, get night() {
 
