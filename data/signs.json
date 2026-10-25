@@ -379,19 +379,6 @@
 		"what": "second-hand shop board over a red-framed shop window (read across two photos)"
 	},
 	{
-		"front": "21644101_2",
-		"fromLeft": 0.85,
-		"height": 4,
-		"kind": "letters",
-		"text": "UNIQUE",
-		"sub": "hair and beauty salon",
-		"width": 2,
-		"ink": "#c4a04a",
-		"font": "serif",
-		"street": "konviktska",
-		"what": "gold salon lettering above the shop door"
-	},
-	{
 		"front": "21644144_0",
 		"fromLeft": 0.85,
 		"height": 3.3,
@@ -1131,5 +1118,17 @@
 		"font": "sans",
 		"street": "skorepka",
 		"what": "WINE lettering in the red-framed shop window"
+	},
+	{
+		"front": "21644101_2",
+		"fromLeft": 0.22,
+		"height": 3.7,
+		"kind": "letters",
+		"text": "UNIQUE",
+		"width": 1.5,
+		"ink": "#c9a45c",
+		"font": "serif",
+		"street": "x-1_z1",
+		"what": "gold salon lettering over the ground floor"
 	}
 ]

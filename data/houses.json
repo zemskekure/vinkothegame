@@ -178,7 +178,7 @@
 		"rustic": "none"
 	},
 	"21643806": {
-		"note": "Betlémské náměstí 9 / Konviktská 19: Hotel Betlem Club, four storeys plus dormered red roof; greenish-white upper floors with window hoods, pale green banded ground floor with lattice iron grilles, arched doors, wall lanterns and three flags; 'HOTEL' lettering on the upper floor. Current model confirmed; ground floor is pale green rather than just pale, grilles added (Street View)",
+		"note": "Betlémské náměstí 9 / Konviktská 19: Hotel Betlem Club, four storeys plus dormered red roof; greenish-white upper floors with window hoods, pale green banded ground floor with lattice iron grilles, arched doors, wall lanterns and three flags; 'HOTEL' lettering on the upper floor. The short corner edge 7 has one lattice-grilled window in the pale green rusticated base (Street View 2024-09, marked 21643806_7)",
 		"signs": false,
 		"colour": "#eef0e8",
 		"trim": "#f8f8f2",
@@ -190,6 +190,15 @@
 		"edges": {
 			"2": {
 				"lanterns": true
+			},
+			"7": {
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "green",
+						"bars": true
+					}
+				]
 			}
 		}
 	},
@@ -456,22 +465,247 @@
 		"signs": false
 	},
 	"21644080": {
-		"note": "Konviktská 17: plain classicist house in weathered grey-beige plaster, brown-framed windows, simple pilasters and an arched doorway; edge 9 is a blank white firewall with a black stencil mural (parachute, falling figures) and a memorial plaque. Right half of edge 8 photo shows a white house with pale green ground floor and lattice grilles matching the hotel (Street View)",
-		"colour": "#aaa395",
-		"trim": "#b8b1a2",
+		"note": "Konviktská 17: edge 8 is mostly the same white house with a pale green banded ground floor and diamond lattice grilles as the hotel next door; only its first metres from the west show the grey classicist neighbour. Edge 9 is the tall blank white firewall with the black stencil mural (parachute, falling figures), a memorial plaque and a lantern. Earlier grey-beige colour replaced (Street View 2025-09, marked 21644080_8a/8b/9, 21643806_7)",
+		"colour": "#eceee6",
+		"trim": "#f7f7f1",
 		"floors": 4,
 		"ground": "windows",
-		"rustic": "none",
-		"grilles": false,
-		"graffiti": true,
-		"signs": false
+		"rustic": "banded",
+		"grilles": true,
+		"graffiti": false,
+		"signs": false,
+		"edges": {
+			"8": {
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "dark"
+					},
+					{
+						"kind": "window",
+						"frame": "green",
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "green",
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "green",
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "green",
+						"bars": true
+					}
+				]
+			},
+			"9": {
+				"colour": "#e9e9e5",
+				"trim": "#e9e9e5",
+				"rustic": "none",
+				"ground": [
+					"blank",
+					"blank"
+				]
+			}
+		}
 	},
 	"21644098": {
-		"note": "Konvikt (Konviktská 24 / Průchodní): plain cream baroque houses with steep gables and red tiled roofs, white window surrounds, brown wooden shutters on ground-floor windows; open courtyard with a large tree and restaurant garden with Bernard parasols (Street View)",
-		"signs": false
+		"note": "Konvikt (Bartolomějská 11 / Konviktská 24 / Průchodní), several houses: white banded fronts on Bartolomějská with the dark green arched gate of no. 11, the corner pub's stickered arched door and Kino Ponrepo's green-framed arch with the yellow round sign; cream gabled houses and the tree-shaded courtyard on Konviktská; weathered ochre lane walls with barred windows, green shutters and the Champagneria door on Průchodní (Street View 2024-09/2025-09, marked; owner photos 2022-23)",
+		"signs": false,
+		"colour": "#d9bf8f",
+		"trim": "#e6d3ad",
+		"rustic": "none",
+		"graffiti": true,
+		"edges": {
+			"0": {
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "gate",
+						"frame": "green",
+						"arch": true,
+						"size": "wide"
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "door",
+						"frame": "wood",
+						"arch": true,
+						"glazed": true
+					},
+					{
+						"kind": "window",
+						"frame": "wood"
+					},
+					{
+						"kind": "door",
+						"frame": "green",
+						"arch": true
+					}
+				],
+				"colour": "#ebe6da",
+				"trim": "#f4f0e7",
+				"rustic": "banded"
+			},
+			"1": {
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true
+					},
+					"blank",
+					"blank",
+					{
+						"kind": "door",
+						"frame": "green",
+						"arch": true,
+						"glazed": true,
+						"size": "wide"
+					}
+				],
+				"shopfront": "21644098_1.svg",
+				"colour": "#ebe6da",
+				"trim": "#f4f0e7",
+				"rustic": "banded"
+			},
+			"15": {
+				"colour": "#e8dcc0",
+				"trim": "#f2eadb",
+				"rustic": "none",
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "wood"
+					},
+					{
+						"kind": "window",
+						"frame": "wood"
+					},
+					{
+						"kind": "gate",
+						"frame": "dark",
+						"arch": true
+					}
+				]
+			},
+			"17": {
+				"colour": "#e8dcc0",
+				"trim": "#f2eadb",
+				"rustic": "none"
+			},
+			"26": {
+				"colour": "#d4b47a",
+				"trim": "#e0c999",
+				"rustic": "rubble",
+				"ground": [
+					{
+						"kind": "door",
+						"frame": "green",
+						"size": "wide"
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true
+					}
+				]
+			},
+			"27": {
+				"colour": "#e0c9a0",
+				"trim": "#ece0c6",
+				"rustic": "none"
+			},
+			"28": {
+				"colour": "#e0c9a0",
+				"trim": "#ece0c6",
+				"rustic": "none",
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "wood"
+					}
+				]
+			},
+			"31": {
+				"colour": "#d9a95e",
+				"trim": "#e8cfa0",
+				"rustic": "none",
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "green",
+						"bars": true
+					}
+				]
+			},
+			"32": {
+				"colour": "#d9a95e",
+				"trim": "#e8cfa0",
+				"rustic": "none",
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "dark",
+						"bars": true
+					}
+				]
+			},
+			"33": {
+				"colour": "#c9ab7c",
+				"trim": "#d9c29a",
+				"rustic": "none",
+				"ground": [
+					{
+						"kind": "door",
+						"frame": "wood"
+					},
+					"blank",
+					{
+						"kind": "window",
+						"frame": "dark",
+						"bars": true
+					},
+					{
+						"kind": "gate",
+						"frame": "dark",
+						"arch": true,
+						"bars": true
+					}
+				]
+			}
+		}
 	},
 	"21644101": {
-		"note": "Konviktská 22: large baroque palace in cream-beige plaster, ochre plinth storey with ornate iron grilles, arched first-floor windows in banded rustication, richly moulded window heads with segmental pediments above; carved portal with cartouche and wooden door on edge 13; some tags on a side door. Edge 2 photo shows a narrower gabled cream house instead (see issues) (Street View)",
+		"note": "Konviktská 22: baroque palace in cream-beige plaster with a tan plinth storey, curled iron grilles, arched first-floor windows in banded rustication, pedimented window heads. Edge 1 from the west: a narrow tagged door, two grilled windows, the brown portal in a carved stone frame (about 11-12.5 m), three grilled windows. Edge 2 is the narrow cream gabled house with gold UNIQUE lettering over brown-framed shop windows (Street View 2025-09, marked 21644101_1a/1b/2)",
 		"colour": "#e4d7b9",
 		"trim": "#ece3cc",
 		"floors": 5,
@@ -480,6 +714,62 @@
 		"grilles": true,
 		"graffiti": true,
 		"edges": {
+			"1": {
+				"ground": [
+					{
+						"kind": "door",
+						"frame": "dark"
+					},
+					{
+						"kind": "window",
+						"frame": "dark",
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "dark",
+						"bars": true
+					},
+					{
+						"kind": "gate",
+						"frame": "wood",
+						"arch": true
+					},
+					{
+						"kind": "window",
+						"frame": "dark",
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "dark",
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "dark",
+						"bars": true
+					}
+				],
+				"shopfront": "21644101_1.svg"
+			},
+			"2": {
+				"colour": "#ece6d6",
+				"trim": "#f4f0e6",
+				"rustic": "none",
+				"ground": [
+					{
+						"kind": "shop",
+						"frame": "wood",
+						"glazed": true
+					},
+					{
+						"kind": "shop",
+						"frame": "wood",
+						"glazed": true
+					}
+				]
+			},
 			"13": {
 				"lanterns": true
 			}
@@ -576,15 +866,155 @@
 		"signs": false
 	},
 	"21644233": {
-		"note": "Na Perštýně 13: this front is a tall blind firewall/gable in ochre plaster, heavily tagged, fronted by a graffiti-covered hoarding over a vacant plot — no real shopfront here despite OSM listing an absinth shop and a bureau de change; a cream neo-baroque house stands further right down the street (Street View 2026)",
-		"colour": "#c9ad74",
-		"trim": "#d8c492",
-		"floors": 4,
-		"ground": "blank",
+		"note": "Na Perštýně 13 / Bartolomějská 13: weathered ochre baroque house with window hoods, a round plaque over the large herringbone-planked gate in a carved arch, grilled windows, an arched window with DANCE/OPEN posters and the black Absinth SHOP front with a striped panel at the tagged corner, then a graffiti hoarding over the vacant plot (earlier 'blind firewall' note was wrong). Průchodní: same ochre, rubble base, tagged doors, barred windows (Street View 2024-09/2025-09, marked)",
+		"colour": "#c9a66a",
+		"trim": "#d8bf8e",
+		"floors": 3,
+		"ground": "shops",
 		"rustic": "none",
-		"grilles": false,
+		"grilles": true,
 		"graffiti": true,
-		"signs": false
+		"signs": false,
+		"edges": {
+			"15": {
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "dark",
+						"bars": true
+					},
+					{
+						"kind": "shop",
+						"frame": "dark",
+						"arch": true,
+						"glazed": true
+					},
+					"blank",
+					{
+						"kind": "gate",
+						"frame": "wood",
+						"arch": true,
+						"size": "wide"
+					},
+					{
+						"kind": "window",
+						"frame": "dark",
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "dark",
+						"bars": true
+					},
+					{
+						"kind": "shop",
+						"frame": "dark",
+						"glazed": true
+					},
+					{
+						"kind": "shop",
+						"frame": "dark"
+					},
+					"blank",
+					"blank",
+					"blank"
+				],
+				"shopfront": "21644233_15.svg"
+			},
+			"17": {
+				"colour": "#d4a862",
+				"ground": [
+					{
+						"kind": "door",
+						"frame": "wood"
+					},
+					"blank",
+					"blank",
+					{
+						"kind": "window",
+						"frame": "dark",
+						"bars": true
+					},
+					{
+						"kind": "door",
+						"frame": "wood"
+					}
+				]
+			},
+			"18": {
+				"colour": "#d6aa66",
+				"rustic": "rubble",
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true
+					},
+					"blank",
+					{
+						"kind": "door",
+						"frame": "green",
+						"size": "narrow"
+					}
+				]
+			}
+		}
+	},
+	"21644241": {
+		"note": "Bartolomějská 12: functionalist six-storey house in cream render with a full-height glazed staircase strip framed in dark red-brown tiles, red-brown window frames, and a ground floor clad in glossy dark red-brown tiles with grilled windows and a glazed wooden door under a small canopy. Its first ~8 m from the east look like the dark-brown stone base and terracotta front of the police block next door (Street View 2025-09, marked 21644241_4a/4b)",
+		"colour": "#ece3c9",
+		"trim": "#8a3e2c",
+		"floors": 6,
+		"ground": "windows",
+		"rustic": "clad",
+		"grilles": true,
+		"graffiti": false,
+		"edges": {
+			"4": {
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "grey",
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "grey",
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "grey",
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "dark",
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "dark",
+						"bars": true
+					},
+					{
+						"kind": "door",
+						"frame": "wood",
+						"glazed": true
+					},
+					{
+						"kind": "window",
+						"frame": "dark",
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "dark",
+						"bars": true
+					}
+				]
+			}
+		}
 	},
 	"21644276": {
 		"note": "Bartolomějská / Karoliny Světlé 2 (Eurostars Thalia): cream neo-renaissance block, banded rusticated ground floor with grilled windows, round-arched first-floor windows in rusticated voussoir surrounds, carved portal with brown door under a balcony on consoles, rounded corner, wall lanterns; no hotel sign visible (Street View)",
@@ -931,7 +1361,7 @@
 		"graffiti": false
 	},
 	"21644560": {
-		"note": "Na Perštýně 11 / Bartolomějská 14 (police): long gently curving 1920s block in warm terracotta-brown plaster, triangular window pediments, a dormer row in the roof; heavy dark-brown stone ground floor with pilasters and bronze-grilled windows and doors; four blue crouching sculptures on the sill course above the ground floor (Street View 2026) Ground floor: tall grilled windows and heavy bronze-brown doors in a dark stone base, seated blue sculptures on the cornice above (not modelled yet) (Street View 2024–26, owner screenshots Sept 2025)",
+		"note": "Na Perštýně 11 / Bartolomějská 14 (police): long curving 1920s block in warm terracotta-brown plaster, triangular window pediments, oriels, a dormer row; heavy dark-brown stone ground floor with pilasters, lattice-grilled windows and a deep wide portal with police plates near the west end; four blue crouching sculptures on the sill course (not modelled) (Street View 2024–26, owner screenshots Sept 2025, marked 21644560_47a/47b)",
 		"colour": "#a9765a",
 		"trim": "#7d5747",
 		"floors": 6,
@@ -1004,6 +1434,79 @@
 					{
 						"kind": "gate",
 						"frame": "wood"
+					}
+				]
+			},
+			"47": {
+				"ground": [
+					{
+						"kind": "door",
+						"frame": "dark"
+					},
+					{
+						"kind": "window",
+						"frame": "grey",
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "grey",
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "grey",
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "grey",
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "grey",
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "grey",
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "grey",
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "grey",
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "grey",
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "grey",
+						"bars": true
+					},
+					{
+						"kind": "gate",
+						"frame": "dark",
+						"size": "wide"
+					},
+					{
+						"kind": "window",
+						"frame": "grey",
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "grey",
+						"bars": true
 					}
 				]
 			}
@@ -1556,15 +2059,39 @@
 		"signs": false
 	},
 	"21649570": {
-		"note": "Konviktská 15/17 area: grey-render 1930s house with brick ground floor and two wooden garage doors (left half), then an older house in rough grey plaster with a moulded string course and tagged ground floor (right half); floor count estimated (Street View)",
-		"colour": "#8c8677",
-		"trim": "#9a9486",
-		"floors": 5,
-		"ground": "gate",
-		"rustic": "none",
+		"note": "Konviktská 15: plain six-storey grey-brown 1930s house with a grid of white-framed windows over a dark brown brick-clad ground floor with a glazed door, a wide window and a smaller one; from about 10 m the front runs on as the white parachute-mural firewall of Konviktská 17 with the memorial plaque. The two wooden garage doors noted before are not visible in 2025 (Street View 2025-09, marked 21649570_8)",
+		"colour": "#857b6f",
+		"trim": "#958c80",
+		"floors": 6,
+		"ground": "windows",
+		"rustic": "clad",
 		"grilles": false,
-		"graffiti": true,
-		"signs": false
+		"graffiti": false,
+		"signs": false,
+		"edges": {
+			"8": {
+				"ground": [
+					{
+						"kind": "door",
+						"frame": "white",
+						"glazed": true
+					},
+					"blank",
+					{
+						"kind": "window",
+						"frame": "white",
+						"size": "wide"
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					"blank",
+					"blank",
+					"blank"
+				]
+			}
+		}
 	},
 	"21649626": {
 		"note": "Betlémské náměstí: long cream four-storey front, Galerie U Betlémské kaple, dark wooden shopfronts (Street View 2025)",
@@ -1575,7 +2102,7 @@
 		"signs": false
 	},
 	"21649634": {
-		"note": "Konviktská 30: ochre-yellow house over a pale beige banded ground floor with a shop window, wall lantern and an empty hanging-sign bracket; no gallery sign visible on this front (Street View)",
+		"note": "Konviktská 30 (Průchodní side): ochre-yellow house over a pale smooth ground floor with deep white reveals, a black chalkboard sign, a sculpted horse head mounted on the wall near the corner, a glazed door and a big shop window; wall lantern and an empty hanging-sign bracket; no gallery sign visible on this front (Street View 2024-09, marked 21649634_8)",
 		"colour": "#dcc887",
 		"trim": "#e3dac0",
 		"ground": "windows",
@@ -1583,6 +2110,25 @@
 		"grilles": false,
 		"graffiti": false,
 		"edges": {
+			"8": {
+				"ground": [
+					{
+						"kind": "door",
+						"frame": "dark",
+						"glazed": true
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "shop",
+						"frame": "white",
+						"glazed": true,
+						"size": "wide"
+					}
+				]
+			},
 			"10": {
 				"lanterns": true
 			}
@@ -2410,6 +2956,33 @@
 		"colour": "#968a78",
 		"trim": "#c9b994",
 		"rustic": "rubble"
+	},
+	"46687530": {
+		"note": "Bartolomějská, west of Ponrepo: white baroque house with window crowns, an oval window, a wall lantern, a small round hanging sign and a rusticated ground floor with two dark green doors: a tagged panelled double door at the west end and an arched one carved with a sunburst (Street View 2025-09, marked 46687530_4)",
+		"colour": "#ece8dd",
+		"trim": "#f5f2ea",
+		"floors": 4,
+		"rustic": "banded",
+		"graffiti": true,
+		"edges": {
+			"4": {
+				"ground": [
+					{
+						"kind": "door",
+						"frame": "green"
+					},
+					"blank",
+					"blank",
+					{
+						"kind": "gate",
+						"frame": "green",
+						"arch": true
+					}
+				],
+				"shopfront": "46687530_4.svg"
+			}
+		},
+		"signs": false
 	},
 	"48864005": {
 		"note": "Národní, St Ursula's church: baroque front with salmon-pink recessed panels framed by white pilasters and cornices, central stone portal with statue in a niche above, oval oculi, statues on the gable. Current colours confirmed (pink a touch deeper). (Street View 2026)",

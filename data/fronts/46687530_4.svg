@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1020 420">
+<rect x="0" y="0" width="1020" height="420" fill="#ece8dd"/>
+<path d="M170 60H730M170 102H730M170 144H730M170 186H730M170 228H730M170 270H730M170 312H730M170 354H730M170 396H730" stroke="#d4cec1" stroke-width="3" fill="none"/>
+<rect x="0" y="0" width="1020" height="16" fill="#f5f2ea"/>
+<rect x="10" y="100" width="150" height="320" fill="#1f3b30"/>
+<path d="M85 100V420" stroke="#13261e" stroke-width="6"/>
+<rect x="25" y="120" width="50" height="120" fill="#284a3c"/>
+<rect x="95" y="120" width="50" height="120" fill="#284a3c"/>
+<rect x="25" y="260" width="50" height="140" fill="#284a3c"/>
+<rect x="95" y="260" width="50" height="140" fill="#284a3c"/>
+<path d="M30 300C50 280 70 320 90 290M100 330L140 310" stroke="#e8e4dc" stroke-width="4" fill="none"/>
+<rect x="330" y="100" width="270" height="280" fill="#f1eee6" stroke="#d4cec1" stroke-width="5"/>
+<path d="M730 420V170A145 145 0 0 1 1020 170V420Z" fill="#f2efe8" stroke="#d4cec1" stroke-width="4"/>
+<path d="M770 420V170A105 105 0 0 1 980 170V420Z" fill="#1d3a30"/>
+<path d="M875 170L786 138M875 170L802 109M875 170L828 88M875 170L859 76M875 170L891 76M875 170L922 88M875 170L948 109M875 170L964 138" stroke="#3f6b58" stroke-width="5" fill="none"/>
+<circle cx="875" cy="170" r="22" fill="#3f6b58"/>
+<path d="M770 170H980M875 170V420" stroke="#13261e" stroke-width="7"/>
+<rect x="790" y="200" width="70" height="90" fill="#284a3c"/>
+<rect x="890" y="200" width="70" height="90" fill="#284a3c"/>
+<rect x="790" y="310" width="70" height="90" fill="#284a3c"/>
+<rect x="890" y="310" width="70" height="90" fill="#284a3c"/>
+<rect x="0" y="404" width="1020" height="16" fill="#dcd7cb"/>
+</svg>
