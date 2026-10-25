@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 630 420" width="630" height="420">
+  <rect width="630" height="420" fill="#f4f1ea"/>
+  <rect y="398" width="630" height="22" fill="#cdb898"/>
+  <rect x="0" y="40" width="62" height="380" fill="#a6835c"/>
+  <rect x="0" y="40" width="62" height="16" fill="#8d6c49"/>
+  <path d="M10 70V398M50 70V398M0 150H62M0 260H62" stroke="#8d6c49" stroke-width="4"/>
+  <rect x="62" y="80" width="12" height="318" fill="#e8b47c"/>
+  <rect x="166" y="80" width="12" height="318" fill="#e8b47c"/>
+  <rect x="356" y="80" width="10" height="318" fill="#e8b47c"/>
+  <rect x="456" y="80" width="10" height="318" fill="#e8b47c"/>
+  <rect x="62" y="18" width="568" height="26" fill="#e3dccb"/>
+  <rect x="62" y="44" width="568" height="34" fill="#efe9da"/>
+  <path d="M62 78H630" stroke="#c9bd9f" stroke-width="4"/>
+  <text x="250" y="67" font-family="Georgia, serif" font-size="15" font-weight="700" letter-spacing="2" fill="#3e3429" text-anchor="middle">RISTORANTE ITALIANO</text>
+  <text x="510" y="68" font-family="Georgia, serif" font-size="20" fill="#3e3429" text-anchor="middle">Oliva Nera</text>
+  <g font-family="Georgia, serif" font-size="19" fill="#3b3a36" text-anchor="middle">
+    <text x="104" y="124">R</text><text x="104" y="148">I</text><text x="104" y="172">S</text><text x="104" y="196">T</text><text x="104" y="220">O</text><text x="104" y="244">R</text><text x="104" y="268">A</text><text x="104" y="292">N</text><text x="104" y="316">T</text><text x="104" y="340">E</text>
+    <text x="136" y="148">I</text><text x="136" y="172">T</text><text x="136" y="196">A</text><text x="136" y="220">L</text><text x="136" y="244">I</text><text x="136" y="268">A</text><text x="136" y="292">N</text><text x="136" y="316">O</text>
+  </g>
+  <g>
+    <rect x="198" y="118" width="142" height="216" fill="#fbfaf6"/>
+    <rect x="208" y="128" width="122" height="196" fill="#46525a"/>
+    <path d="M269 128V324M208 186H330" stroke="#fbfaf6" stroke-width="7"/>
+    <path d="M208 128L256 186M269 186L316 270" stroke="#8796a0" stroke-width="6" opacity="0.5"/>
+    <rect x="192" y="334" width="154" height="10" fill="#e3dccb"/>
+    <path d="M212 330q10 -22 24 -6q10 -24 26 -4q12 -20 24 2q12 -18 26 4" fill="#5d7f38"/>
+  </g>
+  <g>
+    <rect x="380" y="168" width="64" height="122" fill="#5b3b24"/>
+    <rect x="386" y="174" width="52" height="110" fill="#1f2121"/>
+    <path d="M392 192h38M392 208h30M392 224h36M392 240h24M392 256h34" stroke="#dcd8cc" stroke-width="3"/>
+    <rect x="408" y="290" width="8" height="40" fill="#5b3b24"/>
+  </g>
+  <g>
+    <rect x="480" y="118" width="142" height="216" fill="#fbfaf6"/>
+    <rect x="490" y="128" width="122" height="196" fill="#46525a"/>
+    <path d="M551 128V324M490 186H612" stroke="#fbfaf6" stroke-width="7"/>
+    <path d="M490 128L538 186M551 186L598 270" stroke="#8796a0" stroke-width="6" opacity="0.5"/>
+    <rect x="474" y="334" width="154" height="10" fill="#e3dccb"/>
+    <path d="M494 330q10 -22 24 -6q10 -24 26 -4q12 -20 24 2q12 -18 26 4" fill="#5d7f38"/>
+  </g>
+</svg>
