@@ -10,7 +10,7 @@
 import * as THREE from 'three/webgpu';
 import {
 	Fn, float, vec2, vec3, color, uniform, attribute, positionWorld, normalWorldGeometry, cameraPosition,
-	floor, fract, mod, min, max, clamp, mix, step, smoothstep, dot, normalize, pow, abs, length, fwidth, sin, cos
+	floor, fract, mod, min, max, clamp, mix, step, smoothstep, dot, normalize, pow, abs, length, fwidth, sin, cos, texture
 } from 'three/tsl';
 import { hash2D, noise2D, bumpNormal, lineAA, gridLine, filteredPulse, evaluateApartmentInterior } from './common.js';
 
@@ -21,7 +21,15 @@ export const sceneUniforms = {
 };
 
 // cutouts: oriented boxes (scene frame, see tools/places.mjs) where the wall is open: doorways into the walk-in rooms.
-export function createFacadeMaterial( cutouts = [] ) {
+// groundTex: the described ground floors (src/main.js), one row per street front.
+export function createFacadeMaterial( cutouts = [], groundTex = null ) {
+
+	if ( ! groundTex ) {
+
+		groundTex = new THREE.DataTexture( new Uint16Array( 4 ), 1, 1, THREE.RGBAFormat, THREE.HalfFloatType );
+		groundTex.needsUpdate = true;
+
+	}
 
 	const mat = new THREE.MeshStandardNodeMaterial( { roughness: 0.85, metalness: 0 } );
 
@@ -43,15 +51,20 @@ export function createFacadeMaterial( cutouts = [] ) {
 	// (glass blocks), 5 modern curtain-wall offices (Quadrio, DRN), 6 bronze-tinted glass (the theatre's operations building).
 	const style = wallC.w;
 	// House description (data/houses.json): trim colour (r < 0: derive it), ground floor kind (1 gate, 2 blank,
-	// 3 shops, 4 windows), window bars, rustication (−1 default, 0 none, 1 banded, 2 ornate), graffiti.
+	// 3 shops, 4 windows), window bars (+ 2 × the described ground floor's row + 1), rustication (−1 default, 0 none,
+	// 1 banded, 2 ornate, 3 smooth stone cladding), graffiti.
 	const trimColour = attribute( 'trimColour', 'vec3' );
 	const house = attribute( 'house', 'vec4' );
 	const isGate = step( abs( house.x.sub( 1 ) ), 0.5 );
 	const isBlank = step( abs( house.x.sub( 2 ) ), 0.5 );
 	const groundWindows = step( abs( house.x.sub( 4 ) ), 0.5 );
-	const grilles = house.y;
+	// Interpolation leaves 5.9999 for 6: round before taking the packed integers apart.
+	const houseY = floor( house.y.add( 0.5 ) );
+	const grilles = mod( houseY, 2 );
+	const gfRow = floor( houseY.div( 2 ) ).sub( 1 );
 	const rusticKind = house.z;
 	const ornate = step( abs( rusticKind.sub( 2 ) ), 0.5 );
+	const clad = step( abs( rusticKind.sub( 3 ) ), 0.5 );
 	const graffiti = house.w;
 	const sTheatre = step( abs( style.sub( 1 ) ), 0.5 );
 	const sMaj = step( abs( style.sub( 2 ) ), 0.5 );
@@ -97,18 +110,76 @@ export function createFacadeMaterial( cutouts = [] ) {
 	// Máj: blank panel walls above the shops (its glazing is drawn separately); the chapel only has its gothic windows.
 	const solid = max( max( max( max( inPier, tooNarrow ), isParty ), underCornice ), max( max( sMaj.mul( step( 1, gridV ) ), sChapel ), modern ) );
 
+	// Described ground floor (data/houses.json edges.<i>.ground): this front's real openings, read from its row of
+	// the ground-floor texture at the wall position: kind (1 door, 2 gate, 3 shop window, 4 window, 5 garage door,
+	// 6 blind arch with a window in it), frame colour, the opening's left and right edge (m) and flags (1 round
+	// arched, 2 iron bars, 4 glazed door, 8 a double door in the shop window). It replaces the generic ground floor.
+	const gfFront = step( 0, gfRow ).mul( isStreet ).mul( plain );
+	const gfOn = gfFront.mul( ground );
+	const gfTexel = texture( groundTex, vec2( floor( u.div( 0.25 ) ).add( 0.5 ).div( groundTex.image.width ), gfRow.add( 0.5 ).div( groundTex.image.height ) ) );
+	const gfKind = mod( gfTexel.x, 10 ), gfFrame = floor( gfTexel.x.div( 10 ) );
+	const gu0 = gfTexel.y, gu1 = gfTexel.z;
+	const bit = k => mod( floor( gfTexel.w.div( k ) ), 2 );
+	const isKind = k => step( abs( gfKind.sub( k ) ), 0.5 );
+	const kDoor = isKind( 1 ), kGate = isKind( 2 ), kShop = isKind( 3 ), kWin = isKind( 4 ), kGarage = isKind( 5 ), kNiche = isKind( 6 );
+	const gfArched = max( max( bit( 1 ), kGate ), kNiche ), gfBars = bit( 2 ), gfGlazed = bit( 4 ), gfShopDoor = bit( 8 ).mul( kShop );
+	// Heights above the pavement, kept under the string course: a door 2.7 m, a carriage gate 3.9 m, shop windows on a
+	// low stall riser up to 3.2 m, windows from a 0.9 m sill, a garage door 3 m; a blind arch takes the whole floor.
+	const gTop = fH.sub( 0.45 );
+	const gy0 = kShop.mul( 0.15 ).add( kWin.mul( 0.9 ) ).add( kNiche.mul( 0.3 ) );
+	const gy1 = min( gTop, kDoor.mul( 2.7 ).add( kGate.mul( 3.9 ) ).add( kShop.mul( 3.2 ) ).add( kWin.mul( 2.7 ) ).add( kGarage.mul( 3.0 ) ).add( kNiche.mul( 9 ) ) );
+	const gc = gu0.add( gu1 ).mul( 0.5 ), gr = gu1.sub( gu0 ).mul( 0.5 ).max( 0.05 ); // no zero widths: NaNs outside the openings
+	// Signed distance (m) into an opening, positive inside; an arched head is a half circle on the opening's width.
+	const fwU = fwidth( u ).max( 0.001 ), fwH = fwidth( h ).max( 0.001 );
+	const openingDist = ( x0, x1, y0, y1, arch ) => {
+
+		const r = x1.sub( x0 ).mul( 0.5 ), cx = x0.add( x1 ).mul( 0.5 ), spring = y1.sub( r.mul( arch ) );
+		const top = mix( y1.sub( h ), r.sub( length( vec2( u.sub( cx ), h.sub( spring ).max( 0 ) ) ) ), arch );
+		return min( min( u.sub( x0 ), x1.sub( u ) ), min( h.sub( y0 ), top ) );
+
+	};
+	const inside = d => smoothstep( fwU.negate(), fwU, d );
+	const gfDist = openingDist( gu0, gu1, gy0, gy1, gfArched );
+	const gfIn = inside( gfDist ).mul( gfOn ).mul( step( 0.5, gfKind ) );
+	// The pane: the whole opening, or in a blind arch a smaller window low in it.
+	const nx0 = gu0.add( gr.mul( 0.45 ) ), nx1 = gu1.sub( gr.mul( 0.45 ) ), ny1 = min( gy1.sub( gr ).sub( 0.25 ), float( 2.5 ) );
+	const paneDist = mix( gfDist, openingDist( nx0, nx1, float( 0.85 ), ny1, float( 0 ) ), kNiche );
+	const pane = inside( paneDist ).mul( gfIn );
+	const glazedPane = pane.mul( max( max( max( kShop, kWin ), kNiche ), gfGlazed.mul( kDoor ) ) );
+	const leaf = pane.mul( max( kDoor.mul( float( 1 ).sub( gfGlazed ) ), kGate ) );
+	const garage = pane.mul( kGarage );
+	// Frames: a 7 cm frame round each window, 9 cm on shop windows; mullions and a transom.
+	const frameW = mix( float( 0.07 ), float( 0.09 ), kShop );
+	const paneW = mix( gr.mul( 2 ), nx1.sub( nx0 ), kNiche ).max( 0.1 );
+	const paneX0 = mix( gu0, nx0, kNiche );
+	const shopBays = max( floor( paneW.div( 1.3 ).add( 0.5 ) ), 1 );
+	const mullion = max(
+		lineAA( fract( u.sub( paneX0 ).div( paneW ).mul( shopBays ).add( 0.5 ) ).sub( 0.5 ), frameW.mul( 0.5 ).div( paneW ).mul( shopBays ) ).mul( kShop ).mul( step( 0.5, shopBays.sub( 1 ) ) ),
+		lineAA( u.sub( paneX0.add( paneW.mul( 0.5 ) ) ), 0.03 ).mul( max( kWin, kNiche ) ) );
+	const transomH = mix( mix( gy0.add( gy1.sub( gy0 ).mul( 0.7 ) ), gy1.sub( gr ), gfArched ), gy1.sub( 0.5 ), kShop );
+	const transom = lineAA( h.sub( mix( transomH, ny1.sub( 0.35 ), kNiche ) ), 0.03 ).mul( max( max( kShop, kWin ), kNiche ) );
+	// A glazed double door in the middle of a shop window (1.6 m wide, 2.3 m high).
+	const shopDoorFrame = max( max( lineAA( abs( u.sub( gc ) ).sub( 0.8 ), 0.05 ), lineAA( u.sub( gc ), 0.03 ) ).mul( step( h, 2.3 ) ), lineAA( h.sub( 2.3 ), 0.05 ).mul( step( abs( u.sub( gc ) ), 0.8 ) ) ).mul( gfShopDoor );
+	const gfFrameMask = max( max( float( 1 ).sub( smoothstep( frameW.sub( fwU ), frameW.add( fwU ), paneDist ) ), max( mullion, transom ) ), shopDoorFrame ).mul( max( glazedPane, garage ) );
+	// Iron bars: uprights every 13 cm, a cross bar every 0.6 m.
+	const gfBarMask = max( gridLine( u.sub( paneX0 ), 0.13, 0.012 ), gridLine( h, 0.6, 0.015 ) ).mul( gfBars ).mul( glazedPane );
+	// Blind arch: the plaster inside the arch is set back.
+	const nicheRecess = gfIn.mul( kNiche ).mul( float( 1 ).sub( pane ) );
+	// A plaster surround (12 cm) round windows, doors and gates; none on stone-clad fronts or round shop windows.
+	const gfSurround = inside( gfDist.add( 0.14 ) ).sub( inside( gfDist ) ).max( 0 ).mul( gfOn ).mul( step( 0.5, gfKind ) ).mul( float( 1 ).sub( kShop ) ).mul( float( 1 ).sub( kGarage ) ).mul( float( 1 ).sub( clad ) );
+
 	// Ground floor of street fronts: shops in most houses, one door bay per wall.
 	const hasShops = mix( step( 0.3, fract( seed.mul( 7.7 ) ) ), step( 0.5, realShop ), step( - 0.5, realShop ) ).mul( isStreet );
 	const doorBay = min( floor( fract( seed.mul( 3.3 ) ).mul( bays ) ), bays.sub( 1 ) );
-	const door = ground.mul( isStreet ).mul( step( abs( bayIdx.sub( doorBay ) ), 0.5 ) ).mul( float( 1 ).sub( solid ) ).mul( float( 1 ).sub( isBlank ) );
-	const shop = ground.mul( hasShops ).mul( float( 1 ).sub( door ) ).mul( float( 1 ).sub( solid ) );
+	const door = ground.mul( isStreet ).mul( step( abs( bayIdx.sub( doorBay ) ), 0.5 ) ).mul( float( 1 ).sub( solid ) ).mul( float( 1 ).sub( isBlank ) ).mul( float( 1 ).sub( gfOn ) );
+	const shop = ground.mul( hasShops ).mul( float( 1 ).sub( door ) ).mul( float( 1 ).sub( solid ) ).mul( float( 1 ).sub( gfOn ) );
 
 	// Window opening in the cell.
 	const upperX0 = mix( float( 0.3 ), float( 1 ).sub( realWindow ).mul( 0.5 ).clamp( 0.18, 0.38 ), step( 0.1, realWindow ) );
 	const wx0 = mix( upperX0, float( 0.15 ), shop );
 	const wy0 = mix( float( 0.25 ), float( 0.1 ), shop );
 	const wy1 = mix( float( 0.8 ), float( 0.74 ), shop );
-	const open = float( 1 ).sub( solid ).mul( float( 1 ).sub( door ) ).mul( max( upper, max( shop, max( isRear, groundWindows.mul( isStreet ) ).mul( ground ) ) ) );
+	const open = float( 1 ).sub( solid ).mul( float( 1 ).sub( door ) ).mul( max( upper, max( shop, max( isRear, groundWindows.mul( isStreet ) ).mul( ground ) ) ) ).mul( float( 1 ).sub( gfOn ) );
 	const inX = filteredPulse( cellU, wx0, float( 1 ).sub( wx0 ), fw.x ).mul( open );
 	const inY = filteredPulse( cellV, wy0, wy1, fw.y );
 	const opening = inX.mul( inY );
@@ -145,11 +216,11 @@ export function createFacadeMaterial( cutouts = [] ) {
 	const stringCourse = max( isStreet, sTheatre.mul( float( 1 ).sub( isParty ) ) ).mul( filteredPulse( gridV, 0.9, 1.0, fw.y ) ).mul( step( gridV, mix( float( 1.5 ), float( 2.5 ), sTheatre ) ) ).mul( plain );
 	// Rusticated base: the ground floor of street fronts; the theatre's whole two-storey base, in ashlar blocks.
 	// Described houses: rustication only when the description says so (banded or ornate).
-	const rusticAllowed = mix( float( 1 ), step( 0.5, rusticKind ), step( - 0.5, rusticKind ) );
+	const rusticAllowed = mix( float( 1 ), step( 0.5, rusticKind ), step( - 0.5, rusticKind ) ).mul( float( 1 ).sub( clad ) );
 	const rusticated = max( isStreet.mul( ground ).mul( rusticAllowed ), sTheatre.mul( step( h, fH.mul( 2 ) ) ).mul( float( 1 ).sub( isParty ) ) ).mul( float( 1 ).sub( stringCourse ) ).mul( plain );
 	const course = floor( h.div( 0.45 ) );
 	const blockJoint = gridLine( u.add( mod( course, 2 ).mul( 0.6 ) ), 1.2, 0.016 ).mul( sTheatre );
-	const rustGroove = max( gridLine( h, 0.45, 0.018 ), blockJoint ).mul( rusticated ).mul( float( 1 ).sub( openingAll ) );
+	const rustGroove = max( gridLine( h, 0.45, 0.018 ), blockJoint ).mul( rusticated ).mul( float( 1 ).sub( openingAll ) ).mul( float( 1 ).sub( max( gfIn, gfSurround ) ) );
 	const plinth = float( 1 ).sub( step( 0.55, h ) ).mul( float( 1 ).sub( isParty ) );
 	const quoin = inPier.mul( isStreet ).mul( upper ).mul( float( 1 ).sub( mainCornice ) ).mul( plain );
 
@@ -191,6 +262,13 @@ export function createFacadeMaterial( cutouts = [] ) {
 	wall = mix( wall, mix( trim, trim.mul( 0.55 ), scroll ), ornament.mul( 0.9 ) );
 	const stoneBase = ornate.mul( ground ).mul( float( 1 ).sub( isParty ) );
 	wall = mix( wall, mix( color( 0x8f8a83 ), color( 0x7d7871 ), gridLine( h, 0.5, 0.02 ) ), stoneBase );
+	// Smooth stone cladding on a renovated ground floor: large pale sandstone slabs (1.2 × 0.6 m, staggered) with
+	// a faint veining and fine joints.
+	const slabCourse = floor( h.div( 0.6 ) );
+	const slabJoint = max( gridLine( h, 0.6, 0.006 ), gridLine( u.add( mod( slabCourse, 2 ).mul( 0.6 ) ), 1.2, 0.006 ) );
+	const veins = smoothstep( 0.45, 0.75, noise2D( vec2( u.mul( 1.7 ), h.mul( 5.0 ) ).add( slabCourse.mul( 3.7 ) ) ) ).mul( 0.07 );
+	const cladStone = clad.mul( ground ).mul( isStreet ).mul( float( 1 ).sub( isParty ) );
+	wall = mix( wall, mix( color( 0xdccfb3 ).mul( float( 1 ).sub( veins ) ), color( 0xa89a80 ), slabJoint.mul( 0.7 ) ), cladStone );
 
 	// Graffiti tags on the lower wall.
 	const tagCell = floor( u.div( 2.2 ) );
@@ -280,9 +358,28 @@ export function createFacadeMaterial( cutouts = [] ) {
 	col = mix( col, trim, doorFrame );
 	col = mix( col, doorColor, doorWay );
 	col = mix( col, color( 0x1f1f1d ), bars );
+
+	// Described ground floor: plaster surround, the recess of a blind arch, glass, door leaves, garage doors, frames.
+	const gfFrameColour = mix( mix( mix( mix( color( 0x4a2f1d ), color( 0x2b2d2f ), step( 0.5, gfFrame ) ), color( 0xe9e7e0 ), step( 1.5, gfFrame ) ), color( 0x2c3b2a ), step( 2.5, gfFrame ) ), color( 0x7a7d80 ), step( 3.5, gfFrame ) );
+	const gfLit = step( 0.35, hash2D( vec2( floor( gu0.mul( 3.1 ) ), seed ) ) ).mul( kShop );
+	// By day a shop window is mostly dark glass; a lit interior only shows faintly through it.
+	const gfInterior = mix( color( 0x1c1a18 ), color( 0x8a7656 ), smoothstep( 0.0, 3.0, h ).mul( 0.25 ).add( 0.1 ).mul( gfLit ) );
+	const gfGlass = mix( mix( gfInterior, color( 0x161b20 ), 0.5 ), sceneUniforms.skyHorizon, fresnel.mul( 0.55 ).add( 0.1 ) );
+	const leafPanels = max( gridLine( u.sub( gu0 ), gr, 0.025 ), gridLine( h, 0.9, 0.02 ) );
+	const gatePlanks = gridLine( u.sub( gu0 ), 0.16, 0.01 ).mul( kGate );
+	const leafColour = gfFrameColour.mul( float( 1 ).sub( max( leafPanels.mul( 0.4 ), gatePlanks.mul( 0.35 ) ) ) );
+	const louvre = gridLine( h, 0.07, 0.012 ).mul( step( gy1.sub( 0.5 ), h ) );
+	const garageColour = mix( color( 0x6e7174 ), color( 0x3e4043 ), louvre );
+	col = mix( col, trim, gfSurround );
+	col = mix( col, col.mul( 0.78 ), nicheRecess );
+	col = mix( col, gfGlass, glazedPane );
+	col = mix( col, leafColour, leaf );
+	col = mix( col, garageColour, garage );
+	col = mix( col, gfFrameColour, gfFrameMask );
+	col = mix( col, color( 0x1f1f1d ), gfBarMask );
 	mat.colorNode = col;
 
-	const glassMask = openingAll.mul( float( 1 ).sub( frame ) ).add( doorWay.mul( fanlight ) ).add( max( max( majShopfront, majBand ), modernGlass ) ).min( 1 );
+	const glassMask = openingAll.mul( float( 1 ).sub( frame ) ).add( doorWay.mul( fanlight ) ).add( max( max( majShopfront, majBand ), modernGlass ) ).add( glazedPane.mul( float( 1 ).sub( max( gfFrameMask, gfBarMask ) ) ) ).min( 1 );
 	mat.roughnessNode = mix( float( 0.88 ).add( grain ), float( 0.1 ), glassMask );
 
 	// Street-canyon sky occlusion: darker low down in narrow lanes.
@@ -290,6 +387,7 @@ export function createFacadeMaterial( cutouts = [] ) {
 
 	mat.emissiveNode = room.xyz.mul( room.w ).mul( openingAll ).mul( float( 1 ).sub( frame ) ).mul( upper )
 		.add( color( 0xffd29a ).mul( shop ).mul( shopLit ).mul( openingAll ).mul( float( 1 ).sub( frame ) ).mul( 0.6 ) )
+		.add( color( 0xffd29a ).mul( gfLit ).mul( glazedPane ).mul( float( 1 ).sub( gfFrameMask ) ).mul( 0.6 ) )
 		.mul( sceneUniforms.interiorGlow );
 
 	// Relief: cornices, string course, caps and sills stand out; openingAlls and grooves are recessed.
@@ -302,6 +400,7 @@ export function createFacadeMaterial( cutouts = [] ) {
 			.add( cap.mul( 0.04 ) ).add( sill.mul( 0.03 ) ).add( surround.mul( 0.015 ) ).add( quoin.mul( 0.015 ) )
 			.sub( openingAll.mul( float( 1 ).sub( frame ) ).mul( 0.03 ) )
 			.sub( doorWay.mul( 0.03 ) )
+			.sub( gfIn.mul( 0.03 ) ).add( gfSurround.mul( 0.015 ) ).sub( cladStone.mul( slabJoint ).mul( 0.004 ) )
 			.sub( max( rustGroove, quoinGroove ).mul( 0.01 ) );
 		return bumpNormal( relief.mul( fade ) );
 

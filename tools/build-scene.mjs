@@ -378,7 +378,44 @@ for ( const z of zabaged ) {
 const WALL_STRIDE = 24; // x y z  u  wallWidth  base  top  floorH  seed  kind  r g b  bay  window  shop  style  trim r g b  ground grilles rustic graffiti
 // Ground floor kinds and rustication from data/houses.json (−1 / 0 = not described: the shader decides).
 const GROUND = { default: 0, gate: 1, blank: 2, restaurant: 3, shops: 3, windows: 4 };
-const RUSTIC = { none: 0, banded: 1, ornate: 2 };
+const RUSTIC = { none: 0, banded: 1, ornate: 2, clad: 3 };
+// Described ground floors (data/houses.json edges.<i>.ground): the openings of one street front from left to right,
+// as seen from the street, e.g. [ "shop", { "kind": "door", "frame": "dark", "glazed": true }, "garage" ]. Widths are
+// typical for each kind (narrow / normal / wide), not measured; the piers between the openings share the rest of the
+// front. Each front becomes a row of openings [ u0, u1, kind, frame, flags ] for the facade shader (src/main.js).
+const GF_KIND = { door: 1, gate: 2, shop: 3, window: 4, garage: 5, niche: 6, blank: 7 };
+const GF_FRAME = { wood: 0, dark: 1, white: 2, green: 3, grey: 4 };
+const GF_DEFAULT_FRAME = { door: 'wood', gate: 'wood', shop: 'dark', window: 'white', garage: 'grey', niche: 'white' };
+const GF_WIDTH = { door: [ 1.0, 1.3, 1.8 ], gate: [ 2.6, 3.0, 3.6 ], shop: [ 1.8, 2.6, 4.2 ], window: [ 0.9, 1.2, 1.5 ], garage: [ 2.4, 2.8, 3.4 ], niche: [ 1.4, 1.8, 2.2 ], blank: [ 1, 2, 4 ] };
+const GF_MIN_PIER = 0.45;
+const groundFloors = [], groundFloorRow = new Map();
+
+function layoutGroundFloor( items, len ) {
+
+	const list = items.map( it => typeof it === 'string' ? { kind: it } : it ).filter( it => GF_KIND[ it.kind ] );
+	const widths = list.map( it => GF_WIDTH[ it.kind ][ { narrow: 0, wide: 2 }[ it.size ] ?? 1 ] );
+	const sum = widths.reduce( ( a, w ) => a + w, 0 );
+	let pier = ( len - sum ) / ( list.length + 1 ), scale = 1;
+	if ( pier < GF_MIN_PIER ) {
+
+		scale = Math.max( 0.2, ( len - GF_MIN_PIER * ( list.length + 1 ) ) / sum );
+		pier = ( len - sum * scale ) / ( list.length + 1 );
+
+	}
+
+	const row = [];
+	let u = pier;
+	list.forEach( ( it, i ) => {
+
+		const w = widths[ i ] * scale;
+		const flags = ( it.arch ? 1 : 0 ) | ( it.bars ? 2 : 0 ) | ( it.glazed ? 4 : 0 ) | ( it.door ? 8 : 0 );
+		if ( it.kind !== 'blank' ) row.push( [ + u.toFixed( 2 ), + ( u + w ).toFixed( 2 ), GF_KIND[ it.kind ], GF_FRAME[ it.frame || GF_DEFAULT_FRAME[ it.kind ] ] ?? 0, flags ] );
+		u += w + pier;
+
+	} );
+	return row;
+
+}
 // r g b: measured plaster colour (sRGB, -1 when unknown); bay (m) / window (fraction of bay): measured window
 // rhythm, 0 when unknown; shop: 1 shops, 0 none, -1 unknown. See tools/facades.mjs and tools/facade-params.mjs.
 const WALL_KIND = { street: 0, rear: 2, party: 3 };
@@ -1105,7 +1142,24 @@ for ( const b of buildings ) {
 			const wallParams = ringIndex === 0 ? facadeParams.forWall( b.code, a.edge ) : null;
 			const [ cr, cg, cb ] = house?.colour ? srgb( house.colour ) : measured.colour || [ - 1, - 1, - 1 ];
 			const [ tr, tg, tb ] = house?.trim ? srgb( house.trim ) : [ - 1, - 1, - 1 ];
-			const houseGround = GROUND[ house?.ground ] ?? 0, grilles = house?.grilles ? 1 : 0;
+			const houseGround = GROUND[ house?.ground ] ?? 0;
+			// Window bars in the low bit; above it the row of this front's described ground floor (0 = none).
+			let grilles = house?.grilles ? 1 : 0;
+			const gfItems = ringIndex === 0 && kind === WALL_KIND.street ? house?.edges?.[ a.edge ]?.ground : null;
+			if ( Array.isArray( gfItems ) ) {
+
+				const key = `${b.code}_${a.edge}`;
+				if ( ! groundFloorRow.has( key ) ) {
+
+					groundFloorRow.set( key, groundFloors.length );
+					groundFloors.push( layoutGroundFloor( gfItems, a.edgeLen ) );
+
+				}
+
+				grilles += 2 * ( groundFloorRow.get( key ) + 1 );
+
+			}
+
 			const rustic = house?.rustic ? RUSTIC[ house.rustic ] : - 1, graffiti = house?.graffiti ? 1 : 0;
 			const bay = wallParams?.bay || 0, win = wallParams?.window || 0;
 			let shop = ringIndex === 0 && shopEdges.has( `${b.code}_${a.edge}` ) ? 1 : wallParams ? ( wallParams.shop ? 1 : 0 ) : - 1;
@@ -1626,6 +1680,7 @@ await writeFile( new URL( 'scene.json', OUT ), JSON.stringify( {
 	surface: { width: sw, height: sh, cell: SURF_CELL },
 	footprints: { width: dsm.width, height: dsm.height, cell: dsm.cell },
 	wallStride: WALL_STRIDE,
+	groundFloors,
 	roofStride: ROOF_STRIDE,
 	buildings: meta,
 	furniture,

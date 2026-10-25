@@ -258,7 +258,30 @@ for ( let i = 0, n = walls.length / ws; i < n; i ++ ) {
 wallGeo.setAttribute( 'plaster', new THREE.BufferAttribute( plaster, 3 ) );
 wallGeo.setIndex( new THREE.BufferAttribute( new Uint32Array( wallIdxBuf ), 1 ) );
 wallGeo.computeVertexNormals();
-const wallMesh = new THREE.Mesh( wallGeo, createFacadeMaterial( data.places?.cutouts || [] ) );
+// Described ground floors (tools/build-scene.mjs): one row per street front, one texel per 0.25 m of the front
+// holding the opening there: kind + 10 × frame colour, its left and right edge (m) and flags. Half floats: those
+// are filterable under WebGPU too (32-bit floats are not), and keep the edges to about 3 cm.
+const GF_TEXELS = 256;
+const groundRows = data.groundFloors || [];
+const gfData = new Uint16Array( GF_TEXELS * Math.max( 1, groundRows.length ) * 4 );
+groundRows.forEach( ( row, r ) => {
+
+	for ( const [ u0, u1, kind, frame, flags ] of row ) {
+
+		for ( let t = Math.max( 0, Math.floor( u0 / 0.25 ) ); t <= Math.min( GF_TEXELS - 1, Math.floor( u1 / 0.25 ) ); t ++ ) {
+
+			gfData.set( [ kind + 10 * frame, u0, u1, flags ].map( THREE.DataUtils.toHalfFloat ), ( r * GF_TEXELS + t ) * 4 );
+
+		}
+
+	}
+
+} );
+const groundFloorTexture = new THREE.DataTexture( gfData, GF_TEXELS, Math.max( 1, groundRows.length ), THREE.RGBAFormat, THREE.HalfFloatType );
+groundFloorTexture.magFilter = groundFloorTexture.minFilter = THREE.NearestFilter;
+groundFloorTexture.needsUpdate = true;
+
+const wallMesh = new THREE.Mesh( wallGeo, createFacadeMaterial( data.places?.cutouts || [], groundFloorTexture ) );
 wallMesh.castShadow = wallMesh.receiveShadow = true;
 scene.add( wallMesh );
 

@@ -615,10 +615,28 @@
 		"ground": "windows",
 		"rustic": "banded",
 		"grilles": false,
-		"graffiti": false
+		"graffiti": false,
+		"edges": {
+			"22": {
+				"ground": [
+					{
+						"kind": "window",
+						"arch": true
+					},
+					{
+						"kind": "window",
+						"arch": true
+					},
+					{
+						"kind": "window",
+						"arch": true
+					}
+				]
+			}
+		}
 	},
 	"21644349": {
-		"note": "Divadelní 20 / Karoliny Světlé 21: plain baroque house in warm beige, eared window surrounds with cornice hoods; banded rusticated ground floor with arched bays, brown doors and grilled windows with flower boxes; lower than its ornate neighbours (three storeys). OSM lists Communio (social facility) here but no visible sign (Street View 2024)",
+		"note": "Divadelní 20 / Karoliny Světlé 21: plain baroque house in warm beige, eared window surrounds with cornice hoods; banded rusticated ground floor with arched bays, brown doors and grilled windows with flower boxes; lower than its ornate neighbours (three storeys). OSM lists Communio (social facility) here but no visible sign (Street View 2024). Divadelní front: blind round arches in the rustication, each with a small barred window (count estimated, own screenshots May 2024).",
 		"colour": "#e2d2ab",
 		"trim": "#d3c096",
 		"ground": "windows",
@@ -628,6 +646,30 @@
 		"edges": {
 			"8": {
 				"lanterns": true
+			},
+			"15": {
+				"ground": [
+					{
+						"kind": "niche",
+						"bars": true
+					},
+					{
+						"kind": "niche",
+						"bars": true
+					},
+					{
+						"kind": "niche",
+						"bars": true
+					},
+					{
+						"kind": "niche",
+						"bars": true
+					},
+					{
+						"kind": "niche",
+						"bars": true
+					}
+				]
 			}
 		},
 		"signs": false,
@@ -638,10 +680,26 @@
 		"signs": false
 	},
 	"21644365": {
-		"note": "Divadelní 24 / Betlémská / Karoliny Světlé corner: renovated pale cream house, NOT the yellow brown-trim house the old note described. Smooth sandstone-clad ground floor with modern dark-framed glass shopfront doors; tall upper windows with simple iron French balconies; about five storeys. White Sage Therapy occupies the ground floor. A wall lantern sits on the narrow Karoliny Světlé passage side ",
+		"note": "Divadelní 24 / Betlémská / Karoliny Světlé corner: renovated pale cream house, NOT the yellow brown-trim house the old note described. Smooth sandstone-clad ground floor with modern dark-framed glass shopfront doors; tall upper windows with simple iron French balconies; about five storeys. White Sage Therapy occupies the ground floor. A wall lantern sits on the narrow Karoliny Světlé passage side  Ground floor along Divadelní from the Betlémská corner: the wide White Sage shop window with a glazed double door, a second glazed shopfront, a grey metal garage door, the glazed house entrance (own Street View screenshots, May 2024).",
 		"edges": {
 			"1": {
 				"lanterns": true
+			},
+			"8": {
+				"ground": [
+					{
+						"kind": "shop",
+						"size": "wide",
+						"door": true
+					},
+					"shop",
+					"garage",
+					{
+						"kind": "door",
+						"frame": "dark",
+						"glazed": true
+					}
+				]
 			}
 		},
 		"signs": false,
@@ -649,7 +707,7 @@
 		"trim": "#e8e0cf",
 		"floors": 5,
 		"ground": "shops",
-		"rustic": "none",
+		"rustic": "clad",
 		"grilles": false,
 		"graffiti": false
 	},
@@ -1136,7 +1194,29 @@
 		"rustic": "banded",
 		"grilles": false,
 		"graffiti": false,
-		"signs": false
+		"signs": false,
+		"edges": {
+			"8": {
+				"ground": [
+					{
+						"kind": "window",
+						"arch": true
+					},
+					{
+						"kind": "window",
+						"arch": true
+					},
+					{
+						"kind": "window",
+						"arch": true
+					},
+					{
+						"kind": "window",
+						"arch": true
+					}
+				]
+			}
+		}
 	},
 	"21650039": {
 		"note": "Konviktská 7/9: neo-renaissance houses; no. 9 (edges 6, 8) in pale yellow-cream, no. 7 (edge 15) in off-white cream; banded rustication with grilled windows on the lower floors, balustrades and arched windows with rich stucco above; large arched gate at no. 7; Golden Tikka and Sad Man's Tongue at street level (Street View)",
