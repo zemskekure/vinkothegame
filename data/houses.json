@@ -2239,23 +2239,125 @@
 		}
 	},
 	"21651221": {
-		"note": "Národní 16 / Kaňkův palác: yellow-ochre facade with red window surrounds, richly moulded panels and arched ground-floor openings on the Národní side; short Mikulandská edges are only partly visible (Street View 2025-09).",
-		"colour": "#e6c98f",
-		"trim": "#c4553f",
+		"note": "Národní / Mikulandská corner palace: ochre-yellow with salmon-red window surrounds and rich white stucco cartouches, a pediment with an oculus on Národní, arched shop openings in a smooth ground floor; it wraps round into Mikulandská and ends past the carved gateway (Street View 2025-09, marked photos 21651221_8/9/10/11a/11b).",
+		"colour": "#e9d39a",
+		"trim": "#cf6f5f",
 		"floors": 3,
 		"ground": "shops",
-		"rustic": "none",
+		"rustic": "ornate",
 		"grilles": false,
 		"graffiti": false,
-		"signs": false
+		"signs": false,
+		"edges": {
+			"8": {
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "red"
+					},
+					{
+						"kind": "window",
+						"frame": "red"
+					}
+				]
+			},
+			"9": {
+				"ground": [
+					{
+						"kind": "shop",
+						"frame": "dark",
+						"arch": true,
+						"glazed": true,
+						"size": "wide"
+					}
+				]
+			},
+			"11": {
+				"ground": [
+					{
+						"kind": "shop",
+						"frame": "dark",
+						"glazed": true
+					},
+					{
+						"kind": "door",
+						"frame": "dark",
+						"arch": true
+					},
+					{
+						"kind": "shop",
+						"frame": "dark",
+						"glazed": true
+					},
+					{
+						"kind": "shop",
+						"frame": "dark",
+						"glazed": true
+					},
+					{
+						"kind": "door",
+						"frame": "dark",
+						"arch": true
+					},
+					{
+						"kind": "shop",
+						"frame": "dark",
+						"glazed": true
+					},
+					{
+						"kind": "shop",
+						"frame": "dark",
+						"glazed": true
+					}
+				]
+			}
+		}
 	},
 	"21651230": {
-		"note": "Mikulandská west side: cream classicist front with dressed upper windows and a tall arched passage entrance; the street view is oblique and the passage geometry needs its own walk check (Street View 2025-09).",
-		"colour": "#d5cebd",
-		"trim": "#e5dfd3"
+		"note": "Mikulandská east side, north of KAMERA: greige classicist front with pedimented first-floor windows and a heavy cornice; ground floor with a watch shop window, timber doors, an iron bracket sign and an arched door. Its first 4.5 m from the north are the end of the yellow corner palace with a carved gateway into a courtyard (Street View 2025-09, marked 21651230_6a/6b).",
+		"colour": "#cfc6b0",
+		"trim": "#ddd6c6",
+		"edges": {
+			"6": {
+				"ground": [
+					{
+						"kind": "gate",
+						"frame": "dark",
+						"arch": true
+					},
+					{
+						"kind": "shop",
+						"frame": "wood",
+						"glazed": true,
+						"size": "wide"
+					},
+					{
+						"kind": "door",
+						"frame": "wood"
+					},
+					{
+						"kind": "window",
+						"frame": "wood"
+					},
+					{
+						"kind": "door",
+						"frame": "dark",
+						"arch": true
+					},
+					{
+						"kind": "window",
+						"frame": "wood"
+					},
+					{
+						"kind": "window",
+						"frame": "wood"
+					}
+				]
+			}
+		}
 	},
 	"21651248": {
-		"note": "Mikulandská short front: cream plaster and moulded surrounds, a black KAMERA fascia above timber-framed ground-floor openings (Street View 2025-09).",
+		"note": "Mikulandská east side: cream stone-coloured house with pedimented windows on consoles, a black KAMERA fascia over the ground floor and timber-framed openings (Street View 2025-09, marked 21651248_6).",
 		"colour": "#d9d2c2",
 		"trim": "#eee8dc",
 		"edges": {
@@ -2281,9 +2383,9 @@
 		"signs": false
 	},
 	"21651256": {
-		"note": "Mikulandská no. 6: grey-blue ornate stucco, red patterned portal, iron-grilled windows and the navy Dům U dvou zlatých lvů entrance at the end next to KAMERA (Street View 2025-09; owner photo 2019).",
-		"colour": "#b9c2c4",
-		"trim": "#d4d9d5",
+		"note": "Mikulandská 6: mid grey with heavy stucco window crowns, a lighter attic storey, a statue niche and pilaster, the carved stone portal with the red diamond-patterned door, an iron-grilled window; its first 3.8 m from the north are the narrow pale grey-blue Dům U dvou zlatých lvů with the navy shopfront (Street View 2025-09, marked 21651256_2a/2b; owner photo 2019).",
+		"colour": "#a3abad",
+		"trim": "#c3c9ca",
 		"rustic": "ornate",
 		"edges": {
 			"2": {
@@ -2314,23 +2416,148 @@
 				"shopfront": "21651256_2.svg"
 			}
 		},
-		"signs": false
-	},
-	"21651264": {
-		"note": "Mikulandská west side: long warm-beige plaster front with arched ground-floor windows, a tall timber portal, pedimented upper windows and a small curved balcony; photographed in two oblique halves (Street View 2025-09).",
-		"colour": "#d4c7b0",
-		"trim": "#e4dbce",
-		"rustic": "banded"
-	},
-	"21651388": {
-		"note": "Mikulandská east side: light grey ornate facade with moulded windows, a carved entrance surround and red patterned door; ground-floor plaster is tagged. Oblique views do not isolate every short edge (Street View 2025-09).",
-		"colour": "#c9cfcd",
-		"trim": "#e0e4df",
-		"rustic": "ornate",
+		"signs": false,
 		"graffiti": true
 	},
+	"21651264": {
+		"note": "Mikulandská 4 (east side, south end): long warm-beige front with banded ground floor, arched first-floor windows, a tall arched timber portal, a small curved balcony, pedimented upper windows; the ground floor is heavily tagged (Street View 2025-09, marked 21651264_33a/33b).",
+		"colour": "#d6c8ab",
+		"trim": "#e6dcc7",
+		"rustic": "banded",
+		"graffiti": true,
+		"edges": {
+			"33": {
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "dark"
+					},
+					{
+						"kind": "window",
+						"frame": "dark"
+					},
+					{
+						"kind": "gate",
+						"frame": "wood",
+						"arch": true
+					},
+					{
+						"kind": "window",
+						"frame": "dark",
+						"arch": true
+					},
+					{
+						"kind": "shop",
+						"frame": "dark",
+						"glazed": true
+					},
+					{
+						"kind": "shop",
+						"frame": "dark",
+						"glazed": true
+					},
+					{
+						"kind": "window",
+						"frame": "dark"
+					},
+					{
+						"kind": "door",
+						"frame": "dark"
+					},
+					{
+						"kind": "window",
+						"frame": "dark"
+					},
+					{
+						"kind": "window",
+						"frame": "dark",
+						"arch": true
+					},
+					{
+						"kind": "window",
+						"frame": "dark",
+						"arch": true
+					}
+				]
+			}
+		}
+	},
+	"21651388": {
+		"note": "Mikulandská west side, south of DRN: one RÚIAN building over several houses. Edge 1 is the narrow baroque house with the curved gable, stucco crowns over the first-floor windows and the Pilsner Urquell bar (green neon, oak door frame, black menu boards) in a rusticated ground floor; edges 9-12 are a pale neo-renaissance block with rusticated lower floors and pedimented windows (Street View 2025-09, marked 21651388_1/9/11a/11b/12; owner photos 2019).",
+		"colour": "#e3dfd4",
+		"trim": "#f1eee7",
+		"rustic": "banded",
+		"graffiti": true,
+		"edges": {
+			"1": {
+				"colour": "#d8d0bf",
+				"trim": "#e8e2d5",
+				"rustic": "ornate",
+				"ground": [
+					"blank",
+					{
+						"kind": "shop",
+						"frame": "wood",
+						"glazed": true,
+						"size": "wide"
+					},
+					"blank"
+				],
+				"shopfront": "21651388_1.svg"
+			},
+			"9": {
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "dark"
+					},
+					{
+						"kind": "window",
+						"frame": "dark"
+					}
+				]
+			},
+			"11": {
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "dark"
+					},
+					{
+						"kind": "window",
+						"frame": "dark"
+					},
+					{
+						"kind": "window",
+						"frame": "dark"
+					},
+					{
+						"kind": "window",
+						"frame": "dark"
+					},
+					{
+						"kind": "window",
+						"frame": "dark"
+					},
+					{
+						"kind": "window",
+						"frame": "dark"
+					}
+				]
+			},
+			"12": {
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "dark"
+					}
+				]
+			}
+		},
+		"signs": false
+	},
 	"21651396": {
-		"note": "Mikulandská corner: cream plaster with dusty rose surrounds and stucco; the Pilsner Urquell neon and oak-framed entrance remain visible on the Mikulandská side (Street View 2025-09; owner photo 2019).",
+		"note": "DRN (Národní 135/14) joins several houses in one RÚIAN building: the glass corner with the planted roof terraces runs down Mikulandská over edge 4 and the north half of edge 5; edge 7 is a four-storey baroque house in pale grey-cream with large stucco cartouches, a light stone ground floor and a tall oak double portal (Street View 2025-09, marked 21651396_4a/4b/5/7).",
 		"colour": "#e6d6b3",
 		"trim": "#b86d64",
 		"floors": 3,
@@ -2341,12 +2568,34 @@
 					{
 						"kind": "shop",
 						"frame": "dark",
-						"arch": true,
-						"glazed": true
+						"glazed": true,
+						"size": "wide"
 					},
 					{
-						"kind": "window",
-						"frame": "white"
+						"kind": "shop",
+						"frame": "dark",
+						"glazed": true,
+						"size": "wide"
+					}
+				]
+			},
+			"7": {
+				"style": "default",
+				"colour": "#d8cfbd",
+				"trim": "#e6e0d3",
+				"rustic": "ornate",
+				"ground": [
+					"blank",
+					{
+						"kind": "gate",
+						"frame": "wood",
+						"size": "wide"
+					},
+					"blank",
+					"blank",
+					{
+						"kind": "door",
+						"frame": "dark"
 					}
 				]
 			}
