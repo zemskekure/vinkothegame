@@ -784,6 +784,82 @@
 		"ground": "windows",
 		"rustic": "ornate"
 	},
+	"21644471": {
+		"note": "Divadelní 5 / Smetanovo nábř. 4. River front: pale grey-white, stucco pediments, banded ground floor, one arched shop bay under a navy awning at 4-6 m; the DEELIVE bay starts just past this front (edge 4). Divadelní side: derelict, peeling grey-white plaster, boarded red-brown upper windows with big printed portraits, boarded tagged ground floor, grey garage gate ~10-12 m from the south (marked 21644471_0 2025-09, 21644471_2b 2024-05).",
+		"colour": "#dddcd3",
+		"trim": "#f0efe8",
+		"rustic": "banded",
+		"graffiti": true,
+		"edges": {
+			"0": {
+				"ground": [
+					{
+						"kind": "blank"
+					},
+					{
+						"kind": "shop",
+						"frame": "dark",
+						"arch": true,
+						"glazed": true,
+						"size": "wide"
+					},
+					{
+						"kind": "blank"
+					}
+				],
+				"awning": "#2c428a",
+				"shopfront": "21644471_0.svg"
+			},
+			"2": {
+				"colour": "#d6d3c8",
+				"trim": "#e3e0d6",
+				"rustic": "none",
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "grey"
+					},
+					{
+						"kind": "window",
+						"frame": "grey"
+					},
+					{
+						"kind": "garage",
+						"frame": "grey"
+					},
+					{
+						"kind": "window",
+						"frame": "grey"
+					},
+					{
+						"kind": "window",
+						"frame": "grey"
+					},
+					{
+						"kind": "window",
+						"frame": "grey"
+					},
+					{
+						"kind": "window",
+						"frame": "grey"
+					},
+					{
+						"kind": "door",
+						"frame": "grey"
+					},
+					{
+						"kind": "window",
+						"frame": "grey"
+					},
+					{
+						"kind": "window",
+						"frame": "grey"
+					}
+				]
+			}
+		},
+		"signs": false
+	},
 	"21644497": {
 		"note": "Karoliny Světlé 1 / Národní corner: long off-white neo-renaissance front, banded ground floor with round-arched windows in rusticated surrounds, carved wooden corner door, wrought-iron balcony, rich window heads, wall lanterns (Street View)",
 		"colour": "#eee9de",
@@ -1538,11 +1614,99 @@
 		"signs": false
 	},
 	"21649553": {
-		"note": "Smetanovo nábřeží 6: Charles University, Faculty of Social Sciences (Hollar), pale cream classicist palace behind railings and trees",
-		"colour": "#e6dcc3",
-		"trim": "#f2ecdd",
+		"note": "Smetanovo nábř. 6 / Divadelní 7, FSV UK: pale yellow 5-storey classicist palace. River front: arched white-framed windows on a high plinth, brown arched portal, salmon letters FAKULTA SOCIÁLNÍCH VĚD UK north of it, black Hollar sign, plate 6 (owner photos 2018/2021; bays estimated, 4b is edge-on). Divadelní: banded ground floor, white windows, big brown arched gate near the south end, arched first-floor windows (marked 21649553_2a/2b 2024-05).",
+		"colour": "#eae0c0",
+		"trim": "#f4eedc",
 		"ground": "windows",
-		"rustic": "banded"
+		"rustic": "banded",
+		"floors": 5,
+		"edges": {
+			"2": {
+				"ground": [
+					{
+						"kind": "gate",
+						"frame": "wood",
+						"arch": true,
+						"size": "wide"
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					}
+				]
+			},
+			"4": {
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "white",
+						"arch": true
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"arch": true
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"arch": true
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"arch": true
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"arch": true
+					},
+					{
+						"kind": "gate",
+						"frame": "wood",
+						"arch": true
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"arch": true
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"arch": true
+					}
+				],
+				"shopfront": "21649553_4.svg",
+				"shopfrontHeight": 5.5
+			}
+		},
+		"signs": false
 	},
 	"21649561": {
 		"note": "Konviktská 13/15: 1930s houses; left part (no. 13) clad in cream glazed brick tiles, right part (no. 15) in grey render, both with dark red brick ground floors holding shops (ŠATNA, SECOND HAND) and doorways; plain wide windows (Street View)",
@@ -1590,14 +1754,130 @@
 		"signs": false
 	},
 	"21649651": {
-		"note": "Národní 3, Akademie věd: heavy rusticated sandstone neo-renaissance palace, arched ground-floor windows with grilles, a dark wooden gate (Street View 2026)",
-		"colour": "#cdb592",
-		"trim": "#dccaa6",
+		"note": "Akademie věd (Národní 3), back fronts: pale cream sandstone neo-renaissance with heavy banded rustication, segment-arched ground-floor windows behind black iron grilles, round-arched upper windows in rusticated surrounds, statues on the attic; the plinth along Divadelní is covered in large black-and-white graffiti. On Krocínova two dark doors in stone frames near the Divadelní corner (marked 21649651_2b, 36, 38a/38b 2024-05/2025-08; 21649651_40).",
+		"colour": "#ece5d3",
+		"trim": "#f6f1e6",
 		"ground": "windows",
 		"rustic": "banded",
 		"grilles": true,
-		"graffiti": false,
-		"signs": false
+		"graffiti": true,
+		"signs": false,
+		"edges": {
+			"2": {
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "white",
+						"arch": true,
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"arch": true,
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"arch": true,
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"arch": true,
+						"bars": true
+					},
+					{
+						"kind": "door",
+						"frame": "dark"
+					},
+					{
+						"kind": "door",
+						"frame": "dark"
+					}
+				]
+			},
+			"36": {
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "white",
+						"arch": true,
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"arch": true,
+						"bars": true
+					}
+				]
+			},
+			"38": {
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "white",
+						"arch": true,
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"arch": true,
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"arch": true,
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"arch": true,
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"arch": true,
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"arch": true,
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"arch": true,
+						"bars": true
+					}
+				]
+			},
+			"40": {
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "white",
+						"arch": true,
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"arch": true,
+						"bars": true
+					}
+				]
+			}
+		}
 	},
 	"21649677": {
 		"note": "Národní: long salmon-pink baroque front",
@@ -1607,7 +1887,7 @@
 		"rustic": "none"
 	},
 	"21649685": {
-		"note": "Národní 1 / Lažanský palác (Kavárna Slavia): pale sandstone neo-renaissance, pedimented windows on consoles, rusticated sandstone ground floor. Edges 7 and 9: tall café windows under a continuous row of teal-green awnings with white 'Slavia' script (awning corrected from #2f5b3c to a lighter teal #2c6a56). Edge 6 (east end): no café windows, banded rustication with arched windows behind iron grilles, wall lantern, white-painted plinth. Plaster lightened slightly. (Street View 2026)",
+		"note": "Národní 1 / Lažanský palác (Kavárna Slavia): pale sandstone, pedimented windows, rusticated ground floor; edges 7/9 teal Slavia awnings, edge 6 grilled arched windows and a lantern (Street View 2026). Divadelní side (edge 5): vermiculated rustication, brown plank gate at ~3.5-6.3 m from the south, grilled arched windows, brown glazed arched door at ~17.5-20 m; from ~21.5 m a plain grey facade with boarded windows like the derelict neighbour (marked 21649685_5a/5b 2025-08).",
 		"colour": "#ddd5c2",
 		"trim": "#ece6d7",
 		"ground": "restaurant",
@@ -1615,6 +1895,54 @@
 		"edges": {
 			"0": {
 				"awning": "#2f5b3c"
+			},
+			"5": {
+				"ground": [
+					{
+						"kind": "gate",
+						"frame": "wood",
+						"arch": true,
+						"size": "wide"
+					},
+					{
+						"kind": "window",
+						"frame": "dark",
+						"arch": true,
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "dark",
+						"arch": true,
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "dark",
+						"arch": true,
+						"bars": true
+					},
+					{
+						"kind": "door",
+						"frame": "wood",
+						"arch": true,
+						"glazed": true,
+						"size": "wide"
+					},
+					{
+						"kind": "window",
+						"frame": "grey"
+					},
+					{
+						"kind": "window",
+						"frame": "grey"
+					},
+					{
+						"kind": "window",
+						"frame": "grey"
+					}
+				],
+				"shopfront": "21649685_5.svg"
 			},
 			"6": {
 				"lanterns": true
@@ -1669,6 +1997,126 @@
 	"21649731": {
 		"note": "Karoliny Světlé 7: pale grey-white neo-renaissance front, round-arched first-floor windows with balustrades, round-arched ground-floor openings; seen obliquely (Street View)",
 		"signs": false
+	},
+	"21649847": {
+		"note": "Divadelní 16 and 14, grey-green stone colour. First ~7.5 m from the north (no. 16): banded rustication, arched brown-framed windows, balcony on columns. Then diamond-cut quoins and no. 14: lantern, two grilled windows with red geraniums in boxes, deep stone portal at ~16.3-20 m with a grey-green panelled door, wrought-iron fanlight and stone canopy. No. 14 continues ~7 m into 21649987_10 (marked 21649847_9a/9b, 21649987_10b 2024-05).",
+		"colour": "#c9c7b4",
+		"trim": "#dddccd",
+		"rustic": "banded",
+		"grilles": true,
+		"edges": {
+			"9": {
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "wood",
+						"arch": true
+					},
+					{
+						"kind": "window",
+						"frame": "wood",
+						"arch": true
+					},
+					{
+						"kind": "window",
+						"frame": "dark",
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "dark",
+						"bars": true
+					},
+					{
+						"kind": "door",
+						"frame": "grey",
+						"size": "wide"
+					}
+				],
+				"lanterns": true,
+				"shopfront": "21649847_9.svg"
+			}
+		},
+		"signs": false
+	},
+	"21649987": {
+		"note": "Divadelní 12 / Krocínova corner: pale cream neo-renaissance, banded ground floor with round-arched windows behind white grilles, salmon string course, pedimented upper windows; wraps into Krocínova (edge 8). The first ~7.5 m of the Divadelní front are the grey-green no. 14 (two brown-framed windows). Edge 3: travertine-clad 1930s block with corner balconies and dark-framed shop windows (marked 21649987_10a/10b, _3 2024-05; _8 camera doubtful).",
+		"colour": "#e6dfcd",
+		"trim": "#f3eee2",
+		"rustic": "banded",
+		"grilles": true,
+		"edges": {
+			"3": {
+				"colour": "#d8c9a6",
+				"trim": "#e6dcc3",
+				"rustic": "clad",
+				"ground": [
+					{
+						"kind": "shop",
+						"frame": "dark",
+						"glazed": true,
+						"size": "wide"
+					},
+					{
+						"kind": "shop",
+						"frame": "dark",
+						"glazed": true
+					}
+				]
+			},
+			"8": {
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "white",
+						"arch": true,
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"arch": true,
+						"bars": true
+					}
+				]
+			},
+			"10": {
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "wood"
+					},
+					{
+						"kind": "window",
+						"frame": "wood"
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"arch": true,
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"arch": true,
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"arch": true,
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"arch": true,
+						"bars": true
+					}
+				]
+			}
+		}
 	},
 	"21650004": {
 		"note": "Divadelní 18: grand warm pink-beige neo-renaissance apartment house; banded rusticated ground floor with round-arched windows in moulded surrounds, upper floors with louvred shutters and console brackets under the sills, heavy cornice. About five storeys (Street View 2024)",
@@ -2401,8 +2849,25 @@
 		"rustic": "ornate"
 	},
 	"40357422": {
-		"note": "No address, len ~5 m: a low pale garden building/pavilion set among trees inside the Kranner's Fountain park, off Smetanovo nábřeží. No street front is visible; the photo shows mostly garden and trees with only a glimpse of a pale two-storey wall behind. Not describable in detail (Street View)",
-		"signs": false
+		"note": "No address, garden building by the Kranner park: towards the south (edge 2) only a peach-ochre plastered garden wall about 3 m high with ivy and trees on top, a dark green garage door, a dark green door and two grey utility boxes. Edge 1 is all trees and ivy (marked 40357422_1, 40357422_2 2024).",
+		"signs": false,
+		"edges": {
+			"2": {
+				"ground": [
+					{
+						"kind": "garage",
+						"frame": "green"
+					},
+					{
+						"kind": "door",
+						"frame": "green"
+					},
+					{
+						"kind": "blank"
+					}
+				]
+			}
+		}
 	},
 	"46669345": {
 		"note": "Kostel sv. Martina ve zdi (Martinská): Gothic church of dark rubble stone (grey, ochre and rust stones) with sandstone tracery windows and buttresses, NOT whitewashed; steep tiled roof; tower at the south-west corner (data/icons.json) (Street View 2024–26, owner screenshots Sept 2025)",
