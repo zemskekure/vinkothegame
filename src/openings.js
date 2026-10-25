@@ -4,7 +4,7 @@
 // with segmental arches between them, a vaulted ceiling with transverse arches and shopfronts on the back wall.
 
 import * as THREE from 'three/webgpu';
-import { color, positionLocal, mix, float, vec2, floor, fract, abs, max, smoothstep, step } from 'three/tsl';
+import { color, positionLocal, mix, float, vec2, vec3, floor, fract, abs, max, smoothstep, step } from 'three/tsl';
 import { Kit, ashlar, glow, plain } from './kit.js';
 import { hash2D } from './shading/common.js';
 
@@ -22,19 +22,39 @@ function setts() {
 
 }
 
-// Back wall of an arcade: plaster with a shop window and door in every bay (bay = `bay` m, along local x).
-function shopWall( bay ) {
+// Back wall of an arcade: in every bay (`bay` m along local x) a shopfront in a dark metal frame: a glazed door
+// with a transom over it at one side, the shop window on a low stall riser beside it, a dark fascia above, plaster
+// piers between the bays. (Palác Metro's arcade and the others are lined with shop windows and their doors.)
+// floorAt0 + floorSlope · x is the arcade floor's height under local x: the wall's own heights are absolute, so
+// the shopfront is measured up from the floor (measured from 0 it sat 12 m up, out of sight: a blank wall).
+function shopWall( bay, floorAt0 = 0, floorSlope = 0, start = 0 ) {
 
 	const m = new THREE.MeshStandardNodeMaterial( { roughness: 0.6, side: THREE.DoubleSide } );
-	const p = positionLocal;
-	const u = fract( p.x.div( bay ) );
-	const glass = smoothstep( 0.12, 0.14, u ).mul( smoothstep( 0.88, 0.86, u ) ).mul( step( 0.45, p.y ) ).mul( step( p.y, 2.75 ) );
-	const mullion = smoothstep( 0.012, 0.0, abs( u.sub( 0.62 ) ) ).mul( glass );
-	const frame = smoothstep( 0.1, 0.12, u ).mul( smoothstep( 0.9, 0.88, u ) ).mul( step( 0.35, p.y ) ).mul( step( p.y, 2.85 ) ).sub( glass ).max( 0 );
-	const shade = hash2D( vec2( floor( p.x.div( bay ) ), 4.2 ) );
-	const window = mix( color( 0x2b3a40 ), color( 0x6d6047 ), shade.mul( 0.5 ) );
-	m.colorNode = mix( mix( mix( color( 0xe4dccb ), color( 0x3a3833 ), frame ), window, glass ), color( 0x2a2722 ), mullion );
-	m.emissiveNode = color( 0xffd49a ).mul( glass.mul( shade.mul( 0.35 ).add( 0.08 ) ) );
+	const q = positionLocal;
+	const p = vec3( q.x.sub( start ), q.y.sub( q.x.mul( floorSlope ).add( floorAt0 ) ), q.z ); // x from the arcade's first pier
+	const u = fract( p.x.div( bay ) ).mul( bay ); // metres into the bay
+	const ib = floor( p.x.div( bay ) );
+	const x0 = 0.45, x1 = float( bay ).sub( 0.45 ); // the shopfront between the piers
+	const inFront = step( x0, u ).mul( step( u, x1 ) ).mul( step( p.y, 3.0 ) );
+	// The door: 1.1 m wide at the left or right end of the shopfront (by bay), 2.3 m high.
+	const left = step( 0.5, hash2D( vec2( ib, 7.7 ) ) );
+	const d0 = mix( x1.sub( 1.35 ), float( x0 + 0.25 ), left ), d1 = d0.add( 1.1 );
+	const inDoor = step( d0, u ).mul( step( u, d1 ) ).mul( step( p.y, 2.3 ) );
+	const fr = 0.07;
+	const doorGlass = step( d0.add( fr ), u ).mul( step( u, d1.sub( fr ) ) ).mul( step( fr, p.y ) ).mul( step( p.y, 2.3 - fr ) );
+	const winGlass = step( x0 + fr, u ).mul( step( u, x1.sub( fr ) ) ).mul( step( 0.35, p.y ) ).mul( step( p.y, 2.85 ) ).mul( float( 1 ).sub( step( d0.sub( fr ), u ).mul( step( u, d1.add( fr ) ) ).mul( step( p.y, 2.3 + fr ) ) ) );
+	const transom = step( d0.add( fr ), u ).mul( step( u, d1.sub( fr ) ) ).mul( step( 2.3 + fr, p.y ) ).mul( step( p.y, 2.85 ) );
+	const glass = max( max( doorGlass, winGlass ), transom );
+	const handle = step( abs( u.sub( mix( d0.add( 0.18 ), d1.sub( 0.18 ), left ) ) ), 0.025 ).mul( step( 0.8, p.y ) ).mul( step( p.y, 1.5 ) ).mul( inDoor );
+	const fascia = step( x0, u ).mul( step( u, x1 ) ).mul( step( 3.0, p.y ) ).mul( step( p.y, 3.55 ) );
+	const shade = hash2D( vec2( ib, 4.2 ) );
+	const inside = mix( mix( color( 0x232a2e ), color( 0x8a7656 ), shade.mul( 0.45 ).add( smoothstep( 0.4, 2.6, p.y ).mul( 0.15 ) ) ), color( 0x1d2226 ), inDoor.mul( 0.4 ) );
+	let col = mix( color( 0xe4dccb ), color( 0x2c2e30 ), max( inFront, fascia ) );
+	col = mix( col, inside, glass );
+	col = mix( col, color( 0xc8c2b4 ), handle );
+	m.colorNode = col;
+	m.roughnessNode = mix( float( 0.85 ), float( 0.12 ), glass );
+	m.emissiveNode = color( 0xffd49a ).mul( glass.mul( shade.mul( 0.3 ).add( 0.06 ) ) );
 	return m;
 
 }
@@ -189,7 +209,7 @@ function addArcade( scene, shared, o, others ) {
 
 	kit.add( M.floor, quad( [ - L, y( - L ) + 0.02, 0.4 ], [ L, y( L ) + 0.02, 0.4 ], [ L, y( L ) + 0.02, - D ], [ - L, y( - L ) + 0.02, - D ] ) );
 	// Back wall with shopfronts, facing the street (its own mesh: the shop pattern runs in the arcade's frame).
-	const back = new THREE.Mesh( quad( [ - L, y( - L ) - 0.2, - D ], [ L, y( L ) - 0.2, - D ], [ L, y( L ) + o.h + 0.1, - D ], [ - L, y( - L ) + o.h + 0.1, - D ] ), shopWall( bay ) );
+	const back = new THREE.Mesh( quad( [ - L, y( - L ) - 0.2, - D ], [ L, y( L ) - 0.2, - D ], [ L, y( L ) + o.h + 0.1, - D ], [ - L, y( - L ) + o.h + 0.1, - D ] ), shopWall( bay, y( 0 ), ( y( L ) - y( - L ) ) / ( 2 * L ), - L ) );
 	back.matrixAutoUpdate = false;
 	back.matrix.copy( kit.m );
 	back.receiveShadow = true;

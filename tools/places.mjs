@@ -1,6 +1,6 @@
 // Signature places and street life, located in the data at build time (see src/places.js and src/life.js):
 //
-//   - Rotunda sv. Kříže Menšího (Konviktská): its round nave and apse fitted to the OSM outline; the generic
+//   - Rotunda sv. Kříže Menšího (Konviktská): its round nave and apse fitted to the RÚIAN footprint; the generic
 //     building is left out and modelled by hand at runtime.
 //   - Hostinec U Rotundy, Standard Café, Champagneria: the house front each one is in (by house number / nearest
 //     front), a walk-in room behind a real door in it, outdoor seating, signs.
@@ -13,6 +13,7 @@
 // Input positions are S-JTSK; everything returned is in the scene frame (x east, y up, z south).
 
 const ROTUNDA_WAY = 395230762;
+const ROTUNDA_RUIAN = 40354954; // RÚIAN building code of the rotunda
 const STAIRS_WAY = 1201817510;
 // Čapadlo by the Faculty of Social Sciences: steps beside it, the underpass, the metal stair from the terrace.
 const CAPADLO = { steps: 137806765, underpass: 1201427940, metal: 34056146 };
@@ -216,8 +217,11 @@ export function collectPlaces( ctx ) {
 	// --- Rotunda sv. Kříže: a circle fitted to the outline (nave); the points off it are the apse.
 	{
 
-		const way = wayById.get( ROTUNDA_WAY );
-		const pts = way.pts.map( p => [ p.X, p.Y ] );
+		// The RÚIAN footprint (ČÚZK cadastre, the same survey as every house here and as the aerial photo). The OSM
+		// outline lands about 10 m south-west of it: projected OSM sits (−6.2, −7.7) m off RÚIAN all over the area,
+		// which put the rotunda out in Karoliny Světlé and left its real plot, by the corner of Konviktská, empty.
+		const ruian = byCode.get( ROTUNDA_RUIAN );
+		const pts = ruian ? ruian.poly.outer.map( ( [ X, Y ] ) => [ X, Y ] ) : wayById.get( ROTUNDA_WAY ).pts.map( p => [ p.X, p.Y ] );
 		const fit = ps => {
 
 			// Kåsa circle fit.
@@ -293,6 +297,39 @@ export function collectPlaces( ctx ) {
 		const spots = [];
 		for ( let x = - front.left + 1.0; x < doorX - 1.6; x += 2.0 ) spots.push( [ x, 0.75 ] );
 		tablesAt( f, s, 'champagne', spots );
+
+		// The little square in front, where Průchodní meets Konviktská, is the bar's terrace: black tables with
+		// folding chairs all over it round the big lime tree, parked cars only at its north end (Street View
+		// 2025-09; aerial photo). The lime stands at (−47, 114); OSM's pin for it lands 9 m off (tools/geo.mjs).
+		const TREE = [ - 47.0, 114.0 ];
+		const tr = furniture.tree;
+		for ( let i = 0; i < tr.length; i += 5 ) if ( Math.hypot( tr[ i ] - TREE[ 0 ] + 6.18, tr[ i + 2 ] - TREE[ 1 ] - 7.68 ) < 2.5 ) {
+
+			tr[ i ] = TREE[ 0 ];
+			tr[ i + 2 ] = TREE[ 1 ];
+			tr[ i + 1 ] = yAtLocal( ...TREE );
+
+		}
+
+		const square = [];
+		const clear = ( X, Y, r ) => [ [ 0, 0 ], [ r, 0 ], [ - r, 0 ], [ 0, r ], [ 0, - r ] ].every( ( [ dx, dy ] ) => ! inKept( X + dx, Y + dy ) );
+		for ( let z = 108.5; z <= 121; z += 2.3 ) for ( let x = - 56; x <= - 45; x += 2.2 ) {
+
+			const jx = x + ( ( Math.round( z * 10 ) % 3 ) - 1 ) * 0.35, jz = z + ( ( Math.round( x * 10 ) % 3 ) - 1 ) * 0.3;
+			if ( Math.hypot( jx - TREE[ 0 ], jz - TREE[ 1 ] ) < 2.3 ) continue; // the bench round the tree
+			const [ X, Y ] = S( jx, jz );
+			if ( ! clear( X, Y, 1.3 ) ) continue;
+			// Keep a strip along the bar's wall free (its own tables stand there) and the lane into Průchodní.
+			if ( ( X - f.a[ 0 ] ) * f.n[ 0 ] + ( Y - f.a[ 1 ] ) * f.n[ 1 ] < 2.2 ) continue;
+			const y = yAtLocal( jx, jz ), rot = ( ( jx * 7.3 + jz * 3.1 ) % 1.6 ) - 0.8;
+			square.push( [ + jx.toFixed( 2 ), y, + jz.toFixed( 2 ), + rot.toFixed( 3 ), 'champagne' ] );
+			const sx = Math.sin( rot ), sz = Math.cos( rot ); // the table's long axis, as in tablesAt
+			for ( const side of [ - 1, 1 ] ) places.seats.push( [ + ( jx + sx * 0.55 * side ).toFixed( 2 ), y, + ( jz + sz * 0.55 * side ).toFixed( 2 ), + Math.atan2( - sx * side, - sz * side ).toFixed( 3 ) ] );
+
+		}
+
+		places.terraces.find( t => t.kind === 'champagne' ).tables.push( ...square );
+		console.log( `places: Champagneria square, ${square.length} more tables` );
 
 	}
 
@@ -833,7 +870,7 @@ export function collectPlaces( ctx ) {
 			const end = s => groundY( o.X + o.ux * s * ( o.len / 2 + 0.8 ), o.Y + o.uy * s * ( o.len / 2 + 0.8 ) );
 			// Under Nová scéna the walk-throughs are level with the piazzetta (the undercroft's steps take the rise).
 			let y0 = + end( - 1 ).toFixed( 2 ), y1 = + end( 1 ).toFixed( 2 );
-			if ( o.modern && pzLevel !== undefined ) y0 = y1 = + pzLevel.toFixed( 2 );
+			if ( o.modern && ! o.drn && pzLevel !== undefined ) y0 = y1 = + pzLevel.toFixed( 2 ); // DRN's passage runs from Národní's pavement to its courtyard
 			const [ x, z ] = L( o.X, o.Y );
 			places.openings.push( { kind: 'passage', x, z, lx, lz, len: o.len, w: o.w, h: o.h, y0, y1, ...( o.modern ? { modern: true } : {} ) } );
 			zone( x, z, across, o.w / 2 - 0.15, o.len / 2 + 0.35, { y0, y1, along: [ lx, lz ], ceil: + ( Math.max( y0, y1 ) + o.h - 0.2 ).toFixed( 2 ) } );
@@ -1046,6 +1083,23 @@ export function collectPlaces( ctx ) {
 	places.life = streetLife( ctx, L );
 	places.barriers ||= [];
 	collectWalls( { places, project: ctx.project, L, S, yAtLocal, streetData, AREA } );
+
+	// The garden at the west end of Konviktská and Betlémská (the park by the embankment): a cream wall about 1.4 m
+	// high with a clipped hedge over it along the streets, not open lawn (Street View 2024-05 down Konviktská).
+	// Its line is the park's edge in ZABAGED (the lawn drawn here), north, east and south sides.
+	{
+
+		const PARK = [ [ - 338.2, 100.8 ], [ - 323.9, 104.7 ], [ - 316.8, 107.9 ], [ - 314.9, 111.8 ], [ - 313.3, 117.6 ], [ - 310.9, 139.3 ], [ - 311.3, 142.6 ], [ - 324.7, 205.1 ], [ - 331.6, 203.3 ], [ - 340.6, 201.1 ] ];
+		for ( let i = 1; i < PARK.length; i ++ ) {
+
+			const [ x0, z0 ] = PARK[ i - 1 ], [ x1, z1 ] = PARK[ i ];
+			const a = [ x0, z0 ], b = [ x1, z1 ];
+			places.walls.push( { kind: 'wall', x0: + a[ 0 ].toFixed( 2 ), z0: + a[ 1 ].toFixed( 2 ), x1: + b[ 0 ].toFixed( 2 ), z1: + b[ 1 ].toFixed( 2 ), y: Math.min( yAtLocal( ...a ), yAtLocal( ...b ) ), h: 1.4, colour: '#e3dccb', hedge: 0.7 } );
+			places.barriers.push( [ + a[ 0 ].toFixed( 2 ), + a[ 1 ].toFixed( 2 ), + b[ 0 ].toFixed( 2 ), + b[ 1 ].toFixed( 2 ), - 99 ] );
+
+		}
+
+	}
 	dressSquare( { places, frontFacing, frame, S, L, sign, yAtLocal, streetData, project: ctx.project, streetFacades, toLocal, buildingInfo: ctx.buildingInfo, inHouse: inKept } );
 
 	return places;

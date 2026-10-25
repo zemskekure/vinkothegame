@@ -46,7 +46,7 @@ export function dressSquare( { places, frontFacing, frame, S, L, sign, yAtLocal,
 		const p = on( svejk, 0.42, 3.15 );
 		dress.push( { kind: 'board', ...p, w: 7.4, h: 0.78, text: 'ŠVEJK  RESTAURANT', bg: '#5b3a22', ink: '#f1dca4', font: 'Georgia, serif', weight: '700', spacing: 18, frame: 'wood' } );
 		dress.push( { kind: 'badge', ...on( svejk, 0.42 - 4.3 / svejk.len, 3.2 ), r: 0.55, text: 'ŠVEJK', bg: '#f0d79a', ink: '#a8321f', ring: '#c39a3c' } );
-		dress.push( { kind: 'board', ...on( svejk, 0.42 + 4.6 / svejk.len, 3.15 ), w: 0.9, h: 0.9, text: 'Pilsner', sub: 'Urquell', bg: '#2a4a32', ink: '#efe2b4', font: 'Georgia, serif', weight: '700', frame: 'gold' } );
+		dress.push( { kind: 'logo', brand: 'pilsner', ...on( svejk, 0.42 + 4.6 / svejk.len, 3.15 ), w: 0.85, h: 1.0 } );
 		sign( svejk, svejk.len * 0.85, 3.9, '', 'beer' );
 
 	}
@@ -128,7 +128,8 @@ export function dressSquare( { places, frontFacing, frame, S, L, sign, yAtLocal,
 		const t = Math.max( 0.02, Math.min( 0.98, aIsLeft ? g.fromLeft : 1 - g.fromLeft ) );
 		const p = on( f, t, g.height );
 		const font = FONTS[ g.font ] || FONTS.serif, text = g.text, sub = g.sub || undefined;
-		if ( g.kind === 'letters' ) dress.push( { kind: 'letters', ...p, text, h: Math.max( 0.18, Math.min( 0.6, g.width / Math.max( 3, text.length * 0.7 ) ) ), ink: g.ink || '#333333', font, weight: '700', spacing: 8 } );
+		if ( g.brand ) dress.push( { kind: 'logo', ...p, brand: g.brand, w: g.width || 2.5, h: g.logoHeight || 0.6, blade: g.blade || undefined } );
+		else if ( g.kind === 'letters' ) dress.push( { kind: 'letters', ...p, text, h: Math.max( 0.18, Math.min( 0.6, g.width / Math.max( 3, text.length * 0.7 ) ) ), ink: g.ink || '#333333', font, weight: '700', spacing: 8 } );
 		else if ( g.kind === 'hanging' ) dress.push( { kind: 'hanging', ...p, w: Math.min( 1.2, g.width || 0.8 ), h: Math.min( 1.0, ( g.width || 0.8 ) * 0.7 ), text, sub, bg: g.bg || '#2b2b2b', ink: g.ink || '#f2ead6', font } );
 		else if ( g.kind === 'plaque' ) dress.push( { kind: 'board', ...p, w: Math.min( 0.9, g.width || 0.6 ), h: 0.42, text, sub, bg: g.bg || '#1d1d1d', ink: g.ink || '#ffffff', font, weight: '600', spacing: 2, frame: 'none' } );
 		else dress.push( { kind: 'board', ...p, w: Math.max( 1, g.width || 2.5 ), h: sub ? 0.72 : 0.58, text, sub, bg: g.bg || '#222222', ink: g.ink || '#f2ead6', font, weight: '700', spacing: 8, frame: 'none' } );
@@ -190,19 +191,26 @@ export function dressSquare( { places, frontFacing, frame, S, L, sign, yAtLocal,
 	const SANS = '"Helvetica Neue", Arial, sans-serif', SERIF = 'Georgia, "Times New Roman", serif';
 	{
 
-		// Kaňkův palác (Národní 16): the memorial of 17 November 1989 on its front by the corner: a bronze plaque of
-		// raised hands, candles and flowers below.
-		put( at( - 52, 311, - 52, 290, 1.65 ), { kind: 'memorial1711' } );
+		// Kaňkův palác (Národní 16): the memorial of 17 November 1989. The old arcade along Národní is glazed in now;
+		// the memorial fills the arch 8.9 m from the Mikulandská corner (sixth opening from the east, measured off
+		// Street View 2025-09): a white stone panel with the bronze of raised hands on a stone step, candles and
+		// flowers on the step and on the pavement at its foot. OSM node 3196599841 marks the same arch once its
+		// projection offset is taken out. The arch itself is in the house's described ground floor (data/houses.json).
+		put( at( - 46.7, 309.8, - 46.7, 290, 0 ), { kind: 'memorial1711' } );
 		// Café Louvre (Národní 22): the red lettering across the first floor; on the ground floor the dark green
 		// shopfronts, LOUVRE over the door, the small boards of its rooms; Reduta jazz club and Rock Café next door.
-		put( at( 12, 298, 12, 280, 6.1 ), { kind: 'letters', text: 'CAFÉ  LOUVRE', h: 0.95, ink: '#c4232a', font: SERIF, weight: '700', spacing: 18, italic: true } );
+		// Upright red roman capitals, widely spaced, as on the house (Street View 2025-09).
+		put( at( 12, 298, 12, 280, 6.1 ), { kind: 'letters', text: 'CAFÉ  LOUVRE', h: 0.95, ink: '#c4232a', font: SERIF, weight: '700', spacing: 22 } );
 		put( at( 14, 297, 14, 280, 3.5 ), { kind: 'board', w: 3.2, h: 0.75, text: 'LOUVRE', bg: '#173326', ink: '#d9c48a', font: SERIF, weight: '700', spacing: 30, frame: 'none' } );
 		put( at( 9, 299, 9, 280, 2.95 ), { kind: 'board', w: 3.6, h: 0.32, text: 'GALERIE · KAVÁRNA · RESTAURACE · BILLIARD', bg: '#101010', ink: '#f4f1e8', font: SANS, weight: '600', spacing: 4, frame: 'none' } );
 		put( at( - 3, 301, - 3, 282, 3.5 ), { kind: 'board', w: 3.4, h: 0.62, text: 'REDUTA', sub: 'JAZZ CLUB', bg: '#173326', ink: '#e3c66b', font: SERIF, weight: '700', spacing: 12, frame: 'gold' } );
 		put( at( 3, 300, 3, 282, 3.2 ), { kind: 'letters', text: 'Rock Café', h: 0.55, ink: '#ff3b3b', font: '"Brush Script MT", "Segoe Script", cursive', weight: '700', spacing: 2, glow: true } );
-		// Palác Metro (Národní 25): KFC's big white letters on the dark band over the stone portal, the red box sign.
-		put( at( - 14, 283, - 14, 296, 4.3 ), { kind: 'board', w: 3.4, h: 1.0, text: 'KFC', bg: '#262626', ink: '#ffffff', font: SANS, weight: '800', spacing: 20, frame: 'none' } );
-		put( at( - 10, 283, - 10, 296, 2.9 ), { kind: 'board', w: 1.1, h: 0.62, text: 'KFC', bg: '#d0021b', ink: '#ffffff', font: SANS, weight: '800', spacing: 6, frame: 'none' } );
+		// Palác Metro (Národní 25): east of the stone portal (x ≈ −20.5) KFC's white box sign with the Colonel hangs out
+		// over its shopfront at about 3.4 m, a flat one on the fascia beside it (Street View 2025-09).
+		put( at( - 12.5, 283, - 12.5, 296, 3.5 ), { kind: 'logo', brand: 'kfc', w: 0.85, h: 0.85, blade: true, glow: true } );
+		put( at( - 15.5, 283, - 15.5, 296, 3.35 ), { kind: 'logo', brand: 'kfc', w: 0.8, h: 0.8 } );
+		// Česká spořitelna on Na Perštýně: the blue ATM bay, BANKOMAT / ATM over two cash machines.
+		put( at( 37.4, 248.2, 50, 248.2, 1.85 ), { kind: 'logo', brand: 'csAtm', w: 3.2, h: 2.4 } );
 		// Palác Chicago (Národní 32): its name in grey metal letters over the first floor.
 		put( at( 140, 270, 140, 255, 5.6 ), { kind: 'letters', text: 'CHICAGO', h: 0.55, ink: '#8f989d', font: SANS, weight: '700', spacing: 30 } );
 		// The Praha insurance house (Národní 7, Osvald Polívka): PRAHA in gold mosaic under the cornice.

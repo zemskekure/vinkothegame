@@ -465,7 +465,9 @@ function addPubInterior( g, room, kit, seat ) {
 	plaque.position.set( 0, 2.85, - d + 0.06 );
 	g.add( plaque );
 	kit.add( M.gold, new THREE.TorusGeometry( 0.31, 0.02, 6, 32 ).translate( 0, 2.85, - d + 0.07 ) );
-	kit.add( MAT.frame, cyl( 0.2, 0.2, 0.05, w / 2 - 1.6, 2.3, - 0.04, 20 ).rotateX( Math.PI / 2 ).translate( 0, 0, 0 ) );
+	// The round wall clock hangs on the back wall (turned to face the room first, then moved there: turned after
+	// the move it swung out through the front and hung in the street as a floating disc).
+	kit.add( MAT.frame, cyl( 0.2, 0.2, 0.05, 0, 0, 0, 20 ).rotateX( Math.PI / 2 ).translate( w / 2 - 1.6, 2.3, - d + 0.06 ) );
 
 	// Left wall: the bar niche (dark frame, bottle shelves), the brown tiled stove with its flue, menu blackboards.
 	const lx = - w / 2 + 0.05;

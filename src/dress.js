@@ -453,6 +453,8 @@ function addWalls( scene, walls ) {
 
 			kit.add( mat( w.colour ), place( box( 0.4, w.h + 0.6, len + 0.02, 0, - 0.6, 0 ) ) );
 			kit.add( coping, place( box( 0.5, 0.08, len + 0.04, 0, w.h, 0 ) ) );
+			// A clipped hedge growing over the wall from the garden.
+			if ( w.hedge ) kit.add( M.leaf, place( box( 0.9, w.hedge, len + 0.1, 0, w.h + 0.02, 0 ) ) );
 
 		} else {
 
@@ -495,58 +497,76 @@ function addHanging( scene, s ) {
 
 }
 
-// The memorial of 17 November 1989 (Národní 16): a bronze plaque of raised hands, some making the V sign, with the
-// date; candles and flowers on the pavement below.
 function addMemorial1711( scene, s ) {
 
-	const g = onFront( s.x, s.y, s.z, s.n );
+	// The memorial of 17 November 1989 in its arch on Národní 16: a white stone panel standing on a stone step in the
+	// glazed arch, the dark bronze of raised hands (one making the V sign) with the date under it, candles and
+	// flowers on the step and on the pavement in front (Street View 2025-09). The group stands on the pavement at
+	// the arch's middle, z out of the wall.
+	const g = onFront( s.x, s.ground ?? s.y, s.z, s.n );
 	const c = document.createElement( 'canvas' );
 	c.width = 512;
-	c.height = 420;
+	c.height = 400;
 	const x = c.getContext( '2d' );
-	x.fillStyle = '#5b4426';
-	x.fillRect( 0, 0, 512, 420 );
-	x.fillStyle = '#a8814a';
-	for ( let k = 0; k < 8; k ++ ) {
+	x.fillStyle = '#2a241d';
+	x.fillRect( 0, 0, 512, 400 );
+	x.fillStyle = '#6e5a3c';
+	for ( let k = 0; k < 7; k ++ ) {
 
-		const hx = 50 + k * 58 + ( k % 2 ) * 10, hy = 70 + ( k % 3 ) * 30;
+		// Open palms reaching up, with the fingers spread; the middle one the V sign.
+		const hx = 70 + k * 62, hy = 120 + ( k % 3 ) * 22;
 		x.beginPath();
-		x.ellipse( hx, hy + 70, 20, 30, 0, 0, Math.PI * 2 );
+		x.ellipse( hx, hy + 40, 22, 30, 0, 0, Math.PI * 2 );
 		x.fill();
-		x.fillRect( hx - 12, hy + 90, 24, 80 );
-		for ( let f = 0; f < ( k % 3 ? 4 : 2 ); f ++ ) {
+		x.fillRect( hx - 13, hy + 60, 26, 110 );
+		const fingers = k === 3 ? [ - 0.25, 0.25 ] : [ - 0.42, - 0.15, 0.08, 0.3, 0.75 ];
+		for ( const a of fingers ) {
 
-			const a = k % 3 ? - 0.35 + f * 0.24 : - 0.22 + f * 0.44;
 			x.save();
-			x.translate( hx, hy + 50 );
+			x.translate( hx, hy + 30 );
 			x.rotate( a );
-			x.fillRect( - 4, - 55, 8, 55 );
+			x.fillRect( - 5, - ( a > 0.6 ? 40 : 62 ), 10, a > 0.6 ? 40 : 62 );
 			x.restore();
 
 		}
 
 	}
 
-	x.fillStyle = '#d8b878';
-	x.font = '700 46px Georgia, serif';
+	x.fillStyle = '#b89a62';
+	x.font = '700 44px Georgia, serif';
 	x.textAlign = 'center';
-	x.fillText( '17. 11. 1989', 256, 380 );
+	x.fillText( '17. 11. 1989', 256, 370 );
 	const tex = new THREE.CanvasTexture( c );
 	tex.colorSpace = THREE.SRGBColorSpace;
-	const plaque = flat( tex, 0.62, 0.51, { metalness: 0.6, roughness: 0.45 } );
-	plaque.position.z = 0.05;
+	const plaque = flat( tex, 1.0, 0.78, { metalness: 0.55, roughness: 0.5 } );
+	plaque.position.set( 0, 1.75, 0.17 );
 	g.add( plaque );
-	const k = new Kit().add( plain( 0xf4f2ec ), box( 0.72, 0.61, 0.03, 0, - 0.305, 0.015 ) );
-	// Candles (glass lanterns) and flowers along the wall's foot.
-	for ( let i = 0; i < 9; i ++ ) {
 
-		const cx = - 0.45 + i * 0.11 + ( i % 2 ) * 0.02, cz = 0.18 + ( i % 3 ) * 0.07;
-		k.add( plain( [ 0xc8202a, 0xf2efe6, 0xc8202a ][ i % 3 ], { roughness: 0.3, transparent: true, opacity: 0.85 } ), cyl( 0.035, 0.035, 0.11, cx, - 1.65, cz, 8 ) );
-		k.add( glow( 0xffb04a, 2.5 ), ball( 0.012, cx, - 1.52, cz, 5 ) );
+	const stone = plain( 0xece9e2, { roughness: 0.7 } );
+	const k = new Kit();
+	k.add( plain( 0xc9c3b6 ), box( 2.5, 0.28, 0.5, 0, 0, 0.2 ) ); // the step in the arch
+	k.add( stone, box( 1.5, 2.3, 0.14, 0, 0.28, 0.08 ) ); // the panel
+	k.add( plain( 0x1f1a14, { metalness: 0.5, roughness: 0.5 } ), box( 1.1, 0.88, 0.04, 0, 1.31, 0.15 ) ); // the bronze's dark frame
+
+	// Candles in red and clear glass on the step and in a cluster on the pavement, and bunches of flowers.
+	const cups = [ 0xc8202a, 0xf2efe6, 0xc8202a, 0xd8d2c0 ];
+	const candle = ( cx, y, cz, i ) => {
+
+		k.add( plain( cups[ i % 4 ], { roughness: 0.3, transparent: true, opacity: 0.85 } ), cyl( 0.04, 0.035, 0.12, cx, y, cz, 8 ) );
+		k.add( glow( 0xffb04a, 2.5 ), ball( 0.013, cx, y + 0.14, cz, 5 ) );
+
+	};
+
+	for ( let i = 0; i < 11; i ++ ) candle( - 1.05 + i * 0.21, 0.28, 0.32 + ( i % 2 ) * 0.07, i );
+	for ( let i = 0; i < 14; i ++ ) candle( - 0.9 + ( i % 7 ) * 0.3 + ( i % 3 ) * 0.04, 0, 0.6 + Math.floor( i / 7 ) * 0.22 + ( i % 2 ) * 0.05, i + 1 );
+	for ( let i = 0; i < 5; i ++ ) {
+
+		const fx = - 0.8 + i * 0.4, fz = 0.95 + ( i % 2 ) * 0.1;
+		k.add( plain( [ 0xc8102e, 0xf4f4f0, 0x2a5fb0, 0xc8102e, 0xf4f4f0 ][ i ] ), ball( 0.07, fx, 0.06, fz, 6 ), ball( 0.06, fx + 0.08, 0.05, fz - 0.1, 6 ) );
+		k.add( M.leaf, cyl( 0.012, 0.012, 0.35, 0, 0, 0, 4 ).rotateX( 1.35 ).translate( fx, 0.04, fz ) ); // stems lying on the pavement
 
 	}
 
-	for ( let i = 0; i < 4; i ++ ) k.add( plain( [ 0xc8102e, 0xf4f4f0, 0x2a5fb0, 0xc8102e ][ i ] ), ball( 0.06, - 0.3 + i * 0.2, - 1.6, 0.35, 6 ) ).add( M.leaf, cyl( 0.01, 0.01, 0.3, - 0.3 + i * 0.2, - 1.65, 0.3, 4 ).rotateX( 1.2 ) );
 	k.build( g, { shadows: false } );
 	scene.add( g );
 
@@ -809,7 +829,167 @@ function addPylon( scene, s ) {
 
 }
 
-const ADD = { memorial1711: addMemorial1711, cartouche: addCartouche, mosaic: addMosaic, cubistDoor: addCubistDoor, saint: addSaint, triga: addTriga, pylon: addPylon, hanging: addHanging, board: addBoard, letters: addLetters, badge: addBadge, lantern: addLantern, flags: addFlags, portal: addPortal, canopy: addCanopy, clock: addClock };
+// Brand signs drawn after the brands' public look (colours, lettering, the shape of the mark), simplified; no logo
+// files are used. s.brand picks the drawing, s.w × s.h its size (m); s.blade hangs it out from the wall on a bracket,
+// seen from both directions along the street.
+const LOGOS = {
+
+	// Pilsner Urquell: the bottle-green label with a gold rule, the name in a cream script, the red seal with the
+	// brewery gate under it.
+	pilsner( x, W, H ) {
+
+		x.fillStyle = '#16452c';
+		x.fillRect( 0, 0, W, H );
+		x.strokeStyle = '#c9a24a';
+		x.lineWidth = W * 0.02;
+		x.strokeRect( W * 0.04, H * 0.04, W * 0.92, H * 0.92 );
+		x.fillStyle = '#f3e7c4';
+		x.textAlign = 'center';
+		x.font = `italic 700 ${H * 0.2}px "Brush Script MT", "Segoe Script", Georgia, serif`;
+		x.fillText( 'Pilsner', W / 2, H * 0.34 );
+		x.fillText( 'Urquell', W / 2, H * 0.56 );
+		x.fillStyle = '#b3202a';
+		x.beginPath();
+		x.arc( W / 2, H * 0.76, H * 0.12, 0, Math.PI * 2 );
+		x.fill();
+		x.fillStyle = '#f3e7c4';
+		x.fillRect( W / 2 - H * 0.06, H * 0.74, H * 0.12, H * 0.07 );
+		x.beginPath();
+		x.arc( W / 2, H * 0.74, H * 0.06, Math.PI, 0 );
+		x.fill();
+		x.fillStyle = '#b3202a';
+		x.fillRect( W / 2 - H * 0.025, H * 0.75, H * 0.05, H * 0.06 );
+
+	},
+
+	// KFC: the square box sign, a white field with the red stripes along the top, the Colonel's head (white hair,
+	// glasses, goatee, black string tie) in red outline and KFC in heavy red letters.
+	kfc( x, W, H ) {
+
+		x.fillStyle = '#ffffff';
+		x.fillRect( 0, 0, W, H );
+		x.fillStyle = '#e4002b';
+		for ( let k = 0; k < 3; k ++ ) x.fillRect( W * ( 0.12 + k * 0.28 ), 0, W * 0.18, H * 0.14 );
+		const cx = W / 2, cy = H * 0.44, r = H * 0.2;
+		x.fillStyle = '#e4002b';
+		x.beginPath();
+		x.arc( cx, cy, r * 1.25, 0, Math.PI * 2 );
+		x.fill();
+		x.fillStyle = '#ffffff';
+		x.beginPath();
+		x.ellipse( cx, cy, r * 0.8, r, 0, 0, Math.PI * 2 );
+		x.fill();
+		x.strokeStyle = '#1b1b1b';
+		x.lineWidth = r * 0.09;
+		for ( const s of [ - 1, 1 ] ) x.strokeRect( cx + s * r * 0.36 - r * 0.24, cy - r * 0.3, r * 0.48, r * 0.3 );
+		x.beginPath();
+		x.moveTo( cx - r * 0.12, cy - r * 0.15 );
+		x.lineTo( cx + r * 0.12, cy - r * 0.15 );
+		x.stroke();
+		x.fillStyle = '#e4002b';
+		x.beginPath();
+		x.ellipse( cx, cy + r * 0.62, r * 0.3, r * 0.34, 0, 0, Math.PI * 2 );
+		x.fill();
+		x.fillStyle = '#1b1b1b';
+		x.beginPath();
+		x.moveTo( cx - r * 0.3, cy + r * 1.05 );
+		x.lineTo( cx + r * 0.3, cy + r * 1.05 );
+		x.lineTo( cx, cy + r * 1.3 );
+		x.fill();
+		x.fillStyle = '#e4002b';
+		x.textAlign = 'center';
+		x.font = `900 ${H * 0.2}px "Arial Black", "Helvetica Neue", Arial, sans-serif`;
+		x.fillText( 'KFC', cx, H * 0.95 );
+
+	},
+
+	// Česká spořitelna: the bank's bright blue with white lettering, its round white mark on the left.
+	cs( x, W, H ) {
+
+		x.fillStyle = '#2870ed';
+		x.fillRect( 0, 0, W, H );
+		x.fillStyle = '#ffffff';
+		x.beginPath();
+		x.arc( H * 0.5, H * 0.5, H * 0.3, 0, Math.PI * 2 );
+		x.fill();
+		x.fillStyle = '#2870ed';
+		x.beginPath();
+		x.arc( H * 0.5, H * 0.5, H * 0.13, 0, Math.PI * 2 );
+		x.fill();
+		x.fillStyle = '#ffffff';
+		x.textAlign = 'left';
+		x.font = `700 ${H * 0.36}px "Helvetica Neue", Arial, sans-serif`;
+		x.fillText( 'Česká spořitelna', H * 0.95, H * 0.63 );
+
+	},
+
+	// The bank's ATM wall on Na Perštýně: the whole bay in its blue, BANKOMAT / ATM over two cash machines.
+	csAtm( x, W, H ) {
+
+		x.fillStyle = '#2b78f0';
+		x.fillRect( 0, 0, W, H );
+		x.fillStyle = '#ffffff';
+		x.textAlign = 'center';
+		x.font = `700 ${H * 0.06}px "Helvetica Neue", Arial, sans-serif`;
+		x.fillText( 'BANKOMAT / ATM', W / 2, H * 0.14 );
+		for ( const s of [ - 1, 1 ] ) {
+
+			const mx = W / 2 + s * W * 0.17;
+			x.fillStyle = '#d7dde4';
+			x.fillRect( mx - W * 0.09, H * 0.28, W * 0.18, H * 0.5 );
+			x.fillStyle = '#20262c';
+			x.fillRect( mx - W * 0.06, H * 0.33, W * 0.12, H * 0.13 );
+			x.fillStyle = '#7d868f';
+			x.fillRect( mx - W * 0.07, H * 0.55, W * 0.14, H * 0.08 );
+
+		}
+
+	}
+
+};
+
+function addLogo( scene, s ) {
+
+	const g = onFront( s.x, s.y, s.z, s.n );
+	const c = document.createElement( 'canvas' );
+	const px = 360 / Math.max( s.w, s.h );
+	c.width = Math.round( s.w * px );
+	c.height = Math.round( s.h * px );
+	LOGOS[ s.brand ]( c.getContext( '2d' ), c.width, c.height );
+	const tex = new THREE.CanvasTexture( c );
+	tex.colorSpace = THREE.SRGBColorSpace;
+	tex.anisotropy = 4;
+	const k = new Kit();
+	if ( s.blade ) {
+
+		// A box sign on an arm, its faces along the street.
+		const out = s.w / 2 + 0.3;
+		for ( const side of [ - 1, 1 ] ) {
+
+			const face = flat( tex, s.w, s.h, s.glow ? { emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: 0.6 } : {} );
+			face.rotation.y = side * Math.PI / 2;
+			face.position.set( side * 0.081, 0, out );
+			g.add( face );
+
+		}
+
+		k.add( M.black, box( 0.16, s.h + 0.04, s.w + 0.04, 0, - s.h / 2 - 0.02, out ), box( 0.05, 0.05, 0.32, 0, 0.1, 0.16 ) );
+
+	} else {
+
+		const face = flat( tex, s.w, s.h );
+		face.position.z = 0.11;
+		g.add( face );
+		k.add( M.black, box( s.w + 0.04, s.h + 0.04, 0.08, 0, - s.h / 2 - 0.02, 0.04 ) );
+
+	}
+
+	k.build( g );
+	scene.add( g );
+
+}
+
+const ADD = { logo: addLogo, memorial1711: addMemorial1711, cartouche: addCartouche, mosaic: addMosaic, cubistDoor: addCubistDoor, saint: addSaint, triga: addTriga, pylon: addPylon, hanging: addHanging, board: addBoard, letters: addLetters, badge: addBadge, lantern: addLantern, flags: addFlags, portal: addPortal, canopy: addCanopy, clock: addClock };
 
 export function addDress( scene, places ) {
 

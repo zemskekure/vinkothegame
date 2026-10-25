@@ -4851,7 +4851,7 @@
 		}
 	},
 	"21651221": {
-		"note": "Národní / Mikulandská corner palace: ochre-yellow with salmon-red window surrounds and rich white stucco cartouches, a pediment with an oculus on Národní, arched shop openings in a smooth ground floor; it wraps round into Mikulandská and ends past the carved gateway (Street View 2025-09, marked photos 21651221_8/9/10/11a/11b).",
+		"note": "Národní / Mikulandská corner palace: ochre-yellow with salmon-red window surrounds and rich white stucco cartouches, a pediment with an oculus on Národní, arched shop openings in a smooth ground floor; it wraps round into Mikulandská and ends past the carved gateway (Street View 2025-09, marked photos 21651221_8/9/10/11a/11b). Národní front re-measured off Street View 2025-09 (from the east end): three tall rectangular shopfronts, the arched glazed entrance of no. 16, a shopfront, the arch with the 17 November memorial (white stone panel, bronze hands) 8.9 m from the Mikulandská corner, three shopfronts; the ground floor is the façade's ochre with banded rustication, not grey stone.",
 		"colour": "#e9d39a",
 		"trim": "#cf6f5f",
 		"floors": 3,
@@ -4889,39 +4889,88 @@
 					{
 						"kind": "shop",
 						"frame": "dark",
-						"glazed": true
+						"glazed": true,
+						"at": [
+							1.9,
+							3.5
+						]
+					},
+					{
+						"kind": "shop",
+						"frame": "dark",
+						"glazed": true,
+						"at": [
+							4.7,
+							6.1
+						]
+					},
+					{
+						"kind": "shop",
+						"frame": "dark",
+						"glazed": true,
+						"at": [
+							7.2,
+							8.7
+						]
 					},
 					{
 						"kind": "door",
 						"frame": "dark",
+						"glazed": true,
+						"arch": true,
+						"at": [
+							10.4,
+							13.4
+						]
+					},
+					{
+						"kind": "shop",
+						"frame": "dark",
+						"glazed": true,
+						"at": [
+							14.7,
+							16.2
+						]
+					},
+					{
+						"kind": "shop",
+						"frame": "dark",
+						"glazed": true,
+						"at": [
+							17.5,
+							20.2
+						],
 						"arch": true
 					},
 					{
 						"kind": "shop",
 						"frame": "dark",
-						"glazed": true
+						"glazed": true,
+						"at": [
+							21.5,
+							22.9
+						]
 					},
 					{
 						"kind": "shop",
 						"frame": "dark",
-						"glazed": true
-					},
-					{
-						"kind": "door",
-						"frame": "dark",
-						"arch": true
-					},
-					{
-						"kind": "shop",
-						"frame": "dark",
-						"glazed": true
+						"glazed": true,
+						"at": [
+							23.6,
+							24.6
+						]
 					},
 					{
 						"kind": "shop",
 						"frame": "dark",
-						"glazed": true
+						"glazed": true,
+						"at": [
+							25.3,
+							26.6
+						]
 					}
-				]
+				],
+				"rustic": "banded"
 			}
 		}
 	},

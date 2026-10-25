@@ -90,3 +90,10 @@ export async function lonLatToSJTSK() {
 	};
 
 }
+
+// OpenStreetMap projected with the transform above lands (−6.18, −7.68) m off the ČÚZK data (RÚIAN footprints,
+// the aerial photo, the terrain): measured as the median offset of 174 OSM building outlines imported from RÚIAN
+// (source=cuzk:ruian) against the same buildings in RÚIAN, the same to a few centimetres in every corner of the
+// area. Adding this puts an OSM point where the cadastre has it.
+export const OSM_OFFSET = [ 6.18, 7.68 ];
+export const toCadastre = ( [ X, Y ] ) => [ X + OSM_OFFSET[ 0 ], Y + OSM_OFFSET[ 1 ] ];

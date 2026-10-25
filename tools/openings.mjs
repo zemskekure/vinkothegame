@@ -8,7 +8,8 @@
 // depth, h }.
 
 import { readFile } from 'node:fs/promises';
-import { lonLatToSJTSK } from './geo.mjs';
+import { lonLatToSJTSK, toCadastre } from './geo.mjs';
+import { ORIGIN } from './area.mjs';
 
 const RAW = new URL( '../data/raw/', import.meta.url );
 const WALK = new Set( [ 'footway', 'pedestrian', 'path', 'service', 'living_street', 'residential', 'unclassified', 'tertiary', 'secondary', 'cycleway' ] );
@@ -85,7 +86,14 @@ export async function findOpenings( { AREA, buildingAt, buildings = [] } ) {
 		if ( ! arcade && t.tunnel !== 'building_passage' ) continue;
 		if ( [ 'no', 'private' ].includes( t.access ) || [ 'no', 'private' ].includes( t.foot ) ) continue;
 
-		const pts = ( w.nodes || [] ).map( id => nodes.get( id ) ).filter( Boolean ).map( n => project( n.lon, n.lat ) );
+		// On the cadastre, where the house footprints are: projected OSM sits ~10 m off them (tools/geo.mjs), which
+		// laid footways along the streets inside the houses and cut 50–70 m long false passages through them (DRN,
+		// Na Perštýně, Národní).
+		// The theatre and riverfront end of Národní (west of x −240, south of z 290 in the scene frame) is being
+		// reworked separately and keeps the uncorrected positions until that work is merged.
+		const raw = ( w.nodes || [] ).map( id => nodes.get( id ) ).filter( Boolean ).map( n => project( n.lon, n.lat ) );
+		const theatreEnd = raw.some( ( [ X, Y ] ) => X - ORIGIN.x < - 240 && - ( Y - ORIGIN.y ) > 290 );
+		const pts = theatreEnd ? raw : raw.map( toCadastre );
 		const width = Number( t.width ) || WIDTH[ t.highway ] || 6;
 
 		for ( let i = 0; i + 1 < pts.length; i ++ ) {
@@ -185,6 +193,26 @@ export async function findOpenings( { AREA, buildingAt, buildings = [] } ) {
 	// One arcade per straight stretch of front: join a way's pieces along the same line, at one depth.
 	const merged = [];
 	for ( const o of openings ) {
+
+		// A passage mapped as a slightly bent line (DRN's Pasáž generála Josefa Bílého) gives one stretch per segment,
+		// each carried on to the house fronts: overlapping tunnels with walls and ceilings through each other. One
+		// passage per way and direction.
+		const p = o.kind === 'passage' && merged.find( q => q.kind === 'passage' && q.way === o.way && Math.abs( q.ux * o.ux + q.uy * o.uy ) > 0.97 &&
+			Math.abs( - ( o.X - q.X ) * q.uy + ( o.Y - q.Y ) * q.ux ) < 2.0 );
+		if ( p ) {
+
+			const sg = p.ux * o.ux + p.uy * o.uy > 0 ? 1 : - 1;
+			const along = ( X, Y ) => ( X - p.X ) * p.ux + ( Y - p.Y ) * p.uy;
+			const a = Math.min( - p.len / 2, along( o.X, o.Y ) - o.len / 2 ), b = Math.max( p.len / 2, along( o.X, o.Y ) + o.len / 2 );
+			p.X += p.ux * ( a + b ) / 2;
+			p.Y += p.uy * ( a + b ) / 2;
+			p.ux = ( p.ux + o.ux * sg ) / 2; p.uy = ( p.uy + o.uy * sg ) / 2;
+			const l = Math.hypot( p.ux, p.uy );
+			p.ux /= l; p.uy /= l;
+			p.len = + ( b - a ).toFixed( 2 );
+			continue;
+
+		}
 
 		const m = o.kind === 'arcade' && merged.find( q => q.kind === 'arcade' && q.way === o.way && q.ux * o.ux + q.uy * o.uy > 0.995 &&
 			Math.abs( - ( o.X - q.X ) * q.uy + ( o.Y - q.Y ) * q.ux ) < 1.0 &&

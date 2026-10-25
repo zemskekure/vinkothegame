@@ -66,7 +66,12 @@ export function createFacadeMaterial( cutouts = [], groundTex = null ) {
 	const ornate = step( abs( rusticKind.sub( 2 ) ), 0.5 );
 	const clad = step( abs( rusticKind.sub( 3 ) ), 0.5 );
 	const rubble = step( abs( rusticKind.sub( 4 ) ), 0.5 );
-	const graffiti = house.w;
+	// Graffiti in the low bit; above it where OSM has the front's entrance (tools/build-scene.mjs): 2 × ( u in
+	// quarter metres + 1 ), 0 = none.
+	const houseW = floor( house.w.add( 0.5 ) );
+	const graffiti = mod( houseW, 2 );
+	const entranceU = floor( houseW.div( 2 ) ).sub( 1 ).mul( 0.25 );
+	const hasEntrance = step( 0, entranceU );
 	const sTheatre = step( abs( style.sub( 1 ) ), 0.5 );
 	const sMaj = step( abs( style.sub( 2 ) ), 0.5 );
 	// 7: a gothic church in its own (described) colour, e.g. the rubble stone of sv. Martin ve zdi.
@@ -173,7 +178,8 @@ export function createFacadeMaterial( cutouts = [], groundTex = null ) {
 
 	// Ground floor of street fronts: shops in most houses, one door bay per wall.
 	const hasShops = mix( step( 0.3, fract( seed.mul( 7.7 ) ) ), step( 0.5, realShop ), step( - 0.5, realShop ) ).mul( isStreet );
-	const doorBay = min( floor( fract( seed.mul( 3.3 ) ).mul( bays ) ), bays.sub( 1 ) );
+	// The door bay: the one with the mapped entrance in it, else one picked by the seed.
+	const doorBay = mix( min( floor( fract( seed.mul( 3.3 ) ).mul( bays ) ), bays.sub( 1 ) ), clamp( floor( entranceU.sub( pier ).div( bayW ) ), 0, bays.sub( 1 ) ), hasEntrance );
 	const door = ground.mul( isStreet ).mul( step( abs( bayIdx.sub( doorBay ) ), 0.5 ) ).mul( float( 1 ).sub( solid ) ).mul( float( 1 ).sub( isBlank ) ).mul( float( 1 ).sub( gfOn ) );
 	const shop = ground.mul( hasShops ).mul( float( 1 ).sub( door ) ).mul( float( 1 ).sub( solid ) ).mul( float( 1 ).sub( gfOn ) );
 
@@ -346,6 +352,10 @@ export function createFacadeMaterial( cutouts = [], groundTex = null ) {
 	const doorPanels = max( gridLine( doorUV.x, 0.5, 0.025 ), gridLine( doorUV.y, 0.27, 0.02 ) );
 	const planks = gridLine( doorUV.x, 0.125, 0.012 ).add( gridLine( doorUV.x, 0.5, 0.02 ) ).min( 1 );
 	const doorColor = mix( mix( doorPaint.mul( float( 1 ).sub( doorPanels.mul( 0.45 ) ) ), color( 0x4a2f1d ).mul( float( 1 ).sub( planks.mul( 0.4 ) ) ), isGate ), glass, fanlight );
+	// A shop's door is glazed: a dark metal frame round a pane split by a centre bar, a glimpse of the shop inside.
+	const doorPane = filteredPulse( doorUV.x, 0.1, 0.9, fwidth( doorUV.x ) ).mul( filteredPulse( doorUV.y, 0.05, 0.86, fwidth( doorUV.y ) ) ).mul( float( 1 ).sub( lineAA( doorUV.x.sub( 0.5 ), 0.025 ) ) );
+	const doorGlass = mix( mix( color( 0x1c1a18 ), color( 0x6e5e46 ), smoothstep( 0.0, 0.8, doorUV.y ).mul( 0.4 ) ), sceneUniforms.skyHorizon, fresnel.mul( 0.55 ).add( 0.1 ) );
+	const shopDoorColor = mix( color( 0x2b2d2f ), doorGlass, doorPane );
 
 	// Máj glazing: dark glass, lit shop interiors along the street, the band's yellow frames.
 	const majPane = hash2D( vec2( floor( u.sub( 1.5 ).div( 3 ) ), floor( h.sub( 5.2 ).div( 2.85 ) ).add( seed ) ) ); // one value per framed pane
@@ -396,7 +406,7 @@ export function createFacadeMaterial( cutouts = [], groundTex = null ) {
 		.mul( grilles ).mul( ground ).mul( openingAll );
 	col = mix( col, glass, openingAll.mul( float( 1 ).sub( frame ) ) );
 	col = mix( col, trim, doorFrame );
-	col = mix( col, doorColor, doorWay );
+	col = mix( col, mix( doorColor, shopDoorColor, hasShops.mul( float( 1 ).sub( isGate ) ) ), doorWay );
 	col = mix( col, color( 0x1f1f1d ), bars );
 
 	// Described ground floor: plaster surround, the recess of a blind arch, glass, door leaves, garage doors, frames.

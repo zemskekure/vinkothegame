@@ -18,7 +18,7 @@ import { ShapeUtils, Vector2, Color, SRGBColorSpace } from 'three';
 import { AREA, ORIGIN } from './area.mjs';
 import { loadStreets, buildPavementMesh, collectFurniture } from './streets.mjs';
 import { collectPlaces } from './places.mjs';
-import { lonLatToSJTSK } from './geo.mjs';
+import { lonLatToSJTSK, toCadastre } from './geo.mjs';
 import { findOpenings, openingBox, clipToBox } from './openings.mjs';
 import { buildQuay } from './quay.mjs';
 import { buildTerraces } from './terraces.mjs';
@@ -403,9 +403,97 @@ const groundFloors = [], groundFloorRow = new Map();
 // loop); depth is how far an arcade's back wall, with the shops along it, stands behind the front (0: a passage).
 const frontCuts = new Map();
 
+// Doors where OpenStreetMap has an entrance (entrance=yes/main/…, 170-odd in the area), moved onto the cadastre
+// (tools/geo.mjs). Each street front gets a door at every entrance on it: in a described ground floor the door
+// is let into the opening there or set between the openings; a front left to the shader gets its door bay there.
+const ENTRANCES = await ( async () => {
+
+	const project = await lonLatToSJTSK();
+	const osm = JSON.parse( await readFile( new URL( 'osm.json', RAW ) ) );
+	return osm.filter( e => e.type === 'node' && e.tags?.entrance && ! [ 'no', 'emergency', 'exit', 'garage' ].includes( e.tags.entrance ) )
+		.map( e => toCadastre( project( e.lon, e.lat ) ) );
+
+} )();
+
+// Entrances on the footprint edge E0 → E1: distances along it (m), for those within 1.6 m of the edge line.
+function entrancesOn( E0, E1 ) {
+
+	const len = Math.hypot( E1[ 0 ] - E0[ 0 ], E1[ 1 ] - E0[ 1 ] ), ux = ( E1[ 0 ] - E0[ 0 ] ) / len, uy = ( E1[ 1 ] - E0[ 1 ] ) / len;
+	const out = [];
+	for ( const [ X, Y ] of ENTRANCES ) {
+
+		const s = ( X - E0[ 0 ] ) * ux + ( Y - E0[ 1 ] ) * uy, d = Math.abs( - ( X - E0[ 0 ] ) * uy + ( Y - E0[ 1 ] ) * ux );
+		if ( d < 1.6 && s > 0.7 && s < len - 0.7 ) out.push( s );
+
+	}
+
+	return out.sort( ( a, b ) => a - b );
+
+}
+
+// A described front's row of openings with a door at each entrance (u: m from the left as seen from the street).
+// An entrance in a shop window gets the glazed double door in it; in a window, the window becomes a door; between
+// openings a door is set into the wall (glazed on a front of shops), the openings either side kept clear of it.
+// A front of shops with no door at all gets the glazed door in its middle shop window.
+function withEntrances( row, us, len ) {
+
+	const shops = row.some( o => o[ 2 ] === GF_KIND.shop );
+	for ( const u of us ) {
+
+		const hit = row.find( o => u >= o[ 0 ] - 0.2 && u <= o[ 1 ] + 0.2 );
+		if ( hit ) {
+
+			if ( hit[ 2 ] === GF_KIND.shop ) hit[ 4 ] |= 8;
+			else if ( hit[ 2 ] === GF_KIND.window ) {
+
+				hit[ 2 ] = GF_KIND.door;
+				hit[ 4 ] |= 4;
+
+			}
+
+			continue;
+
+		}
+
+		const d0 = Math.max( 0.3, u - 0.65 ), d1 = Math.min( len - 0.3, u + 0.65 );
+		for ( let k = row.length - 1; k >= 0; k -- ) {
+
+			const o = row[ k ];
+			if ( o[ 1 ] <= d0 - 0.3 || o[ 0 ] >= d1 + 0.3 ) continue;
+			if ( o[ 0 ] < d0 ) o[ 1 ] = + ( d0 - 0.3 ).toFixed( 2 );
+			else o[ 0 ] = + ( d1 + 0.3 ).toFixed( 2 );
+			if ( o[ 1 ] - o[ 0 ] < 0.6 ) row.splice( k, 1 );
+
+		}
+
+		row.push( [ + d0.toFixed( 2 ), + d1.toFixed( 2 ), GF_KIND.door, shops ? GF_FRAME.dark : GF_FRAME.wood, shops ? 4 : 0 ] );
+
+	}
+
+	if ( shops && ! row.some( o => o[ 2 ] === GF_KIND.door || o[ 2 ] === GF_KIND.gate || ( o[ 4 ] & 8 ) ) ) {
+
+		const list = row.filter( o => o[ 2 ] === GF_KIND.shop );
+		list.sort( ( a, b ) => Math.abs( ( a[ 0 ] + a[ 1 ] ) / 2 - len / 2 ) - Math.abs( ( b[ 0 ] + b[ 1 ] ) / 2 - len / 2 ) );
+		list[ 0 ][ 4 ] |= 8;
+
+	}
+
+	return row.sort( ( a, b ) => a[ 0 ] - b[ 0 ] );
+
+}
+
 function layoutGroundFloor( items, len ) {
 
 	const list = items.map( it => typeof it === 'string' ? { kind: it } : it ).filter( it => GF_KIND[ it.kind ] );
+	const flagsOf = it => ( it.arch ? 1 : 0 ) | ( it.bars ? 2 : 0 ) | ( it.glazed ? 4 : 0 ) | ( it.door ? 8 : 0 );
+	// Openings measured off a photo carry their own place on the front: `at: [ u0, u1 ]` m from the left end as seen
+	// from the street; such a front is laid out exactly as given.
+	if ( list.length && list.every( it => Array.isArray( it.at ) ) ) {
+
+		return list.filter( it => it.kind !== 'blank' && it.at[ 0 ] < len ).map( it => [ + it.at[ 0 ].toFixed( 2 ), + Math.min( len - 0.2, it.at[ 1 ] ).toFixed( 2 ), GF_KIND[ it.kind ], GF_FRAME[ it.frame || GF_DEFAULT_FRAME[ it.kind ] ] ?? 0, flagsOf( it ) ] );
+
+	}
+
 	const widths = list.map( it => GF_WIDTH[ it.kind ][ { narrow: 0, wide: 2 }[ it.size ] ?? 1 ] );
 	const sum = widths.reduce( ( a, w ) => a + w, 0 );
 	let pier = ( len - sum ) / ( list.length + 1 ), scale = 1;
@@ -421,8 +509,7 @@ function layoutGroundFloor( items, len ) {
 	list.forEach( ( it, i ) => {
 
 		const w = widths[ i ] * scale;
-		const flags = ( it.arch ? 1 : 0 ) | ( it.bars ? 2 : 0 ) | ( it.glazed ? 4 : 0 ) | ( it.door ? 8 : 0 );
-		if ( it.kind !== 'blank' ) row.push( [ + u.toFixed( 2 ), + ( u + w ).toFixed( 2 ), GF_KIND[ it.kind ], GF_FRAME[ it.frame || GF_DEFAULT_FRAME[ it.kind ] ] ?? 0, flags ] );
+		if ( it.kind !== 'blank' ) row.push( [ + u.toFixed( 2 ), + ( u + w ).toFixed( 2 ), GF_KIND[ it.kind ], GF_FRAME[ it.frame || GF_DEFAULT_FRAME[ it.kind ] ] ?? 0, flagsOf( it ) ] );
 		u += w + pier;
 
 	} );
@@ -859,6 +946,8 @@ for ( const o of openings ) {
 
 	const s = landmarkAt( o.X, o.Y )?.style;
 	if ( s === STYLE.glassBlock || s === STYLE.curtain || s === STYLE.bronze || s === STYLE.maj ) o.modern = true;
+	// DRN's passage from Národní to its courtyard: about 5 m wide under a flat ceiling (Street View 2025-09).
+	if ( s === STYLE.curtain && o.kind === 'passage' ) o.drn = true;
 
 }
 
@@ -872,7 +961,7 @@ for ( const o of openings ) {
 	const len = Math.hypot( bx - ax, by - ay ), ux = ( bx - ax ) / len, uy = ( by - ay ) / len;
 	const [ nx, ny ] = uy > 0 ? [ uy, - ux ] : [ - uy, ux ]; // out to Národní (north, +Y)
 	openings.push( { kind: 'arcade', undercroft: true, modern: true, X: ( ax + bx ) / 2, Y: ( ay + by ) / 2, ux, uy, nx: ny > 0 ? nx : - nx, ny: Math.abs( ny ), len: + len.toFixed( 2 ), depth: 7, h: 4.6 } );
-	for ( const o of openings ) if ( o.modern && o.kind === 'passage' ) Object.assign( o, { w: 7, h: 4.6 } );
+	for ( const o of openings ) if ( o.modern && o.kind === 'passage' ) Object.assign( o, { w: o.drn ? 5 : 7, h: 4.6 } );
 	openingBoxes.length = 0;
 	openingBoxes.push( ...openings.map( o => ( { o, box: openingBox( o, 0.05, 0.4 ) } ) ) );
 
@@ -1158,6 +1247,14 @@ for ( const b of buildings ) {
 			let kind = WALL_KIND.rear;
 			if ( other >= 0 && other !== b.id ) kind = WALL_KIND.party;
 			else if ( streetDistance( mx + nx * 3, my + ny * 3 ) < 9 ) kind = WALL_KIND.street;
+			// A front with a described ground floor is a street front, whole: the street centrelines (OSM) run ~10 m
+			// off the houses (tools/geo.mjs), which made the west half of Kaňkův palác on Národní a plain rear wall.
+			else if ( ringIndex === 0 && Array.isArray( house?.edges?.[ a.edge ]?.ground ) ) kind = WALL_KIND.street;
+			// On a street as wide as Národní (25 m between the fronts) a point 3 m out is still more than 9 m from the
+			// centreline: open ground for 8 m out with the centreline near its end is a street front too (Café Louvre's
+			// front was a rear wall, windows only). The theatre end of Národní is left as it was (worked on separately).
+			else if ( ringIndex === 0 && ! ( mx - ORIGIN.x < - 240 && ORIGIN.y - my > 290 ) && streetDistance( mx + nx * 8, my + ny * 8 ) < 9 &&
+				[ 1, 2, 3, 4, 5, 6, 7, 8 ].every( d => buildingAt( mx + nx * d, my + ny * d ) < 0 ) ) kind = WALL_KIND.street;
 
 			// Statues standing on the attic balustrade, about every 7 m along the street fronts.
 			if ( landmark?.statues && kind === WALL_KIND.street && ringIndex === 0 && Math.floor( a.along / 7 ) !== Math.floor( ( a.along + len ) / 7 ) ) {
@@ -1189,6 +1286,10 @@ for ( const b of buildings ) {
 			const houseGround = GROUND[ house?.ground ] ?? 0;
 			// Window bars in the low bit; above it the row of this front's described ground floor (0 = none).
 			let grilles = house?.grilles ? 1 : 0;
+			// Entrances on this front, as u (see withEntrances); on a front left to the shader the first one is
+			// its door bay, packed with the graffiti flag: graffiti + 2 × ( u in quarter metres + 1 ).
+			const ring0 = rings[ ringIndex ], E0 = ring0[ a.edge ], E1 = ring0[ ( a.edge + 1 ) % ring0.length ];
+			const entranceUs = ringIndex === 0 && kind === WALL_KIND.street ? entrancesOn( E0, E1 ).map( s => readsAtoC ? s : a.edgeLen - s ).sort( ( p, q ) => p - q ) : [];
 			const gfItems = ringIndex === 0 && kind === WALL_KIND.street ? house?.edges?.[ a.edge ]?.ground : null;
 			if ( Array.isArray( gfItems ) ) {
 
@@ -1196,7 +1297,7 @@ for ( const b of buildings ) {
 				if ( ! groundFloorRow.has( key ) ) {
 
 					groundFloorRow.set( key, groundFloors.length );
-					groundFloors.push( layoutGroundFloor( gfItems, a.edgeLen ) );
+					groundFloors.push( withEntrances( layoutGroundFloor( gfItems, a.edgeLen ), entranceUs, a.edgeLen ) );
 
 				}
 
@@ -1205,7 +1306,7 @@ for ( const b of buildings ) {
 			}
 
 			const rusticName = look?.rustic ?? house?.rustic;
-			const rustic = rusticName ? RUSTIC[ rusticName ] : - 1, graffiti = house?.graffiti ? 1 : 0;
+			const rustic = rusticName ? RUSTIC[ rusticName ] : - 1, graffiti = ( house?.graffiti ? 1 : 0 ) + ( entranceUs.length ? 2 * ( Math.round( entranceUs[ 0 ] / 0.25 ) + 1 ) : 0 );
 			const bay = wallParams?.bay || 0, win = wallParams?.window || 0;
 			let shop = ringIndex === 0 && shopEdges.has( `${b.code}_${a.edge}` ) ? 1 : wallParams ? ( wallParams.shop ? 1 : 0 ) : - 1;
 			if ( house?.ground ) shop = house.ground === 'restaurant' || house.ground === 'shops' ? 1 : 0;
@@ -1287,7 +1388,7 @@ for ( const b of buildings ) {
 
 			const other = buildingAt( mx + nx * 0.75, my + ny * 0.75 );
 			if ( other >= 0 && other !== b.id ) continue;
-			if ( streetDistance( mx + nx * 3, my + ny * 3 ) >= 9 ) continue;
+			if ( streetDistance( mx + nx * 3, my + ny * 3 ) >= 9 && ! Array.isArray( house?.edges?.[ i ]?.ground ) && ! ( ! ( mx - ORIGIN.x < - 240 && ORIGIN.y - my > 290 ) && streetDistance( mx + nx * 8, my + ny * 8 ) < 9 && [ 1, 2, 3, 4, 5, 6, 7, 8 ].every( d => buildingAt( mx + nx * d, my + ny * d ) < 0 ) ) ) continue;
 			streetFacades.push( { code: b.code, edge: i, a: [ ax, ay ], b: [ bx, by ], n: [ nx, ny ], ground, eave: eaveY, floors } );
 
 			// Decorations this facade has in its house description.
