@@ -154,9 +154,11 @@ export function createGroundMaterial( surfaceTex, surface2Tex, bounds, detailTex
 	const slab = mix( color( 0x9d968b ), color( 0xb2ab9e ), hash2D( vec2( floor( slabCol ), floor( slabRow ) ).add( 3.3 ) ) );
 	const paving = mix( slab.mul( 0.92 ), slab.mul( float( 1 ).sub( max( gridLine( slabCol, 1, 0.012 ), gridLine( slabRow, 1, 0.02 ) ).mul( 0.4 ) ) ), slabFade );
 
-	// Asphalt with tram rails (standard gauge: rails 0.72 m either side of the track centreline).
+	// Asphalt with tram rails. The tram lines (ZABAGED) are the centre lines of double tracks, and every line here is
+	// double (trams both ways, Street View): two tracks 1.5 m either side of the line, standard gauge, so rails at
+	// 1.5 ∓ 0.72 m from it (the trams run on the same tracks, tools/places.mjs).
 	const asphaltCol = mix( color( 0x3d3e40 ), color( 0x4c4c4c ), noise2D( vec2( wx, wz ).mul( 2.5 ) ) ).mul( mix( float( 0.9 ), float( 1.05 ), noise2D( vec2( wx, wz ).mul( 0.2 ) ) ) );
-	const rail = lineAA( abs( tramDist.sub( 0.72 ) ), 0.035 );
+	const rail = max( lineAA( abs( tramDist.sub( 0.78 ) ), 0.035 ), lineAA( abs( tramDist.sub( 2.22 ) ), 0.035 ) );
 	const railCol = color( 0x9c9a96 );
 
 	const grass = mix( color( 0x4f6b2f ), color( 0x6a8338 ), noise2D( vec2( wx, wz ).mul( 0.6 ) ) ).mul( mix( float( 0.85 ), float( 1.1 ), noise2D( vec2( wx, wz ).mul( 7 ) ) ) );
