@@ -145,7 +145,7 @@ export function startHolub( { scene, camera, dom, roofGeo, bounds, groundHeight,
 	const pos = new THREE.Vector3( start[ 0 ], 0, start[ 1 ] );
 	pos.y = surfaceAt( pos.x, pos.z );
 	const vel = new THREE.Vector3();
-	let turnRate = 0, lookedAt = 0, mode = 'walk', heading = start[ 2 ], yaw = start[ 2 ] + Math.PI, pitch = 0.3, dist = 0.95, idle = 0;
+	let airspeed = 6, airPitch = 0, turnRate = 0, lookedAt = 0, mode = 'walk', heading = start[ 2 ], yaw = start[ 2 ] + Math.PI, pitch = 0.3, dist = 0.95, idle = 0;
 	let peck = 0, pecking = 0, poop = 0, poopCooldown = 0, bank = 0, lastYaw = yaw;
 	const keys = new Set();
 	const score = { food: 0, drops: 0, hits: 0 };
@@ -156,7 +156,7 @@ export function startHolub( { scene, camera, dom, roofGeo, bounds, groundHeight,
 
 	// --- HUD
 	const hud = document.getElementById( 'hud' );
-	hud.innerHTML = `<h1>Letím jak holub</h1><p id="help">Klikni do obrazu · myš kamera · WASD chůze, v letu A/D zatáčení, W rychleji, S pomaleji · mezerník vzlétnout a mávat · C dolů / sednout · E zobnout · Q bobek · Shift rychleji</p><p id="score"></p>`;
+	hud.innerHTML = `<h1>Letím jak holub</h1><p id="help">Klikni do obrazu · myš kamera · WASD chůze · v letu A/D zatáčení, W mávat a zrychlit, S brzdit, C střemhlav · mezerník vzlétnout a mávat · C dolů / sednout · E zobnout · Q bobek · Shift rychleji</p><p id="score"></p>`;
 	const scoreEl = document.getElementById( 'score' );
 	const toast = document.createElement( 'div' );
 	Object.assign( toast.style, { position: 'fixed', left: '50%', top: '18%', transform: 'translateX(-50%)', font: '700 26px/1 system-ui, sans-serif', color: '#fff3d6', textShadow: '0 2px 0 #3b2412, 0 0 12px #000', opacity: 0, transition: 'opacity .3s', pointerEvents: 'none' } );
@@ -462,6 +462,9 @@ export function startHolub( { scene, camera, dom, roofGeo, bounds, groundHeight,
 
 				mode = 'fly';
 				vel.copy( fwd ).multiplyScalar( 2.5 ).setY( 3.2 );
+				airspeed = 5;
+				airPitch = 0.35;
+				heading = Math.atan2( fwd.x, fwd.z );
 				say( 'Frrr!' );
 				emit( 'takeoff' );
 
@@ -507,17 +510,22 @@ export function startHolub( { scene, camera, dom, roofGeo, bounds, groundHeight,
 
 		} else {
 
-			// Flight, steered by the keys alone (the mouse only moves the camera round the bird): A/D turn the bird, W
-			// flies faster, S slower, Space flaps upwards, C comes down; without wingbeats, a slow sinking glide.
-			const flapping = keys.has( 'Space' ) || iz > 0;
-			turnRate += ( - ix * 1.9 - turnRate ) * Math.min( 1, 6 * dt );
+			// Flight, arcade style: the bird keeps its own heading, pitch and airspeed, and every input eases in and
+			// out (no snapping). A/D bank and turn, W flaps for speed (Shift: harder), S brakes, Space climbs with
+			// wingbeats, C dives. Diving trades height for speed and climbing speed for height, as in a glide; slow
+			// and not flapping, the bird sinks. The mouse only swings the camera round, which drifts back behind.
+			const damp = ( a, b, k ) => a + ( b - a ) * ( 1 - Math.exp( - k * dt ) );
+			const climb = ( keys.has( 'Space' ) ? 1 : 0 ) - ( keys.has( 'KeyC' ) ? 1 : 0 );
+			const flapping = climb > 0 || iz > 0;
+			turnRate = damp( turnRate, - ix * ( 1.6 - Math.min( 0.6, airspeed / 40 ) ), 4 );
 			heading += turnRate * dt;
-			const target = iz > 0 ? ( fast ? 19 : 11 ) : ( iz < 0 ? 2 : 6 );
-			want.set( Math.sin( heading ) * target, iz <= 0 ? - 1.3 : 0, Math.cos( heading ) * target );
-			vel.lerp( want, Math.min( 1, 1.8 * dt ) );
-			if ( keys.has( 'Space' ) ) vel.y += 11 * dt;
-			if ( keys.has( 'KeyC' ) ) vel.y -= 10 * dt;
-			vel.y = THREE.MathUtils.clamp( vel.y, - 9, 6 );
+			airPitch = damp( airPitch, climb > 0 ? 0.42 : climb < 0 ? - 0.65 : - 0.1, 3 );
+			const cruise = iz > 0 ? ( fast ? 20 : 13 ) : iz < 0 ? 3.5 : 8;
+			airspeed = damp( airspeed, cruise, iz < 0 ? 2 : 0.9 ) - Math.sin( airPitch ) * 7 * dt;
+			airspeed = THREE.MathUtils.clamp( airspeed, 2.5, 26 );
+			const cp = Math.cos( airPitch );
+			want.set( Math.sin( heading ) * cp * airspeed, Math.sin( airPitch ) * airspeed - ( flapping ? 0 : Math.max( 0, 6 - airspeed ) * 0.35 ), Math.cos( heading ) * cp * airspeed );
+			vel.lerp( want, 1 - Math.exp( - 6 * dt ) );
 			mode = flapping ? 'fly' : 'glide';
 
 			const nx = pos.x + vel.x * dt, nz = pos.z + vel.z * dt;
@@ -533,7 +541,7 @@ export function startHolub( { scene, camera, dom, roofGeo, bounds, groundHeight,
 
 				ny = floor;
 				if ( overWater( pos.x, pos.z ) ) vel.y = Math.max( vel.y, 1.5 );
-				else if ( vel.y <= 0.5 && ! keys.has( 'Space' ) ) {
+				else if ( vel.y <= 0.5 && ! keys.has( 'Space' ) && airspeed < 9 ) {
 
 					mode = 'walk';
 					vel.set( 0, 0, 0 );
@@ -544,12 +552,13 @@ export function startHolub( { scene, camera, dom, roofGeo, bounds, groundHeight,
 			}
 
 			pos.y = ny;
-			bank += ( THREE.MathUtils.clamp( turnRate * 0.35, - 0.8, 0.8 ) - bank ) * Math.min( 1, 5 * dt );
+			bank += ( THREE.MathUtils.clamp( turnRate * 0.45, - 0.9, 0.9 ) - bank ) * ( 1 - Math.exp( - 5 * dt ) );
 			// The camera swings back behind the bird when the mouse has been still for a moment.
 			if ( performance.now() - lookedAt > 1200 ) {
 
 				const d = THREE.MathUtils.euclideanModulo( heading + Math.PI - yaw + Math.PI, Math.PI * 2 ) - Math.PI;
-				yaw += d * Math.min( 1, 2.2 * dt );
+				yaw += d * ( 1 - Math.exp( - 1.8 * dt ) );
+				pitch += ( 0.25 - airPitch * 0.4 - pitch ) * ( 1 - Math.exp( - 1.2 * dt ) );
 
 			}
 			speed = vel.length();
@@ -627,7 +636,14 @@ export function startHolub( { scene, camera, dom, roofGeo, bounds, groundHeight,
 
 		camPos.copy( camTarget ).addScaledVector( look, - k );
 		camPos.y = Math.max( camPos.y, ( overWater( camPos.x, camPos.z ) ? waterLevel : surfaceAt( camPos.x, camPos.z ) ) + 0.12 );
-		camera.position.lerp( camPos, Math.min( 1, ( flying ? 6 : 10 ) * dt ) );
+		camera.position.lerp( camPos, 1 - Math.exp( - ( flying ? 5 : 10 ) * dt ) );
+		const fov = 62 + ( flying ? Math.min( 14, airspeed * 0.6 ) : 0 );
+		if ( Math.abs( camera.fov - fov ) > 0.05 ) {
+
+			camera.fov += ( fov - camera.fov ) * ( 1 - Math.exp( - 3 * dt ) );
+			camera.updateProjectionMatrix();
+
+		}
 		camera.lookAt( camTarget );
 		void t;
 

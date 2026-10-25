@@ -443,29 +443,47 @@ function mergeBody( gltf, spec ) {
 		for ( let i = 0; i < count; i += 3 ) {
 
 			const t = [ 0, 1, 2 ].map( k => vo + ( g.index ? g.index.getX( i + k ) : i + k ) );
+			if ( BLOCK_HEADS && t.every( k => dominant[ k ] ) ) continue;
 			index.push( ...t );
 
 		}
 
 	}
 
-	// The modelled head keeps its shape; the photo face is stretched over its front, PS1 style: projected straight on
-	// from the front (+z in the body's rest pose), ear to ear and chin to hairline; the rest of the head is hair.
+	// The head: a coarse faceted gem (6 sides, 4 rings) a size too big, PS1 style, with the photo face stretched
+	// straight on over its front half and hair on the rest; carried by the head bone.
 	const headUV = [];
 	if ( BLOCK_HEADS && headBone >= 0 ) {
 
+		const inv = skeleton.boneInverses[ headBone ].clone().multiply( Winv ), toBody = inv.clone().invert();
 		const box = new THREE.Box3();
-		for ( let i = 0; i < dominant.length; i ++ ) if ( dominant[ i ] ) box.expandByPoint( v.fromArray( position, i * 3 ) );
-		const chin = box.min.y, hairline = box.min.y + ( box.max.y - box.min.y ) * 0.8;
-		const x0 = box.min.x + ( box.max.x - box.min.x ) * 0.06, x1 = box.max.x - ( box.max.x - box.min.x ) * 0.06;
-		for ( let i = 0; i < dominant.length; i ++ ) {
+		for ( let i = 0; i < dominant.length; i ++ ) if ( dominant[ i ] ) box.expandByPoint( v.fromArray( position, i * 3 ).applyMatrix4( inv ) );
+		const size = box.getSize( new THREE.Vector3() ), mid = box.getCenter( new THREE.Vector3() );
+		const gem = new THREE.SphereGeometry( 0.5, 6, 4 ).toNonIndexed();
+		const g = gem.attributes.position, P = new THREE.Vector3(), out = [];
+		for ( let k = 0; k < g.count; k ++ ) out.push( P.set( g.getX( k ) * size.x * 1.15, g.getY( k ) * size.y * 1.1, g.getZ( k ) * size.z * 1.15 ).add( mid ).applyMatrix4( toBody ).clone() );
+		const bb = new THREE.Box3().setFromPoints( out ), vo = position.length / 3;
+		const A = new THREE.Vector3(), B = new THREE.Vector3(), N = new THREE.Vector3();
+		for ( let k = 0; k < out.length; k += 3 ) {
 
-			if ( ! dominant[ i ] ) continue;
-			const x = position[ i * 3 ], y = position[ i * 3 + 1 ], nz = normal[ i * 3 + 2 ];
-			const face = nz > 0.2 && y <= hairline;
-			slot[ i ] = face ? SLOT.face : SLOT.hair;
-			color[ i * 3 ] = color[ i * 3 + 1 ] = color[ i * 3 + 2 ] = 1;
-			headUV.push( i, Math.min( 1, Math.max( 0, ( x - x0 ) / ( x1 - x0 ) ) ), Math.min( 1, Math.max( 0, ( hairline - y ) / ( hairline - chin ) ) ) );
+			N.crossVectors( A.subVectors( out[ k + 1 ], out[ k ] ), B.subVectors( out[ k + 2 ], out[ k ] ) ).normalize();
+			if ( N.dot( P.subVectors( out[ k ], bb.getCenter( new THREE.Vector3() ) ) ) < 0 ) N.negate();
+			const face = N.z > 0.15;
+			for ( let m = 0; m < 3; m ++ ) {
+
+				const q = out[ k + m ];
+				position.push( q.x, q.y, q.z );
+				normal.push( N.x, N.y, N.z );
+				slot.push( face ? SLOT.face : SLOT.hair );
+				color.push( 1, 1, 1 );
+				skinIndex.push( headBone, 0, 0, 0 );
+				skinWeight.push( 1, 0, 0, 0 );
+				headUV.push( vo + k + m, ( q.x - bb.min.x ) / ( bb.max.x - bb.min.x ), ( bb.max.y - q.y ) / ( bb.max.y - bb.min.y ) );
+
+			}
+
+			const flip = N.dot( P.crossVectors( A.subVectors( out[ k + 1 ], out[ k ] ), B.subVectors( out[ k + 2 ], out[ k ] ) ) ) < 0;
+			index.push( vo + k, vo + k + ( flip ? 2 : 1 ), vo + k + ( flip ? 1 : 2 ) );
 
 		}
 

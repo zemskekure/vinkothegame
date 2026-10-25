@@ -3,10 +3,10 @@
 // dither the consoles used to hide the banding, and every texture sampled without smoothing.
 
 import * as THREE from 'three/webgpu';
-import { pass, screenUV, screenSize, vec2, vec3, vec4, floor, fract, float, Fn, uniform } from 'three/tsl';
+import { pass, screenUV, screenSize, vec2, vec3, vec4, floor, fract, float, Fn, uniform, time, dot, sin, mix } from 'three/tsl';
 
-const LINES = 240;
-const LEVELS = 31;
+const LINES = 220;
+const LEVELS = 20;
 
 // Ordered dither threshold 0…1 for a pixel (a 4 × 4 Bayer matrix from two 2 × 2 ones).
 const bayer2 = a => fract( floor( a.x ).div( 2 ).add( floor( a.y ).mul( floor( a.y ) ).mul( 0.75 ) ) );
@@ -24,8 +24,14 @@ export function ps1Look( { renderer, scene, camera } ) {
 		const grid = vec2( lines.mul( screenSize.x.div( screenSize.y ) ).floor(), lines );
 		const cell = floor( screenUV.mul( grid ) );
 		const c = colour.sample( cell.add( 0.5 ).div( grid ) ).rgb;
+		// A hard, contrasty grade (crushed shadows, punchy colour) like a cheap 90s render.
+		const l = dot( c, vec3( 0.299, 0.587, 0.114 ) );
+		const graded = mix( vec3( l ), c, 1.08 ).sub( 0.5 ).mul( 1.1 ).add( 0.5 );
+		// Coarse film grain over the picture, new every frame (from the full-resolution pixel, not the low grid).
+		const px = floor( screenUV.mul( screenSize ) );
+		const grain = fract( sin( dot( px.add( floor( time.mul( 24 ) ).mul( 17.3 ) ), vec2( 12.9898, 78.233 ) ) ).mul( 43758.5453 ) ).sub( 0.5 ).mul( 0.16 );
 		const d = bayer4( cell ).sub( 0.5 ).div( LEVELS );
-		const q = floor( c.add( d ).mul( LEVELS ).add( 0.5 ) ).div( LEVELS );
+		const q = floor( graded.add( d ).add( grain ).mul( LEVELS ).add( 0.5 ) ).div( LEVELS );
 		return vec4( q.clamp( vec3( 0 ), vec3( 1 ) ), float( 1 ) );
 
 	} )();
