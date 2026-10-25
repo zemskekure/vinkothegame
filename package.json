@@ -5,9 +5,10 @@
   "scripts": {
     "data": "NODE_USE_ENV_PROXY=1 node tools/fetch-data.mjs && node tools/build-scene.mjs",
     "build-scene": "node tools/build-scene.mjs",
-    "dev": "vite",
-    "build": "vite build",
-    "square": "node tools/square.mjs"
+    "dev": "node tools/render-fronts.mjs && vite",
+    "build": "node tools/render-fronts.mjs && vite build",
+    "square": "node tools/square.mjs",
+    "grid": "node app/server.mjs"
   },
   "dependencies": {
     "three": "^0.186.1"

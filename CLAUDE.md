@@ -10,7 +10,7 @@ needs to know. The current task built on top of it, the grid app, is specified i
 ```sh
 npm install
 npm run dev            # http://localhost:5173 ; the built scene is committed in public/data/
-npx vite build && npx vite preview --port 4173   # production build
+npm run build && npx vite preview --port 4173   # production build
 ```
 
 URL parameters (`src/main.js`): `?at=x,z,yaw` start on foot there (scene frame, see below; the camera looks along
@@ -79,7 +79,7 @@ The step-by-step workflow used on Betlémské náměstí, to repeat for every gr
    tower, bandstand) fed by data from `places.mjs`.
 4. Walkability: zones (heights), barriers `[x0, z0, x1, z1, above]`, ceilings; see `places.mjs`.
 
-After any change: `node tools/build-scene.mjs` (only if tools/ or data/ changed), `npx vite build`, then look at
+After any change: `node tools/build-scene.mjs` (only if tools/ or data/ changed), `npm run build`, then look at
 it (screenshots below). Check the console summary lines the build prints.
 
 ## Looking at the result

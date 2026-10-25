@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="cs">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Vínko · mřížka</title>
+	<link rel="stylesheet" href="/ui/style.css">
+</head>
+<body>
+	<header>
+		<h1>Vínko · mřížka</h1>
+		<div class="stats" id="stats"></div>
+		<span class="grow"></span>
+		<button id="stop" class="stop">■ ZASTAVIT VŠE</button>
+		<a href="/game/?holub" target="_blank">hra (holub)</a>
+		<a href="/game/" target="_blank">model pěšky</a>
+		<a href="/nastaveni">nastavení</a>
+	</header>
+	<main class="home">
+		<div>
+			<div class="tabs">
+				<button id="layer-ortho" class="on">Skutečnost</button>
+				<button id="layer-model">Model</button>
+				<span class="muted" id="layer-note"></span>
+			</div>
+			<div class="map" id="map"></div>
+			<div class="legend">
+				<span><i class="dot todo"></i>k udělání</span>
+				<span><i class="dot in_progress"></i>rozpracováno</span>
+				<span><i class="dot described"></i>část domů už popsaná (x/y)</span>
+				<span><i class="dot review"></i>ke kontrole (PR)</span>
+				<span><i class="dot done"></i>hotovo</span>
+				<span><i class="dot failed"></i>selhalo</span>
+				<span><i class="dot needs_fix"></i>k opravě (otevřené chyby)</span>
+			</div>
+		</div>
+		<div>
+			<section class="card">
+				<h2>Živě <small id="live-head"></small></h2>
+				<div class="live-money" id="live-money"></div>
+				<pre class="console" id="console"></pre>
+			</section>
+			<section class="card" id="control"></section>
+			<section class="card">
+				<h2>Spotřeba</h2>
+				<div id="usage"></div>
+			</section>
+			<section class="card">
+				<h2>Sezení</h2>
+				<table class="table" id="sessions"></table>
+			</section>
+		</div>
+	</main>
+	<div class="tip" id="tip"></div>
+	<script type="module">
+		import { api, esc, STATE, tokens, usd, pct, when, firstLine } from '/ui/common.js';
+
+		const map = document.getElementById( 'map' ), tip = document.getElementById( 'tip' );
+		let grid, layer = localStorage.getItem( 'layer' ) || 'ortho';
+
+		async function load() {
+
+			grid = await api( '/api/grid' );
+			render();
+
+		}
+
+		function render() {
+
+			const { minX, maxX, minZ, maxZ } = grid.bounds;
+			const W = maxX - minX, H = maxZ - minZ;
+			const t = grid.totals, u = grid.usage, c = grid.control;
+
+			document.getElementById( 'stats' ).innerHTML = `
+				<span><b>${t.done}</b> / ${t.workable} buněk hotovo</span>
+				<span><b>${t.openBugs}</b> otevřených chyb</span>
+				<span title="Skutečně utraceno z API kreditu (strop)">Claude API <b>${c.api ? `${usd( c.api.spent )} / ${usd( c.api.cap )}` : 'vypnuto'}</b></span>
+				<span title="Fotky Street View stažené čtverci, ceníková cena $0.007/ks; v rámci měsíčního free limitu Googlu nejspíš zdarma">Google <b>${usd( c.google.cost )}</b> (${c.google.images} fotek, dnes ${c.google.today})</span>`;
+
+			// The big red button: stops the queue, the running square and Claude, so nothing more is spent.
+			const stop = document.getElementById( 'stop' );
+			stop.textContent = c.stopped ? '▶ ZASTAVENO · pokračovat' : '■ ZASTAVIT VŠE';
+			stop.classList.toggle( 'stopped', c.stopped );
+			stop.onclick = async () => {
+
+				if ( ! c.stopped && ! confirm( 'Zastavit všechno? Fronta se vyprázdní, běžící čtverec a Claude se ukončí.' ) ) return;
+				await api( c.stopped ? '/api/resume' : '/api/stop', { method: 'POST', body: '{}' } );
+				location.reload();
+
+			};
+
+			// Map: the orthophoto, or the model from above (each cell's latest straight-down view).
+			map.style.aspectRatio = `${W} / ${H}`;
+			map.style.backgroundImage = grid.ortho ? 'url(/ortho.jpg)' : 'none';
+			document.getElementById( 'layer-ortho' ).classList.toggle( 'on', layer === 'ortho' );
+			document.getElementById( 'layer-model' ).classList.toggle( 'on', layer === 'model' );
+			const shot = grid.cells.filter( c => c.top ).length;
+			document.getElementById( 'layer-note' ).textContent = layer === 'model' ? ( shot ? `${shot} buněk vyfoceno shora` : 'model zatím nikdo nevyfotil (nastavení → vyfotit model)' ) : '';
+			const pc = ( v, total ) => `${( v / total * 100 ).toFixed( 4 )}%`;
+			map.innerHTML = '';
+			for ( const c of grid.cells ) {
+
+				const a = document.createElement( 'a' );
+				a.className = `cell ${c.status}`;
+				a.href = `/cell/${c.id}`;
+				Object.assign( a.style, { left: pc( c.x0 - minX, W ), top: pc( c.z0 - minZ, H ), width: pc( c.x1 - c.x0, W ), height: pc( c.z1 - c.z0, H ) } );
+				if ( layer === 'model' && c.top ) a.style.backgroundImage = `url(${c.top})`;
+				// Houses already described in data/houses.json (from earlier photo work): a green tint by share, until
+				// the square gets a status of its own.
+				const share = c.buildings ? c.described / c.buildings : 0;
+				if ( c.status === 'todo' && share ) a.style.backgroundColor = `color-mix( in srgb, var(--done) ${Math.round( 8 + share * 40 )}%, transparent )`;
+				if ( grid.control.current?.cell === c.id ) a.classList.add( 'running' );
+				a.innerHTML = `<span>${c.id}</span>${c.openBugs ? `<span class="bugs">${c.openBugs}</span>` : ''}${c.usage ? `<span class="cost">${usd( c.usage.cost )}</span>` : ''}${c.described ? `<span class="described">${c.described}/${c.buildings}</span>` : ''}`;
+				a.addEventListener( 'mousemove', e => {
+
+					tip.style.display = 'block';
+					tip.style.left = Math.min( e.clientX + 14, innerWidth - 270 ) + 'px';
+					tip.style.top = e.clientY + 14 + 'px';
+					tip.innerHTML = `<b>${c.id}</b> · ${c.buildings} domů${c.described ? `, ${c.described} popsáno z fotek` : ''}${c.refs ? ` · ${c.refs} fotek` : ''}${c.usage ? ` · ${tokens( c.usage.tokens )} tokenů, ${usd( c.usage.cost )}` : ''}<br>${esc( c.streets.join( ', ' ) || 'bez ulic' )}`;
+
+				} );
+				a.addEventListener( 'mouseleave', () => tip.style.display = 'none' );
+				map.append( a );
+
+			}
+
+			renderControl();
+			renderUsage();
+			renderSessions();
+
+		}
+
+		function renderControl() {
+
+			const c = grid.control, el = document.getElementById( 'control' );
+			if ( ! c.sessions ) {
+
+				el.innerHTML = '<h2>Claude</h2><p class="muted">Klikněte na čtverec v mapě a pak nahoře na <b>▶ Projet čtverec</b>. Běží jeden po druhém.</p>' + ( c.api ? `<p>API kredit: <b>$${c.api.spent.toFixed( 2 )}</b> z $${c.api.cap} utraceno</p>` : '<p class="muted">Platí předplatné.</p>' ) + ( c.current ? `<p>Teď běží: <a href="/sezeni/${c.current.id}">${c.current.cell}</a> · ${esc( c.current.step || '' )}</p>` : '' );
+				return;
+
+			}
+
+			const cur = c.current;
+			const running = grid.sessions.find( s => s.id === cur?.id );
+			el.innerHTML = `
+				<div class="row between"><h2>Autopilot</h2>
+				<button id="autopilot" class="${c.autopilot ? 'on' : ''}">${c.autopilot ? 'Zapnuto · vypnout' : 'Zapnout'}</button></div>
+				<p class="muted" style="margin:0 0 8px">${c.autopilot ? 'Bere buňku po buňce (nejdřív chyby, pak od Betlémského náměstí ven)' : 'Vypnuto. Buňku lze spustit i ručně na její stránce.'}${c.autoMerge ? ', hotové rovnou slučuje do hry.' : ', hotové nechává ke kontrole.'}</p>
+				${c.pausedReason ? `<p class="warn">${esc( c.pausedReason )}</p>` : ''}
+				${cur ? `<div class="now"><a href="/sezeni/${cur.id}"><b>${cur.cell}</b> · ${esc( cur.step || '' )} · ${running?.minutes ?? 0} min · ${tokens( running?.tokens )} tokenů · ${usd( running?.cost || 0 )}</a></div>` : '<p class="muted" style="margin:0">Teď nic neběží.</p>'}
+				${c.queued.length ? `<p class="muted">Ve frontě: ${c.queued.map( q => `<a href="/cell/${q.cell}">${q.cell}</a>` ).join( ', ' )}</p>` : ''}`;
+			document.getElementById( 'autopilot' ).onclick = async () => {
+
+				try {
+
+					await api( '/api/autopilot', { method: 'POST', body: JSON.stringify( { on: ! c.autopilot } ) } );
+
+				} catch ( e ) {
+
+					alert( e.message );
+
+				}
+
+				load();
+
+			};
+
+		}
+
+		function renderUsage() {
+
+			const u = grid.usage, el = document.getElementById( 'usage' );
+			const left = grid.totals.workable - grid.totals.done;
+			el.innerHTML = `
+				<dl class="kv">
+					<dt>Mřížka celkem</dt><dd>${tokens( u.grid.tokens )} tokenů · ${usd( u.grid.cost )}${u.grid.share ? ` · ${usd( u.grid.share.dollars )} z předplatného $${u.plan}` : ''}</dd>
+					<dt>Posledních 7 dní</dt><dd>${tokens( u.week.tokens )} · ${usd( u.week.cost )}${u.week.share ? ` · <b>${pct( u.week.share.week )}</b> týdenního limitu` : ''}</dd>
+					<dt>Na hotovou buňku</dt><dd>${u.perDone ? `${tokens( u.perDone.tokens )} · ${usd( u.perDone.cost )} (z ${u.perDone.cells})` : '—'}</dd>
+					<dt>Zbytek mapy</dt><dd>${u.perDone ? `${left} buněk ≈ ${usd( u.perDone.cost * left )}${u.budget ? ` ≈ ${( u.perDone.cost * left / u.budget.budget ).toFixed( 1 )} týdnů limitu` : ''}` : '—'}</dd>
+					<dt>Výchozí stavba modelu</dt><dd>${tokens( u.baseline.tokens )} · ${usd( u.baseline.cost )}</dd>
+				</dl>
+				<p class="muted small">Cena = kolik by stejné tokeny stály přes API. ${u.budget ? `Týdenní limit ≈ ${usd( u.budget.budget )} API (kalibrace ${when( u.budget.calibration.at )}).` : '<a href="/nastaveni">Zkalibrujte</a> týdenní limit pro odhad podílu.'}</p>`;
+
+		}
+
+		function renderSessions() {
+
+			const rows = grid.sessions.filter( s => s.kind === 'cell' || s.kind === 'import' );
+			document.getElementById( 'sessions' ).innerHTML = rows.length ? `<tr><th></th><th>buňka</th><th>stav</th><th>kdy</th><th class="num">tokeny</th><th class="num">cena</th></tr>` + rows.map( s => `
+				<tr><td><a href="/sezeni/${s.id}">#${s.id}</a></td>
+				<td>${s.cell ? `<a href="/cell/${s.cell}">${s.cell}</a>` : '<span class="muted">mimo</span>'}</td>
+				<td><span class="state ${s.state}">${STATE[ s.state ] || s.state}</span></td>
+				<td class="muted">${when( s.started || s.created )}${s.minutes != null ? ` · ${s.minutes} min` : ''}</td>
+				<td class="num">${tokens( s.tokens )}</td><td class="num">${usd( s.cost )}</td></tr>
+				${s.summary || s.error ? `<tr class="sub"><td></td><td colspan="5">${esc( firstLine( s.error || s.summary ) ).slice( 0, 140 )}</td></tr>` : ''}` ).join( '' ) : '<tr><td class="muted">Zatím žádná sezení.</td></tr>';
+
+		}
+
+		document.getElementById( 'layer-ortho' ).onclick = () => { layer = 'ortho'; localStorage.setItem( 'layer', layer ); render(); };
+		document.getElementById( 'layer-model' ).onclick = () => { layer = 'model'; localStorage.setItem( 'layer', layer ); render(); };
+
+		await load();
+		setInterval( () => { if ( ! document.hidden ) load(); }, 8000 );
+
+		// The live console, every 3 s: what the running square is doing and what it has cost so far.
+		async function live() {
+
+			if ( document.hidden ) return;
+			const L = await api( '/api/live' ).catch( () => null );
+			if ( ! L ) return;
+			const s = L.session, c = L.control;
+			const mins = s?.started ? Math.round( ( Date.now() - Date.parse( s.started ) ) / 60e3 ) : 0;
+			document.getElementById( 'live-head' ).innerHTML = s ? `${L.running ? '● běží' : 'poslední'} <a href="/sezeni/${s.id}">${s.cell}</a> · ${esc( s.step || STATE[ s.state ] || s.state )}${L.running ? ` · ${mins} min` : ''}${L.queued.length ? ` · ve frontě ${L.queued.map( q => q.cell ).join( ', ' )}` : ''}` : 'nic neběží';
+			document.getElementById( 'live-money' ).innerHTML = [
+				s ? `Tento běh: <b>${tokens( s.tokens || 0 )}</b> tokenů${s.api_cost != null ? ` · API <b>${usd( s.api_cost )}</b>` : s.estimate ? ` · ≈ <b>${usd( s.estimate )}</b> (odhad)` : ''}${s.images ? ` · ${s.images} fotek` : ''}` : '',
+				`API kredit celkem: <b>${c.api ? `${usd( c.api.spent )} / ${usd( c.api.cap )}` : 'vypnuto'}</b>`,
+				`Google dnes: <b>${c.google.today}</b> fotek ≈ ${usd( c.google.todayCost )} · celkem ${usd( c.google.cost )}`,
+				c.stopped ? '<b style="color:#d64533">ZASTAVENO</b>' : ''
+			].filter( Boolean ).join( '<br>' );
+			const box = document.getElementById( 'console' );
+			const atBottom = box.scrollTop + box.clientHeight >= box.scrollHeight - 20;
+			box.textContent = L.events.map( e => ( { app: '· ', tool: '→ ', text: '» ', result: '■ ' }[ e.kind ] || '' ) + e.text.replace( /\s+/g, ' ' ).slice( 0, 220 ) ).join( '\n' );
+			if ( atBottom ) box.scrollTop = box.scrollHeight;
+
+		}
+
+		live();
+		setInterval( live, 3000 );
+	</script>
+</body>
+</html>

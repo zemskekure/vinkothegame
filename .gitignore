@@ -1,6 +1,7 @@
 node_modules
 dist
 data/raw
+data/fronts-rendered
 artifact/assets
 artifact/data
 .square

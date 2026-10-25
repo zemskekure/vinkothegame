@@ -1,8 +1,9 @@
 # Reviewing a grid square's house fronts from street photos
 
 You are helping make a stylised 3D model of Prague's Old Town true to reality: the right house colours, floors,
-ground floors, and the real signs. Your job: read street photos of one grid square's house fronts and write down
-what you see, in the JSON format below. You do NOT edit the repository. You write one output file.
+ground floors, and the real signs. Read street photos of one grid square's house fronts and write down what you
+see. Do not edit the repository. Write `review.json` and, where a front is clear enough, an original SVG drawing
+in the square work folder's `fronts/` directory. The merge validates both before copying any drawing into git.
 
 Run first: `npm run square -- prepare x<i>_z<j>` (see `tools/square.mjs`). It writes the inventory to the square's
 work folder (`SQUARE_WORK`, default `.square/<square>/`) and the photos to `STREETVIEW_DIR` (default
@@ -10,13 +11,17 @@ work folder (`SQUARE_WORK`, default `.square/<square>/`) and the photos to `STRE
 
 ## Inputs
 
+- Use the fetched Street View images as the main reference. The owner's own photos and saved screenshots add
+  detail where they cover the same frontage.
 - `inventory.json` → `fronts`: one entry per house front: `front` ("code_edge"), `code` (RÚIAN building code), `number`
   (house register number), `street` (the street it faces), `mid` (position in the scene, m), `addresses` (from OpenStreetMap), `places` (named businesses OSM puts in this house:
   use them to read signs correctly, but only report a sign you can SEE), `len` (front length, m), `photos`
-  (file names in the photos folder `photosDir`; a long front has `…a.jpg` and `…b.jpg`, each showing about half of it), `aIsLeft`
+  (file names in the photos folder `photosDir`; a long front has `…a.jpg` and `…b.jpg`, each showing about half of it), `views`
+  (the Street View camera position, heading, pitch, field of view and capture date used for model/photo proof), `aIsLeft`
   (ignore), and `current` (what the model has now for this house, or null).
-- `ownPhotos`: the owner's own photos of this square (in `<photosDir>/<square>/`), if any, and manual Street View
-  screenshots dropped there. Use them like the others; they are often better.
+- `ownPhotos`: the owner's own photos of this square (absolute paths from `OWNER_PHOTOS_DIR`, when present), and
+  manual Street View screenshots dropped in `<photosDir>/<square>/`. `ownerPhotoMeta` gives the owner's position,
+  heading, date and description. Owner-owned images may become textures after a deliberate crop; Street View may not.
 - Photos: Street View images are reference only: look; never copy them into the repository, crop them into new
   files, or use them as textures. (A temporary contact sheet outside the repository to view several at once is
   fine; delete it when done.) Each photo was aimed at the middle of its front from across the street, but the camera may be off:
@@ -37,10 +42,18 @@ Write `review.json` in the square's work folder, next to `inventory.json`: an ob
       "trim": "#rrggbb",                        // window surrounds / cornices / string courses
       "floors": 4,                              // above-ground storeys up to the main cornice (not attic dormers)
       "ground": "shops|restaurant|gate|windows|blank|default",
-      "rustic": "none|banded|ornate",           // banded = horizontal rustication on the ground floor; ornate = rich stucco
+      "rustic": "none|banded|ornate|clad|rubble", // banded = horizontal rustication on the ground floor; ornate = rich stucco
+      "style": "default|theatre|maj|chapel|glassBlock|curtain|bronze|gothic",
+      "roof": "flat",                         // only when visibly flat; otherwise omit
       "grilles": true,                          // iron grilles on ground-floor windows
       "graffiti": false,                        // tagged ground floor
-      "edges": { "<edge>": { "awning": "#rrggbb", "lanterns": true, "banner": { "text": "…", "board": "#rrggbb", "ink": "#rrggbb" } } },
+      "edges": { "<edge>": {
+        "awning": "#rrggbb", "lanterns": true,
+        "banner": { "text": "…", "board": "#rrggbb", "ink": "#rrggbb" },
+        "ground": [ "shop", { "kind": "door", "frame": "wood", "glazed": true }, "window" ],
+        "balconies": [ { "floor": 1, "from": 0.1, "to": 0.6, "depth": 0.8 } ],
+        "shopfront": "<code>_<edge>.svg", "shopfrontHeight": 5.5
+      } },
       "note": "Konviktská 24: ochre four-storey baroque house, … (Street View 2025)",
       "confidence": "high|medium|low"
     }
@@ -61,7 +74,8 @@ Write `review.json` in the square's work folder, next to `inventory.json`: an ob
       "what": "restaurant name board over the door"
     }
   ],
-  "issues": [ "free text: photos that don't match, things in the model that look wrong, things worth modelling (arcades, gates, statues, trees, a closed passage), unreadable signs" ]
+  "issues": [ "photos that don't match, unreadable signs, other uncertainty" ],
+  "layoutIssues": [ { "kind": "street|passage|arcade|steps|building|surface|other", "where": "place and position", "evidence": "which photo shows the mismatch and what is visible" } ]
 }
 ```
 
@@ -80,4 +94,18 @@ Write `review.json` in the square's work folder, next to `inventory.json`: an ob
   only if visible, else "(Street View)".
 - Only houses and fronts from this square's inventory are merged; anything else is rejected (say it in `issues`).
 - `confidence: "low"` keeps only your `note` and edges; the colours and floors are left as they are.
+- `ground` on an edge lists visible openings **from left to right as seen from the street**. Kinds: `door`, `gate`,
+  `shop`, `window`, `garage`, `niche`, `blank`. Optional `frame`: `wood`, `dark`, `white`, `green`, `grey`, `red`;
+  `size`: `narrow`, `normal`, `wide`; booleans `arch`, `bars`, `glazed`, `door`. The renderer spaces them across
+  the measured front. Do not put a painted gate over a real passage.
+- Drawn fronts are original, simplified SVGs based on what is seen. Make the viewBox `0 0 W H` in centimetres,
+  with `W` about `inventory.fronts[].len × 100` and `H` 200–650. Use basic shapes, paths and text with literal
+  colours. Make spaces without painted content transparent; real passage openings are cut out by the scene build.
+  Put SVGs at `<work>/fronts/<code>_<edge>.svg` and name them in the matching edge's `shopfront`. No `<image>`,
+  CSS, external links, scripts, filters, embedded photos or remote resources. Do not trace Street View pixels.
+  `npm run build` rasterizes these checked SVG drawings into ignored PNG textures for the game.
+  Set `shopfrontHeight` only when the pictured ground floor is taller than the normal 4.2 m overlay, so the
+  drawing covers the underlying procedural openings.
+- Report layout problems in `layoutIssues`, with the exact photo evidence. Geometry is **not** changed by review.
+  The owner decides whether to fix a passage, street or steps after looking at the comparison and walk report.
 - When done, reply with a 5-line summary: houses described, signs found, notable issues.

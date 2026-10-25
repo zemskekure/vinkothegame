@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="cs">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Vínko · buňka</title>
+	<link rel="stylesheet" href="/ui/style.css">
+</head>
+<body>
+	<header>
+		<h1><a href="/">Vínko · mřížka</a> / <span id="title"></span></h1>
+		<div class="nav" id="nav"></div>
+		<label>Stav
+			<select id="status">
+				<option value="todo">k udělání</option>
+				<option value="in_progress">rozpracováno</option>
+				<option value="review">ke kontrole</option>
+				<option value="done">hotovo</option>
+				<option value="failed">selhalo</option>
+			</select>
+		</label>
+		<span class="muted" id="shown"></span>
+		<button id="square" class="on">▶ Projet čtverec</button>
+	</header>
+	<main class="cell-page">
+		<div>
+			<section class="card">
+				<div class="tabs">
+					<button id="tab-overview" class="on">Shora</button>
+					<button id="tab-at">Z ulice</button>
+					<span class="grow"></span>
+					<a class="muted" id="open-game" target="_blank">otevřít v novém okně</a>
+				</div>
+				<div class="preview" id="preview"></div>
+			</section>
+			<section class="card">
+				<div class="row between"><h2>Claude <small id="cell-usage"></small></h2><button id="start">Spustit sezení…</button></div>
+				<div id="compose" hidden>
+					<textarea id="prompt" style="min-height:260px"></textarea>
+					<div class="row"><button id="send" class="on">Odeslat</button><button id="cancel-compose">Zrušit</button></div>
+				</div>
+				<table class="table" id="sessions"></table>
+			</section>
+			<section class="card">
+				<h2>Co tu je <small id="counts"></small></h2>
+				<div class="chips" id="streets"></div>
+				<ul class="list" id="buildings" style="margin-top:10px"></ul>
+				<div id="venues" class="muted" style="margin-top:10px"></div>
+				<details style="margin-top:10px">
+					<summary>Popis pro Claude</summary>
+					<pre class="desc" id="desc"></pre>
+				</details>
+			</section>
+		</div>
+		<div>
+			<section class="card">
+				<h2>Ortofoto</h2>
+				<div class="ortho" id="ortho"></div>
+			</section>
+			<section class="card">
+				<h2>Poznámky <small class="saved" id="saved"></small></h2>
+				<textarea id="notes" placeholder="Co je tu jinak než ve skutečnosti…"></textarea>
+			</section>
+			<section class="card">
+				<h2>Chyby <small id="bug-count"></small></h2>
+				<ul class="list" id="bugs"></ul>
+				<form class="row" id="bug-form">
+					<input type="text" id="bug-text" placeholder="Nová chyba, např. „chybí lucerna u čp. 251“">
+					<button>Přidat</button>
+				</form>
+			</section>
+			<section class="card">
+				<h2>Street View <small>nepovinné, jen na doladění</small></h2>
+				<div class="drop" id="drop">Přetáhněte sem screenshoty nebo klikněte</div>
+				<input type="file" id="file" accept="image/*" multiple hidden>
+				<div class="refs" id="refs"></div>
+			</section>
+		</div>
+	</main>
+	<script type="module">
+		import { api, esc, STATUS, STATE, tokens, usd, pct, when, firstLine } from '/ui/common.js';
+		const id = location.pathname.split( '/' ).pop();
+
+		let cell = await api( `/api/cells/${id}` );
+		document.title = `Vínko · ${id}`;
+		document.getElementById( 'title' ).textContent = id;
+
+		// Neighbours, laid out like a compass.
+		const nav = document.getElementById( 'nav' );
+		for ( const [ k, label ] of [ [ 'w', '←' ], [ 'n', '↑' ], [ 's', '↓' ], [ 'e', '→' ] ] ) {
+
+			nav.insertAdjacentHTML( 'beforeend', cell.neighbours[ k ] ? `<a href="/cell/${cell.neighbours[ k ]}" title="${cell.neighbours[ k ]}">${label}</a>` : `<span>${label}</span>` );
+
+		}
+
+		// Live game preview, loaded on demand (the scene is ~90 MB).
+		let mode = 'overview';
+		const gameURL = () => mode === 'overview' ? `/game/?overview&view=${cell.views.overview}` : `/game/?at=${cell.views.at}`;
+		const preview = document.getElementById( 'preview' );
+		function showPreview( load ) {
+
+			document.getElementById( 'tab-overview' ).classList.toggle( 'on', mode === 'overview' );
+			document.getElementById( 'tab-at' ).classList.toggle( 'on', mode === 'at' );
+			document.getElementById( 'open-game' ).href = gameURL();
+			if ( ! cell.game ) preview.innerHTML = `<div class="start">Hra není sestavená (npm run build).</div>`;
+			else if ( load ) preview.innerHTML = `<iframe src="${gameURL()}" allow="fullscreen"></iframe>`;
+			else {
+
+				preview.innerHTML = `<div class="start"><button>Načíst náhled</button><span>${mode === 'overview' ? 'pohled shora na buňku' : 'pěšky z ulice ' + esc( cell.streets[ 0 ] || '' )}</span></div>`;
+				preview.querySelector( 'button' ).onclick = () => showPreview( true );
+
+			}
+
+		}
+
+		document.getElementById( 'tab-overview' ).onclick = () => { mode = 'overview'; showPreview( preview.querySelector( 'iframe' ) ); };
+		document.getElementById( 'tab-at' ).onclick = () => { mode = 'at'; showPreview( preview.querySelector( 'iframe' ) ); };
+		if ( ! cell.views.at ) document.getElementById( 'tab-at' ).disabled = true;
+		showPreview( false );
+
+		// Orthophoto crop: the whole photo as a background, scaled so this cell fills the box.
+		const { minX, maxX, minZ, maxZ } = cell.bounds;
+		const ortho = document.getElementById( 'ortho' );
+		const cw = cell.x1 - cell.x0, ch = cell.z1 - cell.z0;
+		ortho.style.aspectRatio = `${cw} / ${ch}`;
+		ortho.style.backgroundImage = 'url(/ortho.jpg)';
+		ortho.style.backgroundSize = `${( maxX - minX ) / cw * 100}% ${( maxZ - minZ ) / ch * 100}%`;
+		const fx = ( maxX - minX ) - cw, fz = ( maxZ - minZ ) - ch;
+		ortho.style.backgroundPosition = `${fx ? ( cell.x0 - minX ) / fx * 100 : 0}% ${fz ? ( cell.z0 - minZ ) / fz * 100 : 0}%`;
+
+		// What's in the cell.
+		document.getElementById( 'counts' ).textContent = `${cell.buildings.length} domů · ${cell.streets.length} ulic`;
+		document.getElementById( 'streets' ).innerHTML = cell.streets.map( s => `<span class="chip">${esc( s )}</span>` ).join( '' );
+		document.getElementById( 'buildings' ).innerHTML = cell.buildings.map( b => `<li>
+			<span style="min-width:70px">${b.number ? 'čp. ' + esc( b.number ) : '—'}</span>
+			<span class="grow">${esc( b.name || '' )} <span class="muted">${b.floors} podl.${b.note ? ' · ' + esc( b.note ) : ''}</span></span>
+			<a class="muted" href="/game/?overview&view=${b.x},60,${b.z + 45},${b.x},0,${b.z}" target="_blank">${b.code}</a></li>` ).join( '' );
+		document.getElementById( 'venues' ).innerHTML = cell.venues.length ? 'Podniky a cedule: ' + cell.venues.map( v => esc( v.name ) ).join( ', ' ) : '';
+		document.getElementById( 'desc' ).textContent = cell.description;
+
+		// Status.
+		const status = document.getElementById( 'status' );
+		status.onchange = async () => { cell = await api( `/api/cells/${id}`, { method: 'PUT', body: JSON.stringify( { status: status.value } ) } ); renderState(); };
+
+		// Notes, saved a moment after typing stops.
+		const notes = document.getElementById( 'notes' ), saved = document.getElementById( 'saved' );
+		notes.value = cell.notes;
+		let timer;
+		notes.oninput = () => {
+
+			saved.textContent = '…';
+			clearTimeout( timer );
+			timer = setTimeout( async () => {
+
+				await api( `/api/cells/${id}`, { method: 'PUT', body: JSON.stringify( { notes: notes.value } ) } );
+				saved.textContent = 'uloženo';
+
+			}, 600 );
+
+		};
+
+		// Bugs.
+		document.getElementById( 'bug-form' ).onsubmit = async e => {
+
+			e.preventDefault();
+			const input = document.getElementById( 'bug-text' );
+			if ( ! input.value.trim() ) return;
+			cell = await api( `/api/cells/${id}/bugs`, { method: 'POST', body: JSON.stringify( { text: input.value } ) } );
+			input.value = '';
+			renderState();
+
+		};
+
+		// Street View screenshots: each dropped file goes up as the raw request body.
+		const drop = document.getElementById( 'drop' ), file = document.getElementById( 'file' );
+		async function upload( files ) {
+
+			for ( const f of files ) {
+
+				if ( ! f.type.startsWith( 'image/' ) ) continue;
+				drop.textContent = `Nahrávám ${f.name}…`;
+				try {
+
+					cell = await api( `/api/cells/${id}/refs?kind=streetview`, { method: 'POST', body: f, headers: { 'content-type': f.type } } );
+
+				} catch ( e ) {
+
+					alert( `${f.name}: ${e.message}` );
+
+				}
+
+			}
+
+			drop.textContent = 'Přetáhněte sem screenshoty nebo klikněte';
+			renderState();
+
+		}
+
+		drop.onclick = () => file.click();
+		file.onchange = () => upload( file.files );
+		drop.ondragover = e => { e.preventDefault(); drop.classList.add( 'over' ); };
+		drop.ondragleave = () => drop.classList.remove( 'over' );
+		drop.ondrop = e => { e.preventDefault(); drop.classList.remove( 'over' ); upload( e.dataTransfer.files ); };
+		// Pasting a screenshot straight from the clipboard works too.
+		window.addEventListener( 'paste', e => { if ( e.clipboardData.files.length && document.activeElement.tagName !== 'TEXTAREA' ) upload( e.clipboardData.files ); } );
+
+		function renderState() {
+
+			status.value = cell.status;
+			document.getElementById( 'shown' ).textContent = cell.shown !== cell.status ? `(${STATUS[ cell.shown ]})` : '';
+
+			const open = cell.bugs.filter( b => b.open ).length;
+			document.getElementById( 'bug-count' ).textContent = cell.bugs.length ? `${open} otevřených` : '';
+			const bugs = document.getElementById( 'bugs' );
+			bugs.innerHTML = cell.bugs.map( b => `<li class="${b.open ? '' : 'closed'}">
+				<input type="checkbox" data-id="${b.id}" ${b.open ? '' : 'checked'} title="opraveno">
+				<span class="grow">${esc( b.text )}</span>
+				<button class="link" data-del="${b.id}" title="smazat">×</button></li>` ).join( '' );
+			bugs.querySelectorAll( 'input' ).forEach( i => i.onchange = async () => { cell = await api( `/api/bugs/${i.dataset.id}`, { method: 'PATCH', body: JSON.stringify( { open: ! i.checked } ) } ); renderState(); } );
+			bugs.querySelectorAll( '[data-del]' ).forEach( b => b.onclick = async () => { cell = await api( `/api/bugs/${b.dataset.del}`, { method: 'DELETE' } ); renderState(); } );
+
+			const refs = document.getElementById( 'refs' );
+			refs.innerHTML = cell.refs.map( r => `<div class="ref">
+				<a href="${r.url}" target="_blank"><img src="${r.url}" alt=""></a>
+				<input type="text" data-id="${r.id}" value="${esc( r.caption )}" placeholder="popisek, např. čp. 251 z náměstí">
+				<div class="row"><span class="muted">${new Date( r.created ).toLocaleDateString( 'cs' )}</span><button class="link" data-del="${r.id}">smazat</button></div></div>` ).join( '' );
+			refs.querySelectorAll( 'input' ).forEach( i => i.onchange = () => api( `/api/refs/${i.dataset.id}`, { method: 'PATCH', body: JSON.stringify( { caption: i.value } ) } ) );
+			refs.querySelectorAll( '[data-del]' ).forEach( b => b.onclick = async () => { if ( confirm( 'Smazat screenshot?' ) ) { cell = await api( `/api/refs/${b.dataset.del}`, { method: 'DELETE' } ); renderState(); } } );
+
+		}
+
+		// Claude sessions on this cell: start one with the assembled (editable) prompt, and the history.
+		const compose = document.getElementById( 'compose' ), startBtn = document.getElementById( 'start' );
+		if ( ! cell.control.sessions ) startBtn.disabled = true;
+		startBtn.onclick = async () => {
+
+			try {
+
+				document.getElementById( 'prompt' ).value = ( await api( `/api/cells/${id}/prompt` ) ).prompt;
+				compose.hidden = false;
+
+			} catch ( e ) {
+
+				alert( e.message );
+
+			}
+
+		};
+		document.getElementById( 'cancel-compose' ).onclick = () => compose.hidden = true;
+		document.getElementById( 'send' ).onclick = async () => {
+
+			const r = await api( `/api/cells/${id}/sessions`, { method: 'POST', body: JSON.stringify( { prompt: document.getElementById( 'prompt' ).value } ) } );
+			location.href = `/sezeni/${r.id}`;
+
+		};
+
+		// The street-photo pipeline: prepare, review by Claude, merge, build, screenshots, pull request.
+		document.getElementById( 'square' ).onclick = async () => {
+
+			const budget = prompt( 'Projet čtverec: Street View fotky → Claude je projde → sloučení → build → PR.\nKolik nejvýš fotek Street View?', '40' );
+			if ( ! budget ) return;
+			const r = await api( `/api/cells/${id}/square`, { method: 'POST', body: JSON.stringify( { budget: Number( budget ) } ) } );
+			location.href = `/sezeni/${r.id}`;
+
+		};
+
+		function renderSessions() {
+
+			const plan = cell.plan || 100;
+
+			const u = cell.usage;
+			document.getElementById( 'cell-usage' ).textContent = u ? `${tokens( u.tokens )} tokenů · ${usd( u.cost )}${u.share ? ` · ${pct( u.share.week )} týdne` : ''}` : '';
+			document.getElementById( 'sessions' ).innerHTML = cell.sessions.map( s => `<tr>
+				<td><a href="/sezeni/${s.id}">#${s.id}</a></td><td><span class="state ${s.state}">${STATE[ s.state ] || s.state}</span></td>
+				<td class="muted">${when( s.started || s.created )}${s.minutes != null ? ` · ${s.minutes} min` : ''}</td>
+				<td class="num">${tokens( s.tokens )}</td><td class="num">${usd( s.cost )}</td></tr>
+				${s.summary || s.error ? `<tr class="sub"><td></td><td colspan="4">${esc( firstLine( s.error || s.summary ) ).slice( 0, 160 )}</td></tr>` : ''}
+				${s.kind === 'square' ? `<tr class="sub"><td></td><td colspan="4">${s.pr ? `<a href="${esc( s.pr )}" target="_blank">PR</a> · ` : ''}${s.state === 'queued' ? `limit ${s.images} fotek` : `${s.images ?? 0} fotek Street View`}${s.cost ? ` · ${pct( s.cost / plan * 100 )} z $${plan}/měs.${s.weekShare != null ? ` · ${pct( s.weekShare )} týdne` : ''}` : ''}
+					${s.shots?.proofUrl ? ` · <a href="${s.shots.proofUrl}" target="_blank">foto/model + průchody</a>` : ''}
+					${s.shots?.after?.length ? `<div class="shots-row">${s.shots.after.map( p => `<a href="${p.url}" target="_blank"><img src="${p.url}" alt="${esc( p.label )}"></a>` ).join( '' )}</div>` : ''}</td></tr>` : ''}` ).join( '' );
+
+		}
+
+		renderState();
+		renderSessions();
+		setInterval( async () => {
+
+			if ( document.hidden || ! cell.sessions.some( s => [ 'queued', 'running', 'building' ].includes( s.state ) ) ) return;
+			cell = await api( `/api/cells/${id}` );
+			renderSessions();
+			status.value = cell.status;
+
+		}, 8000 );
+	</script>
+</body>
+</html>

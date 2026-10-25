@@ -885,7 +885,7 @@ const twinGableFronts = [];
 // ask for: awnings, wall lanterns, hanging banners.
 const HOUSES = JSON.parse( await readFile( new URL( '../data/houses.json', import.meta.url ) ) );
 const srgb = hex => [ 1, 3, 5 ].map( i => parseInt( hex.slice( i, i + 2 ), 16 ) / 255 );
-const decor = { awnings: [], lanterns: [], banners: [], balconies: [] };
+const decor = { awnings: [], lanterns: [], banners: [], balconies: [], shopfronts: [] };
 
 // Real shopfronts: every named shop / café / restaurant… in OSM is pinned to the nearest building wall,
 // whose ground floor then becomes a shop front, with a name board above it (placed after the geometry pass).
@@ -1303,6 +1303,19 @@ for ( const b of buildings ) {
 				// Balconies: { floor, from, to, depth }, floor 1 = the first floor above the ground floor, from / to
 				// fractions of the front from the left as seen from the street.
 				const aIsLeft = ( bx - ax ) * - ny + ( by - ay ) * nx > 0;
+				if ( extra.shopfront ) {
+
+					const key = `${b.code}_${i}`;
+					const overlayHeight = Math.min( extra.shopfrontHeight ?? 4.2, floorH );
+					const cuts = ( frontCuts.get( key ) || [] ).map( ( [ u0, u1 ] ) => aIsLeft ? [ u0, u1 ] : [ len - u1, len - u0 ] )
+						.map( ( [ u0, u1 ] ) => [ Math.max( 0, u0 ), Math.min( len, u1 ) ] ).filter( ( [ u0, u1 ] ) => u1 > u0 ).sort( ( a, b ) => a[ 0 ] - b[ 0 ] );
+					const visible = [];
+					let u = 0;
+					for ( const [ u0, u1 ] of cuts ) { if ( u0 > u + 0.01 ) visible.push( [ + u.toFixed( 2 ), + u0.toFixed( 2 ) ] ); u = Math.max( u, u1 ); }
+					if ( u < len - 0.01 ) visible.push( [ + u.toFixed( 2 ), + len.toFixed( 2 ) ] );
+					decor.shopfronts.push( { front: key, file: extra.shopfront, at: at( 0.5, 0, overlayHeight / 2 ), rot, width: + len.toFixed( 2 ), height: + overlayHeight.toFixed( 2 ), visible } );
+
+				}
 				for ( const bal of extra.balconies || [] ) {
 
 					const f0 = aIsLeft ? bal.from : 1 - bal.to, f1 = aIsLeft ? bal.to : 1 - bal.from;

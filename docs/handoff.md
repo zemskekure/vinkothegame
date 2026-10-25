@@ -109,7 +109,7 @@ counts and text-board signs. That's why its tiles look generic.
 git checkout look/x0_z2
 npm install && npx playwright install chromium
 node tools/fetch-data.mjs && node tools/fetch-osm.mjs   # raw data, not in git
-node tools/build-scene.mjs && npx vite build && npx vite preview --port 4317
+node tools/build-scene.mjs && npm run build && npx vite preview --port 4317
 # street level: http://localhost:4317/?at=x,z,yaw   (V = first person)
 # from above:   http://localhost:4317/?overview&view=camX,camY,camZ,targetX,targetY,targetZ
 ```

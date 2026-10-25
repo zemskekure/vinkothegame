@@ -48,7 +48,7 @@ starts on login), simple to look at, and honest about state and cost.
   reference images (passed as image inputs), and the standing instruction "make this cell as true to reality as
   possible: houses, facades, signs, pavements, furniture; follow CLAUDE.md and docs/realism-workflow.md". The owner can edit it before sending.
 - One git branch per cell session (e.g. `cell/C4-…`), so work can be reviewed and merged; show the diff summary.
-- After the session: rebuild (`node tools/build-scene.mjs` when tools/ or data/ changed, `npx vite build`), take
+- After the session: rebuild (`node tools/build-scene.mjs` when tools/ or data/ changed, `npm run build`), take
   new screenshots, attach them to the session record.
 - Sessions are long (tens of minutes) and the app must survive the browser closing: run them as server-side jobs
   with a log the page can follow.

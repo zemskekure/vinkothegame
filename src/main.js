@@ -9,6 +9,7 @@ import { addSigns } from './signs.js';
 import { addDecor, addEmbankment } from './decor.js';
 import { addPlaces } from './places.js';
 import { addIcons } from './icons.js';
+import { addShopfronts } from './fronts.js';
 import ICONS from '../data/icons.json';
 import { addLife } from './life.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
@@ -315,6 +316,7 @@ addFurniture( scene, data.furniture );
 // Generic name boards from OpenStreetMap: off until the city gets its own signs and logos (?signs shows them).
 if ( params.has( 'signs' ) ) addSigns( scene, data.signs || [], renderer );
 addDecor( scene, data.decor );
+await addShopfronts( scene, data.decor?.shopfronts );
 addEmbankment( scene, embankmentBuf, data.embankment );
 
 // Signature places (rotunda, pub, café, champagne bar, museum gate, stairs) and street life (people, cars).

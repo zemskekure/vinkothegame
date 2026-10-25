@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="cs">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Vínko · sezení</title>
+	<link rel="stylesheet" href="/ui/style.css">
+</head>
+<body>
+	<header>
+		<h1><a href="/">Vínko · mřížka</a> / <span id="title"></span></h1>
+		<span id="state"></span>
+		<span class="grow"></span>
+		<span id="actions"></span>
+	</header>
+	<main class="cell-page">
+		<div>
+			<section class="card" id="shots-card" hidden>
+				<h2>Před a po</h2>
+				<div id="shots"></div>
+			</section>
+			<section class="card">
+				<h2>Průběh <small id="live"></small></h2>
+				<div class="log" id="log"></div>
+			</section>
+		</div>
+		<div>
+			<section class="card">
+				<h2>Shrnutí</h2>
+				<div id="summary"></div>
+			</section>
+			<section class="card">
+				<h2>Tokeny</h2>
+				<div id="usage"></div>
+			</section>
+			<section class="card" id="git-card" hidden>
+				<h2>Změny <small id="branch"></small></h2>
+				<pre class="desc" id="commits"></pre>
+				<details><summary>soubory</summary><pre class="desc" id="diffstat"></pre></details>
+			</section>
+			<section class="card">
+				<details><summary>Zadání pro Claude</summary><pre class="desc" id="prompt"></pre></details>
+			</section>
+		</div>
+	</main>
+	<script type="module">
+		import { api, esc, STATE, tokens, usd, when } from '/ui/common.js';
+
+		const id = location.pathname.split( '/' ).pop();
+		let after = 0, s;
+		const log = document.getElementById( 'log' );
+		const KIND = { overview: 'shora', street: 'z ulice', top: 'kolmo shora' };
+
+		async function load() {
+
+			s = await api( `/api/sessions/${id}` );
+			document.title = `Vínko · sezení ${id}`;
+			document.getElementById( 'title' ).innerHTML = `sezení #${id}${s.cell ? ` · <a href="/cell/${s.cell}">${s.cell}</a>` : ''}`;
+			document.getElementById( 'state' ).innerHTML = `<span class="state ${s.state}">${STATE[ s.state ] || s.state}</span> <span class="muted">${s.step ? esc( s.step ) + ' · ' : ''}${when( s.started || s.created )}${s.minutes != null ? ` · ${s.minutes} min` : ''}</span>`;
+
+			const act = document.getElementById( 'actions' );
+			act.innerHTML = '';
+			const button = ( label, path, confirmText ) => {
+
+				const b = document.createElement( 'button' );
+				b.textContent = label;
+				b.onclick = async () => {
+
+					if ( confirmText && ! confirm( confirmText ) ) return;
+					b.disabled = true;
+					try {
+
+						await api( `/api/sessions/${id}/${path}`, { method: 'POST' } );
+
+					} catch ( e ) {
+
+						alert( e.message );
+
+					}
+
+					load();
+
+				};
+				act.append( b );
+
+			};
+
+			if ( [ 'queued', 'running' ].includes( s.state ) ) button( 'Zastavit', 'cancel', 'Zastavit sezení?' );
+			if ( [ 'review', 'conflict' ].includes( s.state ) ) {
+
+				button( 'Sloučit do hry', 'merge' );
+				button( 'Zahodit', 'reject', 'Zahodit větev s prací tohoto sezení?' );
+
+			}
+
+			document.getElementById( 'summary' ).innerHTML = s.error ? `<p class="warn">${esc( s.error )}</p>` : '';
+			document.getElementById( 'summary' ).innerHTML += s.summary ? `<div class="pre">${esc( s.summary )}</div>` : ( s.error ? '' : '<p class="muted">Zatím nic.</p>' );
+
+			const u = s.usage;
+			document.getElementById( 'usage' ).innerHTML = u ? `<dl class="kv">
+				<dt>Celkem</dt><dd><b>${tokens( u.tokens )}</b> · <b>${usd( u.cost )}</b> API</dd>
+				<dt>Výstup</dt><dd>${tokens( u.output )}</dd>
+				<dt>Zápis do cache</dt><dd>${tokens( u.cache_write_5m + u.cache_write_1h )}</dd>
+				<dt>Čtení z cache</dt><dd>${tokens( u.cache_read )}</dd>
+				<dt>Vstup bez cache</dt><dd>${tokens( u.input )}</dd>
+				<dt>Odpovědí</dt><dd>${u.messages} · ${[ ...new Set( u.models ) ].join( ', ' )}</dd></dl>` : '<p class="muted">Zatím žádné.</p>';
+
+			if ( s.commits || s.diffstat ) {
+
+				document.getElementById( 'git-card' ).hidden = false;
+				document.getElementById( 'branch' ).textContent = s.branch || '';
+				document.getElementById( 'commits' ).textContent = s.commits || '';
+				document.getElementById( 'diffstat' ).textContent = s.diffstat || '';
+
+			}
+
+			document.getElementById( 'prompt' ).textContent = s.prompt;
+
+			if ( s.shots ) {
+
+				document.getElementById( 'shots-card' ).hidden = false;
+				const kinds = [ 'overview', 'street', 'top' ];
+				const pick = ( list, k ) => ( list || [] ).find( x => x.kind === k );
+				document.getElementById( 'shots' ).innerHTML = kinds.map( k => {
+
+					const b = pick( s.shots.before, k ), a = pick( s.shots.after, k );
+					if ( ! b && ! a ) return '';
+					return `<div class="pair"><div><span class="muted small">před · ${KIND[ k ]}</span>${b ? `<a href="${b.url}" target="_blank"><img src="${b.url}"></a>` : '<div class="ph"></div>'}</div>
+						<div><span class="muted small">po · ${KIND[ k ]}</span>${a ? `<a href="${a.url}" target="_blank"><img src="${a.url}"></a>` : '<div class="ph"></div>'}</div></div>`;
+
+				} ).join( '' );
+				if ( s.shots.proof ) {
+
+					const proof = s.shots.proof;
+					const rows = ( s.shots.pairs || [] ).map( p => `<div class="pair"><div><span class="muted small">${esc( p.source )} · ${esc( p.what || '' )}</span><a href="${p.referenceUrl}" target="_blank"><img src="${p.referenceUrl}"></a></div><div><span class="muted small">model · same camera</span><a href="${p.modelUrl}" target="_blank"><img src="${p.modelUrl}"></a></div></div>` ).join( '' );
+					document.getElementById( 'shots' ).innerHTML += `<details><summary>${proof.pairs.length} photo/model pairs · ${proof.clear}/${proof.openings} passages and arcades clear · <a href="${s.shots.proofUrl}" target="_blank">full report</a></summary>${rows}</details>`;
+
+				}
+
+			}
+
+		}
+
+		async function follow() {
+
+			try {
+
+				const { events, next } = await api( `/api/sessions/${id}/events?after=${after}` );
+				const atBottom = log.scrollTop + log.clientHeight >= log.scrollHeight - 30;
+				for ( const e of events ) {
+
+					const div = document.createElement( 'div' );
+					div.className = `ev ${e.kind}`;
+					div.textContent = e.text;
+					log.append( div );
+
+				}
+
+				after = next;
+				if ( atBottom ) log.scrollTop = log.scrollHeight;
+
+			} catch {}
+
+		}
+
+		await load();
+		await follow();
+		log.scrollTop = log.scrollHeight;
+		setInterval( async () => {
+
+			if ( document.hidden || ! [ 'queued', 'running', 'building' ].includes( s.state ) ) return;
+			document.getElementById( 'live' ).textContent = 'živě';
+			await follow();
+			await load();
+
+		}, 3000 );
+	</script>
+</body>
+</html>
