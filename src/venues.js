@@ -895,7 +895,8 @@ function addSlaviaFront( scene, F ) {
 	const g = onFront( F.x, F.y, F.z, F.n );
 	scene.add( g );
 	const kit = new Kit();
-	const L = - F.left + 0.6, R = F.right - 0.6, top = 3.25, bay = 2.7;
+	// The café is a raised ground floor: the glass stands on a stone plinth (F.sill) up to F.top over the pavement.
+	const L = - F.left + 0.6, R = F.right - 0.6, top = F.top ?? 3.25, sill = F.sill ?? 0.45, bay = 2.7;
 	const n = Math.max( 1, Math.round( ( R - L ) / bay ) ), bw = ( R - L ) / n;
 	const glass = new THREE.MeshStandardNodeMaterial( { color: 0x9fb2b4, roughness: 0.05, metalness: 0.2, transparent: true, opacity: F.room ? 0.18 : 0.55, depthWrite: false } );
 	const behind = lit( plain( 0x6b5338 ), 0.5 ); // where no room is modelled: a warm-lit interior seen through glass
@@ -904,10 +905,10 @@ function addSlaviaFront( scene, F ) {
 
 		const x = L + ( k + 0.5 ) * bw, w = bw - 0.5;
 		const isDoor = ! F.windowsOnly && Math.abs( x - F.door ) < bw / 2;
-		const y0 = isDoor ? 0 : 0.45;
+		const y0 = isDoor ? 0 : sill;
 		kit.add( MAT.frame, box( w, 0.08, 0.1, x, y0, 0.06 ), box( w, 0.1, 0.1, x, top - 0.1, 0.06 ), box( 0.06, top - y0, 0.1, x - w / 2 + 0.03, y0, 0.06 ), box( 0.06, top - y0, 0.1, x + w / 2 - 0.03, y0, 0.06 ) );
 		kit.add( MAT.frame, box( w, 0.05, 0.08, x, top - 0.75, 0.06 ) ); // transom
-		if ( ! isDoor ) kit.add( MAT.stone, box( w, 0.45, 0.25, x, 0, 0.0 ) ); // stone sill wall below the glass
+		if ( ! isDoor ) kit.add( MAT.stone, box( w, sill + 0.3, 0.25, x, - 0.3, 0.0 ), box( w + 0.1, 0.08, 0.36, x, sill - 0.08, 0.02 ) ); // stone plinth below the glass, its sill
 		if ( isDoor ) {
 
 			// Double door: dark wood frames with glass, brass push bars, a step.
@@ -930,6 +931,61 @@ function addSlaviaFront( scene, F ) {
 	}
 
 	kit.build( g, { shadows: false } );
+
+}
+
+// Kavárna Slavia's way in (Street View 2025): a recess in the east end of the Národní front under a cantilevered
+// canopy with a green light line along its edge, six granite steps up between stone reveals with brass handrails,
+// a landing, glazed doors in bronze frames.
+function addSlaviaEntrance( scene, F ) {
+
+	const g = onFront( F.x, F.y, F.z, F.n );
+	scene.add( g );
+	const kit = new Kit();
+	const { w, d, run, steps, rise, h } = F;
+	const granite = plain( 0xa9a59d, { roughness: 0.8 } ), reveal = plain( 0xd8d0bf, { roughness: 0.85 } ), bronze = plain( 0x5a4632, { metalness: 0.6, roughness: 0.4 } );
+	for ( let k = 1; k <= steps; k ++ ) kit.add( granite, box( w, rise * k / steps + 0.3, run / steps + 0.02, 0, - 0.3, - ( k - 0.5 ) * run / steps ) );
+	kit.add( granite, box( w, rise + 0.3, d - run + 0.1, 0, - 0.3, - ( run + d ) / 2 ) );
+	for ( const sd of [ - 1, 1 ] ) {
+
+		kit.add( reveal, box( 0.35, h + 0.3, d + 0.1, sd * ( w / 2 + 0.17 ), - 0.3, - d / 2 ) );
+		// Brass handrail along the reveal, over the steps.
+		const len = Math.hypot( run, rise ), slope = Math.atan2( rise, run );
+		kit.add( M.brass, new THREE.CylinderGeometry( 0.025, 0.025, len, 8 ).rotateX( Math.PI / 2 + slope ).translate( sd * ( w / 2 - 0.06 ), rise / 2 + 0.9, - run / 2 ) );
+
+	}
+
+	kit.add( reveal, box( w + 0.7, 0.3, d + 0.1, 0, h, - d / 2 ) ); // the recess's ceiling
+	kit.add( lit( plain( 0xf3e3c0 ), 0.9 ), box( 0.6, 0.04, 0.6, 0, h - 0.04, - d / 2 ) ); // a ceiling light
+	// The doors at the back: bronze frames, glass; the lobby glows behind.
+	const dz = - d + 0.05, y0 = rise;
+	kit.add( bronze, box( w, 0.12, 0.1, 0, h - 0.12, dz ), box( 0.08, h - y0, 0.1, - w / 2 + 0.04, y0, dz ), box( 0.08, h - y0, 0.1, w / 2 - 0.04, y0, dz ), box( 0.06, 2.4, 0.1, 0, y0, dz ), box( w, 0.08, 0.1, 0, y0 + 2.4, dz ) );
+	const pane = new THREE.Mesh( new THREE.PlaneGeometry( w - 0.2, h - y0 - 0.2 ), new THREE.MeshStandardNodeMaterial( { color: 0xb8c7c4, roughness: 0.05, metalness: 0.2, transparent: true, opacity: 0.22, depthWrite: false, side: THREE.DoubleSide } ) );
+	pane.position.set( 0, ( h + y0 ) / 2, dz );
+	g.add( pane );
+	// The canopy: a thin white slab out over the steps, a green light line along its edge.
+	kit.add( plain( 0xe9e7e1, { roughness: 0.6 } ), box( w + 1.4, 0.32, 2.0, 0, h + 0.15, 1.0 ) );
+	kit.add( glow( 0x46c38a, 1.4 ), box( w + 1.42, 0.06, 0.04, 0, h + 0.27, 2.0 ) );
+	kit.build( g );
+
+}
+
+// The lobby from the entrance doors to the café's east end: a short warm-lit corridor at the café's floor.
+function addSlaviaLobby( scene, room ) {
+
+	const [ ax, az, bx, bz ] = room.side.lobby;
+	const len = Math.hypot( bx - ax, bz - az ) + 1.2, W = room.side.w + 0.2, H = 3.0;
+	const g = new THREE.Group();
+	g.position.set( ( ax + bx ) / 2, room.y, ( az + bz ) / 2 );
+	g.rotation.y = Math.atan2( bx - ax, bz - az );
+	const kit = new Kit();
+	kit.add( lit( planks( 0x4a2f1d, 0x5c3b24 ), 0.22 ), box( W, 0.04, len, 0, - 0.04, 0 ) );
+	const wall = lit( plain( 0xece3cf ), 0.45 );
+	for ( const sd of [ - 1, 1 ] ) kit.add( wall, box( 0.08, H, len, sd * W / 2, 0, 0 ) );
+	kit.add( wall, box( W, 0.06, len, 0, H, 0 ) );
+	for ( let z = - len / 2 + 1; z < len / 2; z += 2 ) kit.add( M.lampShade, ball( 0.16, 0, H - 0.25, z, 10 ) );
+	kit.build( g );
+	scene.add( g );
 
 }
 
@@ -968,7 +1024,16 @@ function addSlaviaInterior( g, room, kit, seat ) {
 	const { w, d, h } = room;
 	const marble = plain( 0xf1eee8, { roughness: 0.2 } );
 	kit.add( lit( planks( 0x4a2f1d, 0x5c3b24 ), 0.22 ), box( w, 0.04, d, 0, - 0.04, - d / 2 ) );
-	kit.add( lit( roomWall( 0xece3cf, 0x3d2a1c, 1.1 ) ), box( w, h, 0.08, 0, 0, - d ), box( 0.08, h, d, - w / 2, 0, - d / 2 ), box( 0.08, h, d, w / 2, 0, - d / 2 ) );
+	const wall = lit( roomWall( 0xece3cf, 0x3d2a1c, 1.1 ) );
+	kit.add( wall, box( w, h, 0.08, 0, 0, - d ), box( 0.08, h, d, - w / 2, 0, - d / 2 ) );
+	// The east wall, with the doorway from the lobby (the entrance on Národní) near the front.
+	const side = room.side;
+	if ( side ) {
+
+		const a = side.d - side.w / 2, b = side.d + side.w / 2;
+		kit.add( wall, box( 0.08, h, a, w / 2, 0, - a / 2 ), box( 0.08, h, d - b, w / 2, 0, - ( b + d ) / 2 ), box( 0.08, h - 2.6, side.w, w / 2, 2.6, - side.d ) );
+
+	} else kit.add( wall, box( 0.08, h, d, w / 2, 0, - d / 2 ) );
 	kit.add( lit( plain( 0xf2ebdc ), 0.3 ), box( w, 0.06, d, 0, h, - d / 2 ) );
 	kit.add( lit( plain( 0xd9c9a8 ), 0.2 ), box( w, 0.25, 0.1, 0, h - 0.25, - d + 0.05 ) );
 
@@ -1260,8 +1325,9 @@ function addVenueInterior( scene, room ) {
 export function addVenues( scene, places, furniture ) {
 
 	const seats = [];
-	for ( const F of places.fronts || [] ) ( { pub: addPubFront, cafe: addCafeFront, champagne: addChampagneFront, slavia: addSlaviaFront } )[ F.style ]?.( scene, F, furniture );
+	for ( const F of places.fronts || [] ) ( { pub: addPubFront, cafe: addCafeFront, champagne: addChampagneFront, slavia: addSlaviaFront, slaviaEntrance: addSlaviaEntrance } )[ F.style ]?.( scene, F, furniture );
 	for ( const room of places.interiors ) seats.push( ...addVenueInterior( scene, room ) );
+	for ( const room of places.interiors ) if ( room.side?.lobby ) addSlaviaLobby( scene, room );
 	const kit = new Kit();
 	for ( const t of places.terraces ) addTables( kit, t, seats );
 	// Champagneria: parasols over every other table; a round bench around the square's tree.

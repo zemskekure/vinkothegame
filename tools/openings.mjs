@@ -15,6 +15,8 @@ const WALK = new Set( [ 'footway', 'pedestrian', 'path', 'service', 'living_stre
 // Passages OSM tags that the owner, who walks there, says are not there (Na Perštýně by the Česká spořitelna
 // corner, 25 Oct 2026).
 const NOT_PASSAGES = new Set( [ 755987808 ] );
+// The National Theatre node, S-JTSK (scene x −420 … −280, z 230 … 460).
+const inTheatreNode = ( [ X, Y ] ) => X > - 743507 && X < - 743367 && Y > - 1043742 && Y < - 1043512;
 const WIDTH = { footway: 2.6, path: 2.2, pedestrian: 3.2, cycleway: 2.6, service: 3.4, living_street: 3.6 };
 
 export async function findOpenings( { AREA, buildingAt, buildings = [] } ) {
@@ -85,7 +87,11 @@ export async function findOpenings( { AREA, buildingAt, buildings = [] } ) {
 		if ( ! arcade && t.tunnel !== 'building_passage' ) continue;
 		if ( [ 'no', 'private' ].includes( t.access ) || [ 'no', 'private' ].includes( t.foot ) ) continue;
 
-		const pts = ( w.nodes || [] ).map( id => nodes.get( id ) ).filter( Boolean ).map( n => project( n.lon, n.lat ) );
+		let pts = ( w.nodes || [] ).map( id => nodes.get( id ) ).filter( Boolean ).map( n => project( n.lon, n.lat ) );
+		// By the National Theatre the OSM outlines sit (−6.18, −7.68) m (east, north) off the cadastre the houses come
+		// from (measured on ~600 building pairs, and on the surface model there): moved back onto it, so that the
+		// theatre's loggia on Národní and the passage under the office block on the piazzetta land in their houses.
+		if ( pts.length && inTheatreNode( pts[ 0 ] ) ) pts = pts.map( ( [ X, Y ] ) => [ X + 6.18, Y + 7.68 ] );
 		const width = Number( t.width ) || WIDTH[ t.highway ] || 6;
 
 		for ( let i = 0; i + 1 < pts.length; i ++ ) {

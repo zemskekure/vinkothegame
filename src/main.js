@@ -134,6 +134,34 @@ const terrain = new THREE.Mesh( terrainGeo, groundMaterial );
 terrain.receiveShadow = true;
 scene.add( terrain );
 
+// Decks over a street below (tools/terraces.mjs): Národní over Divadelní, the piazzetta's edge over the covered
+// pavement. Slabs of their own, drawn with the street's surface; the street below is in the terrain.
+{
+
+	const decks = data.places?.theatre?.decks;
+	if ( decks ) {
+
+		const pos = [], quadAt = ( a, b, c, d ) => pos.push( ...a, ...b, ...c, ...a, ...c, ...d );
+		const t = decks.tunnel, y = t.y + 0.01;
+		quadAt( [ t.x0, y, t.z0 ], [ t.x0, y, t.z1 ], [ t.x1, y, t.z1 ], [ t.x1, y, t.z0 ] );
+		for ( let i = 1; i < decks.strip.length; i ++ ) {
+
+			const [ za, xa0, xa1, ya ] = decks.strip[ i - 1 ], [ zb, xb0, xb1, yb ] = decks.strip[ i ];
+			quadAt( [ xa0, ya + 0.01, za ], [ xb0, yb + 0.01, zb ], [ xb1, yb + 0.01, zb ], [ xa1, ya + 0.01, za ] );
+
+		}
+
+		const geo = new THREE.BufferGeometry();
+		geo.setAttribute( 'position', new THREE.Float32BufferAttribute( pos, 3 ) );
+		geo.computeVertexNormals();
+		const deck = new THREE.Mesh( geo, groundMaterial );
+		deck.receiveShadow = true;
+		scene.add( deck );
+
+	}
+
+}
+
 // Raised pavements with their kerbs (double-sided: the kerb faces are only wound one way).
 const pavementGeo = new THREE.BufferGeometry();
 pavementGeo.setAttribute( 'position', new THREE.BufferAttribute( new Float32Array( pavementBuf ), 3 ) );
@@ -158,13 +186,24 @@ function terrainHeight( x, z ) {
 
 // Walking surface: street level plus the raised pavement (kerb field in surface2's blue channel).
 // Walkable zones from tools/places.mjs (rooms, doorways, stairs): oriented rectangles with their own floor height.
+// A zone with a `deck` lies under a walkable deck (the road under Národní, the pavement under the piazzetta's edge):
+// it holds only for a walker down at its level (`y`, the walker's height; null: above, on the deck); the deck's own
+// zone (`over`) only for one up on it.
 const zones = data.places?.zones || [];
-function zoneAt( x, z ) {
+let walkerLevel = () => null;
+function zoneAt( x, z, y = walkerLevel() ) {
 
 	for ( const zn of zones ) {
 
 		const dx = x - zn.x, dz = z - zn.z;
-		if ( Math.abs( dx * zn.ux + dz * zn.uz ) < zn.hu && Math.abs( - dx * zn.uz + dz * zn.ux ) < zn.hn ) return zn;
+		if ( Math.abs( dx * zn.ux + dz * zn.uz ) < zn.hu && Math.abs( - dx * zn.uz + dz * zn.ux ) < zn.hn ) {
+
+			if ( zn.deck !== undefined && ( y === null || y > ( ( zn.y ?? Math.min( zn.y0, zn.y1 ) ) + zn.deck ) / 2 ) ) continue;
+			// A zone `over` a lower level (the deck itself) holds for a walker up there, and for everything else.
+			if ( zn.over !== undefined && y !== null && y <= ( ( zn.y ?? Math.min( zn.y0, zn.y1 ) ) + zn.over ) / 2 ) continue;
+			return zn;
+
+		}
 
 	}
 
@@ -183,9 +222,10 @@ function zoneHeight( zn, x, z ) {
 
 }
 
-function groundHeight( x, z ) {
+// Ground for everything but the walker (trams, people, furniture): the upper level where two overlap.
+function groundHeight( x, z, y = null ) {
 
-	const zn = zoneAt( x, z );
+	const zn = zoneAt( x, z, y );
 	if ( zn ) return zoneHeight( zn, x, z );
 	const col = Math.min( S.width - 1, Math.max( 0, Math.floor( ( x - bounds.minX ) / S.cell ) ) );
 	const row = Math.min( S.height - 1, Math.max( 0, Math.floor( ( z - bounds.minZ ) / S.cell ) ) );
@@ -362,9 +402,10 @@ function barrierAt( x, z, y ) {
 
 	const segs = barGrid.get( Math.floor( ( z - bounds.minZ ) / BAR ) * barW + Math.floor( ( x - bounds.minX ) / BAR ) );
 	if ( ! segs ) return false;
-	for ( const [ x0, z0, x1, z1, above ] of segs ) {
+	for ( const [ x0, z0, x1, z1, above, below = - Infinity ] of segs ) {
 
-		if ( y < above ) continue;
+		// Blocks a walker at or over `above`, or under `below` (a wall under a deck stops only the walker below).
+		if ( y < above && y >= below ) continue;
 		const dx = x1 - x0, dz = z1 - z0, t = Math.max( 0, Math.min( 1, ( ( x - x0 ) * dx + ( z - z0 ) * dz ) / ( dx * dx + dz * dz || 1 ) ) );
 		if ( Math.hypot( x - x0 - t * dx, z - z0 - t * dz ) < 0.2 ) return true;
 
@@ -402,8 +443,9 @@ function cameraBlocked( x, z ) {
 
 }
 
-const walker = new Walker( camera, renderer.domElement, groundHeight, isBlocked, scene, cameraBlocked, ceilingAt );
+const walker = new Walker( camera, renderer.domElement, ( x, z ) => groundHeight( x, z, walker.y ), isBlocked, scene, cameraBlocked, ceilingAt );
 walkerHeight = () => walker.y + 0.5;
+walkerLevel = () => walker.y;
 
 // Trams and their overhead line (poles kept out of houses).
 const trams = addTrams( scene, places?.life?.trams, groundHeight, cameraBlocked );
@@ -483,7 +525,9 @@ function setMode( walk ) {
 	if ( walk ) {
 
 		// Back where you left off, or at the start.
-		const [ x, z, yaw ] = walker.placed ? [ walker.pos.x, walker.pos.z, walker.yaw ] : ( params.get( 'at' ) || startAt() ).split( ',' ).map( Number );
+		// ?at=x,z,yaw[,y]: y picks the level where one lies over another (the walker starts at street level).
+		const [ x, z, yaw, y ] = walker.placed ? [ walker.pos.x, walker.pos.z, walker.yaw ] : ( params.get( 'at' ) || startAt() ).split( ',' ).map( Number );
+		if ( Number.isFinite( y ) ) walker.y = y;
 		walker.teleport( x, z, yaw );
 		walker.placed = true;
 

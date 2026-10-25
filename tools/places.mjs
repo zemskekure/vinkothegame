@@ -7,18 +7,18 @@
 //   - The courtyard with the brewery chimney in Náprstkova: the enclosed yard is found by flooding the open ground
 //     around the chimney; a gateway passage is cut through the thinnest house to a street.
 //   - Náprstkovo muzeum: its gate on the front nearest the museum's address point.
-//   - The stairs from Národní down to Divadelní (OSM way 1201817510).
+//   - The National Theatre node (tools/theatre.mjs): Divadelní under Národní, the stairs, Nová scéna's undercroft.
 //   - Street life: pavement walking lines (from the kerb model), pedestrian lanes, driving lanes, parking spots.
 //
 // Input positions are S-JTSK; everything returned is in the scene frame (x east, y up, z south).
 
 const ROTUNDA_WAY = 395230762;
-const STAIRS_WAY = 1201817510;
 // Čapadlo by the Faculty of Social Sciences: steps beside it, the underpass, the metal stair from the terrace.
 const CAPADLO = { steps: 137806765, underpass: 1201427940, metal: 34056146 };
 
 import { dressSquare } from './dress.mjs';
 import { collectWalls } from './walls.mjs';
+import { collectTheatre } from './theatre.mjs';
 
 export function collectPlaces( ctx ) {
 
@@ -105,7 +105,7 @@ export function collectPlaces( ctx ) {
 
 	// A walk-in room behind a front: centred `s` m along it, as wide as asked (≤ the front), as deep as the house
 	// (≤ maxD); its door `door` m to the right (+X) of the room's centre.
-	function interior( name, style, f, s, { w = 7, maxD = 9, door = 0, h = null } = {} ) {
+	function interior( name, style, f, s, { w = 7, maxD = 9, door = 0, h = null, raise = null, noDoor = false } = {} ) {
 
 		w = Math.min( w, f.len - 1.2, 2 * Math.min( s, f.len - s ) - 0.6 );
 		let depth = maxD;
@@ -136,6 +136,7 @@ export function collectPlaces( ctx ) {
 
 		}
 
+		if ( raise !== null ) c.y = frame( f, s ).y + raise; // a raised ground floor over the pavement (Kavárna Slavia)
 		const floorH = ctx.buildingInfo.get( f.code )?.floorH || 3.4;
 		const room = { name, style, x: c.x, z: c.z, n: c.n, w: + w.toFixed( 2 ), d: + depth.toFixed( 2 ), h: + ( h ?? Math.min( 3.6, Math.max( 3.0, floorH * 0.95 ) ) ).toFixed( 2 ), y: + ( c.y + 0.02 ).toFixed( 2 ), door: + door.toFixed( 2 ), doorW: 1.3, doorH: 2.5 };
 		places.interiors.push( room );
@@ -145,6 +146,7 @@ export function collectPlaces( ctx ) {
 		const inward = d => [ c.x - c.n[ 0 ] * d, c.z - c.n[ 1 ] * d ];
 		const [ rx, rz ] = inward( depth / 2 );
 		zone( rx, rz, X, w / 2 - 0.3, depth / 2 - 0.3, { y: room.y } );
+		if ( noDoor ) return room;
 		const [ dx, dz ] = inward( 0 );
 		zone( dx + X[ 0 ] * door, dz + X[ 1 ] * door, X, room.doorW / 2 - 0.15, 0.7, { y: room.y } );
 		cutout( dx + X[ 0 ] * door, room.y - 0.5, dz + X[ 1 ] * door, X, room.doorW / 2, 0.45, room.y + room.doorH );
@@ -533,39 +535,6 @@ export function collectPlaces( ctx ) {
 
 	}
 
-	// --- Stairs from Národní down to Divadelní.
-	{
-
-		const way = wayById.get( STAIRS_WAY );
-		if ( way ) {
-
-			const [ p0, p1 ] = [ way.pts[ 0 ], way.pts[ way.pts.length - 1 ] ];
-			const h0 = terrainAt( p0.X, p0.Y ), h1 = terrainAt( p1.X, p1.Y );
-			const top = h0 >= h1 ? p0 : p1, bottom = h0 >= h1 ? p1 : p0;
-			const steps = Math.max( 4, Math.round( Math.abs( h0 - h1 ) / 0.16 ) ); // the survey surface sets the drop
-			const [ tx, tz ] = L( top.X, top.Y ), [ bx, bz ] = L( bottom.X, bottom.Y );
-			const yTop = Math.max( h0, h1 ), yBottom = Math.min( h0, h1 );
-			places.stairs = { top: [ tx, + yTop.toFixed( 2 ), tz ], bottom: [ bx, + yBottom.toFixed( 2 ), bz ], steps, w: 3.2 };
-			console.log( `places: stairs ${steps} steps, ${( yTop - yBottom ).toFixed( 2 )} m over ${Math.hypot( tx - bx, tz - bz ).toFixed( 1 )} m` );
-			const len = Math.hypot( tx - bx, tz - bz );
-			const along = [ ( tx - bx ) / len, ( tz - bz ) / len ];
-			zone( ( tx + bx ) / 2, ( tz + bz ) / 2, [ along[ 1 ], - along[ 0 ] ], 1.4, len / 2 + 0.3, { y0: + yBottom.toFixed( 2 ), y1: + yTop.toFixed( 2 ), along, steps } );
-
-			// Cut the ground away under the stairway (the survey surface runs over the treads); its walls hide the cut.
-			const { terrain, tw, th, cell } = ctx.terrainGrid;
-			for ( let r = 0; r < th; r ++ ) for ( let c = 0; c < tw; c ++ ) {
-
-				const [ x, z ] = L( ctx.AREA.xmin + c * cell, ctx.AREA.ymax - r * cell );
-				const dx = x - bx, dz = z - bz;
-				const s = dx * along[ 0 ] + dz * along[ 1 ], o = Math.abs( - dx * along[ 1 ] + dz * along[ 0 ] );
-				if ( s > ( len + 0.6 ) / ( steps + 1 ) - 0.3 && s < len + 0.3 && o < 1.95 ) terrain[ r * tw + c ] = Math.min( terrain[ r * tw + c ], yBottom - 0.4 ); // where the treads are
-
-			}
-
-		}
-
-	}
-
 	// --- Čapadlo (Smetanovo nábřeží by the Faculty of Social Sciences): the steps down beside the faculty into the
 	// underpass under the street and out onto the riverside terrace, and the metal stair from the terrace back up
 	// to the riverside pavement. The railing along the street (tools/quay.mjs) is a walk barrier, open where the
@@ -638,9 +607,9 @@ export function collectPlaces( ctx ) {
 
 		}
 
-		// Walk barriers along the railings (this one, and the terraces' by the theatre): open at the stair's
+		// Walk barriers along the railing: open at the stair's
 		// landing; under them, the underpasses.
-		for ( const line of [ rail, ...( ctx.terraces?.rails || [] ) ] ) for ( let i = 1; i < line.length; i ++ ) {
+		for ( const line of [ rail ] ) for ( let i = 1; i < line.length; i ++ ) {
 
 			const a = line[ i - 1 ], b = line[ i ];
 			if ( a.river && b.river || Math.hypot( b.X - a.X, b.Y - a.Y ) > 2 ) continue;
@@ -650,18 +619,11 @@ export function collectPlaces( ctx ) {
 
 		}
 
-		// Divadelní under Národní: walkable at road level, under the deck.
-		const tun = ctx.terraces?.tunnel;
-		if ( tun ) {
-
-			const [ ax, az ] = L( ...tun.a ), [ bx, bz ] = L( ...tun.b );
-			const tl = Math.hypot( bx - ax, bz - az ), ta = [ ( bx - ax ) / tl, ( bz - az ) / tl ];
-			places.tunnels.push( { a: [ ax, az ], b: [ bx, bz ], ya: + tun.ya.toFixed( 2 ), yb: + tun.yb.toFixed( 2 ), h: + ( tun.ceil - Math.max( tun.ya, tun.yb ) ).toFixed( 2 ), w: tun.w, road: true } );
-			zone( ( ax + bx ) / 2, ( az + bz ) / 2, [ ta[ 1 ], - ta[ 0 ] ], tun.w / 2 - 0.3, tl / 2 + 1.0, { y0: + tun.ya.toFixed( 2 ), y1: + tun.yb.toFixed( 2 ), along: ta, ceil: + ( tun.ceil - 0.1 ).toFixed( 2 ) } );
-
-		}
-
 	}
+
+	// --- The National Theatre node: Divadelní under Národní and under the piazzetta's edge, the stairs down from
+	// Národní, Nová scéna's undercroft (tools/theatre.mjs).
+	collectTheatre( ctx, { places, zone } );
 
 	// --- landmark lettering and plaques, on the house fronts seen in street photos
 	const edgeOf = ( code, edge ) => {
@@ -673,7 +635,7 @@ export function collectPlaces( ctx ) {
 
 	};
 	const LANDMARK_SIGNS = [
-		{ code: 21649685, edge: 7, at: 0.5, h: 4.9, text: 'KAVÁRNA SLAVIA', style: 'letters' },
+		{ code: 21649685, edge: 6, at: 0.5, h: 4.6, text: 'KAVÁRNA SLAVIA', style: 'letters' },
 		{ code: 21649685, edge: 0, at: 0.6, h: 4.9, text: 'KAVÁRNA SLAVIA', style: 'letters' },
 		{ code: 21649685, edge: 1, at: 0.5, h: 3.3, text: 'FAMU', style: 'plaque' },
 		{ code: 21649553, edge: 4, at: 0.5, h: 3.4, text: 'UNIVERZITA KARLOVA · FAKULTA SOCIÁLNÍCH VĚD', style: 'plaque' },
@@ -703,29 +665,61 @@ export function collectPlaces( ctx ) {
 
 	}
 
-	// --- Kavárna Slavia (Národní 1, the corner of Lažanský palác): the café's tall windows run along the ground
-	// floor on Národní and round the corner onto Smetanovo nábřeží, facing the theatre and the river; the entrance
-	// is on Národní. A walk-in room behind the Národní front.
+	// --- Kavárna Slavia (Národní 1, the corner of Lažanský palác), from Street View 2019/2025: a raised ground floor,
+	// the café's tall windows over a 1.2 m stone plinth along Národní, the corner bay and round onto Smetanovo
+	// nábřeží (green awnings, red in 2019). The way in is at the east end of the Národní front by the Divadelní
+	// balustrade: a recess under a cantilevered canopy with KAVÁRNA SLAVIA over it, six granite steps up to glazed
+	// doors, and from there into the café, a metre above the pavement.
 	{
 
-		const f = edgeOf( 21649685, 7 ), g = edgeOf( 21649685, 0 );
+		const RAISE = 1.0, SILL = 1.2, TOP = 3.65;
+		const f = edgeOf( 21649685, 7 ), e = edgeOf( 21649685, 6 );
+		let room = null;
 		if ( f ) {
 
 			const s = f.len * 0.5;
-			const front = venueFront( 'slavia', f, s, { door: 3.6 } );
-			const room = interior( 'Kavárna Slavia', 'slavia', f, s, { w: f.len - 2.2, maxD: 10, door: 3.6, h: 4.2 } );
+			const front = venueFront( 'slavia', f, s, { windowsOnly: true, sill: SILL, top: TOP } );
+			room = interior( 'Kavárna Slavia', 'slavia', f, s, { w: f.len - 2.2, maxD: 10, door: 0, h: 4.0, raise: RAISE, noDoor: true } );
 			if ( room ) {
 
 				// The windows show the room: open the house front along it, at window height.
 				const c = frame( f, s ), X = [ c.n[ 1 ], - c.n[ 0 ] ];
-				cutout( c.x, room.y + 0.5, c.z, X, room.w / 2 - 0.3, 0.45, room.y + 3.25 );
+				cutout( c.x, front.y + SILL + 0.05, c.z, X, room.w / 2 - 0.3, 0.45, front.y + TOP - 0.05 );
 				front.room = true;
 
 			}
 
 		}
 
-		if ( g ) venueFront( 'slavia', g, g.len * 0.5, { windowsOnly: true } );
+		for ( const edge of [ 9, 0 ] ) {
+
+			const g = edgeOf( 21649685, edge );
+			if ( g ) venueFront( 'slavia', g, g.len * 0.5, { windowsOnly: true, sill: SILL, top: TOP } );
+
+		}
+
+		if ( e && room ) {
+
+			// The entrance recess, its centre 4.2 m from the front's west end.
+			const k = sideK( e ), sW = k > 0 ? 0 : e.len; // distance along the edge of its west end
+			const sC = sW + k * 4.2;
+			const c = frame( e, sC ), X = [ c.n[ 1 ], - c.n[ 0 ] ], IN = [ - c.n[ 0 ], - c.n[ 1 ] ];
+			const W = 3.4, D = 3.2, RUN = 2.1, steps = 6, y0 = + ( room.y - RAISE ).toFixed( 2 ), y1 = room.y;
+			c.y = y0; // Národní's pavement, as along the rest of the front
+			venueFront( 'slaviaEntrance', e, sC, { w: W, d: D, run: RUN, steps, rise: + ( y1 - y0 ).toFixed( 2 ), h: 3.6, y: y0 } );
+			cutout( c.x, y0 - 0.3, c.z, X, W / 2, 0.6, y0 + 3.6 );
+			zone( c.x + IN[ 0 ] * ( RUN / 2 - 0.25 ), c.z + IN[ 1 ] * ( RUN / 2 - 0.25 ), X, W / 2 - 0.2, RUN / 2 + 0.25, { y0, y1, along: IN, steps } );
+			zone( c.x + IN[ 0 ] * ( RUN + D ) / 2, c.z + IN[ 1 ] * ( RUN + D ) / 2, X, W / 2 - 0.2, ( D - RUN ) / 2 + 0.05, { y: y1 } );
+			// Behind the doors a lobby runs west into the café's east end.
+			const RX = [ room.n[ 1 ], - room.n[ 0 ] ];
+			const ex = room.x + RX[ 0 ] * ( room.w / 2 ) - room.n[ 0 ] * 1.6, ez = room.z + RX[ 1 ] * ( room.w / 2 ) - room.n[ 1 ] * 1.6;
+			const bx = c.x + IN[ 0 ] * ( D - 0.6 ), bz = c.z + IN[ 1 ] * ( D - 0.6 );
+			const ll = Math.hypot( bx - ex, bz - ez ), lu = [ ( bx - ex ) / ll, ( bz - ez ) / ll ];
+			zone( ( bx + ex ) / 2 - lu[ 0 ] * 0.4, ( bz + ez ) / 2 - lu[ 1 ] * 0.4, [ lu[ 1 ], - lu[ 0 ] ], 0.85, ll / 2 + 0.9, { y: y1 } );
+			room.side = { d: 1.6, w: 1.6, lobby: [ + ex.toFixed( 2 ), + ez.toFixed( 2 ), + bx.toFixed( 2 ), + bz.toFixed( 2 ) ] };
+			console.log( `places: Slavia entrance, ${steps} steps × ${( ( y1 - y0 ) / steps ).toFixed( 3 )} m up to the café` );
+
+		}
 
 	}
 
@@ -742,49 +736,14 @@ export function collectPlaces( ctx ) {
 
 	// --- The piazzetta of the National Theatre (náměstí Václava Havla): Kurt Gebauer's red Heart for Václav Havel
 	// with his signature (2016) facing the theatre, Josef Malejovský's bronze Rebirth (1983) on its round plinth at
-	// the corner by Divadelní and Nová scéna; Nová scéna's granite-clad pillars along its ground floor.
+	// the corner by Divadelní and Nová scéna, on the square a few metres in from its parapet (Street View 2024).
 	{
 
 		const pz = ctx.terraces?.piazzetta;
 		if ( pz ) {
 
 			const y = + pz.level.toFixed( 2 );
-			places.piazzetta = { heart: [ - 303, y, 377.5, 0 ], statue: [ - 342.5, y, 377, Math.PI / 2 + 0.4 ], pillars: [] };
-			// Open granite steps up from Národní's pavement along the square's north edges (tools/terraces.mjs).
-			for ( const f of pz.fronts || [] ) {
-
-				const [ ax, az ] = L( ...f.a ), [ bx, bz ] = L( ...f.b ), [ nx, nz ] = LV( ...f.n );
-				const len = Math.hypot( bx - ax, bz - az ), RUN = 2.0, steps = Math.max( 2, Math.round( ( y - f.foot ) / 0.15 ) );
-				const mx = ( ax + bx ) / 2, mz = ( az + bz ) / 2;
-				places.flights.push( { kind: 'open', top: [ + mx.toFixed( 2 ), y, + mz.toFixed( 2 ) ], bottom: [ + ( mx + nx * RUN ).toFixed( 2 ), + f.foot.toFixed( 2 ), + ( mz + nz * RUN ).toFixed( 2 ) ], steps, w: + ( len + 0.6 ).toFixed( 2 ) } );
-				zone( mx + nx * RUN / 2, mz + nz * RUN / 2, [ ( bx - ax ) / len, ( bz - az ) / len ], len / 2 + 0.3, RUN / 2, { y0: + f.foot.toFixed( 2 ), y1: y, along: [ - nx, - nz ], steps } );
-				console.log( `places: piazzetta steps from Národní, ${steps} × ${( ( y - f.foot ) / steps ).toFixed( 3 )} m over ${len.toFixed( 1 )} m` );
-
-			}
-			const b = null; // Nová scéna overhangs its recessed ground floor (no free-standing pillars, street photos)
-			if ( b ) {
-
-				const r = b.poly.outer;
-				for ( let i = 0; i < r.length; i ++ ) {
-
-					const [ ax, ay ] = r[ i ], [ bx, by ] = r[ ( i + 1 ) % r.length ];
-					const len = Math.hypot( bx - ax, by - ay );
-					if ( len < 8 ) continue;
-					let nx = ( by - ay ) / len, ny = - ( bx - ax ) / len;
-					if ( buildingAt( ( ax + bx ) / 2 + nx * 0.5, ( ay + by ) / 2 + ny * 0.5 ) === b.id ) { nx = - nx; ny = - ny; }
-					if ( inKept( ( ax + bx ) / 2 + nx * 1.5, ( ay + by ) / 2 + ny * 1.5 ) ) continue;
-					const n = Math.round( len / 6.5 );
-					for ( let k = 0; k <= n; k ++ ) {
-
-						const X = ax + ( bx - ax ) * k / n - nx * 0.45, Y = ay + ( by - ay ) * k / n - ny * 0.45;
-						const [ x, z ] = L( X, Y );
-						places.piazzetta.pillars.push( [ x, + ( terrainAt( X + nx, Y + ny ) + streetData.raise( streetData.at( X + nx, Y + ny ).Fk ) ).toFixed( 2 ), z, + Math.atan2( bx - ax, - ( by - ay ) ).toFixed( 3 ) ] );
-
-					}
-
-				}
-
-			}
+			places.piazzetta = { heart: [ - 303, y, 377.5, 0 ], statue: [ - 335.5, y, 373.5, Math.PI / 2 + 0.4 ], pillars: [] };
 
 		}
 
@@ -805,35 +764,14 @@ export function collectPlaces( ctx ) {
 	// walkable zones sloping between them.
 	places.openings = [];
 	const groundY = ( X, Y ) => terrainAt( X, Y ) + streetData.raise( streetData.at( X, Y ).Fk );
-	const pzLevel = ctx.terraces?.piazzetta?.level;
-	// Nová scéna's undercroft first (zones are looked up in order): 4 steps just inside its street face from the
-	// pavement up to the piazzetta's level, level floor behind.
-	for ( const o of ( ctx.openings || [] ).filter( o => o.undercroft && pzLevel !== undefined ) ) {
-
-		const [ x, z ] = L( o.X, o.Y ), [ lx, lz ] = LV( o.ux, o.uy ), [ nx, nz ] = LV( o.nx, o.ny );
-		const foot = Math.max( ...[ - 0.4, - 0.2, 0, 0.2, 0.4 ].map( t => groundY( o.X + o.ux * t * o.len + o.nx * 1.5, o.Y + o.uy * t * o.len + o.ny * 1.5 ) ) );
-		const level = + pzLevel.toFixed( 2 ), STRIP = 1.6, steps = Math.max( 2, Math.round( ( level - foot ) / 0.16 ) );
-		places.openings.push( { kind: 'arcade', undercroft: true, x, z, lx, lz, nx, nz, len: o.len, depth: o.depth, h: o.h, y0: level, y1: level, foot: + foot.toFixed( 2 ), steps, strip: STRIP } );
-		// From 1 m out on the pavement (the front is not quite straight) to the top step.
-		zone( x - nx * ( STRIP - 1 ) / 2, z - nz * ( STRIP - 1 ) / 2, [ lx, lz ], o.len / 2, ( STRIP + 1 ) / 2 + 0.05, { y0: + foot.toFixed( 2 ), y1: level, along: [ - nx, - nz ], steps } );
-		const back = ( o.depth - STRIP ) / 2;
-		zone( x - nx * ( STRIP + back ), z - nz * ( STRIP + back ), [ lx, lz ], o.len / 2, back, { y0: level, y1: level, along: [ - nx, - nz ], ceil: + ( level + o.h - 0.2 ).toFixed( 2 ) } );
-		console.log( `places: Nová scéna undercroft, ${steps} steps × ${( ( level - foot ) / steps ).toFixed( 3 )} m` );
-
-	}
-
 	for ( const o of ctx.openings || [] ) {
-
-		if ( o.undercroft ) continue;
 
 		const [ lx, lz ] = LV( o.ux, o.uy );
 		const across = [ lz, - lx ]; // zone u axis, so that the zone's n axis (its slope) runs along the opening
 		if ( o.kind === 'passage' ) {
 
 			const end = s => groundY( o.X + o.ux * s * ( o.len / 2 + 0.8 ), o.Y + o.uy * s * ( o.len / 2 + 0.8 ) );
-			// Under Nová scéna the walk-throughs are level with the piazzetta (the undercroft's steps take the rise).
-			let y0 = + end( - 1 ).toFixed( 2 ), y1 = + end( 1 ).toFixed( 2 );
-			if ( o.modern && pzLevel !== undefined ) y0 = y1 = + pzLevel.toFixed( 2 );
+			const y0 = + end( - 1 ).toFixed( 2 ), y1 = + end( 1 ).toFixed( 2 );
 			const [ x, z ] = L( o.X, o.Y );
 			places.openings.push( { kind: 'passage', x, z, lx, lz, len: o.len, w: o.w, h: o.h, y0, y1, ...( o.modern ? { modern: true } : {} ) } );
 			zone( x, z, across, o.w / 2 - 0.15, o.len / 2 + 0.35, { y0, y1, along: [ lx, lz ], ceil: + ( Math.max( y0, y1 ) + o.h - 0.2 ).toFixed( 2 ) } );

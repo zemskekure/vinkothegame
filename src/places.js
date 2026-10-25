@@ -1,6 +1,6 @@
 // Signature places, positioned at build time by tools/places.mjs:
 //   Rotunda sv. Kříže Menšího · Hostinec U Rotundy · Standard Café · Champagneria (src/venues.js) · the gate of
-//   Náprstkovo muzeum · the chimney courtyard in Náprstkova · the stairs from Národní down to Divadelní.
+//   Náprstkovo muzeum · the chimney courtyard in Náprstkova · the National Theatre node (src/theatre.js).
 // Stylised rather than realistic: simple solids, flat colours and a few procedural patterns (stone, tiles, wood).
 
 import * as THREE from 'three/webgpu';
@@ -13,6 +13,7 @@ import { addLandmarks } from './landmarks.js';
 import { addDress } from './dress.js';
 import { addFlights } from './flights.js';
 import { addVenues } from './venues.js';
+import { addTheatre } from './theatre.js';
 
 // ---------------------------------------------------------------------------
 // Rotunda sv. Kříže Menšího: round nave of rubble stone, semicircular apse, red tiled cone roof with a round
@@ -266,45 +267,6 @@ function addMuseumGate( scene, G ) {
 }
 
 // ---------------------------------------------------------------------------
-// The stairs from Národní down to Divadelní: granite treads between stone walls with iron handrails.
-// Tread heights match the walking heights in src/main.js (zoneHeight).
-
-function addStairs( scene, S ) {
-
-	const [ bx, by, bz ] = S.bottom, [ tx, ty, tz ] = S.top;
-	const len = Math.hypot( tx - bx, tz - bz ), N = S.steps, drop = ty - by;
-	const g = new THREE.Group();
-	g.position.set( bx, by, bz );
-	g.rotation.y = Math.atan2( tx - bx, tz - bz ); // local +z runs up the stairs
-	scene.add( g );
-	const kit = new Kit();
-	const granite = tiles( 0xa8a39a, 0x9d978d, 0.6 );
-	const walls = ashlar( 0xa49b8a, 0xb6ad9b );
-	const L2 = len + 0.6, w = S.w;
-	const sAt = t => t * L2 - 0.3;
-	for ( let k = 1; k <= N; k ++ ) {
-
-		const s0 = sAt( k / ( N + 1 ) ), s1 = k === N ? len + 0.3 : sAt( ( k + 1 ) / ( N + 1 ) );
-		const y = drop * k / N;
-		kit.add( granite, box( w, y + 1.0, s1 - s0 + 0.02, 0, - 1.0, ( s0 + s1 ) / 2 ) );
-		for ( const side of [ - 1, 1 ] ) kit.add( walls, box( 0.35, y + 1.0 + 0.95, s1 - s0 + 0.02, side * ( w / 2 + 0.17 ), - 1.0, ( s0 + s1 ) / 2 ) );
-
-	}
-
-	// Handrails along the slope, on posts.
-	const slope = Math.atan2( drop, len );
-	for ( const side of [ - 1, 1 ] ) {
-
-		kit.add( M.iron, new THREE.CylinderGeometry( 0.025, 0.025, Math.hypot( len, drop ), 8 ).rotateX( Math.PI / 2 - slope ).translate( side * ( w / 2 - 0.12 ), drop / 2 + 0.92, len / 2 ) );
-		for ( let s = 0.5; s < len; s += 1.6 ) kit.add( M.iron, cyl( 0.02, 0.02, 0.92, side * ( w / 2 - 0.12 ), drop * s / len, s, 6 ) );
-
-	}
-
-	kit.build( g );
-
-}
-
-// ---------------------------------------------------------------------------
 
 export function addPlaces( scene, places, furniture = {}, waterLevel = 0 ) {
 
@@ -318,13 +280,13 @@ export function addPlaces( scene, places, furniture = {}, waterLevel = 0 ) {
 	seats.push( ...addVenues( scene, places, furniture ) );
 	if ( places.lights?.length ) addFestoons( scene, places.lights );
 	if ( places.gate ) addMuseumGate( scene, places.gate );
-	if ( places.stairs ) addStairs( scene, places.stairs );
 	addOpenings( scene, places.openings );
 	addStops( scene, places.stops );
 	addBridges( scene, places.bridges, places.piers, waterLevel );
 	addLandmarks( scene, places, waterLevel );
 	addDress( scene, places );
 	addFlights( scene, places.flights, places.tunnels );
+	if ( places.theatre ) addTheatre( scene, places.theatre );
 	return { seats };
 
 }
