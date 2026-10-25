@@ -348,7 +348,30 @@ function measureChain( parts, photo, inBuilding ) {
 
 	}
 
-	return { pts: line.map( p => [ p.X, p.Y ] ), left: halves.left, right: halves.right, outer, rule, kerbed: line.map( p => p.left || p.right ), name: parts[ 0 ].name, highway: parts[ 0 ].highway, oneway: parts[ 0 ].oneway, paveWidth };
+	// The stations wobble by up to a metre (house-front measurements, centre-line shifts, rule switches), which drew
+	// a kerb zig-zagging every few metres. Real kerbs run in long smooth lines: the line and both widths are evened
+	// out over about ±6 m along the street, the chain's ends kept where they are.
+	const even = ( values, n ) => values.map( ( v, i ) => {
+
+		if ( i === 0 || i === values.length - 1 ) return v;
+		const k = Math.min( n, i, values.length - 1 - i );
+		let s = 0, w = 0;
+		for ( let j = - k; j <= k; j ++ ) {
+
+			const wt = k + 1 - Math.abs( j );
+			s += values[ i + j ] * wt;
+			w += wt;
+
+		}
+
+		return s / w;
+
+	} );
+	const xs = even( line.map( p => p.X ), 4 ), ys = even( line.map( p => p.Y ), 4 );
+	halves.left = even( halves.left, 4 );
+	halves.right = even( halves.right, 4 );
+
+	return { pts: line.map( ( p, i ) => [ xs[ i ], ys[ i ] ] ), left: halves.left, right: halves.right, outer, rule, kerbed: line.map( p => p.left || p.right ), name: parts[ 0 ].name, highway: parts[ 0 ].highway, oneway: parts[ 0 ].oneway, paveWidth };
 
 }
 
