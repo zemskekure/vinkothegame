@@ -329,7 +329,15 @@ export function buildPavementMesh( streets, { AREA, toLocal, heightAt, inBuildin
  * Street furniture and crossings, as { type: [ x, y, z, rotation, scale, … ] } arrays in the scene frame.
  * heightAt( X, Y ) is the walking surface height (street level plus any raised pavement).
  */
-export function collectFurniture( streets, { toLocal, heightAt, dsmTrees, treeHeightAt } ) {
+export function collectFurniture( streets, { toLocal, heightAt, dsmTrees, treeHeightAt, tramPaths = [] } ) {
+
+	const tramSegs = tramPaths.flatMap( p => p.slice( 1 ).map( ( q, i ) => [ p[ i ], q ] ) );
+	const onTramLine = ( X, Y ) => tramSegs.some( ( [ [ ax, ay ], [ bx, by ] ] ) => {
+
+		const dx = bx - ax, dy = by - ay, t = Math.max( 0, Math.min( 1, ( ( X - ax ) * dx + ( Y - ay ) * dy ) / ( dx * dx + dy * dy || 1 ) ) );
+		return Math.hypot( X - ax - t * dx, Y - ay - t * dy ) < 4;
+
+	} );
 
 	const out = { lamp: [], bench: [], bin: [], bollard: [], bikestand: [], fountain: [], statue: [], shelter: [], tree: [], zebra: [], chimney: [] };
 	const along = ( X, Y ) => {
@@ -394,7 +402,8 @@ export function collectFurniture( streets, { toLocal, heightAt, dsmTrees, treeHe
 		else if ( t.amenity === 'fountain' ) put( 'fountain', n.X, n.Y );
 		else if ( ! NOT_STATUES.has( n.id ) && ( t.tourism === 'artwork' && ! ( t[ 'addr:conscriptionnumber' ] && ! t.name ) && ( t.artwork_type === 'statue' || t.artwork_type === 'sculpture' ) || t.historic === 'memorial' && t.memorial === 'statue' || t.historic === 'monument' ) ) put( 'statue', n.X, n.Y, along( n.X, n.Y ) );
 		else if ( t.public_transport === 'platform' && t.shelter === 'yes' ) put( 'shelter', n.X, n.Y, along( n.X, n.Y ) );
-		else if ( t.natural === 'tree' ) put( 'tree', n.X, n.Y, 0, treeHeightAt( n.X, n.Y ) );
+		// A mapped tree in the middle of a tram street (Národní) is a planned or wrongly placed point: none stand there.
+		else if ( t.natural === 'tree' && ! onTramLine( n.X, n.Y ) ) put( 'tree', n.X, n.Y, 0, treeHeightAt( n.X, n.Y ) );
 		else if ( t.man_made === 'chimney' ) put( 'chimney', n.X, n.Y, 0, parseFloat( t.height ) || 30 );
 
 	}
