@@ -60,7 +60,7 @@ export function validateReview( review, inventory ) {
 			const front = `${code}_${edge}`, where = `${at}.edges.${edge}`;
 			if ( ! fronts.has( front ) || ! h.fronts?.includes( front ) ) errors.push( `${where}: front must be in houses.${code}.fronts` );
 			if ( ! object( e ) ) { errors.push( `${where}: expected object` ); continue; }
-			keys( e, [ 'awning', 'lanterns', 'banner', 'ground', 'balconies', 'shopfront', 'shopfrontHeight', 'photoPatches' ], where, errors );
+			keys( e, [ 'awning', 'lanterns', 'banner', 'ground', 'balconies', 'shopfront', 'shopfrontHeight' ], where, errors );
 			if ( e.awning !== undefined && ! colour( e.awning ) ) errors.push( `${where}.awning: expected #rrggbb` );
 			if ( e.lanterns !== undefined && typeof e.lanterns !== 'boolean' ) errors.push( `${where}.lanterns: expected boolean` );
 			if ( e.banner !== undefined && ( ! object( e.banner ) || typeof e.banner.text !== 'string' || e.banner.text.length > 30 || ! colour( e.banner.board ) || ! colour( e.banner.ink ) ) ) errors.push( `${where}.banner: text, board and ink required` );
@@ -87,21 +87,6 @@ export function validateReview( review, inventory ) {
 			}
 			if ( e.shopfront !== undefined && e.shopfront !== `${front}.svg` ) errors.push( `${where}.shopfront: expected ${front}.svg` );
 			if ( e.shopfrontHeight !== undefined && ( ! e.shopfront || ! bounded( e.shopfrontHeight, 2, 6.5 ) ) ) errors.push( `${where}.shopfrontHeight: requires a drawn front and 2–6.5 m` );
-			if ( e.photoPatches !== undefined ) {
-
-				if ( ! Array.isArray( e.photoPatches ) || e.photoPatches.length > 4 ) errors.push( `${where}.photoPatches: expected up to four owner-owned crops` );
-				else for ( const [ n, patch ] of e.photoPatches.entries() ) {
-
-					const at = `${where}.photoPatches[${n}]`;
-					if ( ! object( patch ) ) { errors.push( `${at}: expected object` ); continue; }
-					keys( patch, [ 'photo', 'from', 'to', 'height' ], at, errors );
-					if ( ! inventory.ownerPhotoMeta?.some( p => p.file === patch.photo && p.textureCandidate ) ) errors.push( `${at}.photo: use a texture candidate from this square's owner-photo inventory` );
-					if ( ! bounded( patch.from, 0, 1 ) || ! bounded( patch.to, 0, 1 ) || patch.to <= patch.from || ! bounded( patch.height, 2, 6.5 ) ) errors.push( `${at}: from, to and height required` );
-
-				}
-
-			}
-
 		}
 
 	}

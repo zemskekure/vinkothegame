@@ -288,7 +288,6 @@ async function merge() {
 	const protect = new Set( ( opt( 'protect' ) || '' ).split( ',' ).filter( Boolean ) );
 	const frontMap = new Map( inv.fronts.map( f => [ f.front, f ] ) );
 	const svgFiles = [];
-	const photoFiles = [];
 	for ( const [ code, h ] of Object.entries( R.houses || {} ) ) {
 
 		for ( const [ edge, e ] of Object.entries( h.edges || {} ) ) {
@@ -329,14 +328,7 @@ async function merge() {
 			for ( const [ k, v ] of Object.entries( h.edges ) ) {
 
 				e.edges[ k ] = { ...( e.edges[ k ] || {} ), ...v };
-				if ( v.photoPatches ) e.edges[ k ].photoPatches = v.photoPatches.map( ( p, i ) => {
-
-					const ext = path.extname( p.photo ).toLowerCase();
-					const file = `owner/${code}_${k}_${i}${ext}`;
-					photoFiles.push( { src: p.photo, dst: path.join( ROOT, 'data/fronts', file ) } );
-					return { file, from: p.from, to: p.to, height: p.height };
-
-				} );
+				delete e.edges[ k ].photoPatches;
 				if ( v.ground ) groundFloors ++;
 				if ( v.balconies ) balconies += v.balconies.length;
 
@@ -344,7 +336,7 @@ async function merge() {
 
 		}
 
-		if ( Object.values( h.edges || {} ).some( edge => edge.shopfront || edge.photoPatches?.length ) || ( R.signs || [] ).some( sign => h.fronts.includes( sign.front ) ) ) e.signs = false;
+		if ( Object.values( h.edges || {} ).some( edge => edge.shopfront ) || ( R.signs || [] ).some( sign => h.fronts.includes( sign.front ) ) ) e.signs = false;
 		H[ code ] = e;
 		houses ++;
 
@@ -366,13 +358,11 @@ async function merge() {
 
 	if ( svgFiles.length ) await mkdir( path.join( ROOT, 'data/fronts' ), { recursive: true } );
 	for ( const file of svgFiles ) await copyFile( file.src, file.dst );
-	if ( photoFiles.length ) await mkdir( path.join( ROOT, 'data/fronts/owner' ), { recursive: true } );
-	for ( const file of photoFiles ) await copyFile( file.src, file.dst );
 	await writeFile( HP, JSON.stringify( H, null, '\t' ) + '\n' );
 	await writeFile( SG, JSON.stringify( updatedSigns, null, '\t' ) + '\n' );
-	console.log( `square ${name}: merged ${houses} houses, ${groundFloors} described ground floors, ${balconies} balconies, ${svgFiles.length} drawn fronts, ${photoFiles.length} owner-photo details, ${signs} signs` );
+	console.log( `square ${name}: merged ${houses} houses, ${groundFloors} described ground floors, ${balconies} balconies, ${svgFiles.length} drawn fronts, ${signs} signs` );
 	if ( lowConfidence.length ) console.log( `low confidence (note only): ${lowConfidence.join( ', ' )}` );
-	await writeFile( path.join( WORK, 'merge.json' ), JSON.stringify( { houses, signs, groundFloors, balconies, shopfronts: svgFiles.length, photoPatches: photoFiles.length, lowConfidence, protectedHouses, issues: R.issues || [], layoutIssues: R.layoutIssues || [] }, null, 1 ) );
+	await writeFile( path.join( WORK, 'merge.json' ), JSON.stringify( { houses, signs, groundFloors, balconies, shopfronts: svgFiles.length, lowConfidence, protectedHouses, issues: R.issues || [], layoutIssues: R.layoutIssues || [] }, null, 1 ) );
 	console.log( 'next: node tools/build-scene.mjs && npm run build, then look at the square' );
 
 }

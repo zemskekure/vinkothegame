@@ -1316,20 +1316,6 @@ for ( const b of buildings ) {
 					decor.shopfronts.push( { front: key, file: extra.shopfront, at: at( 0.5, 0, overlayHeight / 2 ), rot, width: + len.toFixed( 2 ), height: + overlayHeight.toFixed( 2 ), visible } );
 
 				}
-				for ( const patch of extra.photoPatches || [] ) {
-
-					const key = `${b.code}_${i}`;
-					const start = patch.from * len, end = patch.to * len;
-					const cuts = ( frontCuts.get( key ) || [] ).map( ( [ u0, u1 ] ) => aIsLeft ? [ u0, u1 ] : [ len - u1, len - u0 ] )
-						.map( ( [ u0, u1 ] ) => [ Math.max( start, u0 ), Math.min( end, u1 ) ] ).filter( ( [ u0, u1 ] ) => u1 > u0 ).sort( ( a, b ) => a[ 0 ] - b[ 0 ] );
-					const visible = [];
-					let u = start;
-					for ( const [ u0, u1 ] of cuts ) { if ( u0 > u + 0.01 ) visible.push( [ + u.toFixed( 2 ), + u0.toFixed( 2 ) ] ); u = Math.max( u, u1 ); }
-					if ( u < end - 0.01 ) visible.push( [ + u.toFixed( 2 ), + end.toFixed( 2 ) ] );
-					const overlayHeight = Math.min( patch.height, floorH );
-					decor.shopfronts.push( { front: key, file: patch.file, at: at( 0.5, 0, overlayHeight / 2 ), rot, width: + len.toFixed( 2 ), height: + overlayHeight.toFixed( 2 ), visible, uvBox: [ + start.toFixed( 2 ), + end.toFixed( 2 ) ], depth: 0.09 } );
-
-				}
 				for ( const bal of extra.balconies || [] ) {
 
 					const f0 = aIsLeft ? bal.from : 1 - bal.to, f1 = aIsLeft ? bal.to : 1 - bal.from;

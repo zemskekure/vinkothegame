@@ -52,8 +52,7 @@ Write `review.json` in the square's work folder, next to `inventory.json`: an ob
         "banner": { "text": "…", "board": "#rrggbb", "ink": "#rrggbb" },
         "ground": [ "shop", { "kind": "door", "frame": "wood", "glazed": true }, "window" ],
         "balconies": [ { "floor": 1, "from": 0.1, "to": 0.6, "depth": 0.8 } ],
-        "shopfront": "<code>_<edge>.svg", "shopfrontHeight": 5.5,
-        "photoPatches": [ { "photo": "/absolute/owner/photo.jpg", "from": 0.0, "to": 0.17, "height": 4.2 } ]
+        "shopfront": "<code>_<edge>.svg", "shopfrontHeight": 5.5
       } },
       "note": "Konviktská 24: ochre four-storey baroque house, … (Street View 2025)",
       "confidence": "high|medium|low"
@@ -108,11 +107,8 @@ Write `review.json` in the square's work folder, next to `inventory.json`: an ob
   `npm run build` rasterizes these checked SVG drawings into ignored PNG textures for the game.
   Set `shopfrontHeight` only when the pictured ground floor is taller than the normal 4.2 m overlay, so the
   drawing covers the underlying procedural openings.
-- For a straight-on owner-owned photo marked `textureCandidate` in `ownerPhotoMeta`, a `photoPatches` entry
-  can put the real detail on a measured fraction of the front. `photo` must exactly match that inventory path;
-  `from` and `to` are fractions of the front from its left as seen from the street. The merge copies only
-  those approved owner files into `data/fronts/owner/`. Street View remains the source for the review and may
-  never be used here. Use a photo patch only when the pictured feature still matches Street View.
+- Owner photos can clarify signs, doors and material details when Street View is ambiguous. Translate those
+  details into original SVG drawings that match the game's painted style; do not place raw photo patches on facades.
 - Report layout problems in `layoutIssues`, with the exact photo evidence. Geometry is **not** changed by review.
   The owner decides whether to fix a passage, street or steps after looking at the comparison and walk report.
 - After the model/photo correction pass, list every prominent frontage mismatch still visible in `visualIssues`.
