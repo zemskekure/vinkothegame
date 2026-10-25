@@ -399,6 +399,8 @@ const GF_DEFAULT_FRAME = { door: 'wood', gate: 'wood', shop: 'dark', window: 'wh
 const GF_WIDTH = { door: [ 1.0, 1.3, 1.8 ], gate: [ 2.6, 3.0, 3.6 ], shop: [ 1.8, 2.6, 4.2 ], window: [ 0.9, 1.2, 1.5 ], garage: [ 2.4, 2.8, 3.4 ], niche: [ 1.4, 1.8, 2.2 ], blank: [ 1, 2, 4 ] };
 const GF_MIN_PIER = 0.45;
 const groundFloors = [], groundFloorRow = new Map();
+// Where a real passage or arcade cuts a described front: [ u0, u1 ] ranges per front key (see the wall loop).
+const frontCuts = new Map();
 
 function layoutGroundFloor( items, len ) {
 
@@ -1213,6 +1215,14 @@ for ( const b of buildings ) {
 				const [ PX, PY ] = P( t0 ), [ QX, QY ] = P( t1 );
 				const bottom = ( X, Y ) => terrainAt( X, Y ) + BASE_HEIGHT + ( cut ? cut : - 1.0 );
 				if ( cut && bottom( PX, PY ) > roofAt( PX, PY ) - 0.3 ) continue;
+				if ( cut && ringIndex === 0 ) {
+
+					const key = `${b.code}_${a.edge}`, ua = uA + ( uC - uA ) * t0, ub = uA + ( uC - uA ) * t1;
+					if ( ! frontCuts.has( key ) ) frontCuts.set( key, [] );
+					frontCuts.get( key ).push( [ Math.min( ua, ub ), Math.max( ua, ub ) ] );
+
+				}
+
 				const q = wallData.length / WALL_STRIDE;
 				v( toLocal( PX, PY, bottom( PX, PY ) ), uA + ( uC - uA ) * t0 );
 				v( toLocal( QX, QY, bottom( QX, QY ) ), uA + ( uC - uA ) * t1 );
@@ -1691,6 +1701,18 @@ await writeFile( new URL( 'street-facades.json', RAW ), JSON.stringify( streetFa
 const mask = new Uint8Array( Math.ceil( idGrid.length / 8 ) );
 for ( let i = 0; i < idGrid.length; i ++ ) if ( keptIds.has( idGrid[ i ] ) ) mask[ i >> 3 ] |= 1 << ( i & 7 );
 await writeFile( new URL( 'footprints.bin', OUT ), mask );
+
+// A painted gate on a front that has a real passage would sit beside the hole you can walk through: the real
+// opening is the gate there, so painted gates and doors are dropped on those fronts, and anything painted over the
+// hole goes too.
+for ( const [ key, row ] of groundFloorRow ) {
+
+	const cuts = frontCuts.get( key );
+	if ( ! cuts ) continue;
+	const items = groundFloors[ row ];
+	groundFloors[ row ] = items.filter( ( [ u0, u1, kind ] ) => kind !== GF_KIND.gate && ! cuts.some( ( [ c0, c1 ] ) => u0 < c1 && u1 > c0 ) );
+
+}
 
 await writeFile( new URL( 'scene.json', OUT ), JSON.stringify( {
 	attribution: 'Data © ČÚZK (RÚIAN, ZABAGED®, DMR 5G, DMP 1G) · © OpenStreetMap contributors (ODbL)',
