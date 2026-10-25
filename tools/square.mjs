@@ -344,7 +344,7 @@ async function merge() {
 
 		}
 
-		if ( Object.values( h.edges || {} ).some( edge => edge.shopfront ) || ( R.signs || [] ).some( sign => h.fronts.includes( sign.front ) ) ) e.signs = false;
+		if ( Object.values( h.edges || {} ).some( edge => edge.shopfront || edge.photoPatches?.length ) || ( R.signs || [] ).some( sign => h.fronts.includes( sign.front ) ) ) e.signs = false;
 		H[ code ] = e;
 		houses ++;
 
