@@ -1,13 +1,17 @@
 import * as THREE from 'three/webgpu';
 import { makeFigure } from './figures.js';
+import { makeMoped } from './moped.js';
 
 const RADIUS = 0.35;
 const WALK = 1.7, RUN = 5.2;
+// On the moped: top speed about 40 km/h, brisk town acceleration, steering that tightens as it slows.
+const MOPED = { max: 11, reverse: 2, accel: 4.5, brake: 9, drag: 1.6, turn: 2.2 };
 
 // Third-person walking (GTA-style): your figure in the street with the camera behind it. Mouse look (pointer
 // lock) and WASD, Shift to run, the wheel to zoom, V for first person; on touch screens a joystick (bottom left)
 // to walk and a drag anywhere else to look. The figure turns towards where it walks; the camera pulls in when a
 // house stands between it and the figure. Terrain following, sliding collisions against building footprints.
+// B gets on or off a moped: W/S throttle and brake, A/D steer, and the camera swings in behind.
 export class Walker {
 
 	constructor( camera, dom, groundHeight, isBlocked, scene, cameraBlocked = isBlocked, ceilingAt = () => Infinity ) {
@@ -34,6 +38,12 @@ export class Walker {
 		this.avatar = makeFigure( 0xc4533a, 0x3b4350, 0xeee9df );
 		this.avatar.visible = false;
 		scene.add( this.avatar );
+		this.moped = makeMoped();
+		this.moped.visible = false;
+		scene.add( this.moped );
+		this.riding = false;
+		this.speed = 0;
+		this.lookTime = 0;
 
 		dom.addEventListener( 'click', () => {
 
@@ -45,6 +55,7 @@ export class Walker {
 
 			if ( ! this.enabled || document.pointerLockElement !== dom ) return;
 			this.yaw -= e.movementX * 0.0022;
+			this.lookTime = 1.5;
 			this.pitch += e.movementY * 0.0022;
 			this.clampPitch();
 
@@ -90,6 +101,7 @@ export class Walker {
 
 			this.keys.add( e.code );
 			if ( e.code === 'KeyV' && this.enabled ) this.setFirstPerson( ! this.firstPerson );
+			if ( e.code === 'KeyB' && this.enabled ) this.setRiding( ! this.riding );
 
 		} );
 		window.addEventListener( 'keyup', e => this.keys.delete( e.code ) );
@@ -156,11 +168,20 @@ export class Walker {
 
 	}
 
+	setRiding( on ) {
+
+		this.riding = on;
+		this.speed = 0;
+		this.moped.visible = this.enabled && on;
+
+	}
+
 	setEnabled( enabled, touch ) {
 
 		this.enabled = enabled;
 		this.joystick.style.display = enabled && touch ? 'block' : 'none';
 		this.avatar.visible = enabled && ! this.firstPerson;
+		this.moped.visible = enabled && this.riding;
 		if ( ! enabled ) this.stick.x = this.stick.y = 0;
 
 	}
@@ -209,6 +230,7 @@ export class Walker {
 
 	update( dt ) {
 
+		if ( this.riding ) return this.ride( dt );
 		const k = this.keys;
 		let forward = ( k.has( 'KeyW' ) || k.has( 'ArrowUp' ) ? 1 : 0 ) - ( k.has( 'KeyS' ) || k.has( 'ArrowDown' ) ? 1 : 0 );
 		let strafe = ( k.has( 'KeyD' ) || k.has( 'ArrowRight' ) ? 1 : 0 ) - ( k.has( 'KeyA' ) || k.has( 'ArrowLeft' ) ? 1 : 0 );
@@ -258,12 +280,80 @@ export class Walker {
 
 	}
 
+	// Moped: the throttle and brake set the speed, steering turns the heading, and the move is taken in short steps
+	// so a fast moped cannot skip through a thin wall. Hitting something slides along it and loses most speed.
+	ride( dt ) {
+
+		const k = this.keys;
+		let throttle = ( k.has( 'KeyW' ) || k.has( 'ArrowUp' ) ? 1 : 0 ) - ( k.has( 'KeyS' ) || k.has( 'ArrowDown' ) ? 1 : 0 );
+		let steer = ( k.has( 'KeyD' ) || k.has( 'ArrowRight' ) ? 1 : 0 ) - ( k.has( 'KeyA' ) || k.has( 'ArrowLeft' ) ? 1 : 0 );
+		if ( Math.hypot( this.stick.x, this.stick.y ) > 0.15 ) {
+
+			throttle = THREE.MathUtils.clamp( - this.stick.y, - 1, 1 );
+			steer = THREE.MathUtils.clamp( this.stick.x, - 1, 1 );
+
+		}
+
+		let v = this.speed;
+		if ( throttle > 0 ) v += ( v < 0 ? MOPED.brake : MOPED.accel * throttle ) * dt;
+		else if ( throttle < 0 ) v -= ( v > 0 ? MOPED.brake : MOPED.accel ) * - throttle * dt;
+		else v -= Math.sign( v ) * Math.min( Math.abs( v ), MOPED.drag * dt );
+		v = THREE.MathUtils.clamp( v, - MOPED.reverse, MOPED.max );
+
+		// Turning the bars only turns a moving moped, and less at speed.
+		const grip = Math.min( 1, Math.abs( v ) / 2.5 ) * ( 1 - 0.45 * Math.abs( v ) / MOPED.max );
+		this.heading -= steer * MOPED.turn * grip * Math.sign( v ) * dt;
+
+		const p = this.pos;
+		const sx = Math.sin( this.heading ), sz = Math.cos( this.heading );
+		const steps = Math.max( 1, Math.ceil( Math.abs( v * dt ) / 0.25 ) );
+		for ( let i = 0; i < steps; i ++ ) {
+
+			const dx = sx * v * dt / steps, dz = sz * v * dt / steps;
+			if ( this.blocked( p.x, p.z ) || ! this.blocked( p.x + dx, p.z + dz ) ) { p.x += dx; p.z += dz; continue; }
+			if ( ! this.blocked( p.x + dx, p.z ) ) p.x += dx;
+			else if ( ! this.blocked( p.x, p.z + dz ) ) p.z += dz;
+			v *= 0.4;
+			break;
+
+		}
+
+		this.speed = v;
+
+		// The camera settles behind the rider unless the mouse looked around in the last moment.
+		this.lookTime = Math.max( 0, this.lookTime - dt );
+		if ( ! this.lookTime && Math.abs( v ) > 0.5 ) {
+
+			let d = this.heading + Math.PI - this.yaw;
+			d = Math.atan2( Math.sin( d ), Math.cos( d ) );
+			this.yaw += d * Math.min( 1, dt * 2.5 );
+
+		}
+
+		this.stride += ( 0 - this.stride ) * Math.min( 1, dt * 8 );
+		this.time += dt;
+		const target = this.groundHeight( p.x, p.z );
+		this.y += ( target - this.y ) * Math.min( 1, dt * 12 );
+		this.apply( dt );
+
+	}
+
 	apply( dt ) {
 
 		const p = this.pos;
 		p.y = this.y;
 		this.avatar.position.copy( p );
 		this.avatar.rotation.y = this.heading;
+		if ( this.riding ) {
+
+			// The rider stands on the floorboard, a little back, leaning into the bars.
+			this.moped.position.copy( p );
+			this.moped.rotation.y = this.heading;
+			this.avatar.position.y += 0.32;
+			this.avatar.position.x -= Math.sin( this.heading ) * 0.15;
+			this.avatar.position.z -= Math.cos( this.heading ) * 0.15;
+
+		}
 		this.avatar.userData.setPose( { phase: this.phase, stride: this.stride, t: this.time } );
 
 		const cam = this.camera;

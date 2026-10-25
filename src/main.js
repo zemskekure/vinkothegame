@@ -475,7 +475,7 @@ function setMode( walk ) {
 	hud.help.textContent = touch
 		? ( walk ? 'Joystick vlevo dole chůze (až k okraji běh) · táhni prstem kamerou' : 'Táhni prstem pro otáčení · dvěma prsty přiblížení a posun' )
 		: walk
-			? 'Klikni a ovládej kameru myší · WASD chůze · Shift běh · kolečko zoom · V pohled z očí'
+			? 'Klikni a ovládej kameru myší · WASD chůze · Shift běh · B moped · kolečko zoom · V pohled z očí'
 			: 'Táhni myší pro otáčení · kolečko přiblížení · pravé tlačítko posun';
 	hud.place.style.display = walk ? 'block' : 'none';
 	minimap.setVisible( walk );
