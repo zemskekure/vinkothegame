@@ -4,13 +4,14 @@
 import * as THREE from 'three/webgpu';
 
 const urls = import.meta.glob( '../data/fronts-rendered/*.png', { query: '?url', import: 'default', eager: true } );
+const ownerUrls = import.meta.glob( '../data/fronts/owner/*.{jpg,jpeg,png,webp}', { query: '?url', import: 'default', eager: true } );
 
 export async function addShopfronts( scene, fronts ) {
 
 	const loader = new THREE.TextureLoader();
 	for ( const f of fronts || [] ) {
 
-		const url = urls[ `../data/fronts-rendered/${f.file.replace( /\.svg$/, '.png' )}` ];
+		const url = f.file.endsWith( '.svg' ) ? urls[ `../data/fronts-rendered/${f.file.replace( /\.svg$/, '.png' )}` ] : ownerUrls[ `../data/fronts/${f.file}` ];
 		if ( ! url ) throw new Error( `Missing drawn front ${f.file}` );
 		const texture = await loader.loadAsync( url );
 		texture.colorSpace = THREE.SRGBColorSpace;
@@ -24,9 +25,10 @@ export async function addShopfronts( scene, fronts ) {
 			if ( to - from < 0.02 ) continue;
 			const geometry = new THREE.PlaneGeometry( to - from, f.height );
 			const uv = geometry.attributes.uv;
-			for ( let i = 0; i < uv.count; i ++ ) uv.setX( i, ( from + uv.getX( i ) * ( to - from ) ) / f.width );
+			const [ u0, u1 ] = f.uvBox || [ 0, f.width ];
+			for ( let i = 0; i < uv.count; i ++ ) uv.setX( i, ( from + uv.getX( i ) * ( to - from ) - u0 ) / ( u1 - u0 ) );
 			const mesh = new THREE.Mesh( geometry, material );
-			mesh.position.set( ( from + to - f.width ) / 2, 0, 0.075 );
+			mesh.position.set( ( from + to - f.width ) / 2, 0, f.depth || 0.075 );
 			mesh.receiveShadow = true;
 			group.add( mesh );
 

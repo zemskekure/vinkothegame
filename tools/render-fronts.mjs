@@ -11,7 +11,7 @@ const ROOT = path.dirname( path.dirname( fileURLToPath( import.meta.url ) ) );
 const source = path.join( ROOT, 'data/fronts' );
 const output = path.join( ROOT, 'data/fronts-rendered' );
 const scene = JSON.parse( await readFile( path.join( ROOT, 'public/data/scene.json' ) ) );
-const fronts = scene.decor?.shopfronts || [];
+const fronts = ( scene.decor?.shopfronts || [] ).filter( f => f.file.endsWith( '.svg' ) );
 await mkdir( output, { recursive: true } );
 const wanted = new Set( fronts.map( f => f.file.replace( /\.svg$/, '.png' ) ) );
 for ( const file of await readdir( output ) ) if ( file.endsWith( '.png' ) && ! wanted.has( file ) ) await rm( path.join( output, file ) );

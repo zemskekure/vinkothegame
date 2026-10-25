@@ -22,15 +22,21 @@ export function validateReview( review, inventory ) {
 
 	const errors = [];
 	if ( ! object( review ) ) return [ 'review must be an object' ];
-	keys( review, [ 'houses', 'signs', 'issues', 'layoutIssues' ], 'review', errors );
+	keys( review, [ 'houses', 'signs', 'issues', 'layoutIssues', 'visualIssues' ], 'review', errors );
 	const fronts = new Map( inventory.fronts.map( f => [ f.front, f ] ) );
 	if ( ! object( review.houses ) ) errors.push( 'houses must be an object' );
 	if ( ! Array.isArray( review.signs ) ) errors.push( 'signs must be an array' );
 	if ( ! Array.isArray( review.issues ) || review.issues.some( v => typeof v !== 'string' || v.length > 500 ) ) errors.push( 'issues must be short strings' );
 	if ( ! Array.isArray( review.layoutIssues ) ) errors.push( 'layoutIssues must be an array' );
+	if ( ! Array.isArray( review.visualIssues ) ) errors.push( 'visualIssues must be an array, even when no visible mismatch remains' );
 	for ( const [ n, issue ] of ( Array.isArray( review.layoutIssues ) ? review.layoutIssues : [] ).entries() ) {
 
 		if ( ! object( issue ) || ! [ 'street', 'passage', 'arcade', 'steps', 'building', 'surface', 'other' ].includes( issue.kind ) || typeof issue.where !== 'string' || ! issue.where.trim() || issue.where.length > 120 || typeof issue.evidence !== 'string' || ! issue.evidence.trim() || issue.evidence.length > 500 ) errors.push( `layoutIssues[${n}]: kind, where and photo evidence required` );
+
+	}
+	for ( const [ n, issue ] of ( Array.isArray( review.visualIssues ) ? review.visualIssues : [] ).entries() ) {
+
+		if ( ! object( issue ) || ! fronts.has( issue.front ) || typeof issue.what !== 'string' || ! issue.what.trim() || issue.what.length > 300 || typeof issue.evidence !== 'string' || ! issue.evidence.trim() || issue.evidence.length > 500 ) errors.push( `visualIssues[${n}]: reviewed front, visible mismatch and photo evidence required` );
 
 	}
 	for ( const [ code, h ] of Object.entries( object( review.houses ) ? review.houses : {} ) ) {
@@ -54,7 +60,7 @@ export function validateReview( review, inventory ) {
 			const front = `${code}_${edge}`, where = `${at}.edges.${edge}`;
 			if ( ! fronts.has( front ) || ! h.fronts?.includes( front ) ) errors.push( `${where}: front must be in houses.${code}.fronts` );
 			if ( ! object( e ) ) { errors.push( `${where}: expected object` ); continue; }
-			keys( e, [ 'awning', 'lanterns', 'banner', 'ground', 'balconies', 'shopfront', 'shopfrontHeight' ], where, errors );
+			keys( e, [ 'awning', 'lanterns', 'banner', 'ground', 'balconies', 'shopfront', 'shopfrontHeight', 'photoPatches' ], where, errors );
 			if ( e.awning !== undefined && ! colour( e.awning ) ) errors.push( `${where}.awning: expected #rrggbb` );
 			if ( e.lanterns !== undefined && typeof e.lanterns !== 'boolean' ) errors.push( `${where}.lanterns: expected boolean` );
 			if ( e.banner !== undefined && ( ! object( e.banner ) || typeof e.banner.text !== 'string' || e.banner.text.length > 30 || ! colour( e.banner.board ) || ! colour( e.banner.ink ) ) ) errors.push( `${where}.banner: text, board and ink required` );
@@ -81,6 +87,20 @@ export function validateReview( review, inventory ) {
 			}
 			if ( e.shopfront !== undefined && e.shopfront !== `${front}.svg` ) errors.push( `${where}.shopfront: expected ${front}.svg` );
 			if ( e.shopfrontHeight !== undefined && ( ! e.shopfront || ! bounded( e.shopfrontHeight, 2, 6.5 ) ) ) errors.push( `${where}.shopfrontHeight: requires a drawn front and 2–6.5 m` );
+			if ( e.photoPatches !== undefined ) {
+
+				if ( ! Array.isArray( e.photoPatches ) || e.photoPatches.length > 4 ) errors.push( `${where}.photoPatches: expected up to four owner-owned crops` );
+				else for ( const [ n, patch ] of e.photoPatches.entries() ) {
+
+					const at = `${where}.photoPatches[${n}]`;
+					if ( ! object( patch ) ) { errors.push( `${at}: expected object` ); continue; }
+					keys( patch, [ 'photo', 'from', 'to', 'height' ], at, errors );
+					if ( ! inventory.ownerPhotoMeta?.some( p => p.file === patch.photo && p.textureCandidate ) ) errors.push( `${at}.photo: use a texture candidate from this square's owner-photo inventory` );
+					if ( ! bounded( patch.from, 0, 1 ) || ! bounded( patch.to, 0, 1 ) || patch.to <= patch.from || ! bounded( patch.height, 2, 6.5 ) ) errors.push( `${at}: from, to and height required` );
+
+				}
+
+			}
 
 		}
 
