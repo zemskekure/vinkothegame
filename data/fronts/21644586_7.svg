@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 740 480">
+<rect x="0" y="0" width="740" height="22" fill="#e2dab2"/>
+<path d="M0 22H740" stroke="#b8ad80" stroke-width="5"/>
+<path d="M0 30H740M0 125H740M0 170H740M0 215H740M0 260H740M0 305H740M0 350H740M0 395H740M0 440H740" stroke="#b9ae82" stroke-width="2.5" fill="none"/>
+<path d="M90 125V170M300 125V170M60 170V215M230 170V215M120 215V260M330 215V260M50 260V305M250 260V305M140 305V350M340 305V350M70 350V395M260 350V395M150 395V440M330 395V440M60 440V480M240 440V480M690 170V215M670 260V305M700 350V395M680 440V480M30 30V125M690 30V125" stroke="#b9ae82" stroke-width="2.5" fill="none"/>
+<rect x="142" y="38" width="505" height="68" fill="none" stroke="#4a80b6" stroke-width="2.5"/>
+<text x="394" y="92" font-family="Georgia, serif" font-size="50" font-weight="bold" letter-spacing="12" text-anchor="middle" fill="#3d78b4">U ŠEDIVÝCH</text>
+<rect x="388" y="151" width="254" height="329" fill="none" stroke="#bdb286" stroke-width="7"/>
+<rect x="403" y="166" width="224" height="74" fill="#1e1c1b"/>
+<rect x="412" y="174" width="206" height="56" fill="#5d6a70"/>
+<path d="M430 182H600" stroke="#7f8b90" stroke-width="3"/>
+<rect x="403" y="240" width="95" height="240" fill="#1e1c1b"/>
+<rect x="414" y="252" width="72" height="150" fill="#3d4549"/>
+<rect x="414" y="410" width="72" height="62" fill="#262422"/>
+<rect x="476" y="330" width="5" height="22" fill="#c9c9c4"/>
+<rect x="498" y="240" width="129" height="166" fill="#1e1c1b"/>
+<rect x="508" y="250" width="110" height="148" fill="#3e474c"/>
+<circle cx="535" cy="320" r="10" fill="#c2463d"/>
+<circle cx="568" cy="296" r="9" fill="#e3e0d6"/>
+<circle cx="596" cy="342" r="10" fill="#4f78b8"/>
+<path d="M548 280V360M520 378H604" stroke="#9aa3a8" stroke-width="7"/>
+<rect x="494" y="406" width="137" height="10" fill="#9c8669"/>
+</svg>

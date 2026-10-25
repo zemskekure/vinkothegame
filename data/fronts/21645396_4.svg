@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 420">
+<rect x="0" y="0" width="1080" height="24" fill="#f3e8c4"/>
+<path d="M0 24H1080" stroke="#cfbd85" stroke-width="5"/>
+<rect x="40" y="150" width="36" height="26" fill="#f4f2ec" stroke="#b7b2a6" stroke-width="2"/>
+<rect x="92" y="60" width="16" height="360" fill="#f4efe0"/>
+<rect x="98" y="72" width="500" height="58" fill="#c9dc6e"/>
+<rect x="98" y="72" width="500" height="58" fill="none" stroke="#7d9a45" stroke-width="3"/>
+<rect x="104" y="76" width="74" height="50" fill="#5e8f4a"/>
+<path d="M134 122V96L138 86H146L150 96V122Z" fill="#d8ee8a"/>
+<text x="390" y="118" font-family="Georgia, serif" font-size="40" font-weight="bold" text-anchor="middle" fill="#2c6a2b">Absinthe Shop</text>
+<rect x="104" y="132" width="490" height="16" fill="#f4efe0"/>
+<rect x="118" y="148" width="462" height="272" fill="#2f3a33"/>
+<path d="M118 170H580M118 192H580M118 214H580M118 236H580M118 258H580M118 280H580M118 302H580M118 324H580M118 346H580M118 368H580M118 390H580" stroke="#45524a" stroke-width="3"/>
+<path d="M150 160V200M150 180H180M200 160V200H230V160M260 200V160L290 200V160M320 160V200M350 160Q380 160 380 180Q380 200 350 200M410 160V200M410 180L440 160M410 180L440 200" stroke="#d6d6d0" stroke-width="10" fill="none" stroke-linecap="round"/>
+<path d="M170 420V300Q170 240 240 240Q300 240 300 300V420Z" fill="#3fb6a8"/>
+<path d="M330 420V250H420V300H380V420Z" fill="#3fb6a8"/>
+<path d="M440 420V260H560V310H500V420Z" fill="#46c0b0"/>
+<path d="M180 300Q240 250 290 300" stroke="#6d4a9a" stroke-width="12" fill="none"/>
+<path d="M120 420V330Q140 300 170 330M560 420V340Q570 320 580 330" stroke="#6d4a9a" stroke-width="14" fill="none"/>
+<rect x="690" y="150" width="140" height="270" fill="#f4efe0"/>
+<rect x="702" y="162" width="116" height="258" fill="#2f5a3a"/>
+<path d="M760 162V420M712 180H750V300H712ZM770 180H808V300H770Z" stroke="#1f3e28" stroke-width="5" fill="none"/>
+<rect x="950" y="120" width="130" height="300" fill="#2f6b3a"/>
+<rect x="962" y="132" width="118" height="288" fill="#2b3631"/>
+<path d="M985 200L1000 175L1015 200L1000 190ZM1030 260L1045 235L1060 260L1045 250Z" fill="#79c24a"/>
+<path d="M975 300H1070M975 330H1050" stroke="#f2f2ee" stroke-width="8"/>
+</svg>

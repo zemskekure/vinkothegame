@@ -314,6 +314,62 @@
 			}
 		}
 	},
+	"21643628": {
+		"note": "Husova 4a / Jilská 3: the Husova fronts are a white garden wall about 3.5 m high with a red-tiled coping and blind round arches, a restaurant terrace under Staropramen umbrellas in front; behind the corner a sand-coloured 3-storey house with dormers and a round-arched ground-floor arcade. Pass 2: confirmed; the model still builds a full white house on these edges (Street View 2019).",
+		"edges": {
+			"0": {
+				"colour": "#f1eee6",
+				"ground": [
+					{
+						"kind": "niche",
+						"arch": true
+					}
+				]
+			},
+			"2": {
+				"colour": "#f1eee6",
+				"ground": [
+					"blank"
+				]
+			}
+		}
+	},
+	"21643636": {
+		"note": "Husova 3: white baroque house, horizontally rusticated ground floor, brown wooden shop door; wrought-iron hanging sign of Egoist Royal Parfums at the north end. Pass 2: confirmed in the 21643644_48 pair (Street View 2019).",
+		"colour": "#eeebe2",
+		"trim": "#f7f5ef",
+		"ground": "shops",
+		"rustic": "banded",
+		"signs": false
+	},
+	"21643644": {
+		"note": "Husova 5: white baroque palace, white banded ground floor, tall brown wooden windows in stucco surrounds with hoods, wall lantern and a carved stone portal with a sculpted head. Pass 2: rustic changed from ornate to banded because ornate drew a grey stone base the photo does not have; ground floor two tall windows and the portal door (Street View 2019).",
+		"colour": "#eeebe2",
+		"trim": "#f7f5ef",
+		"floors": 4,
+		"ground": "gate",
+		"rustic": "banded",
+		"edges": {
+			"48": {
+				"lanterns": true,
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "wood"
+					},
+					{
+						"kind": "window",
+						"frame": "wood"
+					},
+					{
+						"kind": "door",
+						"arch": true,
+						"frame": "wood"
+					}
+				]
+			}
+		}
+	},
 	"21643741": {
 		"note": "Liliová 4 (no. 250): its first ~7 m from the north are a pale pink historicist house with a banded ground floor, barred windows and a wall lantern; the rest is a plain white three-storey house with Choco-Café U Červené židle: wood-framed shop windows at ~8-10 and ~17.5-21 m, black wrought-iron vine trellises between them and a brown hanging CHOCO CAFÉ sign (marked 21643741_15a/b, Street View 2024). Drawn front.",
 		"colour": "#ecebe6",
@@ -3077,33 +3133,145 @@
 		}
 	},
 	"21644586": {
-		"note": "Betlémské náměstí: cream-yellow house with the dark wooden Švejk restaurant front (Street View 2019)",
+		"note": "Na Perštýně 18 face: khaki-cream plaster scored as ashlar, string course at about 4.8 m, blue serif \"U ŠEDIVÝCH\" painted in a thin blue frame, iron wall lantern, black door and display window with a glazed transom (puppet shop). Pass 2: drawing made transparent so the lettering and ashlar sit on the wall instead of a pale patch; duplicate sign removed. Betlémské náměstí face not seen (owner photos 2025-05-14).",
 		"colour": "#ecd9a4",
 		"trim": "#f4ead0",
 		"ground": "restaurant",
 		"rustic": "none",
-		"signs": false
+		"signs": false,
+		"edges": {
+			"7": {
+				"colour": "#d9d0a3",
+				"trim": "#e2dab2",
+				"rustic": "banded",
+				"lanterns": true,
+				"ground": [
+					"blank",
+					{
+						"kind": "door",
+						"frame": "dark",
+						"glazed": true
+					},
+					{
+						"kind": "shop",
+						"frame": "dark"
+					}
+				],
+				"shopfront": "21644586_7.svg",
+				"shopfrontHeight": 4.8
+			}
+		}
 	},
 	"21644594": {
-		"note": "Betlémské náměstí 6: U Zeleného stromu, cream neo-gothic front, ornate tympanum, arched gateway (Street View)",
-		"colour": "#e9e0c8",
-		"trim": "#f3ede0",
-		"ground": "gate",
-		"rustic": "ornate",
-		"signs": false
+		"note": "U Zeleného stromu: cream-yellow 4-storey house, plain window surrounds; ground floor a dark-brown wooden restaurant front under one long fascia \"U ZELENÉHO STROMU\" in gilt capitals with a round emblem at its end. Pass 2: rustic set to none (no grey stone base in the photo), drawing widened to the whole front, duplicate board removed; the fascia also runs along Husova (Street View 2019).",
+		"colour": "#e9d6a2",
+		"trim": "#f2e6c4",
+		"ground": "restaurant",
+		"rustic": "none",
+		"signs": false,
+		"floors": 4,
+		"edges": {
+			"1": {
+				"ground": [
+					{
+						"kind": "shop",
+						"frame": "wood"
+					},
+					{
+						"kind": "door",
+						"frame": "wood"
+					},
+					{
+						"kind": "shop",
+						"frame": "wood"
+					},
+					{
+						"kind": "door",
+						"frame": "wood",
+						"arch": true
+					},
+					{
+						"kind": "window",
+						"frame": "wood"
+					}
+				],
+				"shopfront": "21644594_1.svg"
+			}
+		}
 	},
 	"21644608": {
-		"note": "Jilská 1a / Husova 2 corner: plain ochre-beige house with string courses, display windows and a wall lantern; current confirmed, colour slightly warmer; Viselec (hanging-man sculpture) on a pole at roof level (Street View)",
-		"colour": "#e0c295",
-		"trim": "#e9d3ad",
+		"note": "Husova 2 / Jilská 1a: warm apricot-ochre house with recessed string courses, plain window surrounds, deep eaves; curved corner to Jilská with a lantern and the 1a door. Pass 2: Betlémské front drawn with its plaster-framed gallery window and transom; Husova front drawn with the arched window, tall glazed door, two framed display windows, stone-framed wooden door and small windows (17–24 m not seen). Colour warmer (Street View 2019, 2024, 2025).",
+		"colour": "#e0bb86",
+		"trim": "#e6cba0",
 		"ground": "shops",
 		"rustic": "none",
 		"floors": 4,
 		"grilles": false,
 		"graffiti": false,
 		"edges": {
+			"4": {
+				"lanterns": true,
+				"ground": [
+					"blank",
+					"blank"
+				]
+			},
 			"13": {
-				"lanterns": true
+				"lanterns": true,
+				"ground": [
+					"blank",
+					{
+						"kind": "shop",
+						"frame": "dark",
+						"size": "wide"
+					}
+				],
+				"shopfront": "21644608_13.svg"
+			},
+			"15": {
+				"lanterns": true,
+				"ground": [
+					"blank"
+				],
+				"shopfront": "21644608_15.svg"
+			}
+		},
+		"signs": false
+	},
+	"21644616": {
+		"note": "Jilská 4 (U Vejvodů): saturated ochre house, two storeys and a stepped gable, brown sandstone window surrounds with red-brown frames. Pass 2: arcade redrawn as a deep round arch on stacked stone corbels with the green board and red-framed glazed door behind; canopy redrawn as a red pantile roof over the dark \"U VEJVODŮ\" fascia and rough stone arch; floors 2, darker trim; duplicate signs removed (Street View 2024).",
+		"colour": "#eac57f",
+		"trim": "#8f7756",
+		"floors": 2,
+		"ground": "restaurant",
+		"rustic": "none",
+		"edges": {
+			"1": {
+				"lanterns": true,
+				"ground": [
+					"blank",
+					{
+						"kind": "door",
+						"frame": "green"
+					},
+					{
+						"kind": "door",
+						"arch": true,
+						"frame": "dark"
+					}
+				],
+				"shopfront": "21644616_1.svg"
+			},
+			"4": {
+				"ground": [
+					{
+						"kind": "niche",
+						"arch": true,
+						"size": "wide"
+					}
+				],
+				"shopfront": "21644616_4.svg",
+				"shopfrontHeight": 4.5
 			}
 		},
 		"signs": false
@@ -3307,6 +3475,84 @@
 		"rustic": "ornate",
 		"grilles": false,
 		"graffiti": false
+	},
+	"21644691": {
+		"note": "Jilská 1: one RÚIAN building of several houses: warm ochre house with dark shopfronts under the HAVLÍKOVA PŘÍRODNÍ APOTÉKA board; plain front on Jilská; pale ochre 3-storey house with red dormers and barred windows; grey-beige gabled house with white strapwork stucco; cream house with a lantern. Pass 2: edge 4 warmer, edge 7 rustic none (ornate drew a grey base), edge 8 creamier (Street View 2019, 2024).",
+		"colour": "#e3cfa4",
+		"trim": "#efe4cc",
+		"floors": 4,
+		"ground": "shops",
+		"edges": {
+			"4": {
+				"colour": "#dcb27a",
+				"ground": [
+					{
+						"kind": "shop",
+						"frame": "dark"
+					},
+					{
+						"kind": "shop",
+						"frame": "dark"
+					},
+					{
+						"kind": "door",
+						"frame": "dark"
+					},
+					{
+						"kind": "shop",
+						"frame": "dark"
+					}
+				]
+			},
+			"5": {
+				"colour": "#e3cfa4",
+				"ground": [
+					"window",
+					"window",
+					"window"
+				]
+			},
+			"6": {
+				"colour": "#e6cf9f",
+				"trim": "#f1e8d2",
+				"ground": [
+					{
+						"kind": "window",
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"bars": true
+					}
+				]
+			},
+			"7": {
+				"colour": "#cfba98",
+				"trim": "#f1ece0",
+				"rustic": "none",
+				"ground": [
+					"window",
+					{
+						"kind": "door",
+						"frame": "dark"
+					},
+					"window"
+				]
+			},
+			"8": {
+				"colour": "#e8d3ae",
+				"lanterns": true,
+				"ground": [
+					{
+						"kind": "door",
+						"frame": "dark"
+					},
+					"window",
+					"window"
+				]
+			}
+		},
+		"signs": false
 	},
 	"21644705": {
 		"note": "Na Perštýně 2 (corner Národní): white-grey neo-baroque/secession house with rich stucco, oriels and wrought-iron balconies; tall arched shop windows (Feratt) with brown stone plinths, ornate carved portal with iron door, Numismatika shop with hanging gold coin; Pietro Filipi (OSM) no longer there (Street View) Ground floor from the north: the narrow Numismatika window, the carved portal, three tall arched Feratt windows to the corner (owner screenshots, Sept 2025). Iron balconies over the middle Feratt arches on the second and fourth floors (owner screenshots, Sept 2025).",
@@ -3534,6 +3780,168 @@
 		"ground": "gate",
 		"rustic": "none"
 	},
+	"21645388": {
+		"note": "Vejvodova 8: cream house seen edge-on with a tall vertical white hanging banner reading HOTEL, letters stacked; facade detail not readable from this camera (Street View 2019).",
+		"signs": false
+	},
+	"21645396": {
+		"note": "Jilská 6 / Vejvodova 1: pale-yellow baroque corner house, white framing bands and panels, panelled frieze over a banded ground floor; Absinthe Shop shutter, #Mr.420, HOSAROWA and its arched entrance; carved oak arched door on Vejvodova; white east front with two arched windows. Pass 2: graffiti off (Vejvodova fronts are clean; the shutter tags are drawn); signs only in drawings; oak door redrawn; stray window removed (Street View 2019, 2024).",
+		"colour": "#ecdcaa",
+		"trim": "#f6f0dc",
+		"floors": 4,
+		"ground": "shops",
+		"rustic": "none",
+		"graffiti": false,
+		"edges": {
+			"1": {
+				"colour": "#ecd690",
+				"lanterns": true,
+				"ground": [
+					{
+						"kind": "shop",
+						"frame": "green"
+					},
+					"blank"
+				],
+				"shopfront": "21645396_1.svg"
+			},
+			"4": {
+				"colour": "#eedca2",
+				"ground": [
+					"blank",
+					{
+						"kind": "shop",
+						"frame": "grey",
+						"size": "wide"
+					},
+					{
+						"kind": "door",
+						"frame": "green"
+					},
+					{
+						"kind": "shop",
+						"frame": "green"
+					}
+				],
+				"shopfront": "21645396_4.svg"
+			},
+			"10": {
+				"colour": "#f0eeea",
+				"ground": [
+					"blank",
+					{
+						"kind": "window",
+						"arch": true,
+						"size": "narrow",
+						"frame": "dark"
+					},
+					{
+						"kind": "shop",
+						"arch": true,
+						"frame": "dark"
+					},
+					"blank"
+				]
+			},
+			"11": {
+				"colour": "#efe2b8",
+				"rustic": "banded",
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					}
+				]
+			},
+			"12": {
+				"colour": "#efe2b8",
+				"rustic": "banded",
+				"ground": [
+					"blank",
+					{
+						"kind": "door",
+						"arch": true,
+						"frame": "wood"
+					}
+				],
+				"shopfront": "21645396_12.svg"
+			},
+			"13": {
+				"colour": "#efe2b8",
+				"rustic": "banded",
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					}
+				]
+			},
+			"15": {
+				"ground": [
+					{
+						"kind": "shop",
+						"frame": "white",
+						"size": "wide"
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					}
+				]
+			},
+			"16": {
+				"colour": "#e6c375",
+				"rustic": "banded",
+				"ground": [
+					{
+						"kind": "door",
+						"arch": true,
+						"frame": "dark"
+					},
+					"blank"
+				]
+			}
+		},
+		"signs": false
+	},
+	"21645400": {
+		"note": "Jilská 8: pale-ochre house with white panelled window aprons, ground floor in off-white banded rustication, wall lantern, bright-green framed shop window behind a steel mesh grille with goods behind it, stickered downpipe. Pass 2: confirmed; stray chevron marks in the window replaced by goods (Street View 2024).",
+		"colour": "#e3cf98",
+		"trim": "#f0e9d6",
+		"floors": 4,
+		"ground": "shops",
+		"rustic": "banded",
+		"grilles": true,
+		"graffiti": true,
+		"edges": {
+			"16": {
+				"lanterns": true,
+				"ground": [
+					"blank",
+					"blank",
+					{
+						"kind": "shop",
+						"frame": "green",
+						"bars": true
+					}
+				],
+				"shopfront": "21645400_16.svg"
+			}
+		},
+		"signs": false
+	},
 	"21645990": {
 		"note": "Uhelný trh: white corner house with a shop",
 		"colour": "#efe7d6",
@@ -3547,6 +3955,67 @@
 		"trim": "#f3e9cf",
 		"ground": "shops",
 		"rustic": "none"
+	},
+	"21646104": {
+		"note": "Jilská 2 (U Vejvodů): low ochre house, ground floor of rough brown-grey rubble under a dressed ledge, arched glazed wooden door at 4–6 m in a dressed stone surround, green board above, tall white banner; then a cream pilaster and a maroon-framed shopfront (8–15 m) of a tall cream neo-renaissance house. Pass 2: rubble redrawn as small irregular stones; house rustic none (rubble had covered all floors); duplicate board removed (Street View 2024).",
+		"colour": "#e2c58f",
+		"trim": "#bfae8a",
+		"ground": "restaurant",
+		"rustic": "none",
+		"edges": {
+			"1": {
+				"ground": [
+					"blank",
+					{
+						"kind": "door",
+						"arch": true,
+						"frame": "wood",
+						"glazed": true
+					},
+					"blank",
+					{
+						"kind": "shop",
+						"frame": "red",
+						"size": "wide"
+					},
+					{
+						"kind": "shop",
+						"frame": "red",
+						"size": "wide"
+					},
+					"blank"
+				],
+				"shopfront": "21646104_1.svg",
+				"shopfrontHeight": 4.5
+			}
+		},
+		"signs": false
+	},
+	"21649251": {
+		"note": "Vejvodova 4/6: pale greenish-white classical house, acanthus consoles under window hoods, round-arched ground-floor openings with an oak door under a sunburst fanlight; next door a cream house with a wooden double door and lantern. Pass 2: confidence raised so the colour applies; the model showed this house brownish-pink, which no photo supports (Street View 2019).",
+		"colour": "#e6e8dc",
+		"trim": "#f5f5ee",
+		"ground": "windows",
+		"edges": {
+			"11": {
+				"ground": [
+					{
+						"kind": "window",
+						"arch": true,
+						"frame": "white"
+					},
+					{
+						"kind": "door",
+						"arch": true,
+						"frame": "wood"
+					},
+					{
+						"kind": "door",
+						"frame": "wood"
+					}
+				]
+			}
+		}
 	},
 	"21649308": {
 		"note": "Národní 19: white functionalist block with stacked rectangular oriels; ground floor of shops under black fascias: a narrow barber's at the left, the dark-wood double door of 'HOSTEL & PENSION DOWNTOWN' under a gold board in a grey stone frame at 3-6 m, then the black 'fivuza MARKET' shop at 8-13 m. Only the left half photographed; tree in front (Street View 2026, marked 21649308_0b).",
