@@ -19,14 +19,14 @@ export async function addShopfronts( scene, fronts ) {
 		const group = new THREE.Group();
 		group.position.set( ...f.at );
 		group.rotation.y = f.rot;
-		for ( const [ from, to ] of f.visible ) {
+		for ( const [ from, to, depth = 0 ] of f.visible ) {
 
 			if ( to - from < 0.02 ) continue;
 			const geometry = new THREE.PlaneGeometry( to - from, f.height );
 			const uv = geometry.attributes.uv;
 			for ( let i = 0; i < uv.count; i ++ ) uv.setX( i, ( from + uv.getX( i ) * ( to - from ) ) / f.width );
 			const mesh = new THREE.Mesh( geometry, material );
-			mesh.position.set( ( from + to - f.width ) / 2, 0, 0.075 );
+			mesh.position.set( ( from + to - f.width ) / 2, 0, 0.075 - depth );
 			mesh.receiveShadow = true;
 			group.add( mesh );
 

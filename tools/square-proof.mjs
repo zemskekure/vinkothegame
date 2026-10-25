@@ -111,7 +111,22 @@ try {
 		await page.waitForTimeout( 1800 );
 		const model = `${String( i + 1 ).padStart( 2, '0' )}-model.jpg`;
 		const reference = `${String( i + 1 ).padStart( 2, '0' )}-reference${path.extname( p.file ).toLowerCase()}`;
-		await page.screenshot( { path: path.join( out, model ), type: 'jpeg', quality: 86, timeout: 180000 } );
+		// On a loaded machine one frame can take minutes; try three times, longer each time, before giving up.
+		for ( let attempt = 1; ; attempt ++ ) {
+
+			try {
+
+				await page.screenshot( { path: path.join( out, model ), type: 'jpeg', quality: 86, timeout: 180000 * attempt } );
+				break;
+
+			} catch ( e ) {
+
+				if ( attempt >= 3 ) throw e;
+				console.log( `pair ${i + 1}: screenshot timed out, trying again` );
+
+			}
+
+		}
 		await copyFile( p.file, path.join( out, reference ) );
 		pairs.push( { reference, model, source: p.source, x: p.x, z: p.z, yaw: p.yaw, pitch: p.pitch || 0, fov: p.fov || 60, pose, taken: p.taken, what: p.what } );
 		console.log( `pair ${i + 1}/${selected.length}: ${p.what || path.basename( p.file )}` );
