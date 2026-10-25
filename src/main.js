@@ -8,6 +8,8 @@ import { addFurniture } from './furniture.js';
 import { addSigns } from './signs.js';
 import { addDecor, addEmbankment } from './decor.js';
 import { addPlaces } from './places.js';
+import { addIcons } from './icons.js';
+import ICONS from '../data/icons.json';
 import { addLife } from './life.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { createMinimap } from './minimap.js';
@@ -317,6 +319,8 @@ addEmbankment( scene, embankmentBuf, data.embankment );
 
 // Signature places (rotunda, pub, café, champagne bar, museum gate, stairs) and street life (people, cars).
 const { seats } = addPlaces( scene, places, data.furniture, data.waterLevel );
+// Local icons: big lettering, sculptures, domed corner towers (data/icons.json).
+addIcons( scene, ICONS, groundHeight, data.buildings );
 // Models: Kenney's Mini Characters and Car Kit (CC0); textures resolve next to them.
 const gltfLoader = new GLTFLoader();
 const loadModel = async ( path, dir ) => gltfLoader.parseAsync( await load( path, 'arrayBuffer', '' ), dir );

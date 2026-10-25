@@ -1,0 +1,21 @@
+[
+	{
+		"kind": "letters",
+		"text": "MÁJ",
+		"x": 75.5, "z": 279.85, "y": 22.4, "facing": [ -0.222, -0.974 ],
+		"height": 3.4, "width": 8.5, "ink": "#3a3d42",
+		"note": "Máj (Národní 26): the big dark grey MÁJ letters high on the Národní front near the Spálená corner (owner's Street View screenshots, Sept 2025); front from RÚIAN edge (68.7, 281.6)–(102, 274)"
+	},
+	{
+		"kind": "butterfly",
+		"x": 61.5, "z": 280.6, "y": 13.0, "facing": [ -0.6, -0.8 ], "span": 9,
+		"note": "David Černý's Motýlek / Letadlo (Butterfly Effect), a butterfly with a propeller-plane body hanging off the north-west corner of Máj over the Národní / Spálená crossing (OSM node 323123830; seen in the owner's screenshots, Sept 2025)"
+	},
+	{
+		"kind": "cupola",
+		"code": 21651191,
+		"x": 40.5, "z": 288.7, "r": 2.3,
+		"drum": 3.2, "plaster": "#e2d3b0", "copper": "#5d8f7a",
+		"note": "Národní 24: the round corner tower over the Spálená corner, a windowed drum above the main cornice crowned by a green copper cupola and a small lantern (Street View 2025, owner's screenshots); centre from the rounded RÚIAN corner"
+	}
+]

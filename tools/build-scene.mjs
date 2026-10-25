@@ -1008,7 +1008,8 @@ for ( const b of buildings ) {
 	else if ( rg > rr * 1.02 && rg >= rb * 0.95 ) kind = ROOF_KIND.copper;
 	else if ( sat < 0.07 ) kind = ROOF_KIND.slate;
 
-	const style = landmark?.style ?? STYLE.default;
+	// A house description can name a facade style too ("curtain": a modern glass office block).
+	const style = landmark?.style ?? STYLE[ house?.style ] ?? STYLE.default;
 	if ( landmark && ! b.name ) b.name = landmark.name;
 	if ( landmark?.roof !== undefined ) kind = landmark.roof;
 

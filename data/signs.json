@@ -559,7 +559,7 @@
 	},
 	{
 		"front": "21644705_8",
-		"fromLeft": 0.3,
+		"fromLeft": 0.45,
 		"height": 3.3,
 		"kind": "board",
 		"text": "FERATT",
@@ -856,5 +856,69 @@
 		"font": "sans",
 		"street": "x-4_z1",
 		"what": "White Sage Therapy logo (wavy monogram) and lettering on the glass entrance door; matches the OSM fitness_centre place"
+	},
+	{
+		"front": "21644705_8",
+		"fromLeft": 0.66,
+		"height": 3.3,
+		"kind": "board",
+		"text": "FERATT",
+		"width": 2.2,
+		"bg": "#1c1c1c",
+		"ink": "#ffffff",
+		"font": "sans",
+		"street": "na-perstyne",
+		"what": "second Feratt board across the middle arched window (owner screenshots, Sept 2025)"
+	},
+	{
+		"front": "21644705_8",
+		"fromLeft": 0.87,
+		"height": 3.3,
+		"kind": "board",
+		"text": "FERATT",
+		"width": 2.2,
+		"bg": "#1c1c1c",
+		"ink": "#ffffff",
+		"font": "sans",
+		"street": "na-perstyne",
+		"what": "Feratt board across the corner arched window (owner screenshots, Sept 2025)"
+	},
+	{
+		"front": "21644527_5",
+		"fromLeft": 0.78,
+		"height": 3.2,
+		"kind": "board",
+		"text": "ČESKÁ SPOŘITELNA",
+		"width": 2.6,
+		"bg": "#1f5bd6",
+		"ink": "#ffffff",
+		"font": "sans",
+		"street": "na-perstyne",
+		"what": "bank fascia by the blue ATM wall (owner screenshots, Sept 2025)"
+	},
+	{
+		"front": "21651191_4",
+		"fromLeft": 0.72,
+		"height": 3.4,
+		"kind": "letters",
+		"text": "knedlín",
+		"width": 2.2,
+		"ink": "#efe4c8",
+		"font": "serif",
+		"street": "narodni",
+		"what": "Knedlín shop name over the dark green shopfront by the corner tower (owner screenshots, Sept 2025)"
+	},
+	{
+		"front": "21645159_9",
+		"fromLeft": 0.5,
+		"height": 3.4,
+		"kind": "board",
+		"text": "TIMOURE ET GROUP",
+		"width": 6,
+		"bg": "#141414",
+		"ink": "#ffffff",
+		"font": "sans",
+		"street": "martinska",
+		"what": "black fashion-shop fascia along the Martinská front (Street View 2025)"
 	}
 ]

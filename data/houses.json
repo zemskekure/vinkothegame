@@ -805,7 +805,7 @@
 		"signs": false
 	},
 	"21644527": {
-		"note": "Na Perštýně 1/3 (corner Národní): modern glass curtain-wall office block, dark stone ground floor recessed behind square columns (arcade) with canopy; Spaces coworking, exchange office, blue bank ATM wall (Street View)",
+		"note": "Na Perštýně 1/3 (corner Národní): modern glass curtain-wall office block, dark stone ground floor recessed behind square columns (arcade) with canopy; Spaces coworking, exchange office, blue bank ATM wall (Street View) Drawn as a glass curtain wall (owner screenshots, Sept 2025).",
 		"colour": "#6f8f96",
 		"trim": "#3b3a38",
 		"floors": 7,
@@ -813,7 +813,8 @@
 		"rustic": "none",
 		"grilles": false,
 		"graffiti": false,
-		"signs": false
+		"signs": false,
+		"style": "curtain"
 	},
 	"21644535": {
 		"note": "Na Perštýně 5-7, U Medvídků: pale butter-yellow classicist house, low triangular pediment, three storeys plus dormers; ground floor with dark-brown wooden pilasters/frames and serif letters RESTAURACE / U MEDVÍDKŮ / BEER BAR / 1466 along the band; round bronze bracket emblem and street lamp (Street View)",
@@ -826,10 +827,42 @@
 		"graffiti": false,
 		"edges": {
 			"11": {
-				"lanterns": true
+				"lanterns": true,
+				"ground": [
+					{
+						"kind": "door",
+						"frame": "wood",
+						"glazed": true
+					},
+					{
+						"kind": "shop",
+						"frame": "wood"
+					}
+				]
 			},
 			"16": {
-				"lanterns": true
+				"lanterns": true,
+				"ground": [
+					{
+						"kind": "shop",
+						"size": "narrow",
+						"frame": "wood"
+					},
+					{
+						"kind": "door",
+						"frame": "wood",
+						"glazed": true
+					}
+				]
+			},
+			"18": {
+				"ground": [
+					{
+						"kind": "shop",
+						"size": "narrow",
+						"frame": "wood"
+					}
+				]
 			}
 		},
 		"signs": false
@@ -933,7 +966,7 @@
 		"signs": false
 	},
 	"21644705": {
-		"note": "Na Perštýně 2 (corner Národní): white-grey neo-baroque/secession house with rich stucco, oriels and wrought-iron balconies; tall arched shop windows (Feratt) with brown stone plinths, ornate carved portal with iron door, Numismatika shop with hanging gold coin; Pietro Filipi (OSM) no longer there (Street View)",
+		"note": "Na Perštýně 2 (corner Národní): white-grey neo-baroque/secession house with rich stucco, oriels and wrought-iron balconies; tall arched shop windows (Feratt) with brown stone plinths, ornate carved portal with iron door, Numismatika shop with hanging gold coin; Pietro Filipi (OSM) no longer there (Street View) Ground floor from the north: the narrow Numismatika window, the carved portal, three tall arched Feratt windows to the corner (owner screenshots, Sept 2025).",
 		"colour": "#e5e4dd",
 		"trim": "#f4f3ef",
 		"floors": 5,
@@ -941,7 +974,35 @@
 		"rustic": "ornate",
 		"grilles": false,
 		"graffiti": false,
-		"signs": false
+		"signs": false,
+		"edges": {
+			"8": {
+				"ground": [
+					{
+						"kind": "shop",
+						"size": "narrow",
+						"arch": true
+					},
+					{
+						"kind": "door",
+						"frame": "dark",
+						"arch": true
+					},
+					{
+						"kind": "shop",
+						"arch": true
+					},
+					{
+						"kind": "shop",
+						"arch": true
+					},
+					{
+						"kind": "shop",
+						"arch": true
+					}
+				]
+			}
+		}
 	},
 	"21644721": {
 		"note": "Národní 43 / Perlová 10 (corner, right end): salmon-pink neo-renaissance block, round-arched windows with balustraded sills, ornate cornices, chamfered corner with balcony and stacked arched windows. Ground floor clad in grey-beige stone (#b5ab98) with shops under a dark fascia band with gold letters; red roller shutter at the corner shop. (Street View 2026)",
@@ -960,6 +1021,34 @@
 		"trim": "#f5f1e6",
 		"ground": "shops",
 		"rustic": "banded"
+	},
+	"21645159": {
+		"note": "Martinská 4 / Na Perštýně corner: pale beige neo-classical apartment house, four storeys, rounded corner with a small gable; black Timoure et Group fascia over the shop windows (Street View 2025)",
+		"colour": "#e3d4b6",
+		"floors": 4,
+		"edges": {
+			"9": {
+				"ground": [
+					{
+						"kind": "shop",
+						"frame": "dark"
+					},
+					{
+						"kind": "shop",
+						"frame": "dark",
+						"door": true
+					},
+					{
+						"kind": "shop",
+						"frame": "dark"
+					},
+					{
+						"kind": "shop",
+						"frame": "dark"
+					}
+				]
+			}
+		}
 	},
 	"21645175": {
 		"note": "Uhelný trh: cream house with arched openings and dark wooden doors",
@@ -1340,7 +1429,30 @@
 		"floors": 5,
 		"grilles": false,
 		"graffiti": false,
-		"signs": false
+		"signs": false,
+		"edges": {
+			"4": {
+				"ground": [
+					{
+						"kind": "shop",
+						"frame": "green"
+					},
+					{
+						"kind": "shop",
+						"frame": "green",
+						"door": true
+					},
+					{
+						"kind": "shop",
+						"frame": "green"
+					},
+					{
+						"kind": "shop",
+						"frame": "green"
+					}
+				]
+			}
+		}
 	},
 	"21651221": {
 		"note": "Národní 16, Kaňkův palác: ochre baroque palace with red-painted window surrounds and stucco, the 17 November 1989 memorial by the corner (Street View 2026)",
