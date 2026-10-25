@@ -60,7 +60,10 @@ export function validateReview( review, inventory ) {
 			const front = `${code}_${edge}`, where = `${at}.edges.${edge}`;
 			if ( ! fronts.has( front ) || ! h.fronts?.includes( front ) ) errors.push( `${where}: front must be in houses.${code}.fronts` );
 			if ( ! object( e ) ) { errors.push( `${where}: expected object` ); continue; }
-			keys( e, [ 'awning', 'lanterns', 'banner', 'ground', 'balconies', 'shopfront', 'shopfrontHeight' ], where, errors );
+			keys( e, [ 'awning', 'lanterns', 'banner', 'ground', 'balconies', 'shopfront', 'shopfrontHeight', 'style', 'colour', 'trim', 'rustic' ], where, errors );
+			for ( const k of [ 'colour', 'trim' ] ) if ( e[ k ] !== undefined && ! colour( e[ k ] ) ) errors.push( `${where}.${k}: expected #rrggbb` );
+			if ( e.rustic !== undefined && ! RUSTIC.has( e.rustic ) ) errors.push( `${where}.rustic: unknown kind` );
+			if ( e.style !== undefined && ! STYLES.has( e.style ) ) errors.push( `${where}.style: unknown style` );
 			if ( e.awning !== undefined && ! colour( e.awning ) ) errors.push( `${where}.awning: expected #rrggbb` );
 			if ( e.lanterns !== undefined && typeof e.lanterns !== 'boolean' ) errors.push( `${where}.lanterns: expected boolean` );
 			if ( e.banner !== undefined && ( ! object( e.banner ) || typeof e.banner.text !== 'string' || e.banner.text.length > 30 || ! colour( e.banner.board ) || ! colour( e.banner.ink ) ) ) errors.push( `${where}.banner: text, board and ink required` );
