@@ -45,7 +45,10 @@ const M = {
 	side: plain( 0xe2d9c6, { roughness: 0.9, side: THREE.DoubleSide } ),
 	stone: ashlar( 0xb9b09e, 0xcfc6b3 ),
 	plinth: plain( 0x8f8a80, { roughness: 0.9, side: THREE.DoubleSide } ),
-	lamp: glow( 0xffdcaa, 1.8 )
+	lamp: glow( 0xffdcaa, 1.8 ),
+	// Under the modern theatre buildings: dark stone-clad walls and a dark ceiling.
+	modernSide: plain( 0x3a3936, { roughness: 0.6, side: THREE.DoubleSide } ),
+	modernCeiling: plain( 0x242424, { roughness: 0.8, side: THREE.DoubleSide } )
 };
 
 // A quad from four corners (counter-clockwise seen from the front).
@@ -111,8 +114,17 @@ function addPassage( shared, o ) {
 		// Plastered side walls with a stone plinth, facing into the passage.
 		const z = - s * W;
 		const corners = [ [ - L, y( - L ) - 0.2, z ], [ L, y( L ) - 0.2, z ], [ L, y( L ) + spring, z ], [ - L, y( - L ) + spring, z ] ];
-		kit.add( M.side, quad( ...corners ) );
+		kit.add( o.modern ? M.modernSide : M.side, quad( ...corners.map( ( [ px, py, pz ], i ) => [ px, i < 2 ? py : ( o.modern ? py - spring + o.h : py ), pz ] ) ) );
 		kit.add( M.plinth, quad( ...corners.map( ( [ px, py, pz ], i ) => [ px, i < 2 ? py : py - spring + 0.65, pz - s * 0.04 ] ) ) );
+
+	}
+
+	// Under a modern building: a flat dark ceiling and no portals, just the cut in the front.
+	if ( o.modern ) {
+
+		kit.add( M.modernCeiling, quad( [ - L, y( - L ) + o.h, W ], [ L, y( L ) + o.h, W ], [ L, y( L ) + o.h, - W ], [ - L, y( - L ) + o.h, - W ] ) );
+		kit.add( M.lamp, new THREE.SphereGeometry( 0.12, 10, 6 ).translate( 0, y( 0 ) + o.h - 0.2, 0 ) );
+		return;
 
 	}
 

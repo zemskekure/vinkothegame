@@ -853,6 +853,14 @@ const landmarkAt = await ( async () => {
 	return ( X, Y ) => polys.find( p => pointInRings( [ p.ring ], X, Y ) )?.landmark || null;
 
 } )();
+// Passages under the modern landmarks (Nová scéna) are plain rectangular openings, not vaulted stone portals.
+for ( const o of openings ) {
+
+	const s = landmarkAt( o.X, o.Y )?.style;
+	if ( s === STYLE.glassBlock || s === STYLE.curtain || s === STYLE.bronze || s === STYLE.maj ) o.modern = true;
+
+}
+
 const landmarkStatues = [];
 const twinGableFronts = [];
 
@@ -999,7 +1007,7 @@ for ( const b of buildings ) {
 
 	const eave = Math.max( 3, eaveAbs - ground );
 	const rise = Math.max( 0, ridgeAbs - ground - eave );
-	const flat = rise < 1.3 || landmark?.roof === ROOF_KIND.flat;
+	const flat = rise < 1.3 || landmark?.roof === ROOF_KIND.flat || HOUSES[ b.code ]?.roof === 'flat';
 	const maxDepth = interior.reduce( ( m, p ) => Math.max( m, p.d ), 0 );
 	const roofRise = flat ? 0 : Math.min( rise, maxDepth * ROOF_SLOPE, 22 );
 
@@ -1024,6 +1032,7 @@ for ( const b of buildings ) {
 	const style = landmark?.style ?? STYLE[ house?.style ] ?? STYLE.default;
 	if ( landmark && ! b.name ) b.name = landmark.name;
 	if ( landmark?.roof !== undefined ) kind = landmark.roof;
+	else if ( house?.roof && ROOF_KIND[ house.roof ] !== undefined ) kind = ROOF_KIND[ house.roof ];
 
 	const eaveY = ground + eave;
 	let roofAt = ( X, Y, d ) => d === undefined ? eaveY : eaveY + ( flat ? 0 : Math.min( d * ROOF_SLOPE, roofRise ) );

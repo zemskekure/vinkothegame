@@ -803,7 +803,7 @@ export function collectPlaces( ctx ) {
 			const end = s => groundY( o.X + o.ux * s * ( o.len / 2 + 0.8 ), o.Y + o.uy * s * ( o.len / 2 + 0.8 ) );
 			const y0 = + end( - 1 ).toFixed( 2 ), y1 = + end( 1 ).toFixed( 2 );
 			const [ x, z ] = L( o.X, o.Y );
-			places.openings.push( { kind: 'passage', x, z, lx, lz, len: o.len, w: o.w, h: o.h, y0, y1 } );
+			places.openings.push( { kind: 'passage', x, z, lx, lz, len: o.len, w: o.w, h: o.h, y0, y1, ...( o.modern ? { modern: true } : {} ) } );
 			zone( x, z, across, o.w / 2 - 0.15, o.len / 2 + 0.35, { y0, y1, along: [ lx, lz ], ceil: + ( Math.max( y0, y1 ) + o.h - 0.2 ).toFixed( 2 ) } );
 
 		} else {

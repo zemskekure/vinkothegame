@@ -58,7 +58,10 @@ export function createRoofMaterial() {
 	const starCell = vec2( across.div( 0.9 ), positionWorld.y.div( 0.9 ) );
 	const starUV = fract( starCell.add( vec2( mod( floor( starCell.y ), 2 ).mul( 0.5 ), 0 ) ) ).sub( 0.5 );
 	const star = smoothstep( 0.13, 0.1, abs( starUV.x ).add( abs( starUV.y ) ) ).max( smoothstep( 0.05, 0.03, abs( starUV.x ).max( abs( starUV.y ) ) ) );
-	const theatreRoof = mix( color( 0x223a6b ).mul( float( 1 ).sub( seam.mul( 0.3 ) ) ), color( 0xd6a63c ), star );
+	// The starry blue covers the auditorium and stage; the south wing (Schulz's annexe, past z ≈ 402 in the scene) is
+	// green copper on the aerial photo.
+	const southWing = smoothstep( 401, 403, positionWorld.z );
+	const theatreRoof = mix( mix( color( 0x1f3157 ).mul( float( 1 ).sub( seam.mul( 0.3 ) ) ), color( 0xd6a63c ), star ), color( 0x5f8f7c ).mul( float( 1 ).sub( seam.mul( 0.3 ) ) ), southWing );
 
 	mat.colorNode = tiles.mul( isTiles ).add( sheets.mul( isCopper.add( isMetal ) ) ).add( gravel.mul( isFlat ) ).add( theatreRoof.mul( isTheatre ) );
 	mat.roughnessNode = mix( mix( float( 0.78 ), float( 0.45 ), isCopper.add( isMetal ).add( isTheatre ).min( 1 ) ), float( 0.3 ), star.mul( isTheatre ) );

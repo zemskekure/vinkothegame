@@ -2267,6 +2267,12 @@
 		"ground": "windows",
 		"rustic": "ornate"
 	},
+	"21652244": {
+		"roof": "flat",
+		"style": "bronze",
+		"note": "National Theatre, the third of Prager's buildings behind the piazzetta (south side): flat roof with solar panels and bronze-tinted glass like the operations building (ČÚZK aerial photo; owner screenshots Sept 2025)",
+		"floors": 5
+	},
 	"21652252": {
 		"note": "Slovanský ostrov: Žofín palace, ochre-yellow neo-renaissance with white dressings",
 		"colour": "#e6c56e",
