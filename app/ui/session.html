@@ -132,8 +132,8 @@
 				if ( s.shots.proof ) {
 
 					const proof = s.shots.proof;
-					const rows = ( s.shots.pairs || [] ).map( p => `<div class="pair"><div><span class="muted small">${esc( p.source )} · ${esc( p.what || '' )}</span><a href="${p.referenceUrl}" target="_blank"><img src="${p.referenceUrl}"></a></div><div><span class="muted small">model · same camera</span><a href="${p.modelUrl}" target="_blank"><img src="${p.modelUrl}"></a></div></div>` ).join( '' );
-					document.getElementById( 'shots' ).innerHTML += `<details><summary>${proof.pairs.length} photo/model pairs · ${proof.clear}/${proof.openings} passages and arcades clear · <a href="${s.shots.proofUrl}" target="_blank">full report</a></summary>${rows}</details>`;
+					const rows = ( s.shots.pairs || [] ).map( p => `<div class="pair"><div><span class="muted small">foto · ${esc( p.what || '' )}</span><a href="${p.referenceUrl}" target="_blank"><img src="${p.referenceUrl}"></a></div><div><span class="muted small">model · same camera</span><a href="${p.modelUrl}" target="_blank"><img src="${p.modelUrl}"></a></div></div>` ).join( '' );
+					document.getElementById( 'shots' ).innerHTML += `<details open><summary>${s.shots.pass === 1 ? '1. průchod (oprava běží) · ' : ''}${proof.pairs.length} photo/model pairs · ${proof.clear}/${proof.openings} passages and arcades clear · <a href="${s.shots.proofUrl}" target="_blank">full report</a></summary>${rows}</details>`;
 
 				}
 

@@ -221,7 +221,8 @@ export async function runSquare( { db, grid, data, live, env, id, budget = 40, s
 	try { first = await screenshots( { tree, cell, inventory, dir: firstDir, id, run, note } ); }
 	catch ( e ) { return fail( `first proof failed: ${e.message}` ); }
 	if ( ! first.proof.pairs.length ) return fail( 'no model/photo pairs; Street View camera metadata or owner photos are needed' );
-	update( { shots: JSON.stringify( { before: first.shots, proof: first.proof } ) } );
+	// The first pass's photo/model pairs show on the session page while the correction runs.
+	update( { shots: JSON.stringify( { before: first.shots, proof: first.proof, pass: 1, pairs: first.proof.pairs.map( p => ( { ...p, referenceUrl: `/files/shots/${id}/pass1/proof/${p.reference}`, modelUrl: `/files/shots/${id}/pass1/proof/${p.model}` } ) ), proofUrl: `/files/shots/${id}/pass1/proof/index.html` } ) } );
 
 	step( 'correction review' );
 	renameSync( join( work, 'review.json' ), join( work, 'review-pass1.json' ) );
