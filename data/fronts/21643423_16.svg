@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2300 420">
+  <rect width="2300" height="420" fill="#e7e1a6"/>
+  <path d="M0 42H1960M0 84H1960M0 126H1960M0 168H1960M0 210H1960M0 252H1960M0 294H1960M0 336H1960M0 378H1960" stroke="#d2cb8e" stroke-width="4"/>
+  <rect x="1960" width="340" height="420" fill="#e9d7c0"/>
+  <path d="M1960 42H2300M1960 84H2300M1960 126H2300M1960 168H2300M1960 210H2300M1960 252H2300M1960 294H2300M1960 336H2300M1960 378H2300" stroke="#d3bb9f" stroke-width="7"/>
+  <rect x="1956" width="8" height="420" fill="#cbb48f"/>
+  <rect x="2080" y="110" width="150" height="300" fill="#e2cdb2"/>
+  <rect x="2092" y="122" width="126" height="288" fill="#9b2f22"/>
+  <rect x="2104" y="136" width="46" height="120" fill="#7c2419"/>
+  <rect x="2160" y="136" width="46" height="120" fill="#7c2419"/>
+  <rect x="2104" y="272" width="46" height="124" fill="#7c2419"/>
+  <rect x="2160" y="272" width="46" height="124" fill="#7c2419"/>
+  <g fill="#1a1918">
+    <rect x="50" y="78" width="140" height="34"/>
+    <rect x="62" y="112" width="116" height="298"/>
+    <rect x="282" y="58" width="300" height="38"/>
+    <rect x="296" y="96" width="272" height="314"/>
+    <rect x="690" y="100" width="210" height="34"/>
+    <rect x="702" y="134" width="186" height="276"/>
+  </g>
+  <rect x="178" y="128" width="118" height="282" fill="#a3242a"/>
+  <rect x="194" y="146" width="86" height="250" fill="#3a2627"/>
+  <rect x="568" y="128" width="134" height="282" fill="#a3242a"/>
+  <rect x="584" y="146" width="102" height="250" fill="#2f2324"/>
+  <rect x="604" y="300" width="60" height="60" fill="#c98a92" opacity="0.5"/>
+  <path d="M362 390V240A70 70 0 0 1 502 240V390Z" fill="#2e3336"/>
+  <path d="M372 250A58 58 0 0 1 430 196" stroke="#6c777a" stroke-width="5" fill="none"/>
+  <rect x="374" y="104" width="116" height="92" fill="#f4f1ec"/>
+  <circle cx="432" cy="142" r="30" fill="#e07b9c"/>
+  <circle cx="432" cy="142" r="11" fill="#f4f1ec"/>
+  <text x="432" y="188" text-anchor="middle" font-family="Georgia, serif" font-size="13" fill="#3a2a2e">Donuterie</text>
+  <rect x="732" y="170" width="126" height="210" fill="#272c29" stroke="#4c3a2a" stroke-width="6"/>
+  <path d="M752 205H838M752 235H820M752 265H832M752 295H808M752 325H826M752 355H800" stroke="#e8e6dc" stroke-width="4" opacity="0.8"/>
+  <rect x="1340" y="130" width="330" height="280" fill="#cfc993"/>
+  <rect x="1356" y="144" width="298" height="266" fill="#74402a"/>
+  <path d="M1505 144V410" stroke="#4a2818" stroke-width="6"/>
+  <path d="M1376 170H1490V280H1376ZM1520 170H1634V280H1520Z" fill="none" stroke="#5e3320" stroke-width="5"/>
+  <path d="M1380 340C1410 300 1440 380 1470 330S1530 300 1560 350M1530 390C1560 360 1600 400 1630 360" stroke="#2c2f4a" stroke-width="7" fill="none"/>
+  <path d="M1390 380C1420 360 1450 395 1480 370" stroke="#d8d8d8" stroke-width="6" fill="none"/>
+  <rect y="400" width="2300" height="20" fill="#bdb689"/>
+</svg>

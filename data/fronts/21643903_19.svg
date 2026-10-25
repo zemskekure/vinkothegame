@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2100 420">
+  <rect width="2100" height="420" fill="#ead9a2"/>
+  <g fill="#f2e7c6">
+    <rect x="0" y="0" width="46" height="400"/>
+    <rect x="590" y="0" width="56" height="400"/>
+    <rect x="1240" y="0" width="56" height="400"/>
+    <rect x="2050" y="0" width="50" height="400"/>
+  </g>
+  <rect y="14" width="2100" height="10" fill="#d8c48c"/>
+  <circle cx="365" cy="56" r="44" fill="#efe3c2" stroke="#c9b27a" stroke-width="8"/>
+  <circle cx="365" cy="56" r="28" fill="none" stroke="#c9b27a" stroke-width="3"/>
+  <text x="285" y="122" text-anchor="middle" font-family="Georgia, serif" font-size="26" fill="#a6803c">Číslo</text>
+  <text x="448" y="122" text-anchor="middle" font-family="Georgia, serif" font-size="26" fill="#a6803c">269</text>
+  <rect x="482" y="98" width="26" height="22" fill="#1f3a78"/>
+  <path d="M232 410V230A133 133 0 0 1 498 230V410H470V232A105 105 0 0 0 260 232V410Z" fill="#d6c7a0"/>
+  <path d="M260 410V232A105 105 0 0 1 470 232V410Z" fill="#3e2c20"/>
+  <path d="M365 128L385 128L381 158H349L345 128Z" fill="#cbbb92"/>
+  <path d="M365 136V410" stroke="#2a1d14" stroke-width="5"/>
+  <path d="M282 300H448M282 350H448" stroke="#57402e" stroke-width="4"/>
+  <rect x="88" y="190" width="56" height="70" fill="#cfc7b4" stroke="#a89f88" stroke-width="3"/>
+  <rect x="96" y="276" width="40" height="46" fill="#cfc7b4" stroke="#a89f88" stroke-width="3"/>
+  <g fill="#e6d6a6" stroke="#c7b07a" stroke-width="6">
+    <rect x="720" y="150" width="170" height="200"/>
+    <rect x="1010" y="150" width="170" height="200"/>
+    <rect x="1360" y="150" width="170" height="200"/>
+    <rect x="1640" y="150" width="170" height="200"/>
+    <rect x="1900" y="150" width="130" height="200"/>
+  </g>
+  <g fill="#3a3f42">
+    <rect x="738" y="168" width="134" height="164"/>
+    <rect x="1028" y="168" width="134" height="164"/>
+    <rect x="1378" y="168" width="134" height="164"/>
+    <rect x="1658" y="168" width="134" height="164"/>
+    <rect x="1918" y="168" width="94" height="164"/>
+  </g>
+  <g stroke="#1c1c1b" stroke-width="4" fill="none">
+    <path d="M738 168L872 302M738 222L848 332M738 276L794 332M780 168L872 260M826 168L872 214M872 168L738 302M872 222L762 332M872 276L816 332M830 168L738 260M784 168L738 214"/>
+    <path d="M1028 168L1162 302M1028 222L1138 332M1028 276L1084 332M1070 168L1162 260M1116 168L1162 214M1162 168L1028 302M1162 222L1052 332M1162 276L1106 332M1120 168L1028 260M1074 168L1028 214"/>
+    <path d="M1378 168L1512 302M1378 222L1488 332M1378 276L1434 332M1420 168L1512 260M1466 168L1512 214M1512 168L1378 302M1512 222L1402 332M1512 276L1456 332M1470 168L1378 260M1424 168L1378 214"/>
+    <path d="M1658 168L1792 302M1658 222L1768 332M1658 276L1714 332M1700 168L1792 260M1746 168L1792 214M1792 168L1658 302M1792 222L1682 332M1792 276L1736 332M1750 168L1658 260M1704 168L1658 214"/>
+    <path d="M1918 168L2012 262M1918 222L2012 316M1918 276L1974 332M1964 168L2012 216M2012 168L1918 262M2012 222L1918 316M2012 276L1956 332M1966 168L1918 216"/>
+  </g>
+  <g fill="#d2bd85">
+    <rect x="712" y="350" width="186" height="14"/>
+    <rect x="1002" y="350" width="186" height="14"/>
+    <rect x="1352" y="350" width="186" height="14"/>
+    <rect x="1632" y="350" width="186" height="14"/>
+    <rect x="1892" y="350" width="146" height="14"/>
+  </g>
+  <rect y="380" width="2100" height="40" fill="#bdb090"/>
+  <rect x="232" y="380" width="266" height="40" fill="#d6c7a0"/>
+  <rect x="260" y="380" width="210" height="40" fill="#3e2c20"/>
+</svg>

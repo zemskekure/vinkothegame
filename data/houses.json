@@ -81,28 +81,78 @@
 		"graffiti": false
 	},
 	"21643407": {
-		"note": "Náprstkova 5 (no. 213, plate 213 visible): yellow-ochre house, upper floor weathered/greyer, plain moulded window frames, lattice grilles on ground-floor windows, a blind panel with vent, heavy tags on the lower wall. Confirms current; colour a touch more saturated yellow (Street View 2025)",
-		"colour": "#dfbf5e",
-		"trim": "#e9d69a",
+		"note": "Náprstkova 5 (no. 213, plate 213 visible): yellow-ochre house, upper floor weathered/greyer, plain moulded window frames, lattice grilles on ground-floor windows, a blind panel with vent, heavy tags on the lower wall. (Street View 2025). Tile pass: colour toned down to the dirty ochre of the photos; the marks put the white FOSIL house front (its name board and dark door) on the last 4 m of edge 16, so the FOSIL board moved there from 21643415_11 (marked 21643407_16/17, Street View 2026).",
+		"colour": "#cdb06a",
+		"trim": "#dccb94",
 		"ground": "windows",
 		"grilles": true,
 		"graffiti": true,
 		"rustic": "none",
-		"signs": false
+		"signs": false,
+		"edges": {
+			"16": {
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true
+					},
+					{
+						"kind": "shop",
+						"frame": "dark",
+						"glazed": true
+					}
+				]
+			},
+			"17": {
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true
+					},
+					"blank",
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true
+					}
+				]
+			}
+		}
 	},
 	"21643415": {
-		"note": "Náprstkova 7 (no. 214): cream-yellow two-storey house over a yellow banded-rusticated ground floor, red geraniums in window boxes; the večerka (MINIMARKET, phở in the back room) at the east end by the corner, FOSIL at the west end, Old Prague House lettered above (owner photos 2023, Street View 2025)",
-		"colour": "#efe1b4",
-		"trim": "#f7f0d8",
+		"note": "Náprstkova 7 (no. 214): white-cream two-storey house (proof pass: was too yellow) over a banded ground floor, red geraniums; MINIMARKET at the east end, FOSIL at the west end, Old Prague House lettered above (owner photos 2023, Street View 2025). Edge 10 is by the marks the west end of the pale lemon block no. 215 with the pedimented doorway and red-brown door (marked 21643415_10, Street View 2026).",
+		"colour": "#efe9da",
+		"trim": "#f7f3ea",
 		"ground": "shops",
 		"rustic": "banded",
 		"floors": 2,
 		"grilles": false,
 		"graffiti": false,
-		"signs": false
+		"signs": false,
+		"edges": {
+			"10": {
+				"colour": "#e9e3a8",
+				"trim": "#f3efcd",
+				"rustic": "banded",
+				"ground": [
+					"blank",
+					{
+						"kind": "door",
+						"frame": "red"
+					}
+				]
+			}
+		}
 	},
 	"21643423": {
-		"note": "Náprstkova 9 (no. 215): pale lemon-yellow neo-renaissance block with horizontal rustication on all floors, dentil cornices and segmental window pediments; pedimented doorway with reclining figures and a red-brown door, black shopfronts with red doors (Donuterie, round pink logo), brown shutter boxes and brown double gates. Confirms current; floors added (Street View 2026)",
+		"note": "Náprstkova 9 (no. 215): pale lemon neo-renaissance block rusticated on all floors, segmental pediments. Drawn front: Donuterie's black pilasters with red doors, arched display and pink logo at 0.5-9 m, tagged brown double gate at ~14-16.5 m, last ~3.5 m the pink-beige banded ground floor of no. 216 with its red door (marked 21643423_16a/b, owner photo 2026-07, Street View 2026).",
 		"colour": "#e9e3a8",
 		"trim": "#f3efcd",
 		"ground": "shops",
@@ -110,25 +160,201 @@
 		"floors": 5,
 		"grilles": false,
 		"graffiti": false,
-		"signs": false
+		"signs": false,
+		"edges": {
+			"16": {
+				"ground": [
+					{
+						"kind": "door",
+						"frame": "red",
+						"glazed": true
+					},
+					{
+						"kind": "shop",
+						"frame": "dark",
+						"glazed": true,
+						"arch": true
+					},
+					{
+						"kind": "door",
+						"frame": "red",
+						"glazed": true
+					},
+					"blank",
+					{
+						"kind": "gate",
+						"frame": "wood"
+					},
+					"blank",
+					{
+						"kind": "door",
+						"frame": "red"
+					}
+				],
+				"shopfront": "21643423_16.svg"
+			}
+		}
 	},
 	"21643431": {
-		"note": "Náprstkova 11 / Liliová 1 (no. 216): ochre-sandstone neo-renaissance corner house with rich stucco, arched first-floor windows in block surrounds, a corbelled corner balcony; pale cream banded-rusticated ground floor with red window frames and 'V Zátiší' letters. Edge 9 shows a narrow cream house with pink window surrounds and a BEYOND THE BAR board. New entry (Street View 2026)",
+		"note": "Náprstkova 11 / Liliová 1 (no. 216): ochre neo-renaissance corner house, rich stucco, corbelled corner balcony, cream banded ground floor with red frames, 'V Zátiší' letters. Corrected: the narrow cream house with pink surrounds and BEYOND THE BAR (green door, red awning) is edge 5, not 9. Edge 7: red door, arched timber gate, red-framed windows (marked 21643431_5/7/9/11, Street View 2026).",
 		"colour": "#d4ad74",
 		"trim": "#e3c592",
 		"ground": "restaurant",
-		"rustic": "ornate",
+		"rustic": "banded",
 		"grilles": false,
 		"graffiti": false,
 		"edges": {
+			"5": {
+				"colour": "#efe2c0",
+				"trim": "#d99a8a",
+				"rustic": "none",
+				"awning": "#b8332e",
+				"lanterns": true,
+				"ground": [
+					{
+						"kind": "door",
+						"frame": "green",
+						"glazed": true
+					},
+					{
+						"kind": "shop",
+						"frame": "wood",
+						"glazed": true
+					}
+				]
+			},
+			"7": {
+				"ground": [
+					{
+						"kind": "door",
+						"frame": "red",
+						"glazed": true
+					},
+					{
+						"kind": "gate",
+						"frame": "wood",
+						"arch": true
+					},
+					{
+						"kind": "window",
+						"frame": "red"
+					},
+					{
+						"kind": "window",
+						"frame": "red"
+					},
+					{
+						"kind": "window",
+						"frame": "red"
+					}
+				]
+			},
 			"9": {
-				"lanterns": true
+				"lanterns": true,
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "red"
+					}
+				]
+			},
+			"11": {
+				"ground": [
+					{
+						"kind": "door",
+						"frame": "red"
+					},
+					{
+						"kind": "window",
+						"frame": "red"
+					},
+					{
+						"kind": "window",
+						"frame": "red"
+					},
+					{
+						"kind": "window",
+						"frame": "red"
+					},
+					{
+						"kind": "window",
+						"frame": "red"
+					},
+					{
+						"kind": "window",
+						"frame": "red"
+					}
+				]
+			}
+		},
+		"signs": false
+	},
+	"21643440": {
+		"note": "Liliová (no. 218): plain sand-beige house with a moulded cornice, white-framed windows, iron-barred ground-floor windows (marked 21643440_1, Street View 2024).",
+		"colour": "#d8c49e",
+		"trim": "#d8c7a3",
+		"floors": 4,
+		"ground": "windows",
+		"rustic": "none",
+		"grilles": true,
+		"edges": {
+			"1": {
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true
+					}
+				]
+			}
+		}
+	},
+	"21643741": {
+		"note": "Liliová 4 (no. 250): its first ~7 m from the north are a pale pink historicist house with a banded ground floor, barred windows and a wall lantern; the rest is a plain white three-storey house with Choco-Café U Červené židle: wood-framed shop windows at ~8-10 and ~17.5-21 m, black wrought-iron vine trellises between them and a brown hanging CHOCO CAFÉ sign (marked 21643741_15a/b, Street View 2024). Drawn front.",
+		"colour": "#ecebe6",
+		"trim": "#f4f3ee",
+		"floors": 3,
+		"ground": "shops",
+		"rustic": "none",
+		"edges": {
+			"15": {
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true
+					},
+					{
+						"kind": "shop",
+						"frame": "wood",
+						"glazed": true
+					},
+					"blank",
+					"blank",
+					{
+						"kind": "shop",
+						"frame": "wood",
+						"glazed": true,
+						"size": "wide"
+					}
+				],
+				"shopfront": "21643741_15.svg"
 			}
 		},
 		"signs": false
 	},
 	"21643750": {
-		"note": "Betlémské náměstí 2 / Liliová 2 (no. 251): historicist block in cream-beige (not pinkish), balustraded window sills, banded rusticated ground floor with round arches, dark red window frames, white awnings, Pilsner Urquell plaque at the corner. Colour corrected; rest confirmed (Street View 2024)",
+		"note": "Betlémské náměstí 2 / Liliová 2 (no. 251): historicist block in cream-beige (not pinkish), balustraded window sills, banded rusticated ground floor with round arches, dark red window frames, white awnings, Pilsner Urquell plaque at the corner (Street View 2024). Tile pass confirms; edge 0 has two round-arched dark-red framed openings (marked 21643750_0).",
 		"signs": false,
 		"colour": "#e3d2ac",
 		"trim": "#eee2c6",
@@ -137,7 +363,21 @@
 		"rustic": "banded",
 		"edges": {
 			"0": {
-				"awning": "#f1efe8"
+				"awning": "#f1efe8",
+				"ground": [
+					{
+						"kind": "shop",
+						"frame": "red",
+						"arch": true,
+						"glazed": true
+					},
+					{
+						"kind": "shop",
+						"frame": "red",
+						"arch": true,
+						"glazed": true
+					}
+				]
 			},
 			"11": {
 				"awning": "#f1efe8"
@@ -219,26 +459,81 @@
 		}
 	},
 	"21643831": {
-		"note": "Betlémská: pale green-grey house with a big arched wooden gate in a stone surround, barred windows",
+		"note": "Betlémská 14 (no. 260, plate 260/14 visible): cream neo-baroque house with rich stucco window crowns, round-arched ground-floor windows in dark red frames and a dark arched gate at the west end. Corrected: the pale green gable house with the big wooden gate (plate 11) is its eastern neighbour, the marks start this front just west of that gate (marked 21643831_0, 21643849_0, Street View 2024).",
 		"signs": false,
-		"colour": "#c9d1c0",
-		"trim": "#dfe3d6",
-		"ground": "gate",
-		"grilles": true,
-		"rustic": "none"
+		"colour": "#ebe4d2",
+		"trim": "#f5f0e4",
+		"ground": "windows",
+		"grilles": false,
+		"rustic": "none",
+		"floors": 6,
+		"edges": {
+			"0": {
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "red",
+						"arch": true
+					},
+					{
+						"kind": "window",
+						"frame": "red",
+						"arch": true
+					},
+					{
+						"kind": "gate",
+						"frame": "dark",
+						"arch": true
+					}
+				]
+			}
+		}
 	},
 	"21643849": {
-		"note": "Konviktská 13 area: narrow 1930s house, weathered dark grey-brown render, plain wide windows, dark red-brown brick ground floor with a small shop window and door; top floors not visible (Street View)",
+		"note": "Konviktská side: 1930s house, dark grey-brown render (Street View). Tile pass, Betlémská 261/12 (edge 0): pale grey-beige seven-storey front with relief panels, dark brown stone ground floor with the Bistro Café shopfront (two white boards) and an ornate iron gate (marked 21643849_0, 21643857_0, Street View 2024).",
 		"colour": "#6f6858",
 		"trim": "#6f6858",
 		"ground": "shops",
 		"rustic": "none",
 		"grilles": false,
 		"graffiti": false,
-		"signs": false
+		"signs": false,
+		"edges": {
+			"0": {
+				"colour": "#ddd3bd",
+				"trim": "#e8e3d8",
+				"rustic": "none",
+				"ground": [
+					{
+						"kind": "shop",
+						"frame": "dark",
+						"glazed": true,
+						"size": "wide"
+					},
+					{
+						"kind": "door",
+						"frame": "dark"
+					},
+					{
+						"kind": "shop",
+						"frame": "dark",
+						"glazed": true
+					},
+					{
+						"kind": "gate",
+						"frame": "dark",
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					}
+				]
+			}
+		}
 	},
 	"21643857": {
-		"note": "Konviktská 11: narrow two-bay house; rough white plaster first floor under a small red-tiled ledge, smoother cream upper floors with round stucco medallions; restaurant with grey parasols at street level. Floor count estimated, top not visible (Street View)",
+		"note": "Konviktská side: narrow two-bay white/cream house (Street View). Tile pass, Betlémská 262/10: edge 0 is grey-beige like no. 261 (door, window with flowers); edge 20 is a yellow-cream neo-renaissance front with heavy banded rustication; its dark arched door lies just over the line on 21650021_2 (marked 21643857_0/20, Street View 2024).",
 		"colour": "#ebe8e0",
 		"trim": "#e3dccb",
 		"floors": 5,
@@ -246,10 +541,42 @@
 		"rustic": "none",
 		"grilles": false,
 		"graffiti": false,
-		"signs": false
+		"signs": false,
+		"edges": {
+			"0": {
+				"colour": "#d8d1c1",
+				"trim": "#e8e3d8",
+				"rustic": "none",
+				"ground": [
+					{
+						"kind": "door",
+						"frame": "dark"
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					}
+				]
+			},
+			"20": {
+				"colour": "#ecd6a0",
+				"trim": "#f4e6c4",
+				"rustic": "banded",
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					}
+				]
+			}
+		}
 	},
 	"21643865": {
-		"note": "Konviktská 5/7: Residence Bologna, 1930s functionalist block, white render with rounded glazed corner bays and a setback top; grey stone-clad ground floor with large shop windows, green-and-white striped awnings, brass lanterns, red geranium boxes along the first-floor ledge and red vertical BOLOGNA banners (Street View)",
+		"note": "Konviktská 5/7: Residence Bologna, 1930s functionalist block, white render, green awnings and BOLOGNA banners on Konviktská (Street View). Tile pass, Betlémská edge 2: white upper floors over two storeys of grey render, wide window bays with white iron grids, a brown garage door with a red P BOLOGNA PARKING sign near the east end (marked 21643865_2a/b, Street View 2024).",
 		"colour": "#eeeeea",
 		"trim": "#f6f6f2",
 		"floors": 6,
@@ -258,6 +585,83 @@
 		"grilles": false,
 		"graffiti": false,
 		"edges": {
+			"2": {
+				"colour": "#e9e8e3",
+				"trim": "#f2f2ee",
+				"rustic": "none",
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true
+					},
+					{
+						"kind": "garage",
+						"frame": "wood",
+						"size": "wide"
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true,
+						"size": "wide"
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true,
+						"size": "wide"
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true,
+						"size": "wide"
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true,
+						"size": "wide"
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true,
+						"size": "wide"
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true,
+						"size": "wide"
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true,
+						"size": "wide"
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true,
+						"size": "wide"
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true,
+						"size": "wide"
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true,
+						"size": "wide"
+					}
+				]
+			},
 			"19": {
 				"awning": "#3f8a5f",
 				"lanterns": true,
@@ -270,8 +674,122 @@
 		},
 		"signs": false
 	},
+	"21643881": {
+		"note": "U Dobřenských 1-3 / Betlémská corner (nos. 267, 268): greige neo-baroque five-storey houses with rich stucco crowns and window boxes; the corner ground floor is renovated: cream square piers between big black-framed shop windows ('manual' on the glass), a black recessed door; on U Dobřenských a big carved stucco portal with a tagged arched wooden gate (plate 268) (marked 21643881_0a/b, 1a/b, Street View 2024; owner photos 2019-20 show the corner shop to let).",
+		"colour": "#d3c6a8",
+		"trim": "#e4dac4",
+		"floors": 5,
+		"ground": "shops",
+		"rustic": "none",
+		"edges": {
+			"0": {
+				"ground": [
+					{
+						"kind": "shop",
+						"frame": "dark",
+						"glazed": true,
+						"size": "wide"
+					},
+					{
+						"kind": "door",
+						"frame": "dark"
+					},
+					{
+						"kind": "shop",
+						"frame": "dark",
+						"glazed": true
+					},
+					{
+						"kind": "gate",
+						"frame": "wood",
+						"arch": true,
+						"size": "wide"
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true
+					}
+				]
+			},
+			"1": {
+				"ground": [
+					{
+						"kind": "door",
+						"frame": "dark"
+					},
+					{
+						"kind": "shop",
+						"frame": "dark",
+						"glazed": true,
+						"size": "wide"
+					},
+					{
+						"kind": "shop",
+						"frame": "dark",
+						"glazed": true,
+						"size": "wide"
+					},
+					{
+						"kind": "door",
+						"frame": "wood"
+					},
+					{
+						"kind": "shop",
+						"frame": "dark",
+						"glazed": true
+					},
+					{
+						"kind": "shop",
+						"frame": "dark",
+						"glazed": true
+					}
+				]
+			}
+		}
+	},
+	"21643890": {
+		"note": "U Dobřenských 5 (no. 268): greige banded neo-renaissance house with carved window crowns; its north half has the yellow-painted ground floor that runs on into the corner house no. 271, with a tagged grey roller shutter and a black 'manual' blade sign (marked 21643890_5, Street View 2024; owner photo 2026-09).",
+		"colour": "#c9bba0",
+		"trim": "#ddd0b0",
+		"floors": 4,
+		"ground": "shops",
+		"rustic": "banded",
+		"edges": {
+			"5": {
+				"ground": [
+					"blank",
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true
+					},
+					{
+						"kind": "garage",
+						"frame": "grey"
+					},
+					{
+						"kind": "shop",
+						"frame": "dark",
+						"glazed": true
+					},
+					{
+						"kind": "shop",
+						"frame": "dark",
+						"glazed": true
+					}
+				]
+			}
+		},
+		"signs": false
+	},
 	"21643903": {
-		"note": "Betlémské náměstí 1 (no. 269, U Halánků, Náprstek museum): pale yellow two-storey house with pilasters, red tile roof with dormers, dark red vertical banner, barred ground-floor windows and a wall lantern. Corrected colour (paler than #e8c46c) and ground (barred windows, not gate); seen only at the right edge of the photo (Street View)",
+		"note": "Betlémské nám. 1 (no. 269, U Halánků, Náprstek museum): pale yellow, pilasters, red tile roof with dormers. Drawn front (edge 19): curved gable with painted lunette, stone round-arched portal with dark doors, round stucco medallion and painted 'Číslo 269', two plaques, lattice-grilled windows; flags and museum banner above. Other sides: plain walls with a few lattice-barred windows (marked 21643903_*, Street View 2024; owner photo 2026-05).",
 		"signs": false,
 		"colour": "#e9d9a0",
 		"trim": "#f3e9c6",
@@ -279,16 +797,262 @@
 		"ground": "windows",
 		"rustic": "none",
 		"edges": {
+			"18": {
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true
+					}
+				]
+			},
 			"19": {
 				"banner": {
 					"text": "NÁPRSTKOVO MUZEUM",
 					"board": "#9b2335",
 					"ink": "#ffffff"
-				}
+				},
+				"ground": [
+					"blank",
+					{
+						"kind": "gate",
+						"frame": "wood",
+						"arch": true
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true
+					}
+				],
+				"shopfront": "21643903_19.svg"
+			},
+			"20": {
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true
+					},
+					"blank"
+				]
+			},
+			"21": {
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true
+					},
+					"blank",
+					"blank",
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true
+					}
+				]
+			},
+			"22": {
+				"ground": [
+					"blank",
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true
+					}
+				]
+			},
+			"23": {
+				"ground": [
+					{
+						"kind": "door",
+						"frame": "white",
+						"glazed": true,
+						"bars": true
+					},
+					"blank",
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true
+					}
+				]
+			},
+			"28": {
+				"ground": [
+					"blank"
+				]
+			},
+			"31": {
+				"ground": [
+					{
+						"kind": "door",
+						"frame": "white"
+					},
+					"blank",
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true
+					}
+				]
 			}
 		},
 		"grilles": true,
 		"graffiti": false
+	},
+	"21643911": {
+		"note": "Náprstkova 14 / U Dobřenských 2 (no. 270): cream-greige classicist five-storey block, banded ground floor with large iron-barred windows and basement grilles, a small balcony on the second floor and a wall lantern at the north end (marked 21643911_0/1a/1b, Street View 2024).",
+		"colour": "#e3d8bf",
+		"trim": "#eee6d2",
+		"floors": 5,
+		"ground": "windows",
+		"rustic": "banded",
+		"grilles": true,
+		"edges": {
+			"0": {
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true
+					}
+				]
+			},
+			"1": {
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true
+					},
+					{
+						"kind": "door",
+						"frame": "white"
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true
+					}
+				]
+			}
+		}
+	},
+	"21643920": {
+		"note": "Náprstkova 12 / U Dobřenských corner (no. 271): ochre-beige neo-renaissance five-storey corner house with rich window crowns; the ground floor is painted yellow with rusticated piers between tall black-framed shop windows (manual, lettered on the glass) and a glazed timber house door at the south end. Drawn front (marked 21643920_14a/b, Street View 2024; owner photos 2024 and 2026-09).",
+		"colour": "#d4bf9a",
+		"trim": "#e6d6ac",
+		"floors": 5,
+		"ground": "shops",
+		"rustic": "ornate",
+		"edges": {
+			"14": {
+				"ground": [
+					{
+						"kind": "door",
+						"frame": "wood",
+						"glazed": true
+					},
+					{
+						"kind": "shop",
+						"frame": "dark",
+						"glazed": true,
+						"size": "wide"
+					},
+					{
+						"kind": "shop",
+						"frame": "dark",
+						"glazed": true,
+						"size": "wide"
+					},
+					{
+						"kind": "shop",
+						"frame": "dark",
+						"glazed": true,
+						"size": "wide"
+					},
+					{
+						"kind": "shop",
+						"frame": "dark",
+						"glazed": true,
+						"size": "wide"
+					},
+					{
+						"kind": "shop",
+						"frame": "dark",
+						"glazed": true,
+						"size": "wide"
+					},
+					{
+						"kind": "shop",
+						"frame": "dark",
+						"glazed": true,
+						"size": "wide"
+					}
+				],
+				"shopfront": "21643920_14.svg"
+			}
+		},
+		"signs": false
+	},
+	"21643938": {
+		"note": "Boršov 6 (no. 272): greige neo-renaissance house rusticated over the whole front, mascarons over the first-floor windows, iron flower-box rails; a white vertical blade sign at street level. Photo is a close-up; ground floor not seen (marked 21643938_2a, 21643890_5).",
+		"colour": "#c9bea6",
+		"trim": "#dacfb4",
+		"floors": 4,
+		"rustic": "banded"
 	},
 	"21643954": {
 		"note": "Náprstkova: cream historicist house with a rusticated white ground floor, dark wooden glazed doors, restaurant with a pink awning, vertical black HOTEL banner",
@@ -437,7 +1201,7 @@
 		}
 	},
 	"21644071": {
-		"note": "Konviktská 3 / Betlémská 4: long neo-renaissance block; pale grey-white upper floors with beige stone window pediments, balustrades under first-floor windows and arched second-floor windows; heavy beige banded rustication on the ground floor over a plinth with grilled basement windows; arched gate (tagged) on edge 26 and pedimented wooden doorway at no. 3 on edge 33. No Bianco Nero sign visible (Street View)",
+		"note": "Konviktská 3 / Betlémská 4: long neo-renaissance block, grey-white upper floors, beige banded ground floor, arched gate on edge 26, doorway on edge 33 (Street View). Tile pass: edge 9 on Betlémská is functionalist like Residence Bologna: white over grey render, wide window bays with white iron grids (marked 21644071_9, Street View 2024).",
 		"colour": "#e6e4dd",
 		"trim": "#d4cab6",
 		"floors": 4,
@@ -446,6 +1210,25 @@
 		"grilles": false,
 		"graffiti": true,
 		"edges": {
+			"9": {
+				"colour": "#eceae4",
+				"trim": "#f4f3ef",
+				"rustic": "none",
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true,
+						"size": "wide"
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true,
+						"size": "wide"
+					}
+				]
+			},
 			"39": {
 				"lanterns": true
 			},
@@ -1703,6 +2486,55 @@
 			}
 		}
 	},
+	"21650021": {
+		"note": "Betlémská 8 (no. 1054): pale pink neo-renaissance house with cream pedimented window surrounds, balustrades, a central dark wooden door and lattice-grilled ground-floor windows, tags on the ground floor; the first ~3 m of edge 2 are the end of the yellow neighbour with its dark arched wooden door (marked 21650021_2/9, Street View 2024).",
+		"colour": "#efd9cf",
+		"trim": "#f6ece2",
+		"floors": 5,
+		"ground": "windows",
+		"rustic": "none",
+		"grilles": true,
+		"graffiti": true,
+		"edges": {
+			"2": {
+				"ground": [
+					{
+						"kind": "door",
+						"frame": "wood",
+						"arch": true
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true
+					}
+				]
+			},
+			"9": {
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true
+					},
+					{
+						"kind": "door",
+						"frame": "wood"
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true
+					}
+				]
+			}
+		}
+	},
 	"21650039": {
 		"note": "Konviktská 7/9: neo-renaissance houses; no. 9 (edges 6, 8) in pale yellow-cream, no. 7 (edge 15) in off-white cream; banded rustication with grilled windows on the lower floors, balustrades and arched windows with rich stucco above; large arched gate at no. 7; Golden Tikka and Sad Man's Tongue at street level (Street View)",
 		"colour": "#ecdcae",
@@ -2422,14 +3254,37 @@
 		"signs": false
 	},
 	"78878535": {
-		"note": "Náprstkova 5a (no. 1102): pale yellow yard wall with tile coping and a big round-arched dark wooden gate, brick chimney behind. Colour paler than #e3c35f; the tags are on the neighbouring no. 213, not on this wall (Street View 2025)",
+		"note": "Náprstkova 5a (no. 1102): pale yellow yard wall with tile coping and a big round-arched dark wooden gate, brick chimney behind. The tags are on the neighbouring no. 213, not on this wall (Street View 2025). Tile pass confirms: plate 1102 on edge 3, the gate (plate 5a) on edge 4, plain wall on 5 (marked 78878535_3/4/5).",
 		"colour": "#e2cf88",
 		"trim": "#ece0aa",
 		"ground": "gate",
 		"graffiti": false,
 		"rustic": "none",
 		"grilles": false,
-		"signs": false
+		"signs": false,
+		"edges": {
+			"3": {
+				"ground": [
+					"blank"
+				]
+			},
+			"4": {
+				"ground": [
+					"blank",
+					{
+						"kind": "gate",
+						"frame": "dark",
+						"arch": true,
+						"size": "wide"
+					}
+				]
+			},
+			"5": {
+				"ground": [
+					"blank"
+				]
+			}
+		}
 	},
 	"155557548": {
 		"note": "Konviktská 18: pale yellow neo-renaissance house with pedimented windows, cream banded-rusticated ground floor with grilled windows and a herringbone wooden door; seen mostly at the edge of its photo and next to the Cloister Inn (Street View)",
