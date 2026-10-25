@@ -29,7 +29,7 @@ export function ps1Look( { renderer, scene, camera } ) {
 		const graded = mix( vec3( l ), c, 1.08 ).sub( 0.5 ).mul( 1.1 ).add( 0.5 );
 		// Coarse film grain over the picture, new every frame (from the full-resolution pixel, not the low grid).
 		const px = floor( screenUV.mul( screenSize ) );
-		const grain = fract( sin( dot( px.add( floor( time.mul( 24 ) ).mul( 17.3 ) ), vec2( 12.9898, 78.233 ) ) ).mul( 43758.5453 ) ).sub( 0.5 ).mul( 0.16 );
+		const grain = fract( sin( dot( px.add( floor( time.mul( 24 ) ).mul( 17.3 ) ), vec2( 12.9898, 78.233 ) ) ).mul( 43758.5453 ) ).sub( 0.5 ).mul( 0.03 );
 		const d = bayer4( cell ).sub( 0.5 ).div( LEVELS );
 		const q = floor( graded.add( d ).add( grain ).mul( LEVELS ).add( 0.5 ) ).div( LEVELS );
 		return vec4( q.clamp( vec3( 0 ), vec3( 1 ) ), float( 1 ) );
