@@ -15,8 +15,6 @@
 const ROTUNDA_WAY = 395230762;
 const ROTUNDA_RUIAN = 40354954; // RÚIAN building code of the rotunda
 const STAIRS_WAY = 1201817510;
-// Čapadlo by the Faculty of Social Sciences: steps beside it, the underpass, the metal stair from the terrace.
-const CAPADLO = { steps: 137806765, underpass: 1201427940, metal: 34056146 };
 
 import { dressSquare } from './dress.mjs';
 import { collectWalls } from './walls.mjs';
@@ -603,85 +601,56 @@ export function collectPlaces( ctx ) {
 
 	}
 
-	// --- Čapadlo (Smetanovo nábřeží by the Faculty of Social Sciences): the steps down beside the faculty into the
-	// underpass under the street and out onto the riverside terrace, and the metal stair from the terrace back up
-	// to the riverside pavement. The railing along the street (tools/quay.mjs) is a walk barrier, open where the
-	// stair lands on the pavement, and passable under it where the underpass comes out.
+	// --- Čapadlo (Smetanovo nábřeží by the Faculty of Social Sciences), measured in tools/quay.mjs: the steps down
+	// from the street's east pavement along the faculty's north wall into the sunken lane, and the underpass from the
+	// lane under the street out onto the náplavka, the only way down to it. The railings along the street, the lane's
+	// walls and the terraces' by the theatre are walk barriers, passable below them where the underpass runs.
 	places.flights = [];
 	places.tunnels = [];
 	places.barriers = [];
 	{
 
-		const way = id => wayById.get( id )?.pts.map( p => [ p.X, p.Y ] );
-		const steps = way( CAPADLO.steps ), under = way( CAPADLO.underpass ), metal = way( CAPADLO.metal );
-		const rail = ctx.quay?.rail || [];
-		const { terrain, tw, th, cell } = ctx.terrainGrid;
-		const cut = ( [ ax, ay ], [ bx, by ], half, y ) => {
+		const cap = ctx.quay?.capadlo;
+		if ( cap?.steps ) {
 
-			// Lower the ground under a stretch (the survey surface runs over steps and trenches).
-			const len = Math.hypot( bx - ax, by - ay ), ux = ( bx - ax ) / len, uy = ( by - ay ) / len;
-			for ( let s = - 0.5; s <= len + 0.5; s += 0.4 ) for ( let o = - half; o <= half; o += 0.4 ) {
+			const { top, foot, w, n } = cap.steps;
+			const [ tx, tz ] = L( top[ 0 ], top[ 1 ] ), [ bx, bz ] = L( foot[ 0 ], foot[ 1 ] );
+			const yTop = + top[ 2 ].toFixed( 2 ), yBottom = + foot[ 2 ].toFixed( 2 );
+			const len = Math.hypot( tx - bx, tz - bz ), along = [ ( tx - bx ) / len, ( tz - bz ) / len ];
+			const right = [ - along[ 1 ], along[ 0 ] ]; // right-hand normal going up (local x, z)
+			const side = right[ 1 ] < 0 ? 1 : - 1; // the open side, towards the lane (north, −z): +1 on the right going up
+			places.flights.push( { top: [ tx, yTop, tz ], bottom: [ bx, yBottom, bz ], steps: n, w, kind: 'wall', open: side } );
+			zone( ( tx + bx ) / 2, ( tz + bz ) / 2, [ along[ 1 ], - along[ 0 ] ], w / 2 - 0.1, len / 2 + 0.25, { y0: yBottom, y1: yTop, along, steps: n } );
+			// The handrail on the open side (the faculty's wall is the other).
+			{
 
-				const X = ax + ux * s - uy * o, Y = ay + uy * s + ux * o;
-				const c = Math.round( ( X - ctx.AREA.xmin ) / cell ), r = Math.round( ( ctx.AREA.ymax - Y ) / cell );
-				if ( c >= 0 && r >= 0 && c < tw && r < th ) terrain[ r * tw + c ] = Math.min( terrain[ r * tw + c ], typeof y === 'function' ? y( s / len ) : y );
+				const o = side * ( w / 2 + 0.05 ), x0 = tx + right[ 0 ] * o, z0 = tz + right[ 1 ] * o;
+				places.barriers.push( [ + x0.toFixed( 2 ), + z0.toFixed( 2 ), + ( x0 - along[ 0 ] * ( len - 0.4 ) ).toFixed( 2 ), + ( z0 - along[ 1 ] * ( len - 0.4 ) ).toFixed( 2 ), - 99 ] );
 
 			}
 
-		};
-
-		if ( steps && under && rail.length ) {
-
-			// The underpass floor is the terrace's level where it comes out under the railing.
-			const mouth = rail.filter( p => p.portal );
-			const floorY = mouth.length ? mouth.reduce( ( a, p ) => a + p.quay, 0 ) / mouth.length : rail[ 0 ].quay;
-			const [ p0, p1 ] = [ steps[ 0 ], steps[ steps.length - 1 ] ];
-			const top = terrainAt( ...p0 ) > terrainAt( ...p1 ) ? p0 : p1, bottom = top === p0 ? p1 : p0;
-			const yTop = terrainAt( ...top ), n = Math.max( 6, Math.round( ( yTop - floorY ) / 0.16 ) );
-			const [ tx, tz ] = L( ...top ), [ bx, bz ] = L( ...bottom );
-			const len = Math.hypot( tx - bx, tz - bz ), along = [ ( tx - bx ) / len, ( tz - bz ) / len ];
-			places.flights.push( { top: [ tx, + yTop.toFixed( 2 ), tz ], bottom: [ bx, + floorY.toFixed( 2 ), bz ], steps: n, w: 2.6, kind: 'trench' } );
-			zone( ( tx + bx ) / 2, ( tz + bz ) / 2, [ along[ 1 ], - along[ 0 ] ], 1.15, len / 2 + 0.3, { y0: + floorY.toFixed( 2 ), y1: + yTop.toFixed( 2 ), along, steps: n } );
-			cut( bottom, top, 1.6, t => floorY + ( yTop - floorY ) * t - 0.5 );
-
-			// Underpass: from the foot of the steps to the terrace.
-			// It ends at the opening in the wall under the railing.
-			const end = mouth.length ? [ 0, 1 ].map( k => mouth.reduce( ( a, p ) => a + ( k ? p.Y + p.ny * 0.3 : p.X + p.nx * 0.3 ), 0 ) / mouth.length ) : under[ under.length - 1 ];
-			const [ ex, ez ] = L( ...end );
-			const ul = Math.hypot( ex - bx, ez - bz ), ua = [ ( ex - bx ) / ul, ( ez - bz ) / ul ];
-			places.tunnels.push( { a: [ bx, bz ], b: [ ex, ez ], ya: + floorY.toFixed( 2 ), yb: + floorY.toFixed( 2 ), h: 2.8, w: 2.8 } );
-			zone( ( bx + ex ) / 2, ( bz + ez ) / 2, [ ua[ 1 ], - ua[ 0 ] ], 1.25, ul / 2 + 0.6, { y: + floorY.toFixed( 2 ), ceil: + ( floorY + 2.7 ).toFixed( 2 ) } );
-			console.log( `places: Čapadlo steps ${n} × ${( ( yTop - floorY ) / n ).toFixed( 3 )} m, underpass ${ul.toFixed( 1 )} m at ${floorY.toFixed( 2 )}` );
+			console.log( `places: Čapadlo steps ${n} × ${( ( yTop - yBottom ) / n ).toFixed( 3 )} m over ${len.toFixed( 1 )} m` );
 
 		}
 
-		let landing = null;
-		if ( metal && metal.length >= 3 && rail.length ) {
+		if ( cap?.tunnel ) {
 
-			// Metal stair along the wall from the terrace up to a landing on the pavement.
-			const [ q0, q1, q2 ] = [ metal[ 0 ], metal[ 1 ], metal[ 2 ] ];
-			const y0 = terrainAt( ...q0 ), y1 = terrainAt( ...q2 );
-			const lo = y0 < y1 ? q0 : q2;
-			const foot = lo === q0 ? q0 : q2, head = lo === q0 ? q1 : q1, top = lo === q0 ? q2 : q0;
-			const yLow = Math.min( y0, y1 ), yHigh = Math.max( y0, y1 );
-			const n = Math.max( 6, Math.round( ( yHigh - yLow ) / 0.17 ) );
-			const [ fx, fz ] = L( ...foot ), [ hx, hz ] = L( ...head ), [ px, pz ] = L( ...top );
-			const len = Math.hypot( hx - fx, hz - fz ), along = [ ( hx - fx ) / len, ( hz - fz ) / len ];
-			places.flights.push( { top: [ hx, + yHigh.toFixed( 2 ), hz ], bottom: [ fx, + yLow.toFixed( 2 ), fz ], steps: n, w: 1.4, kind: 'metal', landing: [ px, + yHigh.toFixed( 2 ), pz ] } );
-			zone( ( hx + fx ) / 2, ( hz + fz ) / 2, [ along[ 1 ], - along[ 0 ] ], 0.6, len / 2 + 0.2, { y0: + yLow.toFixed( 2 ), y1: + yHigh.toFixed( 2 ), along, steps: n } );
-			const ll = Math.hypot( px - hx, pz - hz ), la = [ ( px - hx ) / ll, ( pz - hz ) / ll ];
-			zone( ( hx + px ) / 2, ( hz + pz ) / 2, [ la[ 1 ], - la[ 0 ] ], 0.75, ll / 2 + 0.4, { y: + yHigh.toFixed( 2 ) } );
-			landing = top;
+			const { a, b, w, h } = cap.tunnel;
+			const [ ax, az ] = L( a[ 0 ], a[ 1 ] ), [ ex, ez ] = L( b[ 0 ], b[ 1 ] );
+			const ya = + a[ 2 ].toFixed( 2 ), yb = + b[ 2 ].toFixed( 2 );
+			const ul = Math.hypot( ex - ax, ez - az ), ua = [ ( ex - ax ) / ul, ( ez - az ) / ul ];
+			places.tunnels.push( { a: [ ax, az ], b: [ ex, ez ], ya, yb, h, w, glazed: 'Čapadlo' } );
+			// Walkable under the street only from below: someone on the street above is not in it (src/main.js).
+			zone( ( ax + ex ) / 2, ( az + ez ) / 2, [ ua[ 1 ], - ua[ 0 ] ], w / 2 - 0.3, ul / 2 + 0.5, { y0: ya, y1: yb, along: ua, ceil: + ( Math.max( ya, yb ) + h - 0.1 ).toFixed( 2 ), under: true } );
+			console.log( `places: Čapadlo underpass ${ul.toFixed( 1 )} m from ${ya} to ${yb}` );
 
 		}
 
-		// Walk barriers along the railings (this one, and the terraces' by the theatre): open at the stair's
-		// landing; under them, the underpasses.
-		for ( const line of [ rail, ...( ctx.terraces?.rails || [] ) ] ) for ( let i = 1; i < line.length; i ++ ) {
+		// Walk barriers along the railing lines; under them, the underpasses.
+		for ( const line of [ ...( ctx.quay?.lines || [] ), ...( ctx.terraces?.rails || [] ) ] ) for ( let i = 1; i < line.length; i ++ ) {
 
 			const a = line[ i - 1 ], b = line[ i ];
 			if ( a.river && b.river || Math.hypot( b.X - a.X, b.Y - a.Y ) > 2 ) continue;
-			if ( landing && Math.hypot( ( a.X + b.X ) / 2 - landing[ 0 ], ( a.Y + b.Y ) / 2 - landing[ 1 ] ) < 1.6 ) continue;
 			const [ x0, z0 ] = L( a.X, a.Y ), [ x1, z1 ] = L( b.X, b.Y );
 			places.barriers.push( [ x0, z0, x1, z1, a.portal && b.portal ? + ( Math.min( a.quay, b.quay ) + 2.0 ).toFixed( 2 ) : - 99 ] );
 
@@ -890,6 +859,160 @@ export function collectPlaces( ctx ) {
 
 	}
 
+	// --- Most Legií, from the ČÚZK data: OSM draws it 7–8 m south of where the surface model (DMP 1G), the ZABAGED
+	// bridge and tram axis and the aerial photo have it. The deck follows the ZABAGED axis (the tracks' centre), 16.6 m
+	// over the balustrades (the surface model's width), its road at the surface model's height (the lower quarter of
+	// the heights across the carriageway, so cars and wires don't count), evened along the bridge. At the Národní end
+	// the bays with the two domed tollhouses; piers with cutwaters where the aerial photo shows them; tall cast-iron
+	// poles with lanterns on the balustrade carrying the tram wires' cross spans, over every pier and half way between
+	// (Street View 2017, 2019). The OSM ways of the bridge are left out of the generic decks below.
+	places.legie = null;
+	let legieAxis = null;
+	const bridgeSegs0 = [];
+	{
+
+		const feats = ctx.zabagedBridges?.features || ctx.zabagedBridges || [];
+		const f = feats.find( q => ( q.attributes || q.properties )?.jmeno === 'most Legií' );
+		const path = f && ( f.geometry.paths || f.geometry.rings || [] )[ 0 ];
+		if ( path && dsm ) {
+
+			const BASE = - toLocal( 0, 0, 0 )[ 1 ];
+			const dsmAt = ( X, Y ) => {
+
+				const fx = Math.min( Math.max( ( X - AREA.xmin ) / dsm.cell - 0.5, 0 ), dsm.width - 1.001 ), fy = Math.min( Math.max( ( AREA.ymax - Y ) / dsm.cell - 0.5, 0 ), dsm.height - 1.001 );
+				const x0 = Math.floor( fx ), y0 = Math.floor( fy ), tx = fx - x0, ty = fy - y0, i = y0 * dsm.width + x0, d = dsm.data;
+				return ( d[ i ] * ( 1 - tx ) + d[ i + 1 ] * tx ) * ( 1 - ty ) + ( d[ i + dsm.width ] * ( 1 - tx ) + d[ i + dsm.width + 1 ] * tx ) * ty;
+
+			};
+
+			// East (Národní) end first; stations every 2 m, inside the area.
+			const axis = path[ 0 ][ 0 ] < path[ path.length - 1 ][ 0 ] ? [ ...path ].reverse() : [ ...path ];
+			const st = [];
+			let i = 1, seg0 = 0;
+			for ( let s = 0; i < axis.length; s += 2 ) {
+
+				while ( i < axis.length && seg0 + Math.hypot( axis[ i ][ 0 ] - axis[ i - 1 ][ 0 ], axis[ i ][ 1 ] - axis[ i - 1 ][ 1 ] ) < s ) {
+
+					seg0 += Math.hypot( axis[ i ][ 0 ] - axis[ i - 1 ][ 0 ], axis[ i ][ 1 ] - axis[ i - 1 ][ 1 ] );
+					i ++;
+
+				}
+
+				if ( i >= axis.length ) break;
+				const [ ax, ay ] = axis[ i - 1 ], [ bx, by ] = axis[ i ], t = ( s - seg0 ) / Math.hypot( bx - ax, by - ay );
+				const X = ax + ( bx - ax ) * t, Y = ay + ( by - ay ) * t;
+				if ( X > AREA.xmin + 3 && X < AREA.xmax - 3 && Y > AREA.ymin + 3 && Y < AREA.ymax - 3 ) st.push( [ X, Y ] );
+				else if ( st.length ) break;
+
+			}
+
+			if ( st.length > 10 ) {
+
+				const dir = i => {
+
+					const a = st[ Math.max( 0, i - 2 ) ], b = st[ Math.min( st.length - 1, i + 2 ) ], l = Math.hypot( b[ 0 ] - a[ 0 ], b[ 1 ] - a[ 1 ] );
+					return [ ( b[ 0 ] - a[ 0 ] ) / l, ( b[ 1 ] - a[ 1 ] ) / l ];
+
+				};
+				const raw = st.map( ( [ X, Y ], i ) => {
+
+					const [ ux, uy ] = dir( i ), hs = [];
+					for ( let o = - 4; o <= 4; o += 0.5 ) hs.push( dsmAt( X - uy * o, Y + ux * o ) );
+					hs.sort( ( a, b ) => a - b );
+					return hs[ hs.length >> 2 ] - BASE;
+
+				} );
+				let ys = raw.map( ( _, i ) => {
+
+					const w = raw.slice( Math.max( 0, i - 5 ), i + 6 );
+					return w.reduce( ( a, v ) => a + v, 0 ) / w.length;
+
+				} );
+				// Meet the street at the Národní end: blend over the first 12 m to the ground there.
+				const y0 = groundY( ...st[ 0 ] );
+				ys = ys.map( ( y, i ) => i * 2 < 12 ? y0 + ( y - y0 ) * i * 2 / 12 : y );
+				const sAtX = x => {
+
+					let best = 0, bd = Infinity;
+					st.forEach( ( [ X ], i ) => {
+
+						const d = Math.abs( X - ORIGIN.x - x );
+						if ( d < bd ) {
+
+							bd = d;
+							best = i * 2;
+
+						}
+
+					} );
+					return best;
+
+				};
+				// Piers and poles by their x in the scene frame (aerial photo: the tollhouses' pier at x −437, cutwaters at −480, −525, −571).
+				const piers = [ - 437, - 480, - 525, - 571 ].map( sAtX ).filter( v => v > 4 && v < st.length * 2 - 4 );
+				const poles = [ - 437, - 458.5, - 480, - 502.5, - 525, - 548, - 571, - 594, - 617 ].map( sAtX ).filter( v => v > 4 && v < st.length * 2 - 2 );
+				const pts = st.map( ( [ X, Y ], i ) => [ ...L( X, Y ), + ys[ i ].toFixed( 2 ) ] );
+				places.legie = { pts, step: 2, half: 8.3, rail: 0.45, walk: 2.6, bay: { s0: 0, s1: sAtX( - 447 ), half: 11.5 }, piers, poles, tollhouses: [ { s: sAtX( - 442 ), o: - 9.6 }, { s: sAtX( - 442 ), o: 9.6 } ] };
+				legieAxis = st;
+
+				// Walking: the sidewalks (a kerb up from the road) and the carriageway, 10 m at a time; the bays flat.
+				const lg = places.legie, kerb = 0.12;
+				for ( let i = 0; i + 1 < pts.length; i += 5 ) {
+
+					const j = Math.min( pts.length - 1, i + 5 ), [ ax, az, ya ] = pts[ i ], [ bx, bz, yb ] = pts[ j ];
+					const len = Math.hypot( bx - ax, bz - az ), lx = ( bx - ax ) / len, lz = ( bz - az ) / len;
+					const inner = lg.half - lg.rail, mid = inner - lg.walk / 2;
+					for ( const sgn of [ - 1, 1 ] ) zone( ( ax + bx ) / 2 - lz * sgn * mid, ( az + bz ) / 2 + lx * sgn * mid, [ lz, - lx ], lg.walk / 2, len / 2 + 0.05, { y0: + ( ya + kerb ).toFixed( 2 ), y1: + ( yb + kerb ).toFixed( 2 ), along: [ lx, lz ] } );
+					zone( ( ax + bx ) / 2, ( az + bz ) / 2, [ lz, - lx ], inner - lg.walk + 0.01, len / 2 + 0.05, { y0: ya, y1: yb, along: [ lx, lz ] } );
+					bridgeSegs0.push( { A: S( ax, az ), B: S( bx, bz ), w: lg.half * 2, kind: 'legie' } );
+
+				}
+
+				const bi = lg.bay.s1 / 2 | 0, [ ax, az, ya ] = pts[ 0 ], [ bx, bz ] = pts[ bi ];
+				const len = Math.hypot( bx - ax, bz - az ), lx = ( bx - ax ) / len, lz = ( bz - az ) / len;
+				for ( const sgn of [ - 1, 1 ] ) {
+
+					const o = ( lg.half - lg.rail + lg.bay.half - lg.rail ) / 2;
+					zone( ( ax + bx ) / 2 - lz * sgn * o, ( az + bz ) / 2 + lx * sgn * o, [ lz, - lx ], ( lg.bay.half - lg.half ) / 2 + 0.05, len / 2, { y: + ( ( ya + pts[ bi ][ 2 ] ) / 2 + kerb ).toFixed( 2 ) } );
+
+				}
+
+				// The balustrades are walk barriers (round the bays too).
+				const edge = ( i, o ) => {
+
+					const [ x, z ] = pts[ i ], j = Math.min( pts.length - 1, i + 1 ), k = Math.max( 0, i - 1 );
+					const l = Math.hypot( pts[ j ][ 0 ] - pts[ k ][ 0 ], pts[ j ][ 1 ] - pts[ k ][ 1 ] ), ux = ( pts[ j ][ 0 ] - pts[ k ][ 0 ] ) / l, uz = ( pts[ j ][ 1 ] - pts[ k ][ 1 ] ) / l;
+					return [ x - uz * o, z + ux * o ];
+
+				};
+				for ( const sgn of [ - 1, 1 ] ) {
+
+					let prev = null;
+					for ( let i = 0; i < pts.length; i ++ ) {
+
+						const o = sgn * ( ( i * 2 <= lg.bay.s1 ? lg.bay.half : lg.half ) - lg.rail - 0.1 );
+						const p = edge( i, o );
+						if ( prev ) places.barriers.push( [ + prev[ 0 ].toFixed( 2 ), + prev[ 1 ].toFixed( 2 ), + p[ 0 ].toFixed( 2 ), + p[ 1 ].toFixed( 2 ), - 99 ] );
+						if ( i * 2 <= lg.bay.s1 && ( i + 1 ) * 2 > lg.bay.s1 ) {
+
+							const q = edge( i, sgn * ( lg.half - lg.rail - 0.1 ) );
+							places.barriers.push( [ + p[ 0 ].toFixed( 2 ), + p[ 1 ].toFixed( 2 ), + q[ 0 ].toFixed( 2 ), + q[ 1 ].toFixed( 2 ), - 99 ] );
+							prev = q;
+
+						} else prev = p;
+
+					}
+
+				}
+
+				console.log( `places: Most Legií ${( pts.length - 1 ) * 2} m, road ${( ys[ 0 ] + BASE ).toFixed( 2 )}…${( Math.max( ...ys ) + BASE ).toFixed( 2 )} m, piers at s ${piers.join( ', ' )}` );
+
+			}
+
+		}
+
+	}
+
 	// --- bridges (OSM bridge=yes ways, clipped to the area): a deck strip per way segment at the height of the land
 	// at its ends, walkable; piers down to the river under the road decks every 25 m (src/bridges.js).
 	places.bridges = [];
@@ -923,6 +1046,7 @@ export function collectPlaces( ctx ) {
 
 		const t = w.tags;
 		if ( ! t.bridge || t.bridge === 'no' || t.highway === 'steps' ) continue;
+		if ( legieAxis && w.pts.every( p => p.X < AREA.xmin || p.X > AREA.xmax || legieAxis.some( ( [ X, Y ] ) => Math.hypot( p.X - X, p.Y - Y ) < 24 ) ) ) continue; // Most Legií, above
 		const kind = t.railway === 'tram' ? 'tram' : t.highway;
 		if ( ! BRIDGE_W[ kind ] || w.pts.length < 2 ) continue;
 		const width = parseFloat( t.width ) || BRIDGE_W[ kind ];
@@ -1007,12 +1131,13 @@ export function collectPlaces( ctx ) {
 		}
 
 		bridgeSegs.length = 0;
-		bridgeSegs.push( ...decks );
+		bridgeSegs.push( ...decks, ...bridgeSegs0 );
 
 	}
 
 	for ( const g of bridgeSegs ) {
 
+		if ( g.kind === 'legie' ) continue;
 		const [ ax, az ] = L( ...g.A ), [ bx, bz ] = L( ...g.B );
 		const len = Math.hypot( bx - ax, bz - az ), lx = ( bx - ax ) / len, lz = ( bz - az ) / len;
 		const y0 = + g.ya.toFixed( 2 ), y1 = + g.yb.toFixed( 2 );

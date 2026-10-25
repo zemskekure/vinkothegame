@@ -207,8 +207,10 @@ export class Walker {
 
 		}
 
+		this.placed = false;
 		this.pos.set( x, this.groundHeight( x, z ), z );
 		this.y = this.pos.y;
+		this.placed = true;
 		this.yaw = yaw;
 		this.heading = yaw + Math.PI;
 		this.camDist = this.distance;
@@ -231,6 +233,7 @@ export class Walker {
 	update( dt ) {
 
 		if ( this.riding ) return this.ride( dt );
+		const safe = { x: this.pos.x, z: this.pos.z, y: this.y, heading: this.heading };
 		const k = this.keys;
 		let forward = ( k.has( 'KeyW' ) || k.has( 'ArrowUp' ) ? 1 : 0 ) - ( k.has( 'KeyS' ) || k.has( 'ArrowDown' ) ? 1 : 0 );
 		let strafe = ( k.has( 'KeyD' ) || k.has( 'ArrowRight' ) ? 1 : 0 ) - ( k.has( 'KeyA' ) || k.has( 'ArrowLeft' ) ? 1 : 0 );
@@ -274,9 +277,7 @@ export class Walker {
 		this.phase += dt * ( moving > WALK + 0.5 ? 9.5 : 6.2 ) * Math.min( 1, this.stride + 0.2 );
 		this.time += dt;
 
-		const target = this.groundHeight( this.pos.x, this.pos.z );
-		this.y += ( target - this.y ) * Math.min( 1, dt * 12 );
-		this.apply( dt );
+		this.settle( dt, safe );
 
 	}
 
@@ -284,6 +285,7 @@ export class Walker {
 	// so a fast moped cannot skip through a thin wall. Hitting something slides along it and loses most speed.
 	ride( dt ) {
 
+		const safe = { x: this.pos.x, z: this.pos.z, y: this.y, heading: this.heading };
 		const k = this.keys;
 		let throttle = ( k.has( 'KeyW' ) || k.has( 'ArrowUp' ) ? 1 : 0 ) - ( k.has( 'KeyS' ) || k.has( 'ArrowDown' ) ? 1 : 0 );
 		let steer = ( k.has( 'KeyD' ) || k.has( 'ArrowRight' ) ? 1 : 0 ) - ( k.has( 'KeyA' ) || k.has( 'ArrowLeft' ) ? 1 : 0 );
@@ -332,8 +334,24 @@ export class Walker {
 
 		this.stride += ( 0 - this.stride ) * Math.min( 1, dt * 8 );
 		this.time += dt;
+		this.settle( dt, safe );
+
+	}
+
+	// Follow the ground, and never keep a broken position: if anything made the position or the height non-finite
+	// (a bad ground or collision answer at some railing), step back to the last good spot.
+	settle( dt, safe ) {
+
+		const p = this.pos;
 		const target = this.groundHeight( p.x, p.z );
-		this.y += ( target - this.y ) * Math.min( 1, dt * 12 );
+		if ( Number.isFinite( target ) ) this.y += ( target - this.y ) * Math.min( 1, dt * 12 );
+		if ( ! Number.isFinite( p.x + p.z + this.y + this.heading ) ) {
+
+			p.x = safe.x; p.z = safe.z; this.y = safe.y; this.heading = safe.heading;
+			this.speed = 0;
+
+		}
+
 		this.apply( dt );
 
 	}

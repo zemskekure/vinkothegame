@@ -223,7 +223,7 @@ export async function loadStreets( { AREA, buildingDist, inBuilding, tramPaths }
  * (Fk = 0, found by interpolating the field along cell edges), with a vertical kerb face along that line.
  * heightAt( X, Y ) returns the street-level ground height in the scene frame.
  */
-export function buildPavementMesh( streets, { AREA, toLocal, heightAt, inBuilding } ) {
+export function buildPavementMesh( streets, { AREA, toLocal, heightAt, inBuilding, cut } ) {
 
 	const STEP = 0.5;
 	const OFFSET = 0.03; // above the terrain mesh, so the two never fight
@@ -267,6 +267,8 @@ export function buildPavementMesh( streets, { AREA, toLocal, heightAt, inBuildin
 			if ( Math.max( ...f ) >= 100 && Math.min( ...f ) <= 0 ) continue; // the end of a pavement band: no kerb
 			const cx = AREA.xmin + ( i + 0.5 ) * STEP, cy = AREA.ymax - ( j + 0.5 ) * STEP;
 			if ( inBuilding( cx, cy ) && corners.every( ( [ a, b ] ) => inBuilding( AREA.xmin + a * STEP, AREA.ymax - b * STEP ) ) ) continue;
+			// Over the edge of a wall (Smetanovo nábřeží's railing): the cell is left to the terrain.
+			if ( cut && corners.some( ( [ a, b ] ) => cut( AREA.xmin + a * STEP, AREA.ymax - b * STEP ) ) ) continue;
 
 			const P = corners.map( ( [ a, b ] ) => [ AREA.xmin + a * STEP, AREA.ymax - b * STEP ] );
 			const gridId = ( [ a, b ] ) => `g${a},${b}`;

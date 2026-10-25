@@ -12,7 +12,8 @@ const F = {
 	plaster: plain( 0xd9d4ca, { roughness: 0.9, side: THREE.DoubleSide } ),
 	floor: plain( 0x6f6c66, { roughness: 0.9 } ),
 	road: plain( 0x3f4042, { roughness: 0.85 } ),
-	lamp: glow( 0xfff0d0, 1.6 )
+	lamp: glow( 0xfff0d0, 1.6 ),
+	glass: plain( 0x9fb4ad, { roughness: 0.15, metalness: 0.2, transparent: true, opacity: 0.45, side: THREE.DoubleSide } )
 };
 
 // A group at the bottom of a flight, local +z up the stairs.
@@ -59,6 +60,31 @@ function addTrench( scene, f ) {
 
 	}
 
+	kit.build( g );
+	scene.add( g );
+
+}
+
+// Stone steps against a wall (Čapadlo, along the faculty's north wall; owner's photo 2023): solid steps, a cheek wall
+// up to the pavement on the wall side, open to the lane on the other side
+// (f.open: +1 right, −1 left going up) with one iron handrail.
+function addWallFlight( scene, f ) {
+
+	const g = flightGroup( f );
+	const kit = new Kit();
+	const [ bx, , bz ] = f.bottom, [ tx, ty, tz ] = f.top;
+	const len = Math.hypot( tx - bx, tz - bz ), drop = ty - f.bottom[ 1 ], N = f.steps, w = f.w;
+	for ( let k = 1; k <= N; k ++ ) {
+
+		const s0 = len * ( k - 1 ) / N, s1 = k === N ? len + 0.3 : len * k / N;
+		kit.add( F.granite, box( w, drop * k / N + 0.6, s1 - s0 + 0.02, 0, - 0.6, ( s0 + s1 ) / 2 ) );
+
+	}
+
+	// Local x: +x is to the left going up (the group looks along +z).
+	const open = - f.open;
+	kit.add( F.wall, box( 0.35, drop + 0.8, len + 0.6, - open * ( w / 2 + 0.175 ), - 0.6, len / 2 ) );
+	rail( kit, open * ( w / 2 - 0.05 ), 0, 0, drop, len, 0.95 );
 	kit.build( g );
 	scene.add( g );
 
@@ -161,7 +187,36 @@ function addTunnel( scene, t ) {
 
 	}
 
-	if ( ! t.road ) kit.add( F.wall, box( t.w + 0.8, 3.2, 0.6, 0, H + 0.4, - 0.3 ) );
+	// Čapadlo's front in the lane: a glazed steel grid filling the arch, the double doors in the middle standing open.
+	if ( t.glazed ) {
+
+		const R = W, spring = H - R;
+		for ( const side of [ - 1, 1 ] ) {
+
+			for ( let x = 0.75; x < R; x += 0.42 ) {
+
+				const top = spring + Math.sqrt( Math.max( 0, R * R - x * x ) );
+				kit.add( F.steel, box( 0.04, top, 0.05, side * x, 0, 0.15 ) );
+
+			}
+
+			for ( let y = 0.5; y < spring + R; y += 0.5 ) {
+
+				const half = y <= spring ? R : Math.sqrt( Math.max( 0, R * R - ( y - spring ) ** 2 ) );
+				if ( half > 0.75 ) kit.add( F.steel, box( half - 0.75, 0.04, 0.05, side * ( 0.75 + half ) / 2, y, 0.15 ) );
+
+			}
+
+			kit.add( F.steel, box( 0.06, 2.3, 0.06, side * 0.75, 0, 0.15 ) );
+			kit.add( F.glass, new THREE.ShapeGeometry( new THREE.Shape().moveTo( side * 0.75, 0 ).lineTo( side * R, 0 ).lineTo( side * R, spring ).absarc( 0, spring, R, side > 0 ? 0 : Math.PI, side > 0 ? Math.acos( 0.75 / R ) : Math.PI - Math.acos( 0.75 / R ), side < 0 ).closePath(), 12 ).translate( 0, 0, 0.15 ) );
+			// The doors folded back against the glazing.
+			kit.add( F.steel, box( 0.04, 2.25, 0.72, side * 0.78, 0, 0.55 ) );
+
+		}
+
+		kit.add( F.steel, box( 1.56, 0.06, 0.06, 0, 2.3, 0.15 ) );
+
+	}
 	kit.build( g );
 	scene.add( g );
 
@@ -169,7 +224,7 @@ function addTunnel( scene, t ) {
 
 export function addFlights( scene, flights = [], tunnels = [] ) {
 
-	for ( const f of flights ) ( f.kind === 'metal' ? addMetal : f.kind === 'open' ? addOpen : addTrench )( scene, f );
+	for ( const f of flights ) ( f.kind === 'metal' ? addMetal : f.kind === 'open' ? addOpen : f.kind === 'wall' ? addWallFlight : addTrench )( scene, f );
 	for ( const t of tunnels ) addTunnel( scene, t );
 
 }
