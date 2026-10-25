@@ -491,7 +491,7 @@ function prBody( { square, cell, merged, review, inventory, fetched, streetViews
 	return [
 		`Street-photo review of grid square **${square}** (x ${cell.x0}…${cell.x1}, z ${cell.z0}…${cell.z1}; ${cell.streets.join( ', ' )}), run by the grid app (session ${id}) following docs/review-brief.md.`,
 		'Changes are in `data/houses.json`, `data/signs.json`, `data/fronts/` and the rebuilt `public/data/`.',
-		`## Merged\n${merged.houses} houses, ${merged.groundFloors} described ground floors, ${merged.balconies} balconies, ${merged.shopfronts} drawn fronts, ${merged.signs} signs (${inventory.fronts.length} fronts in the inventory).`,
+		`## Merged\n${merged.houses} houses, ${merged.groundFloors} described ground floors, ${merged.balconies} balconies, ${merged.shopfronts} drawn fronts, ${merged.photoPatches || 0} owner-photo details, ${merged.signs} signs (${inventory.fronts.length} fronts in the inventory).`,
 		merged.lowConfidence.length ? `Low confidence (note only, colours and floors left as they were): ${merged.lowConfidence.join( ', ' )}` : '',
 		'Merge schema and SVG checks passed.',
 		`<details><summary>Houses</summary>\n\n${houses.join( '\n' ) || '-'}\n</details>`,
