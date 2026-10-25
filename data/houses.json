@@ -966,12 +966,12 @@
 		"signs": false
 	},
 	"21644705": {
-		"note": "Na Perštýně 2 (corner Národní): white-grey neo-baroque/secession house with rich stucco, oriels and wrought-iron balconies; tall arched shop windows (Feratt) with brown stone plinths, ornate carved portal with iron door, Numismatika shop with hanging gold coin; Pietro Filipi (OSM) no longer there (Street View) Ground floor from the north: the narrow Numismatika window, the carved portal, three tall arched Feratt windows to the corner (owner screenshots, Sept 2025).",
+		"note": "Na Perštýně 2 (corner Národní): white-grey neo-baroque/secession house with rich stucco, oriels and wrought-iron balconies; tall arched shop windows (Feratt) with brown stone plinths, ornate carved portal with iron door, Numismatika shop with hanging gold coin; Pietro Filipi (OSM) no longer there (Street View) Ground floor from the north: the narrow Numismatika window, the carved portal, three tall arched Feratt windows to the corner (owner screenshots, Sept 2025). Iron balconies over the middle Feratt arches on the second and fourth floors (owner screenshots, Sept 2025).",
 		"colour": "#e5e4dd",
-		"trim": "#f4f3ef",
+		"trim": "#f4f2ec",
 		"floors": 5,
 		"ground": "shops",
-		"rustic": "ornate",
+		"rustic": "none",
 		"grilles": false,
 		"graffiti": false,
 		"signs": false,
@@ -999,6 +999,20 @@
 					{
 						"kind": "shop",
 						"arch": true
+					}
+				],
+				"balconies": [
+					{
+						"floor": 2,
+						"from": 0.52,
+						"to": 0.74,
+						"depth": 0.9
+					},
+					{
+						"floor": 4,
+						"from": 0.55,
+						"to": 0.71,
+						"depth": 0.6
 					}
 				]
 			}
@@ -1421,7 +1435,7 @@
 		"rustic": "none"
 	},
 	"21651191": {
-		"note": "Národní 24 (corner): cream art-nouveau house with a round corner tower crowned by a green copper cupola and lantern, corner balconies with iron railings, long iron balcony over the shopfront. Ground floor: dark green glazed shopfront, as in the model. Rustication not visible (shopfront covers it). (Street View 2026)",
+		"note": "Národní 24 (corner): cream art-nouveau house with a round corner tower crowned by a green copper cupola and lantern, corner balconies with iron railings, long iron balcony over the shopfront. Ground floor: dark green glazed shopfront, as in the model. Rustication not visible (shopfront covers it). (Street View 2026) Balconies: the long iron balcony over the shopfront along the whole Národní front, another by the tower higher up (owner screenshots, Sept 2025).",
 		"colour": "#e2d7bd",
 		"trim": "#efe8d6",
 		"ground": "shops",
@@ -1449,6 +1463,20 @@
 					{
 						"kind": "shop",
 						"frame": "green"
+					}
+				],
+				"balconies": [
+					{
+						"floor": 1,
+						"from": 0.02,
+						"to": 0.98,
+						"depth": 0.6
+					},
+					{
+						"floor": 3,
+						"from": 0.04,
+						"to": 0.38,
+						"depth": 0.7
 					}
 				]
 			}

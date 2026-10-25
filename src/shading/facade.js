@@ -108,7 +108,7 @@ export function createFacadeMaterial( cutouts = [], groundTex = null ) {
 	const mainCornice = float( 1 ).sub( smoothstep( 0.55, 0.75, fromTop ) );
 	const underCornice = step( fromTop, mix( float( 1.1 ), float( 1.8 ), sTheatre ) ); // no windows cut into the cornice / attic
 	// Máj: blank panel walls above the shops (its glazing is drawn separately); the chapel only has its gothic windows.
-	const solid = max( max( max( max( inPier, tooNarrow ), isParty ), underCornice ), max( max( sMaj.mul( step( 1, gridV ) ), sChapel ), modern ) );
+	const solid = max( max( max( max( inPier, tooNarrow ), isParty ), underCornice ), max( max( sMaj, sChapel ), modern ) );
 
 	// Described ground floor (data/houses.json edges.<i>.ground): this front's real openings, read from its row of
 	// the ground-floor texture at the wall position: kind (1 door, 2 gate, 3 shop window, 4 window, 5 garage door,
@@ -127,7 +127,8 @@ export function createFacadeMaterial( cutouts = [], groundTex = null ) {
 	// low stall riser up to 3.2 m, windows from a 0.9 m sill, a garage door 3 m; a blind arch takes the whole floor.
 	const gTop = fH.sub( 0.45 );
 	const gy0 = kShop.mul( 0.15 ).add( kWin.mul( 0.9 ) ).add( kNiche.mul( 0.3 ) );
-	const gy1 = min( gTop, kDoor.mul( 2.7 ).add( kGate.mul( 3.9 ) ).add( kShop.mul( 3.2 ) ).add( kWin.mul( 2.7 ) ).add( kGarage.mul( 3.0 ) ).add( kNiche.mul( 9 ) ) );
+	// Arched shop windows (as on Na Perštýně 2) rise to just under the string course.
+	const gy1 = min( gTop, kDoor.mul( 2.7 ).add( kGate.mul( 3.9 ) ).add( kShop.mul( mix( float( 3.2 ), float( 9 ), bit( 1 ) ) ) ).add( kWin.mul( 2.7 ) ).add( kGarage.mul( 3.0 ) ).add( kNiche.mul( 9 ) ) );
 	const gc = gu0.add( gu1 ).mul( 0.5 ), gr = gu1.sub( gu0 ).mul( 0.5 ).max( 0.05 ); // no zero widths: NaNs outside the openings
 	// Signed distance (m) into an opening, positive inside; an arched head is a half circle on the opening's width.
 	const fwU = fwidth( u ).max( 0.001 ), fwH = fwidth( h ).max( 0.001 );
@@ -229,10 +230,19 @@ export function createFacadeMaterial( cutouts = [], groundTex = null ) {
 	const balusterGap = lineAA( fract( u.div( 0.32 ) ).sub( 0.5 ), 0.17 ).mul( step( 0.6, fromTop ) ).mul( step( fromTop, 1.25 ) ).mul( attic );
 
 	// Máj: large beige façade panels; a recessed glass shopfront along the street; a yellow-framed glazed band at the top.
-	const panelJoint = max( gridLine( u, 1.5, 0.012 ), gridLine( h, 1.25, 0.012 ) ).mul( sMaj );
-	const majShopfront = sMaj.mul( isStreet ).mul( step( h, 4.4 ) ).mul( step( 0.25, h ) );
-	const majBand = sMaj.mul( isStreet ).mul( step( 1.0, fromTop ) ).mul( step( fromTop, 3.8 ) );
-	const majFrame = max( max( lineAA( fromTop.sub( 1.05 ), 0.08 ), lineAA( fromTop.sub( 3.75 ), 0.08 ) ), lineAA( fract( u.div( 3.0 ) ).sub( 0.5 ), 0.012 ) ).mul( majBand );
+	// From the street up: a dark recessed shop arcade under a white soffit, two storeys of big windows in
+	// orange-yellow frames (adverts behind some panes), white panel cladding, and a band of dark glass on the top
+	// floors (owner's Street View screenshots, Sept 2025).
+	// Every outside wall of Máj gets it: Národní is so wide there that its front counts as a rear wall.
+	const majFace = sMaj.mul( float( 1 ).sub( isParty ) );
+	const panelJoint = max( gridLine( u, 1.2, 0.01 ), gridLine( h, 0.6, 0.01 ) ).mul( sMaj );
+	const majShopfront = majFace.mul( step( h, 4.4 ) ).mul( step( 0.25, h ) );
+	const majOrange = majFace.mul( step( 5.2, h ) ).mul( step( h, 11.0 ) );
+	const majTop = majFace.mul( step( fromTop, 5.2 ) ).mul( step( 0.5, fromTop ) );
+	const majBand = max( majOrange, majTop );
+	const majOrangeFrame = max( max( lineAA( h.sub( 5.25 ), 0.1 ), lineAA( h.sub( 10.95 ), 0.1 ) ), max( lineAA( h.sub( 8.1 ), 0.08 ), lineAA( fract( u.div( 3.0 ) ).sub( 0.5 ), 0.025 ) ) ).mul( majOrange );
+	const majTopFrame = max( lineAA( fract( u.div( 1.5 ) ).sub( 0.5 ), 0.02 ), gridLine( fromTop, 1.75, 0.05 ) ).mul( majTop );
+	const majFrame = majOrangeFrame;
 	const quoinGroove = gridLine( h, 0.6, 0.02 ).mul( quoin );
 
 	// --- colours
@@ -319,9 +329,15 @@ export function createFacadeMaterial( cutouts = [], groundTex = null ) {
 	const doorColor = mix( mix( doorPaint.mul( float( 1 ).sub( doorPanels.mul( 0.45 ) ) ), color( 0x4a2f1d ).mul( float( 1 ).sub( planks.mul( 0.4 ) ) ), isGate ), glass, fanlight );
 
 	// Máj glazing: dark glass, lit shop interiors along the street, the band's yellow frames.
-	const majGlass = mix( mix( color( 0x1c2228 ), color( 0xcbb48a ), step( 0.35, hash2D( vec2( floor( u.div( 3 ) ), seed ) ) ).mul( smoothstep( 4.4, 0.5, h ) ).mul( 0.55 ) ), sceneUniforms.skyHorizon, fresnel.mul( 0.5 ).add( 0.05 ) );
+	const majPane = hash2D( vec2( floor( u.sub( 1.5 ).div( 3 ) ), floor( h.sub( 5.2 ).div( 2.85 ) ).add( seed ) ) ); // one value per framed pane
+	const majAdvert = step( 0.72, majPane ).mul( majOrange );
+	const majInside = mix( mix( color( 0x1c2228 ), color( 0x9c8466 ), step( 0.5, majPane ).mul( smoothstep( 4.4, 0.5, h ) ).mul( 0.4 ) ), mix( color( 0x9a3430 ), color( 0xb85a40 ), noise2D( vec2( u, h ).mul( 0.7 ) ) ), majAdvert );
+	const majGlass = mix( majInside, sceneUniforms.skyHorizon, fresnel.mul( 0.5 ).add( mix( mix( float( 0.05 ), float( 0.3 ), majOrange.mul( float( 1 ).sub( majAdvert ) ) ), float( 0.35 ), majTop ) ) );
 	wall = mix( wall, majGlass, max( majShopfront, majBand ) );
-	wall = mix( wall, color( 0xe8b030 ), max( majFrame, lineAA( fract( u.div( 1.5 ) ).sub( 0.5 ), 0.01 ).mul( majShopfront ).mul( 0.6 ) ) );
+	wall = mix( wall, color( 0xe0a028 ), max( majFrame, lineAA( fract( u.div( 1.5 ) ).sub( 0.5 ), 0.01 ).mul( majShopfront ).mul( 0.6 ) ) );
+	wall = mix( wall, color( 0x5b6168 ), majTopFrame );
+	// White soffit between the arcade and the orange band.
+	wall = mix( wall, color( 0xf2f2ee ), majFace.mul( step( 4.4, h ) ).mul( step( h, 5.2 ) ) );
 
 	// Nová scéna: a skin of square glass blocks (≈ 0.5 m) in dark grey-green glass over the upper floors; the
 	// ground floor a dark recessed glazing behind the piers.
@@ -339,7 +355,8 @@ export function createFacadeMaterial( cutouts = [], groundTex = null ) {
 	const cwMullion = lineAA( fract( u.div( 1.35 ) ).sub( 0.5 ), 0.025 );
 	const cwFin = lineAA( fract( u.div( 2.7 ) ).sub( 0.5 ), 0.05 );
 	const cwGlass = mix( mix( color( 0x22303c ), color( 0x3a4b5a ), noise2D( vec2( u.mul( 0.15 ), h.mul( 0.15 ) ) ) ), sceneUniforms.skyHorizon, fresnel.mul( 0.7 ).add( 0.12 ) );
-	const cwShop = mix( color( 0x2a2622 ), color( 0xe0c79a ), step( 0.3, hash2D( vec2( floor( u.div( 2.7 ) ), seed ) ) ).mul( 0.6 ) );
+	// Ground floor: dark shop glazing behind dark stone piers, only a little light from inside by day.
+	const cwShop = mix( mix( color( 0x1a1f24 ), color( 0x7d6a50 ), step( 0.5, hash2D( vec2( floor( u.div( 2.7 ) ), seed ) ) ).mul( 0.4 ) ), color( 0x3a3b3c ), cwFin.mul( 3 ).min( 1 ) );
 	const cwCol = mix( mix( mix( cwGlass, cwShop, ground ), color( 0xc8ccd0 ), cwSpandrel ), color( 0x9aa1a7 ), max( cwMullion, cwFin ) );
 	const cwOn = sCurtain.mul( float( 1 ).sub( isParty ) );
 	wall = mix( wall, cwCol, cwOn );

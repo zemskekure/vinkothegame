@@ -32,7 +32,7 @@ function addLetters( scene, L, groundHeight ) {
 
 	const tex = textTexture( [ [ L.text, 640 ] ], { w: 2048, h: 820, ink: L.ink, font: 'Helvetica, Arial, sans-serif', weight: '800', spacing: 40 } );
 	tex.colorSpace = THREE.SRGBColorSpace;
-	const shade = textTexture( [ [ L.text, 640 ] ], { w: 2048, h: 820, ink: '#15161a', font: 'Helvetica, Arial, sans-serif', weight: '800', spacing: 40 } );
+	const shade = textTexture( [ [ L.text, 640 ] ], { w: 2048, h: 820, ink: L.side || '#2b2c30', font: 'Helvetica, Arial, sans-serif', weight: '800', spacing: 40 } );
 	const plane = new THREE.PlaneGeometry( L.width, L.width * 820 / 2048 );
 	const front = new THREE.Mesh( plane, new THREE.MeshStandardNodeMaterial( { map: tex, transparent: true, alphaTest: 0.5, roughness: 0.5, metalness: 0.2 } ) );
 	const back = new THREE.Mesh( plane, new THREE.MeshStandardNodeMaterial( { map: shade, transparent: true, alphaTest: 0.5, roughness: 0.9 } ) );
@@ -44,29 +44,31 @@ function addLetters( scene, L, groundHeight ) {
 }
 
 // ---------------------------------------------------------------------------
-// David Černý's Motýlek / Letadlo: a butterfly whose body is a small propeller plane, hung nose-up off the corner
-// of Máj. Wings in violet shading to blue and pink with dark veins; a dark violet fuselage; a steel bracket to
-// the wall.
+// David Černý's Motýlek / Letadlo: a light-blue and violet propeller plane, nose up close to the wall, with
+// butterfly wings of open violet wire lattice raised away from the wall in a V, as if it had just landed on the
+// corner of Máj. On a short steel bracket.
 
-function wingTexture() {
+const WING = 0x6a3a9e;
+
+function latticeTexture() {
 
 	const c = document.createElement( 'canvas' );
 	c.width = c.height = 512;
 	const ctx = c.getContext( '2d' );
-	// u runs from the wing root (0) out to the tip (1), v across the wing.
-	const grad = ctx.createRadialGradient( 0, 256, 20, 0, 256, 560 );
-	grad.addColorStop( 0, '#4b2580' );
-	grad.addColorStop( 0.35, '#7b3fb5' );
-	grad.addColorStop( 0.65, '#4f78d8' );
-	grad.addColorStop( 0.88, '#e070b8' );
-	grad.addColorStop( 1, '#2a1640' );
-	ctx.fillStyle = grad;
-	ctx.fillRect( 0, 0, 512, 512 );
-	ctx.strokeStyle = 'rgba(25, 12, 40, 0.75)';
-	ctx.lineWidth = 6;
-	for ( let k = - 6; k <= 6; k ++ ) {
+	ctx.strokeStyle = '#6a3a9e';
+	// A fine net of wire in two diagonals, and heavier veins fanning out from the wing root (u = 0, v = ½).
+	ctx.lineWidth = 3;
+	for ( let k = - 512; k < 1024; k += 26 ) {
 
-		const a = k * 0.24;
+		ctx.beginPath(); ctx.moveTo( k, 0 ); ctx.lineTo( k + 512, 512 ); ctx.stroke();
+		ctx.beginPath(); ctx.moveTo( k, 512 ); ctx.lineTo( k + 512, 0 ); ctx.stroke();
+
+	}
+
+	ctx.lineWidth = 9;
+	for ( let k = - 5; k <= 5; k ++ ) {
+
+		const a = k * 0.28;
 		ctx.beginPath();
 		ctx.moveTo( 0, 256 );
 		ctx.quadraticCurveTo( 260 * Math.cos( a * 0.7 ), 256 + 260 * Math.sin( a * 0.7 ), 560 * Math.cos( a ), 256 + 560 * Math.sin( a ) );
@@ -80,12 +82,21 @@ function wingTexture() {
 
 }
 
-function wingGeometry( points, half ) {
+const FORE = [ [ 0, 0.05 ], [ 0.35, 0.55 ], [ 0.85, 0.95 ], [ 1.0, 0.8 ], [ 1.05, 0.5 ], [ 0.7, 0.15 ], [ 0, - 0.05 ] ];
+const HIND = [ [ 0, - 0.05 ], [ 0.6, - 0.1 ], [ 0.8, - 0.55 ], [ 0.55, - 0.75 ], [ 0.3, - 0.85 ], [ 0.1, - 0.45 ], [ 0, - 0.2 ] ];
+
+function wingShape( points ) {
 
 	const s = new THREE.Shape();
 	s.moveTo( ...points[ 0 ] );
 	for ( let i = 1; i < points.length; i += 3 ) s.bezierCurveTo( ...points[ i ], ...points[ i + 1 ], ...points[ i + 2 ] );
-	const geo = new THREE.ShapeGeometry( s, 24 );
+	return s;
+
+}
+
+function wingGeometry( points, half ) {
+
+	const geo = new THREE.ShapeGeometry( wingShape( points ), 24 );
 	const pos = geo.attributes.position, uv = geo.attributes.uv;
 	for ( let i = 0; i < pos.count; i ++ ) {
 
@@ -98,6 +109,14 @@ function wingGeometry( points, half ) {
 
 }
 
+// The heavy wire rim round a wing.
+function wingRim( points, half ) {
+
+	const pts = wingShape( points ).getPoints( 40 ).map( p => new THREE.Vector3( p.x * half, p.y * half, 0 ) );
+	return new THREE.TubeGeometry( new THREE.CatmullRomCurve3( pts, true ), 120, 0.05, 5, true );
+
+}
+
 function addButterfly( scene, B, groundHeight ) {
 
 	const g = new THREE.Group();
@@ -105,42 +124,43 @@ function addButterfly( scene, B, groundHeight ) {
 	face( g, B.facing );
 	scene.add( g );
 
-	// The butterfly itself, nose up and leaning, wings across the view from the street.
+	// Local axes: y up the body (nose up), x out from the wall, z along it.
 	const fly = new THREE.Group();
-	fly.rotation.z = - 0.45;
+	fly.rotation.z = - 0.15;
 	g.add( fly );
 	const half = B.span / 2;
-	const wingMat = new THREE.MeshStandardNodeMaterial( { map: wingTexture(), side: THREE.DoubleSide, roughness: 0.45, metalness: 0.15 } );
-	const fore = wingGeometry( [ [ 0, 0.05 ], [ 0.35, 0.55 ], [ 0.85, 0.95 ], [ 1.0, 0.8 ], [ 1.05, 0.5 ], [ 0.7, 0.15 ], [ 0, - 0.05 ] ], half );
-	const hind = wingGeometry( [ [ 0, - 0.05 ], [ 0.6, - 0.1 ], [ 0.8, - 0.55 ], [ 0.55, - 0.75 ], [ 0.3, - 0.85 ], [ 0.1, - 0.45 ], [ 0, - 0.2 ] ], half );
+	const lattice = new THREE.MeshStandardNodeMaterial( { map: latticeTexture(), transparent: true, alphaTest: 0.35, side: THREE.DoubleSide, roughness: 0.4, metalness: 0.4 } );
+	const rimMat = plain( WING, { metalness: 0.5, roughness: 0.35 } );
 	for ( const side of [ 1, - 1 ] ) {
 
-		for ( const geo of [ fore, hind ] ) {
+		for ( const pts of [ FORE, HIND ] ) {
 
-			const w = new THREE.Mesh( geo, wingMat );
-			w.scale.x = side;
-			w.rotation.y = side * - 0.4; // wings raised towards the viewer in a shallow V
-			w.castShadow = true;
-			fly.add( w );
+			const wing = new THREE.Group();
+			wing.add( new THREE.Mesh( wingGeometry( pts, half ), lattice ), new THREE.Mesh( wingRim( pts, half ), rimMat ) );
+			wing.rotation.y = side * 0.3; // both pairs out from the wall, opened in a V
+			wing.traverse( o => o.castShadow = true );
+			fly.add( wing );
 
 		}
 
 	}
 
-	// Fuselage of a small plane along the body, a propeller at the nose.
+	// The plane: a light-blue fuselage with violet paint, tailplane and fin, a two-bladed propeller at the nose.
 	const kit = new Kit();
-	const body = plain( 0x3d2160, { metalness: 0.5, roughness: 0.35 } );
-	const len = B.span * 0.42;
-	kit.add( body, new THREE.CapsuleGeometry( 0.26, len, 6, 14 ).translate( 0, - len * 0.15, 0.05 ) );
-	kit.add( body, new THREE.BoxGeometry( 1.4, 0.08, 0.5 ).translate( 0, - len * 0.62, 0.05 ) ); // tailplane
-	kit.add( M.iron, cyl( 0.12, 0.02, 0.35, 0, len * 0.35 + 0.15, 0.05, 10 ) );
-	kit.add( M.iron, new THREE.BoxGeometry( 0.12, 0.04, 1.6 ).translate( 0, len * 0.35 + 0.3, 0.05 ) );
+	const blue = plain( 0x5aa2dc, { metalness: 0.3, roughness: 0.35 } ), violet = plain( 0x7444b0, { metalness: 0.3, roughness: 0.35 } );
+	const len = B.span * 0.5;
+	kit.add( blue, new THREE.CapsuleGeometry( 0.32, len, 6, 16 ).translate( 0, - len * 0.1, 0.1 ) );
+	kit.add( violet, new THREE.CapsuleGeometry( 0.34, len * 0.35, 6, 16 ).translate( 0, - len * 0.05, 0.1 ) );
+	kit.add( violet, new THREE.BoxGeometry( 1.8, 0.1, 0.7 ).translate( 0, - len * 0.58, 0.1 ) );
+	kit.add( violet, new THREE.BoxGeometry( 0.1, 0.9, 0.8 ).translate( 0, - len * 0.55, 0.45 ) );
+	kit.add( violet, cyl( 0.2, 0.06, 0.4, 0, len * 0.4 + 0.1, 0.1, 12 ) );
+	kit.add( M.iron, new THREE.BoxGeometry( 0.14, 0.05, 2.2 ).translate( 0, len * 0.4 + 0.45, 0.1 ) );
 	kit.build( fly );
 
 	// Steel bracket back to the wall.
-	const rod = new THREE.Mesh( cyl( 0.05, 0.05, 2.4, 0, 0, 0, 8 ), M.iron );
-	rod.rotation.x = Math.PI / 2;
-	rod.position.z = - 1.2;
+	const rod = new THREE.Mesh( cyl( 0.06, 0.06, 1.3, 0, 0, 0, 8 ), M.iron );
+	rod.rotation.z = Math.PI / 2;
+	rod.position.x = - 0.1;
 	g.add( rod );
 
 }

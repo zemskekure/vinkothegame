@@ -849,7 +849,7 @@ const twinGableFronts = [];
 // ask for: awnings, wall lanterns, hanging banners.
 const HOUSES = JSON.parse( await readFile( new URL( '../data/houses.json', import.meta.url ) ) );
 const srgb = hex => [ 1, 3, 5 ].map( i => parseInt( hex.slice( i, i + 2 ), 16 ) / 255 );
-const decor = { awnings: [], lanterns: [], banners: [] };
+const decor = { awnings: [], lanterns: [], banners: [], balconies: [] };
 
 // Real shopfronts: every named shop / café / restaurant… in OSM is pinned to the nearest building wall,
 // whose ground floor then becomes a shop front, with a name board above it (placed after the geometry pass).
@@ -1255,6 +1255,16 @@ for ( const b of buildings ) {
 
 				if ( extra.awning ) decor.awnings.push( [ ...at( 0.5, 0, Math.min( 3.0, floorH * 0.9 ) ), rot, + ( len * 0.8 ).toFixed( 2 ), extra.awning ] );
 				if ( extra.lanterns ) for ( let d = 4; d < len - 2; d += 9 ) decor.lanterns.push( [ ...at( d / len, 0, Math.min( 3.6, floorH * 1.05 ) ), rot ] );
+				// Balconies: { floor, from, to, depth }, floor 1 = the first floor above the ground floor, from / to
+				// fractions of the front from the left as seen from the street.
+				const aIsLeft = ( bx - ax ) * - ny + ( by - ay ) * nx > 0;
+				for ( const bal of extra.balconies || [] ) {
+
+					const f0 = aIsLeft ? bal.from : 1 - bal.to, f1 = aIsLeft ? bal.to : 1 - bal.from;
+					decor.balconies.push( [ ...at( ( f0 + f1 ) / 2, 0, floorH * ( bal.floor || 1 ) ), rot, + ( ( f1 - f0 ) * len ).toFixed( 2 ), bal.depth || 0.8 ] );
+
+				}
+
 				if ( extra.banner ) decor.banners.push( [ ...at( Math.min( 0.9, 1.5 / len ), 0, Math.min( floorH * 1.6, 6 ) ), rot, extra.banner.text, extra.banner.board, extra.banner.ink ] );
 
 			}

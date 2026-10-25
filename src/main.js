@@ -241,8 +241,8 @@ const wib = new THREE.InterleavedBuffer( walls, ws );
 
 } );
 
-// Landmark facades (style 1 Národní divadlo sandstone, 2 Máj beige panels, 3 Betlémská kaple white render).
-const LANDMARK_COLOURS = { 1: 0xb59a74, 2: 0xd8d1c2, 3: 0xf1ede5 };
+// Landmark facades (style 1 Národní divadlo sandstone, 2 Máj white panels, 3 Betlémská kaple white render).
+const LANDMARK_COLOURS = { 1: 0xb59a74, 2: 0xe6e6e2, 3: 0xf1ede5 };
 const plaster = new Float32Array( walls.length / ws * 3 );
 const c = new THREE.Color();
 for ( let i = 0, n = walls.length / ws; i < n; i ++ ) {

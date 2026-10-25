@@ -1,5 +1,6 @@
 // Street decorations from the house descriptions (data/houses.json via tools/build-scene.mjs, `decor`):
-// fabric awnings over restaurants, wall lanterns on iron brackets and vertical hanging banners.
+// fabric awnings over restaurants, wall lanterns on iron brackets, vertical hanging banners and wrought-iron
+// balconies.
 // Every entry is positioned on its facade with `rot` turning the model's +z to point out of the wall.
 
 import * as THREE from 'three/webgpu';
@@ -55,6 +56,37 @@ export function addDecor( scene, decor ) {
 
 	}
 
+	// Balconies: a stone slab on two consoles with a wrought-iron railing, 1 m high, round its three open sides.
+	// All of them go into two merged meshes (slabs, railings).
+	if ( decor.balconies?.length ) {
+
+		const slabs = [], rails = [];
+		for ( const [ x, y, z, rot, w, d ] of decor.balconies ) {
+
+			const place = g => g.rotateY( rot ).translate( x, y, z );
+			slabs.push( place( new THREE.BoxGeometry( w, 0.18, d ).translate( 0, - 0.09, d / 2 ) ) );
+			for ( const cx of [ - w / 2 + 0.25, w / 2 - 0.25 ] ) slabs.push( place( new THREE.BoxGeometry( 0.22, 0.45, d * 0.8 ).translate( cx, - 0.4, d * 0.4 ) ) );
+			// Railing panels: the front and both ends, the pattern repeating every 0.8 m.
+			const panel = ( len, tx, tz, ry ) => {
+
+				const g = new THREE.PlaneGeometry( len, 1.0 ).translate( 0, 0.5, 0 );
+				const uv = g.attributes.uv;
+				for ( let i = 0; i < uv.count; i ++ ) uv.setX( i, uv.getX( i ) * Math.max( 1, Math.round( len / 0.8 ) ) );
+				return place( g.rotateY( ry ).translate( tx, 0, tz ) );
+
+			};
+			rails.push( panel( w, 0, d - 0.04, 0 ), panel( d, - w / 2 + 0.02, d / 2, Math.PI / 2 ), panel( d, w / 2 - 0.02, d / 2, Math.PI / 2 ) );
+
+		}
+
+		const stone = new THREE.MeshStandardNodeMaterial( { color: 0xd8d0c0, roughness: 0.85 } );
+		const slabMesh = new THREE.Mesh( mergeGeometries( slabs ), stone );
+		const railMesh = new THREE.Mesh( mergeGeometries( rails ), new THREE.MeshStandardNodeMaterial( { map: railingTexture(), color: 0x2a2c2b, transparent: true, alphaTest: 0.4, side: THREE.DoubleSide, metalness: 0.5, roughness: 0.45 } ) );
+		slabMesh.castShadow = slabMesh.receiveShadow = railMesh.castShadow = true;
+		scene.add( slabMesh, railMesh );
+
+	}
+
 	// Vertical banners hung at right angles to the wall, lettered top to bottom.
 	for ( const [ x, y, z, rot, text, board, ink ] of decor.banners ) {
 
@@ -85,6 +117,38 @@ export function addDecor( scene, decor ) {
 }
 
 // River embankment (tools/build-scene.mjs): dressed-stone wall and parapet, and an iron railing on top.
+// Wrought-iron railing, one 0.8 m panel: top and bottom rails, upright bars, a scroll pair in the middle.
+function railingTexture() {
+
+	const c = document.createElement( 'canvas' );
+	c.width = 256;
+	c.height = 320;
+	const ctx = c.getContext( '2d' );
+	ctx.strokeStyle = '#ffffff';
+	ctx.lineWidth = 14;
+	ctx.beginPath(); ctx.moveTo( 0, 10 ); ctx.lineTo( 256, 10 ); ctx.moveTo( 0, 300 ); ctx.lineTo( 256, 300 ); ctx.stroke();
+	ctx.lineWidth = 6;
+	for ( let x = 8; x < 256; x += 32 ) {
+
+		ctx.beginPath(); ctx.moveTo( x, 10 ); ctx.lineTo( x, 300 ); ctx.stroke();
+
+	}
+
+	ctx.lineWidth = 7;
+	for ( const [ cx, dir ] of [ [ 96, - 1 ], [ 160, 1 ] ] ) {
+
+		ctx.beginPath(); ctx.arc( cx, 120, 30, 0, Math.PI * 2 ); ctx.stroke();
+		ctx.beginPath(); ctx.arc( cx, 200, 30, 0, Math.PI * 2 ); ctx.stroke();
+		ctx.beginPath(); ctx.arc( cx + dir * 20, 160, 14, 0, Math.PI * 2 ); ctx.stroke();
+
+	}
+
+	const tex = new THREE.CanvasTexture( c );
+	tex.wrapS = THREE.RepeatWrapping;
+	return tex;
+
+}
+
 export function addEmbankment( scene, stoneBuf, embankment ) {
 
 	const geometry = new THREE.BufferGeometry();
