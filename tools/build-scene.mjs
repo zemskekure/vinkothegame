@@ -388,13 +388,13 @@ for ( const z of zabaged ) {
 const WALL_STRIDE = 24; // x y z  u  wallWidth  base  top  floorH  seed  kind  r g b  bay  window  shop  style  trim r g b  ground grilles rustic graffiti
 // Ground floor kinds and rustication from data/houses.json (−1 / 0 = not described: the shader decides).
 const GROUND = { default: 0, gate: 1, blank: 2, restaurant: 3, shops: 3, windows: 4 };
-const RUSTIC = { none: 0, banded: 1, ornate: 2, clad: 3 };
+const RUSTIC = { none: 0, banded: 1, ornate: 2, clad: 3, rubble: 4 };
 // Described ground floors (data/houses.json edges.<i>.ground): the openings of one street front from left to right,
 // as seen from the street, e.g. [ "shop", { "kind": "door", "frame": "dark", "glazed": true }, "garage" ]. Widths are
 // typical for each kind (narrow / normal / wide), not measured; the piers between the openings share the rest of the
 // front. Each front becomes a row of openings [ u0, u1, kind, frame, flags ] for the facade shader (src/main.js).
 const GF_KIND = { door: 1, gate: 2, shop: 3, window: 4, garage: 5, niche: 6, blank: 7 };
-const GF_FRAME = { wood: 0, dark: 1, white: 2, green: 3, grey: 4 };
+const GF_FRAME = { wood: 0, dark: 1, white: 2, green: 3, grey: 4, red: 5 };
 const GF_DEFAULT_FRAME = { door: 'wood', gate: 'wood', shop: 'dark', window: 'white', garage: 'grey', niche: 'white' };
 const GF_WIDTH = { door: [ 1.0, 1.3, 1.8 ], gate: [ 2.6, 3.0, 3.6 ], shop: [ 1.8, 2.6, 4.2 ], window: [ 0.9, 1.2, 1.5 ], garage: [ 2.4, 2.8, 3.4 ], niche: [ 1.4, 1.8, 2.2 ], blank: [ 1, 2, 4 ] };
 const GF_MIN_PIER = 0.45;
@@ -434,7 +434,7 @@ const ROOF_SLOPE = Math.tan( THREE_DEG( 40 ) );
 const ROOF_KIND = { tiles: 0, copper: 1, flat: 2, slate: 3, theatre: 4 };
 
 // Hand-modelled landmarks, by OpenStreetMap way id. style: facade style in src/shading/facade.js.
-const STYLE = { default: 0, theatre: 1, maj: 2, chapel: 3, glassBlock: 4, curtain: 5, bronze: 6 };
+const STYLE = { default: 0, theatre: 1, maj: 2, chapel: 3, glassBlock: 4, curtain: 5, bronze: 6, gothic: 7 };
 const LANDMARKS = {
 	7649971: { name: 'Národní divadlo', style: STYLE.theatre, roof: ROOF_KIND.theatre, statues: true },
 	25921716: { name: 'Máj', style: STYLE.maj, roof: ROOF_KIND.flat },

@@ -65,10 +65,12 @@ export function createFacadeMaterial( cutouts = [], groundTex = null ) {
 	const rusticKind = house.z;
 	const ornate = step( abs( rusticKind.sub( 2 ) ), 0.5 );
 	const clad = step( abs( rusticKind.sub( 3 ) ), 0.5 );
+	const rubble = step( abs( rusticKind.sub( 4 ) ), 0.5 );
 	const graffiti = house.w;
 	const sTheatre = step( abs( style.sub( 1 ) ), 0.5 );
 	const sMaj = step( abs( style.sub( 2 ) ), 0.5 );
-	const sChapel = step( abs( style.sub( 3 ) ), 0.5 );
+	// 7: a gothic church in its own (described) colour, e.g. the rubble stone of sv. Martin ve zdi.
+	const sChapel = max( step( abs( style.sub( 3 ) ), 0.5 ), step( abs( style.sub( 7 ) ), 0.5 ) );
 	const sGlassBlock = step( abs( style.sub( 4 ) ), 0.5 ); // Nová scéna: walls of glass blocks on a recessed glazed ground floor
 	const sCurtain = step( abs( style.sub( 5 ) ), 0.5 ); // modern offices: glass curtain wall, spandrel bands, fins
 	const sBronze = step( abs( style.sub( 6 ) ), 0.5 ); // Prager's theatre buildings: bronze-tinted glass in dark frames
@@ -235,10 +237,17 @@ export function createFacadeMaterial( cutouts = [], groundTex = null ) {
 	// floors (owner's Street View screenshots, Sept 2025).
 	// Every outside wall of Máj gets it: Národní is so wide there that its front counts as a rear wall.
 	const majFace = sMaj.mul( float( 1 ).sub( isParty ) );
+	// The continuous orange band and the white cladding are the Národní front (facing north); the Spálená side
+	// and the rest are warm grey panels with pairs of orange-framed windows dotted over them.
+	const majNorth = step( 0.7, n.z.negate() );
+	const majSideFace = majFace.mul( float( 1 ).sub( majNorth ) );
+	const majSideWin = majSideFace.mul( step( 0.62, hash2D( vec2( floor( u.div( 4.2 ) ), floor( h.div( 4.0 ) ) ).add( seed ) ) ) )
+		.mul( filteredPulse( fract( u.div( 4.2 ) ), 0.12, 0.88, fwidth( u.div( 4.2 ) ) ) ).mul( filteredPulse( fract( h.div( 4.0 ) ), 0.15, 0.85, fwidth( h.div( 4.0 ) ) ) )
+		.mul( step( 5.2, h ) ).mul( step( 1.5, fromTop ) );
 	const panelJoint = max( gridLine( u, 1.2, 0.01 ), gridLine( h, 0.6, 0.01 ) ).mul( sMaj );
 	const majShopfront = majFace.mul( step( h, 4.4 ) ).mul( step( 0.25, h ) );
-	const majOrange = majFace.mul( step( 5.2, h ) ).mul( step( h, 11.0 ) );
-	const majTop = majFace.mul( step( fromTop, 5.2 ) ).mul( step( 0.5, fromTop ) );
+	const majOrange = majFace.mul( majNorth ).mul( step( 5.2, h ) ).mul( step( h, 11.0 ) );
+	const majTop = majFace.mul( majNorth ).mul( step( fromTop, 5.2 ) ).mul( step( 0.5, fromTop ) );
 	const majBand = max( majOrange, majTop );
 	const majOrangeFrame = max( max( lineAA( h.sub( 5.25 ), 0.1 ), lineAA( h.sub( 10.95 ), 0.1 ) ), max( lineAA( h.sub( 8.1 ), 0.08 ), lineAA( fract( u.div( 3.0 ) ).sub( 0.5 ), 0.025 ) ) ).mul( majOrange );
 	const majTopFrame = max( lineAA( fract( u.div( 1.5 ) ).sub( 0.5 ), 0.02 ), gridLine( fromTop, 1.75, 0.05 ) ).mul( majTop );
@@ -279,6 +288,16 @@ export function createFacadeMaterial( cutouts = [], groundTex = null ) {
 	const veins = smoothstep( 0.45, 0.75, noise2D( vec2( u.mul( 1.7 ), h.mul( 5.0 ) ).add( slabCourse.mul( 3.7 ) ) ) ).mul( 0.07 );
 	const cladStone = clad.mul( ground ).mul( isStreet ).mul( float( 1 ).sub( isParty ) );
 	wall = mix( wall, mix( color( 0xdccfb3 ).mul( float( 1 ).sub( veins ) ), color( 0xa89a80 ), slabJoint.mul( 0.7 ) ), cladStone );
+	// Rubble masonry: the whole wall in roughly coursed stones of uneven length, each its own shade of the
+	// described colour (grey, ochre, rust), with pale mortar joints.
+	const rubCourse = floor( h.div( 0.32 ) );
+	const rubU = u.div( 0.55 ).add( hash2D( vec2( rubCourse, 9.1 ) ) );
+	const rubId = vec2( floor( rubU.add( noise2D( vec2( rubCourse, u.mul( 0.4 ) ) ).mul( 0.6 ) ) ), rubCourse );
+	const rubTone = hash2D( rubId.add( seed ) );
+	const rubStone = wallPlaster.mul( mix( float( 0.82 ), float( 1.18 ), rubTone ) ).mul( mix( vec3( 1 ), vec3( 1.12, 0.98, 0.82 ), step( 0.8, hash2D( rubId.add( 3.3 ) ) ) ) );
+	const rubJoint = max( gridLine( h.add( noise2D( vec2( u.mul( 1.3 ), rubCourse ) ).mul( 0.08 ) ), 0.32, 0.012 ), lineAA( fract( rubU.add( noise2D( vec2( rubCourse, u.mul( 0.4 ) ) ).mul( 0.6 ) ) ).sub( 0.5 ), 0.03 ) );
+	const rubbleWall = rubble.mul( float( 1 ).sub( isParty ) );
+	wall = mix( wall, mix( rubStone, color( 0xb3aa98 ), rubJoint.mul( 0.6 ) ), rubbleWall );
 
 	// Graffiti tags on the lower wall.
 	const tagCell = floor( u.div( 2.2 ) );
@@ -336,6 +355,10 @@ export function createFacadeMaterial( cutouts = [], groundTex = null ) {
 	wall = mix( wall, majGlass, max( majShopfront, majBand ) );
 	wall = mix( wall, color( 0xe0a028 ), max( majFrame, lineAA( fract( u.div( 1.5 ) ).sub( 0.5 ), 0.01 ).mul( majShopfront ).mul( 0.6 ) ) );
 	wall = mix( wall, color( 0x5b6168 ), majTopFrame );
+	wall = mix( wall, color( 0xa59d90 ).mul( float( 1 ).sub( panelJoint.mul( 0.25 ) ) ), majSideFace.mul( step( 5.2, h ) ).mul( float( 1 ).sub( majSideWin ) ) );
+	const majSideFrame = float( 1 ).sub( filteredPulse( fract( u.div( 4.2 ) ), 0.15, 0.85, fwidth( u.div( 4.2 ) ) ).mul( filteredPulse( fract( h.div( 4.0 ) ), 0.19, 0.81, fwidth( h.div( 4.0 ) ) ) ) )
+		.max( lineAA( fract( u.div( 4.2 ) ).sub( 0.5 ), 0.008 ) );
+	wall = mix( wall, mix( mix( color( 0x2a2622 ), color( 0x8a7050 ), 0.35 ), color( 0xe0a028 ), majSideFrame ), majSideWin );
 	// White soffit between the arcade and the orange band.
 	wall = mix( wall, color( 0xf2f2ee ), majFace.mul( step( 4.4, h ) ).mul( step( h, 5.2 ) ) );
 
@@ -377,7 +400,7 @@ export function createFacadeMaterial( cutouts = [], groundTex = null ) {
 	col = mix( col, color( 0x1f1f1d ), bars );
 
 	// Described ground floor: plaster surround, the recess of a blind arch, glass, door leaves, garage doors, frames.
-	const gfFrameColour = mix( mix( mix( mix( color( 0x4a2f1d ), color( 0x2b2d2f ), step( 0.5, gfFrame ) ), color( 0xe9e7e0 ), step( 1.5, gfFrame ) ), color( 0x2c3b2a ), step( 2.5, gfFrame ) ), color( 0x7a7d80 ), step( 3.5, gfFrame ) );
+	const gfFrameColour = mix( mix( mix( mix( mix( color( 0x4a2f1d ), color( 0x2b2d2f ), step( 0.5, gfFrame ) ), color( 0xe9e7e0 ), step( 1.5, gfFrame ) ), color( 0x2c3b2a ), step( 2.5, gfFrame ) ), color( 0x7a7d80 ), step( 3.5, gfFrame ) ), color( 0x8e2224 ), step( 4.5, gfFrame ) );
 	const gfLit = step( 0.35, hash2D( vec2( floor( gu0.mul( 3.1 ) ), seed ) ) ).mul( kShop );
 	// By day a shop window is mostly dark glass; a lit interior only shows faintly through it.
 	const gfInterior = mix( color( 0x1c1a18 ), color( 0x8a7656 ), smoothstep( 0.0, 3.0, h ).mul( 0.25 ).add( 0.1 ).mul( gfLit ) );
