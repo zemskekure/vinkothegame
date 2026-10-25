@@ -20,6 +20,7 @@ import { onLegie } from './bridges.js';
 import { SUN, ANIMATE } from './kit.js';
 import { HOLUB_SUN, PIXEL_SCALE, holubLook, startHolub } from './holub/game.js';
 import { startStory } from './holub/story.js';
+import { ps1Look } from './holub/ps1.js';
 import { startDay } from './holub/sky.js';
 
 async function load( name, type = 'arrayBuffer', dir = 'data/' ) {
@@ -713,6 +714,10 @@ window.addEventListener( 'resize', () => {
 const timer = new THREE.Timer();
 let labelTimer = 0;
 
+// The pigeon game is shown as a late-90s console picture (src/holub/ps1.js); ?hd turns that off.
+const ps1 = HOLUB && ! params.has( 'hd' ) ? ps1Look( { renderer, scene, camera } ) : null;
+if ( ps1 ) renderer.setPixelRatio( 1 );
+
 renderer.setAnimationLoop( () => {
 
 	timer.update();
@@ -752,7 +757,7 @@ renderer.setAnimationLoop( () => {
 
 	}
 
-	renderer.render( scene, camera );
+	if ( ps1 ) ps1.render(); else renderer.render( scene, camera );
 
 } );
 
