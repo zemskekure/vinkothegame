@@ -1382,6 +1382,13 @@ function isGreen( X, Y ) {
 }
 
 // Trees: local maxima of canopy height (DSM - DTM) on a 2 m grid, away from buildings.
+const TRAM_SEGMENTS = JSON.parse( await readFile( new URL( 'tram.json', RAW ) ) ).flatMap( f => f.geometry?.paths || [] ).flatMap( p => p.slice( 1 ).map( ( q, i ) => [ p[ i ], q ] ) );
+const nearTram = ( X, Y, d ) => TRAM_SEGMENTS.some( ( [ [ ax, ay ], [ bx, by ] ] ) => {
+
+	const dx = bx - ax, dy = by - ay, t = Math.max( 0, Math.min( 1, ( ( X - ax ) * dx + ( Y - ay ) * dy ) / ( dx * dx + dy * dy || 1 ) ) );
+	return Math.hypot( X - ax - t * dx, Y - ay - t * dy ) < d;
+
+} );
 const trees = [];
 const TREE_CELL = 2;
 const cw = Math.floor( ( AREA.xmax - AREA.xmin ) / TREE_CELL ), ch = Math.floor( ( AREA.ymax - AREA.ymin ) / TREE_CELL );
@@ -1440,6 +1447,9 @@ for ( let r = 2; r < ch - 2; r ++ ) {
 		}
 
 		const X = AREA.xmin + ( c + 0.5 ) * TREE_CELL, Y = AREA.ymax - ( r + 0.5 ) * TREE_CELL;
+		// No tree stands on a tram line: a canopy peak there is a street tree's crown leaning over the tracks
+		// (Národní), whose trunk is on the pavement and is mapped on its own.
+		if ( nearTram( X, Y, 4 ) ) continue;
 		const [ x, y, z ] = toLocal( X, Y, sample( dtm, X, Y ) );
 		trees.push( + x.toFixed( 1 ), + y.toFixed( 2 ), + z.toFixed( 1 ), + h.toFixed( 1 ), radius * TREE_CELL + 1 );
 

@@ -12,6 +12,9 @@ import { lonLatToSJTSK } from './geo.mjs';
 
 const RAW = new URL( '../data/raw/', import.meta.url );
 const WALK = new Set( [ 'footway', 'pedestrian', 'path', 'service', 'living_street', 'residential', 'unclassified', 'tertiary', 'secondary', 'cycleway' ] );
+// Passages OSM tags that the owner, who walks there, says are not there (Na Perštýně by the Česká spořitelna
+// corner, 25 Oct 2026).
+const NOT_PASSAGES = new Set( [ 755987808 ] );
 const WIDTH = { footway: 2.6, path: 2.2, pedestrian: 3.2, cycleway: 2.6, service: 3.4, living_street: 3.6 };
 
 export async function findOpenings( { AREA, buildingAt, buildings = [] } ) {
@@ -153,7 +156,7 @@ export async function findOpenings( { AREA, buildingAt, buildings = [] } ) {
 
 				}
 
-				if ( runLen < 3 || ! n || both < n * 0.6 ) continue;
+				if ( runLen < 3 || ! n || both < n * 0.6 || NOT_PASSAGES.has( w.id ) ) continue;
 				openings.push( { kind: 'passage', way: w.id, name: t.name, X: mx, Y: my, ux, uy, len: + runLen.toFixed( 2 ), w: width, h: width > 4 ? 4.6 : 3.6 } );
 				continue;
 
