@@ -328,7 +328,17 @@ async function merge() {
 	const R = JSON.parse( await readFile( path.join( WORK, 'review.json' ) ) );
 	const inv = JSON.parse( await readFile( path.join( WORK, 'inventory.json' ) ) );
 	if ( inv.square !== name ) throw new Error( `inventory is for ${inv.square}, not ${name}` );
-	const errors = validateReview( R, inv );
+	let errors = validateReview( R, inv );
+	// A bad sign is left out with a warning instead of failing the whole tile (one wrong sign kind cost a run).
+	const badSigns = new Set( errors.map( e => /^signs\[(\d+)\]/.exec( e )?.[ 1 ] ).filter( Boolean ).map( Number ) );
+	if ( badSigns.size ) {
+
+		for ( const e of errors.filter( e => /^signs\[/.test( e ) ) ) console.log( `warning, sign left out: ${e}` );
+		R.signs = ( R.signs || [] ).filter( ( _, i ) => ! badSigns.has( i ) );
+		errors = validateReview( R, inv );
+
+	}
+
 	const protect = new Set( ( opt( 'protect' ) || '' ).split( ',' ).filter( Boolean ) );
 	const frontMap = new Map( inv.fronts.map( f => [ f.front, f ] ) );
 	const svgFiles = [];
