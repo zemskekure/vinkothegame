@@ -439,7 +439,8 @@ async function route( req, res ) {
 	if ( p === '/api/autopilot' && m === 'POST' ) {
 
 		const { on } = await json( req );
-		if ( on ) needJobs();
+		// Tile pipelines on the API key need no session checkout (GRID_WORK); plain sessions do.
+		if ( on && ENV.SQUARE_USE_API !== '1' ) needJobs();
 		setSetting( db, 'autopilot', on ? '1' : '0' );
 		if ( on ) {
 

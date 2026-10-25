@@ -196,7 +196,7 @@ export function createJobs( { db, grid, data, live, work, base, env, gameURL, pr
 	function nextCell() {
 
 		const s = getSettings( db );
-		const recent = db.prepare( "SELECT COUNT(*) AS n FROM sessions WHERE kind = 'cell' AND started >= ?" ).get( new Date( Date.now() - DAY ).toISOString() ).n;
+		const recent = db.prepare( "SELECT COUNT(*) AS n FROM sessions WHERE kind IN ( 'cell', 'square' ) AND started >= ?" ).get( new Date( Date.now() - DAY ).toISOString() ).n;
 		if ( recent >= Number( s.max_per_day ) ) return { stop: `denní strop ${s.max_per_day} sezení` };
 		const sum = summary( db );
 		if ( sum.week.share && sum.week.share.week >= Number( s.max_week_pct ) ) return { stop: `odhad týdenního limitu ${sum.week.share.week.toFixed( 0 )} % ≥ ${s.max_week_pct} %` };
@@ -210,7 +210,7 @@ export function createJobs( { db, grid, data, live, work, base, env, gameURL, pr
 			const row = db.prepare( 'SELECT status FROM cells WHERE id = ?' ).get( c.id );
 			const status = row?.status || 'todo';
 			if ( status === 'in_progress' ) continue;
-			const last = db.prepare( "SELECT state, ended FROM sessions WHERE cell = ? AND kind = 'cell' ORDER BY id DESC LIMIT 1" ).get( c.id );
+			const last = db.prepare( "SELECT state, ended FROM sessions WHERE cell = ? AND kind IN ( 'cell', 'square' ) ORDER BY id DESC LIMIT 1" ).get( c.id );
 			const newestBug = db.prepare( 'SELECT MAX(created) AS t FROM bugs WHERE cell = ? AND open = 1' ).get( c.id ).t;
 			// Bugs reported after the cell's last session send it back to work.
 			if ( newestBug && ( ! last || newestBug > ( last.ended || '' ) ) ) {
@@ -220,7 +220,7 @@ export function createJobs( { db, grid, data, live, work, base, env, gameURL, pr
 
 			}
 
-			if ( status === 'done' || last?.state === 'review' ) continue;
+			if ( status === 'done' || status === 'review' || last?.state === 'review' ) continue;
 			// A cell whose last attempt failed waits half a day before the autopilot tries it again.
 			if ( last && [ 'failed', 'conflict' ].includes( last.state ) && Date.now() - Date.parse( last.ended || 0 ) < DAY / 2 ) continue;
 			candidates.push( { c, rank: 1 } );
