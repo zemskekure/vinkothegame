@@ -12,7 +12,6 @@ import { lonLatToSJTSK } from './geo.mjs';
 
 const RAW = new URL( '../data/raw/', import.meta.url );
 const WALK = new Set( [ 'footway', 'pedestrian', 'path', 'service', 'living_street', 'residential', 'unclassified', 'tertiary', 'secondary', 'cycleway' ] );
-const FOOT = new Set( [ 'footway', 'pedestrian', 'path' ] );
 const WIDTH = { footway: 2.6, path: 2.2, pedestrian: 3.2, cycleway: 2.6, service: 3.4, living_street: 3.6 };
 
 export async function findOpenings( { AREA, buildingAt, buildings = [] } ) {
@@ -80,12 +79,7 @@ export async function findOpenings( { AREA, buildingAt, buildings = [] } ) {
 		const t = w.tags || {};
 		if ( w.type !== 'way' || ! WALK.has( t.highway ) || t.area === 'yes' ) continue;
 		const arcade = t.covered === 'arcade' || /podloub/i.test( t.note || '' );
-		// A passage is often tagged only for its first metres (tunnel=building_passage); the shopping arcades
-		// (pasáže) behind run on as plain footways through the houses. Any footway at street level that runs
-		// through a house counts too (the house-on-both-sides test below keeps out lines that only clip a corner).
-		const throughHouse = FOOT.has( t.highway ) && ! t.tunnel && ( Number( t.layer ) || 0 ) >= 0 && ! ( t.indoor === 'yes' && t.level && t.level !== '0' );
-		if ( ! arcade && t.tunnel !== 'building_passage' && t.covered !== 'yes' && ! throughHouse ) continue;
-		const tagged = arcade || t.tunnel === 'building_passage' || t.covered === 'yes';
+		if ( ! arcade && t.tunnel !== 'building_passage' ) continue;
 		if ( [ 'no', 'private' ].includes( t.access ) || [ 'no', 'private' ].includes( t.foot ) ) continue;
 
 		const pts = ( w.nodes || [] ).map( id => nodes.get( id ) ).filter( Boolean ).map( n => project( n.lon, n.lat ) );
@@ -153,15 +147,13 @@ export async function findOpenings( { AREA, buildingAt, buildings = [] } ) {
 				let both = 0, n = 0;
 				for ( let s = s0 + 0.5; s <= s1 - 0.5; s += 0.5 ) {
 
-					// Untagged footways must run deep inside (house ≥ 3.5 m either side): a pavement line drawn a metre
-					// inside a facade, or under a deep arcade footprint along a street, is not a passage.
-					const X = ax + ux * s, Y = ay + uy * s, o = width / 2 + ( tagged ? 0.6 : 3.5 );
+					const X = ax + ux * s, Y = ay + uy * s, o = width / 2 + 0.6;
 					n ++;
 					if ( inside( X - uy * o, Y + ux * o ) && inside( X + uy * o, Y - ux * o ) ) both ++;
 
 				}
 
-				if ( runLen < 3 || ! n || both < n * ( tagged ? 0.6 : 0.85 ) || ( ! tagged && runLen > 60 ) ) continue;
+				if ( runLen < 3 || ! n || both < n * 0.6 ) continue;
 				openings.push( { kind: 'passage', way: w.id, name: t.name, X: mx, Y: my, ux, uy, len: + runLen.toFixed( 2 ), w: width, h: width > 4 ? 4.6 : 3.6 } );
 				continue;
 
