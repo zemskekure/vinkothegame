@@ -97,3 +97,12 @@ tile branch per square. Ask the owner to review the side-by-side proof before pu
 currently has local commits only: a push to `origin/look/x0_z2` was rejected by automatic approval review over
 the unverified remote destination, and GitHub authentication for PR creation was unavailable. Do not treat a
 local commit or generated proof as a published tile.
+
+## Starting instruction for a new Claude Code session
+
+> Read `CLAUDE.md`, `docs/handoff.md`, `docs/review-brief.md`, and `docs/claude-code-next.md`. Continue the
+> Street View first, drawn-style tile pipeline on the existing local branches. Inspect the same-camera proof,
+> correct the listed `visualIssues` with original SVGs, preserve the walk checks, and keep reference images and
+> keys outside Git. Start with the Pilsner Urquell entrance on `x-1_z3`, then the remaining upper facades in
+> both tiles. Report what is visually resolved and what still needs owner review. Do not publish until the
+> owner has reviewed the corrected proof.
