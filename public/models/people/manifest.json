@@ -1,0 +1,167 @@
+{
+	"faces": [
+		{
+			"file": "face_01.jpg",
+			"sex": "m"
+		},
+		{
+			"file": "face_02.jpg",
+			"sex": "f"
+		},
+		{
+			"file": "face_03.jpg",
+			"sex": "f"
+		},
+		{
+			"file": "face_04.jpg",
+			"sex": "m"
+		},
+		{
+			"file": "face_05.jpg",
+			"sex": "m"
+		},
+		{
+			"file": "face_06.jpg",
+			"sex": "f"
+		},
+		{
+			"file": "face_07.jpg",
+			"sex": "m"
+		},
+		{
+			"file": "face_08.jpg",
+			"sex": "m"
+		},
+		{
+			"file": "face_09.jpg",
+			"sex": "f"
+		},
+		{
+			"file": "face_10.jpg",
+			"sex": "m"
+		},
+		{
+			"file": "face_11.jpg",
+			"sex": "m"
+		},
+		{
+			"file": "face_12.jpg",
+			"sex": "m"
+		},
+		{
+			"file": "face_13.jpg",
+			"sex": "f"
+		},
+		{
+			"file": "face_14.jpg",
+			"sex": "m"
+		},
+		{
+			"file": "face_15.jpg",
+			"sex": "m"
+		},
+		{
+			"file": "face_16.jpg",
+			"sex": "m"
+		},
+		{
+			"file": "face_17.jpg",
+			"sex": "f"
+		},
+		{
+			"file": "face_18.jpg",
+			"sex": "m"
+		},
+		{
+			"file": "face_19.jpg",
+			"sex": "f"
+		},
+		{
+			"file": "face_20.jpg",
+			"sex": "m"
+		},
+		{
+			"file": "face_21.jpg",
+			"sex": "f"
+		},
+		{
+			"file": "face_22.jpg",
+			"sex": "m"
+		},
+		{
+			"file": "face_23.jpg",
+			"sex": "f"
+		},
+		{
+			"file": "face_24.jpg",
+			"sex": "m"
+		},
+		{
+			"file": "face_25.jpg",
+			"sex": "m"
+		},
+		{
+			"file": "face_26.jpg",
+			"sex": "f"
+		},
+		{
+			"file": "face_27.jpg",
+			"sex": "f"
+		},
+		{
+			"file": "face_28.jpg",
+			"sex": "m"
+		},
+		{
+			"file": "face_29.jpg",
+			"sex": "f"
+		},
+		{
+			"file": "face_30.jpg",
+			"sex": "f"
+		},
+		{
+			"file": "face_31.jpg",
+			"sex": "m"
+		},
+		{
+			"file": "face_32.jpg",
+			"sex": "f"
+		},
+		{
+			"file": "face_33.jpg",
+			"sex": "f"
+		},
+		{
+			"file": "face_34.jpg",
+			"sex": "m"
+		},
+		{
+			"file": "face_35.jpg",
+			"sex": "f"
+		},
+		{
+			"file": "face_36.jpg",
+			"sex": "m"
+		},
+		{
+			"file": "face_37.jpg",
+			"sex": "f"
+		},
+		{
+			"file": "face_38.jpg",
+			"sex": "m"
+		},
+		{
+			"file": "face_39.jpg",
+			"sex": "m"
+		},
+		{
+			"file": "face_40.jpg",
+			"sex": "f"
+		}
+	],
+	"heads": [],
+	"clothes": [],
+	"skin": []
+}

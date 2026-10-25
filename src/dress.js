@@ -203,6 +203,9 @@ function addPortal( scene, s ) {
 
 }
 
+// Seats on the terraces built here: [ x, y, z, facing, seat height ].
+export const SEATS = [];
+
 // The terrace: a row of cream awnings on posts over tables and wicker armchairs, the name on the valances.
 function addCanopy( scene, s ) {
 
@@ -230,6 +233,9 @@ function addCanopy( scene, s ) {
 
 			const cx = x + side * 0.62;
 			kit.add( D.wicker, box( 0.56, 0.42, 0.56, cx, 0, z ), box( 0.12, 0.42, 0.56, cx + side * 0.24, 0.42, z ), box( 0.56, 0.2, 0.1, cx, 0.42, z - 0.24 ), box( 0.56, 0.2, 0.1, cx, 0.42, z + 0.24 ) );
+			// A seat for the street-life module (scene frame, facing the table; seat 0.42 m).
+			const c = Math.cos( s.rot ), sn = Math.sin( s.rot );
+			SEATS.push( [ s.x + cx * c + z * sn, s.y, s.z - cx * sn + z * c, Math.atan2( - side * c, side * sn ), 0.42 ] );
 
 		}
 

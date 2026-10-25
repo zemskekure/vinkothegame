@@ -10,7 +10,7 @@ import { addOpenings } from './openings.js';
 import { addStops } from './stops.js';
 import { addBridges } from './bridges.js';
 import { addLandmarks } from './landmarks.js';
-import { addDress } from './dress.js';
+import { addDress, SEATS as dressSeats } from './dress.js';
 import { addFlights } from './flights.js';
 import { addVenues } from './venues.js';
 
@@ -324,6 +324,7 @@ export function addPlaces( scene, places, furniture = {}, waterLevel = 0 ) {
 	addBridges( scene, places.bridges, places.piers, waterLevel );
 	addLandmarks( scene, places, waterLevel );
 	addDress( scene, places );
+	seats.push( ...dressSeats );
 	addFlights( scene, places.flights, places.tunnels );
 	return { seats };
 

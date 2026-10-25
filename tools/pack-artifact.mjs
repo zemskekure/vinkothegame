@@ -2,7 +2,7 @@
 // every binary data file is gzipped and base64-encoded (images are copied as they are) into artifact/data/<name>.gz.txt; the page sets
 // window.PACKED_DATA so src/main.js unpacks them in the browser.
 
-import { readdir, readFile, writeFile, mkdir, copyFile } from 'node:fs/promises';
+import { readdir, readFile, writeFile, mkdir, copyFile, stat } from 'node:fs/promises';
 import { gzipSync } from 'node:zlib';
 
 const DIST = new URL( '../dist/', import.meta.url );
@@ -29,24 +29,20 @@ for ( const name of await readdir( new URL( 'data/', DIST ) ) ) {
 
 }
 
-// Models (public/models): .glb packed like the data, textures and licences copied.
+// Models (public/models, nested folders): .glb packed like the data; textures, faces and licences copied.
 const MODELS = new URL( 'models/', DIST );
-for ( const dir of await readdir( MODELS ) ) {
+async function packModels( rel ) {
 
-	await mkdir( new URL( `models/${dir}/Textures/`, OUT ), { recursive: true } );
-	for ( const name of await readdir( new URL( `${dir}/`, MODELS ) ) ) {
+	await mkdir( new URL( `models/${rel}`, OUT ), { recursive: true } );
+	for ( const name of await readdir( new URL( rel, MODELS ) ) ) {
 
-		const src = new URL( `${dir}/${name}`, MODELS );
-		if ( name === 'Textures' ) {
-
-			for ( const tex of await readdir( new URL( `${dir}/Textures/`, MODELS ) ) ) await copyFile( new URL( `${dir}/Textures/${tex}`, MODELS ), new URL( `models/${dir}/Textures/${tex}`, OUT ) );
-
-		} else if ( name.endsWith( '.glb' ) ) {
-
-			await writeFile( new URL( `models/${dir}/${name}.gz.txt`, OUT ), gzipSync( await readFile( src ), { level: 9 } ).toString( 'base64' ) );
-
-		} else await copyFile( src, new URL( `models/${dir}/${name}`, OUT ) );
+		const src = new URL( `${rel}${name}`, MODELS );
+		if ( ( await stat( src ) ).isDirectory() ) await packModels( `${rel}${name}/` );
+		else if ( name.endsWith( '.glb' ) ) await writeFile( new URL( `models/${rel}${name}.gz.txt`, OUT ), gzipSync( await readFile( src ), { level: 9 } ).toString( 'base64' ) );
+		else await copyFile( src, new URL( `models/${rel}${name}`, OUT ) );
 
 	}
 
 }
+
+await packModels( '' );

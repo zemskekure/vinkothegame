@@ -223,7 +223,13 @@ function addTables( kit, terrace, seats ) {
 		tableAt( kit, x, y, z, rot, kind );
 		const ux = Math.sin( rot ), uz = Math.cos( rot );
 		const chairKind = { fold: 'foldWood', bistro: 'bistroWhite', champagne: 'foldBlack' }[ kind ] || 'foldWood';
-		for ( const side of [ - 1, 1 ] ) chairAt( kit, x + ux * 0.55 * side, y, z + uz * 0.55 * side, Math.atan2( ux * side, uz * side ), chairKind );
+		for ( const side of [ - 1, 1 ] ) {
+
+			chairAt( kit, x + ux * 0.55 * side, y, z + uz * 0.55 * side, Math.atan2( ux * side, uz * side ), chairKind );
+			// Someone may sit here, facing the table.
+			seats.push( [ x + ux * 0.55 * side, y, z + uz * 0.55 * side, Math.atan2( - ux * side, - uz * side ) ] );
+
+		}
 		if ( kind === 'champagne' ) {
 
 			bucket( kit, x + 0.1, y + 0.74, z );

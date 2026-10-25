@@ -13,6 +13,7 @@ import { addShopfronts } from './fronts.js';
 import ICONS from '../data/icons.json';
 import { addLife } from './life.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { createMinimap } from './minimap.js';
 import { addTrams } from './trams.js';
 import { SUN, ANIMATE } from './kit.js';
@@ -325,8 +326,9 @@ addEmbankment( scene, embankmentBuf, data.embankment );
 const { seats } = addPlaces( scene, places, data.furniture, data.waterLevel );
 // Local icons: big lettering, sculptures, domed corner towers (data/icons.json).
 addIcons( scene, ICONS, groundHeight, data.buildings );
-// Models: Kenney's Mini Characters and Car Kit (CC0); textures resolve next to them.
-const gltfLoader = new GLTFLoader();
+// Models: Quaternius' people and Kenney's Car Kit (CC0); textures resolve next to them. The people are
+// meshopt-compressed.
+const gltfLoader = new GLTFLoader().setMeshoptDecoder( MeshoptDecoder );
 const loadModel = async ( path, dir ) => gltfLoader.parseAsync( await load( path, 'arrayBuffer', '' ), dir );
 const life = await addLife( scene, places?.life, { seats, benches: data.furniture.bench, groundHeight, loadModel, camera, cars: params.has( 'cars' ) } ); // cars hidden for now (?cars shows them)
 
@@ -557,7 +559,7 @@ function nearestStreet( x, z ) {
 
 }
 
-document.getElementById( 'credit' ).textContent = data.attribution + ' · fasády podle fotek © Mapillary (CC BY-SA) · auta: Kenney (CC0) · rendering after Slop New York (MIT, Mr.doob)';
+document.getElementById( 'credit' ).textContent = data.attribution + ' · fasády podle fotek © Mapillary (CC BY-SA) · lidé: Quaternius (CC0) · auta: Kenney (CC0) · rendering after Slop New York (MIT, Mr.doob)';
 
 // ---------------------------------------------------------------------------
 

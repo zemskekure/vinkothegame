@@ -1,7 +1,8 @@
 // Street life:
-//   - People: architectural scale figures (src/figures.js), one instanced batch per body part. They walk the
-//     pavement lines and pedestrian lanes from tools/places.mjs (to the end and back) and sit on benches, at the
-//     café / pub / bar tables and on the bar stools.
+//   - People: Quaternius' low-poly characters (CC0; src/people.js, public/models/people). They walk the pavement
+//     lines and pedestrian lanes from tools/places.mjs (to the end and back), sit at the café / pub / bar tables,
+//     on the bar stools and on benches, and a few stand about in pairs. Walkers near the camera are skinned and
+//     animated; further away, and everyone seated or standing, they are instanced static poses.
 //   - Cars: Kenney's Car Kit (CC0, kenney.nl; public/models/cars).
 //   - Cars stand at the kerbs where there is room to park (instanced, one batch per model), and a few drive the
 //     streets in their lanes (right-hand traffic), slowing behind the car ahead, re-entering at the start of a lane
@@ -9,7 +10,7 @@
 
 import * as THREE from 'three/webgpu';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { PARTS, PART_TONE, TONES, pose, newPose, figureMaterial } from './figures.js';
+import { BODIES, dress, loadWardrobe, useWardrobe, prepareBody, preparePosed, makeSkinned, makeBatch } from './people.js';
 
 const CARS = { sedan: 5, 'hatchback-sports': 3, suv: 3, van: 2, taxi: 1, delivery: 1, 'sedan-sports': 2, 'suv-luxury': 2 }; // model: weight
 const CAR_LENGTH = 4.1;
@@ -91,81 +92,179 @@ export async function addLife( scene, life, { seats = [], benches = [], groundHe
 
 	const carModels = cars ? await Promise.all( Object.keys( CARS ).map( n => loadModel( `models/cars/${n}.glb`, 'models/cars/' ) ) ) : [];
 
-	// --- agents: walkers spread over the lines by length, sitters on most chairs and stools and some benches
+	// --- people (src/people.js): the wardrobe and the bodies, loaded once
+	const wardrobe = await loadWardrobe();
+	useWardrobe( wardrobe );
+	const [ bodies, posed ] = await Promise.all( [
+		Promise.all( BODIES.map( async b => prepareBody( await loadModel( `models/people/${b.file}.glb`, 'models/people/' ), b ) ) ),
+		Promise.all( [ 'male', 'female' ].map( async n => preparePosed( await loadModel( `models/people/posed-humans/${n}.glb`, 'models/people/' ) ) ) )
+	] );
+	const sitters = bodies.filter( b => b.sitting );
+	// The 2019 bodies a little more often than the modular ones: they are the everyday clothes.
+	const pickBody = () => rnd() < 0.55 ? Math.floor( rnd() * 8 ) : 8 + Math.floor( rnd() * ( bodies.length - 8 ) );
+	const heightOf = sex => sex === 'f' ? 1.6 + rnd() * 0.13 : 1.72 + rnd() * 0.14;
+
+	// --- agents: walkers spread over the lines by length, sitters on most chairs and stools and some benches,
+	// a few people standing about in pairs
 	const walks = life.walks.map( makePath ).filter( p => p.length > 8 );
 	const total = walks.reduce( ( s, p ) => s + p.length, 0 );
-	const agents = [];
-	const walkerCount = Math.min( 260, Math.round( total / 12 ) );
-	for ( let i = 0; i < walkerCount; i ++ ) {
+	// More people round Betlémské náměstí and the streets off it than out at the edges: each line weighted by its
+	// length and by how close its middle is to the square.
+	for ( const p of walks ) {
 
-		let r = rnd() * total, path = walks[ 0 ];
-		for ( const p of walks ) {
-
-			if ( r < p.length ) {
-
-				path = p;
-				break;
-
-			}
-
-			r -= p.length;
-
-		}
-
-		agents.push( { walk: true, path, s: r, dir: rnd() < 0.5 ? 1 : - 1, speed: 1.0 + rnd() * 0.5, side: ( rnd() - 0.5 ) * 0.5, x: 0, y: 0, z: 0, yaw: 0, phase: rnd() * 6, scale: 0.94 + rnd() * 0.1 } );
+		const m = p.pts[ p.pts.length >> 1 ];
+		p.weight = p.length * ( 1 + 4 * Math.exp( - Math.hypot( m[ 0 ] + 74, m[ 1 ] - 66 ) / 180 ) );
 
 	}
 
-	// Seated figures sit 0.15 m back from the seat's centre (their thighs reach forward over it).
-	const sitter = ( x, y, z, yaw ) => agents.push( { walk: false, x: x - Math.sin( yaw ) * 0.15, y, z: z - Math.cos( yaw ) * 0.15, yaw, scale: 0.94 + rnd() * 0.1 } );
-	for ( const [ x, y, z, rot ] of seats ) if ( rnd() < 0.75 ) sitter( x, y - 0.03, z, rot );
+	const weightSum = walks.reduce( ( s, p ) => s + p.weight, 0 );
+	const agents = [];
+	const along = () => {
+
+		let r = rnd() * weightSum;
+		for ( const p of walks ) {
+
+			if ( r < p.weight ) return [ p, rnd() * p.length ];
+			r -= p.weight;
+
+		}
+
+		return [ walks[ 0 ], 0 ];
+
+	};
+
+	const walkerCount = Math.min( 220, Math.round( total / 12 ) );
+	for ( let i = 0; i < walkerCount; i ++ ) {
+
+		const [ path, s ] = along(), body = pickBody(), sex = bodies[ body ].spec.sex;
+		agents.push( { walk: true, path, s, dir: rnd() < 0.5 ? 1 : - 1, speed: 1.0 + rnd() * 0.45, side: ( rnd() - 0.5 ) * 0.5, x: 0, y: 0, z: 0, yaw: 0, phase: rnd(), body, height: heightOf( sex ), look: dress( rnd, sex, wardrobe ) } );
+
+	}
+
+	// Seated people: on chairs (seat 0.45 m) in the 2019 bodies' sitting pose, hips a little back from the seat's
+	// centre towards the backrest; on benches (seat 0.46 m) in the posed humans' sitting pose.
+	const seated = sitters.map( () => [] ), posedAt = new Map();
+	const sitAt = ( x, y, z, yaw, seatH, back ) => {
+
+		const k = Math.floor( rnd() * sitters.length ), b = sitters[ k ], h = heightOf( b.spec.sex ), sc = h / b.height;
+		const fx = Math.sin( yaw ), fz = Math.cos( yaw ), o = back + b.sitting.hipsZ * sc;
+		const a = { walk: false, x: x - fx * o, y, z: z - fz * o, yaw, oy: seatH - b.sitting.bottom * sc + 0.01, scale: sc, look: dress( rnd, b.spec.sex, wardrobe ) };
+		agents.push( a );
+		seated[ k ].push( a );
+
+	};
+
+	const posedPerson = ( x, y, z, yaw, pose, sex = rnd() < 0.5 ? 0 : 1 ) => {
+
+		const P = posed[ sex ], h = heightOf( sex ? 'f' : 'm' );
+		const a = { walk: false, posed: true, x, y, z, yaw, oy: 0, scale: h / P.height, look: dress( rnd, sex ? 'f' : 'm', wardrobe ) };
+		const key = sex + pose;
+		if ( ! posedAt.has( key ) ) posedAt.set( key, { geometry: P.geometry( pose ), list: [] } );
+		posedAt.get( key ).list.push( a );
+		agents.push( a );
+		return a;
+
+	};
+
+	for ( const [ x, y, z, rot, h = 0.45 ] of seats ) if ( rnd() < 0.75 ) sitAt( x, y, z, rot, h, 0.06 );
 	for ( let i = 0; i < benches.length; i += 5 ) {
 
 		const [ x, y, z, rot ] = benches.slice( i, i + 5 );
 		for ( const ox of [ - 0.45, 0.45 ] ) {
 
-			// Bench model: seat along local x, sitters face its −z.
-			if ( rnd() < 0.35 ) sitter( x + Math.cos( rot ) * ox, y, z - Math.sin( rot ) * ox, rot + Math.PI );
+			// Bench model: seat along local x, sitters face its −z; the hips over the back third of the seat.
+			if ( rnd() >= 0.35 ) continue;
+			const yaw = rot + Math.PI, fx = Math.sin( yaw ), fz = Math.cos( yaw );
+			const sex = rnd() < 0.5 ? 0 : 1, seat = posed[ sex ].seat( 'Sitting' );
+			const a = posedPerson( 0, y, 0, yaw, 'Sitting', sex );
+			const o = 0.08 + seat.z * a.scale;
+			a.x = x + Math.cos( rot ) * ox - fx * o;
+			a.z = z - Math.sin( rot ) * ox - fz * o;
+			a.oy = 0.47 - seat.bottom * a.scale;
 
 		}
 
 	}
 
-	// --- the crowd: one instanced mesh per body part, coloured top / bottom / head per person
-	const crowd = PARTS.map( part => {
+	// People standing about: pairs talking at the edge of a pavement, someone looking up at the houses.
+	const sample0 = { x: 0, z: 0, dx: 0, dz: 1 };
+	for ( let i = 0; i < 28; i ++ ) {
 
-		const mesh = new THREE.InstancedMesh( part.geometry, figureMaterial(), agents.length );
-		mesh.castShadow = true;
-		mesh.receiveShadow = true;
-		mesh.frustumCulled = false;
+		const [ path, s ] = along();
+		sample( path, s, sample0 );
+		const { x, z, dx, dz } = sample0;
+		if ( rnd() < 0.3 ) {
+
+			posedPerson( x, groundHeight( x, z ), z, rnd() * Math.PI * 2, rnd() < 0.5 ? 'LookingUp' : 'Standing_Hips' );
+			continue;
+
+		}
+
+		// Two people along the line, 0.8 m apart, facing each other.
+		for ( const side of [ 1, - 1 ] ) {
+
+			const px = x + dx * 0.4 * side, pz = z + dz * 0.4 * side;
+			posedPerson( px, groundHeight( px, pz ), pz, Math.atan2( - dx * side, - dz * side ), rnd() < 0.7 ? 'Standing' : 'Standing_Hips' );
+
+		}
+
+	}
+
+	// --- static people: instanced batches (seated per body, posed per pose and hairstyle)
+	const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), one = new THREE.Vector3( 1, 1, 1 ), v = new THREE.Vector3(), sv = new THREE.Vector3();
+	const setAt = ( mesh, i, a, y ) => {
+
+		q.setFromAxisAngle( v.set( 0, 1, 0 ), a.yaw );
+		mesh.setMatrixAt( i, m4.compose( v.set( a.x, y, a.z ), q, sv.setScalar( a.scale ) ) );
+		mesh.setLook( i, a.look );
+
+	};
+
+	const statics = [ ...sitters.map( ( b, k ) => [ b.sitting.geometry, seated[ k ] ] ), ...[ ...posedAt.values() ].map( p => [ p.geometry, p.list ] ) ];
+	for ( const [ geometry, list ] of statics ) {
+
+		if ( ! list.length ) continue;
+		const mesh = makeBatch( geometry, list.length );
+		list.forEach( ( a, i ) => setAt( mesh, i, a, a.y + a.oy ) );
+		scene.add( mesh );
+
+	}
+
+	// --- walkers: skinned and animated near the camera, instanced in a mid-stride pose further away
+	const NEAR = 60, MAX_NEAR = 48;
+	const far = bodies.map( ( b, k ) => {
+
+		const list = agents.filter( a => a.walk && a.body === k );
+		list.forEach( ( a, i ) => a.slot = i );
+		const mesh = makeBatch( b.walking, list.length );
+		list.forEach( ( a, i ) => mesh.setLook( i, a.look ) );
 		scene.add( mesh );
 		return mesh;
 
 	} );
 
-	const col = new THREE.Color();
-	agents.forEach( ( a, i ) => {
+	const crowd = new THREE.Group();
+	scene.add( crowd );
+	const near = ( a ) => {
 
-		const top = TONES[ Math.floor( rnd() * TONES.length ) ], bottom = TONES[ Math.floor( rnd() * TONES.length ) ];
-		const tones = [ top, bottom, rnd() < 0.5 ? top : 0xeee9df ];
-		PARTS.forEach( ( p, k ) => crowd[ k ].setColorAt( i, col.setHex( tones[ PART_TONE[ p.name ] ] ) ) );
+		if ( ! a.skinned ) {
 
-	} );
+			const b = bodies[ a.body ];
+			a.skinned = makeSkinned( b, a.look, a.height );
+			const act = a.skinned.mixer.clipAction( b.clips.Walk );
+			act.play();
+			act.time = a.phase * b.clips.Walk.duration;
+			// Feet in step with the ground: the clip's own pace scaled to this person.
+			act.timeScale = a.speed / ( b.pace * a.skinned.scale );
 
-	const parts = newPose(), base = new THREE.Matrix4(), scaleM = new THREE.Matrix4(), tmp = new THREE.Matrix4();
-	const place = ( i, a, state ) => {
+		}
 
-		pose( parts, state );
-		base.makeRotationY( a.yaw ).setPosition( a.x, a.y, a.z ).multiply( scaleM.makeScale( a.scale, a.scale, a.scale ) );
-		for ( let k = 0; k < PARTS.length; k ++ ) crowd[ k ].setMatrixAt( i, tmp.multiplyMatrices( base, parts[ k ] ) );
+		return a.skinned;
 
 	};
 
-	agents.forEach( ( a, i ) => {
-
-		if ( ! a.walk ) place( i, a, { sit: true } );
-
-	} );
+	const frustum = new THREE.Frustum(), pv = new THREE.Matrix4(), sphere = new THREE.Sphere( new THREE.Vector3(), 1.2 );
+	const walkers = agents.filter( a => a.walk );
 
 	// --- cars: one instanced batch per model; parked ones placed once, the moving ones after them in each batch
 	const drives = life.drives.map( makePath ).filter( p => p.length > 25 );
@@ -202,7 +301,6 @@ export async function addLife( scene, life, { seats = [], benches = [], groundHe
 
 	} );
 
-	const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), one = new THREE.Vector3( 1, 1, 1 ), v = new THREE.Vector3();
 	const placeCar = ( batch, i, x, y, z, yaw, pitch = 0 ) => {
 
 		q.setFromEuler( e.set( pitch, yaw, 0, 'YXZ' ) );
@@ -232,9 +330,8 @@ export async function addLife( scene, life, { seats = [], benches = [], groundHe
 	function update( dt ) {
 
 		time += dt;
-		agents.forEach( ( a, i ) => {
+		for ( const a of walkers ) {
 
-			if ( ! a.walk ) return;
 			a.s += a.dir * a.speed * dt;
 			if ( a.s > a.path.length - 0.5 ) a.dir = - 1;
 			if ( a.s < 0.5 ) a.dir = 1;
@@ -243,11 +340,38 @@ export async function addLife( scene, life, { seats = [], benches = [], groundHe
 			a.z = at.z + at.dx * a.side * a.dir;
 			a.y = groundHeight( a.x, a.z );
 			a.yaw = Math.atan2( at.dx * a.dir, at.dz * a.dir );
-			place( i, a, { phase: time * a.speed * 4.6 + a.phase, stride: Math.min( 1, a.speed / 1.3 ) } );
+			a.d = Math.hypot( a.x - camera.position.x, a.z - camera.position.z );
 
-		} );
+		}
 
-		for ( const m of crowd ) m.instanceMatrix.needsUpdate = true;
+		// The nearest walkers in view are skinned and animated (at most MAX_NEAR), the rest instanced.
+		frustum.setFromProjectionMatrix( pv.multiplyMatrices( camera.projectionMatrix, camera.matrixWorldInverse ) );
+		const close = walkers.filter( a => a.d < NEAR && frustum.intersectsSphere( sphere.set( sphere.center.set( a.x, a.y + 0.9, a.z ), 1.2 ) ) ).sort( ( p, r ) => p.d - r.d ).slice( 0, MAX_NEAR );
+		const live = new Set( close );
+		for ( const a of walkers ) {
+
+			const mesh = far[ a.body ];
+			if ( live.has( a ) ) {
+
+				const { object, mixer } = near( a );
+				if ( ! object.parent ) crowd.add( object );
+				object.position.set( a.x, a.y, a.z );
+				object.rotation.y = a.yaw;
+				mixer.update( dt );
+				mesh.setMatrixAt( a.slot, m4.makeScale( 0, 0, 0 ) );
+
+			} else {
+
+				if ( a.skinned?.object.parent ) crowd.remove( a.skinned.object );
+				q.setFromAxisAngle( v.set( 0, 1, 0 ), a.yaw );
+				const sc = a.height / bodies[ a.body ].height;
+				mesh.setMatrixAt( a.slot, m4.compose( v.set( a.x, a.y, a.z ), q, sv.setScalar( sc ) ) );
+
+			}
+
+		}
+
+		for ( const m of far ) m.instanceMatrix.needsUpdate = true;
 
 		for ( const m of movers ) {
 
@@ -283,6 +407,6 @@ export async function addLife( scene, life, { seats = [], benches = [], groundHe
 	}
 
 	update( 0 );
-	return { update, agents, people: agents.length, cars: parked.length + movers.length };
+	return { update, agents, bodies, people: agents.length, cars: parked.length + movers.length };
 
 }

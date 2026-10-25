@@ -66,7 +66,7 @@ Run time (`src/`, browser): `main.js` (renderer, sun, terrain, buildings, walk b
 `shading/facade.js` (TSL facade shader: styles 0 default, 1 theatre, 2 Máj, 3 chapel, 4 glass blocks, 5 curtain
 wall, 6 bronze), `places.js` (dispatches to `openings.js`, `stops.js`, `bridges.js`, `landmarks.js`,
 `flights.js`, `venues.js`, `dress.js`), `decor.js` (awnings, lanterns, banners, embankment), `trams.js`,
-`life.js`, `figures.js`, `furniture.js`, `kit.js` (shared materials/geometry helpers, `SUN`).
+`life.js` + `people.js` (NPCs: Quaternius CC0 rigs, box heads with photo faces, public/models/people), `figures.js` (the player), `furniture.js`, `kit.js` (shared materials/geometry helpers, `SUN`).
 
 ## How realism is added (the levers, cheapest first)
 
