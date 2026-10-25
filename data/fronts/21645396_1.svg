@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 580 420">
+<rect x="0" y="0" width="580" height="24" fill="#f1e2ae"/>
+<path d="M0 24H580" stroke="#cdb46c" stroke-width="5"/>
+<path d="M205 90H580M205 150H580M205 210H580M205 270H580M205 330H580M205 390H580" stroke="#cdb46c" stroke-width="3"/>
+<rect x="0" y="56" width="215" height="364" fill="#2f5e3c"/>
+<rect x="0" y="64" width="205" height="50" fill="#2a2622"/>
+<text x="104" y="101" font-family="Arial, sans-serif" font-size="32" font-weight="bold" text-anchor="middle" fill="#ffffff">#Mr.420</text>
+<rect x="30" y="126" width="152" height="294" fill="#f4f2ec"/>
+<rect x="42" y="138" width="56" height="130" fill="#7d8a86"/>
+<rect x="114" y="138" width="56" height="130" fill="#7d8a86"/>
+<rect x="42" y="282" width="128" height="138" fill="#5f6b67"/>
+<path d="M70 138V268M142 138V268M42 200H98M114 200H170" stroke="#f4f2ec" stroke-width="4"/>
+<path d="M486 112H530M508 112V122" stroke="#2a2a2a" stroke-width="4"/>
+<circle cx="508" cy="146" r="24" fill="#1f1f1f"/>
+<circle cx="508" cy="146" r="15" fill="none" stroke="#e9e4d4" stroke-width="2"/>
+<circle cx="508" cy="246" r="10" fill="none" stroke="#2a2a2a" stroke-width="2"/>
+<text x="506" y="292" font-family="Georgia, serif" font-size="20" font-weight="bold" letter-spacing="1" text-anchor="middle" fill="#2a2a2a">HOSAROWA</text>
+<path d="M466 304H546" stroke="#2a2a2a" stroke-width="2"/>
+</svg>

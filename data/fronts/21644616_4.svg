@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 530 450">
+<path d="M30 450V150Q255 -30 500 140V450Z" fill="#b48d52"/>
+<path d="M95 450V190Q255 40 440 180V450Z" fill="#d2ad6e"/>
+<path d="M95 190Q255 40 440 180" stroke="#a07c46" stroke-width="5" fill="none"/>
+<g fill="#cdb88e" stroke="#9c8862" stroke-width="3">
+<path d="M0 190H92V250H0Z"/><path d="M0 250H92V318H0Z"/><path d="M0 318H92V384H0Z"/><path d="M0 384H92V450H0Z"/>
+<path d="M0 128H104Q118 150 104 172H0Z"/>
+<path d="M0 172H84Q98 196 84 212H0Z"/>
+<path d="M470 300H530V360H470Z"/><path d="M470 360H530V410H470Z"/><path d="M470 410H530V450H470Z"/>
+<path d="M530 104H430Q412 136 430 166H530Z"/>
+<path d="M530 166H448Q430 200 448 234H530Z"/>
+<path d="M530 234H466Q450 266 466 300H530Z"/>
+</g>
+<path d="M0 166H100M0 206H82M434 160H530M452 228H530M470 294H530" stroke="#a38f68" stroke-width="6"/>
+<rect x="216" y="176" width="160" height="52" fill="#2a4a36"/>
+<rect x="216" y="176" width="160" height="52" fill="none" stroke="#c8b36e" stroke-width="3"/>
+<rect x="224" y="188" width="30" height="28" fill="#efe8d0"/>
+<path d="M228 202H250" stroke="#b5302c" stroke-width="4"/>
+<text x="316" y="211" font-family="Georgia, serif" font-size="20" font-weight="bold" text-anchor="middle" fill="#e8dca0">U VEJVODŮ</text>
+<rect x="204" y="256" width="200" height="194" fill="#5a2a24"/>
+<rect x="214" y="266" width="84" height="184" fill="#8e9a9e"/>
+<rect x="310" y="266" width="84" height="184" fill="#8e9a9e"/>
+<path d="M214 306H298M214 346H298M214 386H298M256 266V450M310 306H394M310 346H394M310 386H394M352 266V450" stroke="#5a2a24" stroke-width="3"/>
+<rect x="220" y="430" width="70" height="12" fill="#f2f2ee"/>
+<rect x="316" y="430" width="70" height="12" fill="#f2f2ee"/>
+</svg>
