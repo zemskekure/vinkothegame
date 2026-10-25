@@ -78,7 +78,9 @@ passing build and clear walk are necessary but do not establish visual fidelity.
 ## Current proof and remaining work
 
 - Earlier full Street View proof on `x-1_z3` produced 21 pairs and found 4/4 mapped openings traversable.
-  Its images predate removal of the raw blue-portal photo patch; regenerate and inspect the portal close-up.
+  After removal of the raw blue-portal patch, the corrected portal was checked from both Street View camera
+  positions in `.square/x-1_z3/proof-drawn-portal/index.html`; those two pairs also found 4/4 openings clear.
+  The full 21-pair proof still needs to be regenerated against this exact branch build.
 - Earlier full Street View proof on `x-4_z2` produced 25 pairs and found 0 mapped openings in this square.
   Continue visual correction on the same-camera pairs.
 - The ignored `.square/x-1_z3/review.json` lists the ornate upper-storey mismatch at `21651256_2`, the wrong
