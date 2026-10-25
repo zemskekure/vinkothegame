@@ -21,7 +21,7 @@ work folder (`SQUARE_WORK`, default `.square/<square>/`) and the photos to `STRE
   (ignore), and `current` (what the model has now for this house, or null).
 - `ownPhotos`: the owner's own photos of this square (absolute paths from `OWNER_PHOTOS_DIR`, when present), and
   manual Street View screenshots dropped in `<photosDir>/<square>/`. `ownerPhotoMeta` gives the owner's position,
-  heading, date and description. Owner-owned images may become textures after a deliberate crop; Street View may not.
+  heading, date and description. Use these as supplementary drawing references for this tile pass.
 - Photos: Street View images are reference only: look; never copy them into the repository, crop them into new
   files, or use them as textures. (A temporary contact sheet outside the repository to view several at once is
   fine; delete it when done.) Each photo was aimed at the middle of its front from across the street, but the camera may be off:

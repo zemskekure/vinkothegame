@@ -3,6 +3,10 @@
 Written for the next agent working on this repo. Read `CLAUDE.md` first (run, coordinates, pipeline map, data
 rules); this file says what the owner wants, where things stand, and what went wrong so far.
 
+**Current continuation:** Read `docs/claude-code-next.md` for the updated implementation status and art direction.
+This handover records the original plan; its suggestions to use photographic facade crops are superseded by the
+owner's request for a consistent drawn look.
+
 ## What the owner wants
 
 A walkable model of Prague's Old Town (Betlémská čtvrť to Národní and the National Theatre) where **a player who
