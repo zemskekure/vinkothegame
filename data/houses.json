@@ -575,6 +575,17 @@
 		},
 		"signs": false
 	},
+	"21644233": {
+		"note": "Na Perštýně 13: this front is a tall blind firewall/gable in ochre plaster, heavily tagged, fronted by a graffiti-covered hoarding over a vacant plot — no real shopfront here despite OSM listing an absinth shop and a bureau de change; a cream neo-baroque house stands further right down the street (Street View 2026)",
+		"colour": "#c9ad74",
+		"trim": "#d8c492",
+		"floors": 4,
+		"ground": "blank",
+		"rustic": "none",
+		"grilles": false,
+		"graffiti": true,
+		"signs": false
+	},
 	"21644276": {
 		"note": "Bartolomějská / Karoliny Světlé 2 (Eurostars Thalia): cream neo-renaissance block, banded rusticated ground floor with grilled windows, round-arched first-floor windows in rusticated voussoir surrounds, carved portal with brown door under a balcony on consoles, rounded corner, wall lanterns; no hotel sign visible (Street View)",
 		"colour": "#ebe3d0",
@@ -868,21 +879,28 @@
 		"signs": false
 	},
 	"21644543": {
-		"note": "Na Perštýně 345 (between U Medvídků and no. 9): plain cream house with dark red-brown framed shop windows; seen only obliquely at the photo's left edge (Street View)",
+		"note": "Na Perštýně 345 (between the ornate no.346/9 and the Skořepka corner): plain cream house with dark red-brown framed shop windows, seen only very obliquely far down the street — not clearly captured (Street View 2026)",
 		"signs": false
 	},
 	"21644551": {
-		"note": "Na Perštýně 9: cream neo-baroque house with rich stucco, balconies with balustrades and decorated parapets; dark red-brown framed shopfronts; seen obliquely only (Street View)",
+		"note": "Na Perštýně 9: cream neo-baroque house with rich white stucco, balconies with balustrades and decorated parapets; dark red-brown framed shopfronts with a café/bar at ground floor (name unreadable) and a hanging sign; seen obliquely from the corner (Street View 2026)",
 		"edges": {
 			"4": {
 				"lanterns": true
 			}
 		},
-		"signs": false
+		"signs": false,
+		"colour": "#e3dcc9",
+		"trim": "#efe9db",
+		"floors": 5,
+		"ground": "restaurant",
+		"rustic": "ornate",
+		"grilles": false,
+		"graffiti": false
 	},
 	"21644560": {
-		"note": "Na Perštýně 11 / Bartolomějská 14 (police): long curving 1920s block in brownish-pink plaster, triangular window pediments, dormer row in the roof; heavy dark-brown stone ground floor with pilasters, bronze-grilled windows and doors; four blue seated sculptures on the cornice above the ground floor (Street View)",
-		"colour": "#a07f6c",
+		"note": "Na Perštýně 11 / Bartolomějská 14 (police): long gently curving 1920s block in warm terracotta-brown plaster, triangular window pediments, a dormer row in the roof; heavy dark-brown stone ground floor with pilasters and bronze-grilled windows and doors; four blue crouching sculptures on the sill course above the ground floor (Street View 2026)",
+		"colour": "#a9765a",
 		"trim": "#7d5747",
 		"floors": 6,
 		"ground": "windows",
@@ -924,7 +942,7 @@
 		"signs": false
 	},
 	"21644632": {
-		"note": "Na Perštýně 14 / Skořepka 2: 1930s functionalist block, pale grey-white plaster, cantilevered balconies with tubular railings at the corner, large windows; ground floor HUDY outdoor shop with black fascia (Street View)",
+		"note": "Na Perštýně 14 / Skořepka 2: 1930s functionalist block, pale grey-white plaster, cantilevered balconies with tubular railings at the rounded corner, large windows; ground floor is a HUDY outdoor shop with black fascias running along the Na Perštýně front (Street View 2026)",
 		"colour": "#e6e6e2",
 		"trim": "#f2f2ef",
 		"floors": 7,
@@ -935,7 +953,7 @@
 		"signs": false
 	},
 	"21644641": {
-		"note": "Na Perštýně 12: pale cream classicist house, rusticated (ashlar-banded) ground floor, stone window surrounds with low lattice grilles, wooden double door, long dark-brown wooden shopfront with arched cornices at its south end; tagged ground floor (Street View)",
+		"note": "Na Perštýně 12: pale cream classicist house, rusticated (ashlar-banded) ground floor, stone window surrounds with low lattice grilles, a wooden double door with leaded-glass panels, a long dark-brown wooden shopfront with arched cornices (empty/under refit); tagged ground floor (Street View 2026)",
 		"colour": "#ebe8d3",
 		"trim": "#f5f3e8",
 		"floors": 4,
@@ -946,7 +964,7 @@
 		"signs": false
 	},
 	"21644659": {
-		"note": "Na Perštýně 10: grey-beige baroque house, stucco cartouche pediments over windows, rusticated quoin strips; souvenir/art shop under a stone arch and Live Exchange; front 6 photo shows mostly no. 12's wooden shopfront (Street View)",
+		"note": "Na Perštýně 10: grey-beige baroque house, rich stucco cartouche pediments over the windows; ground floor a souvenir/art shop under a stone arch ('shop gallery'); the wide dark wooden arched shopfront in the front-6 photo belongs mostly to no.12 next door; tagged at the base (Street View 2026)",
 		"colour": "#cbc3ad",
 		"trim": "#ddd6c4",
 		"floors": 5,
@@ -957,13 +975,20 @@
 		"signs": false
 	},
 	"21644667": {
-		"note": "Na Perštýně 8: pale cream house with simple window cornices; dark fascia with BEEF BAR, hostel door with Ahoy! hanging disc, green mini-market fascia at the south end; street lamp in front (Street View)",
+		"note": "Na Perštýně 8: grey-beige baroque house with ornate stucco cartouche window pediments; ground floor a run of businesses sharing the no.10 boundary — a green currency exchange, the Ahoy! hostel door with its black hanging disc, a dark BEEF BAR fascia, and a green cannabis/souvenir mini-market at the south end; ornate black street lamp in front (Street View 2026)",
 		"edges": {
 			"9": {
 				"lanterns": true
 			}
 		},
-		"signs": false
+		"signs": false,
+		"colour": "#c7bfae",
+		"trim": "#d8d0bd",
+		"floors": 4,
+		"ground": "restaurant",
+		"rustic": "ornate",
+		"grilles": false,
+		"graffiti": false
 	},
 	"21644705": {
 		"note": "Na Perštýně 2 (corner Národní): white-grey neo-baroque/secession house with rich stucco, oriels and wrought-iron balconies; tall arched shop windows (Feratt) with brown stone plinths, ornate carved portal with iron door, Numismatika shop with hanging gold coin; Pietro Filipi (OSM) no longer there (Street View) Ground floor from the north: the narrow Numismatika window, the carved portal, three tall arched Feratt windows to the corner (owner screenshots, Sept 2025). Iron balconies over the middle Feratt arches on the second and fourth floors (owner screenshots, Sept 2025).",
@@ -1678,7 +1703,7 @@
 		"signs": false
 	},
 	"973673162": {
-		"note": "Na Perštýně 6: pale yellow baroque house, triangular gable with cornice, segmental stucco window caps, white pilaster strips; ochre banded-rustication ground floor with arched gateway closed by an ornate iron grille (studio dva theatre entrance); front 37 more ochre with white rusticated corner quoins (Street View)",
+		"note": "Na Perštýně 6: pale yellow baroque house, triangular gable with cornice, segmental stucco window caps, white pilaster strips; ochre banded-rustication ground floor with an arched gateway closed by an ornate diamond-lattice iron grille; black lamp post in front (theatre-entrance attribution from the earlier note not verifiable in the photo) (Street View 2026)",
 		"colour": "#ecdfb2",
 		"trim": "#f4f1e6",
 		"floors": 3,

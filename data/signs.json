@@ -920,5 +920,59 @@
 		"font": "sans",
 		"street": "martinska",
 		"what": "black fashion-shop fascia along the Martinská front (Street View 2025)"
+	},
+	{
+		"front": "21644705_8",
+		"fromLeft": 0.3,
+		"height": 3.3,
+		"kind": "board",
+		"text": "FERATT",
+		"width": 2.2,
+		"bg": "#1c1c1c",
+		"ink": "#ffffff",
+		"font": "sans",
+		"street": "na-perstyne",
+		"what": "fashion shop board across arched window"
+	},
+	{
+		"front": "21644659_4",
+		"fromLeft": 0.45,
+		"height": 3,
+		"kind": "board",
+		"text": "shop gallery",
+		"sub": "Art Shop",
+		"width": 1.6,
+		"bg": "#e8e2d2",
+		"ink": "#333333",
+		"font": "serif",
+		"street": "x0_z1",
+		"what": "souvenir / art shop over the arched ground-floor door, with a colourful 'Art Shop' panel and a vertical SOUVENIR sign"
+	},
+	{
+		"front": "21644667_9",
+		"fromLeft": 0.05,
+		"height": 3.2,
+		"kind": "board",
+		"text": "EXCHANGE",
+		"width": 1.6,
+		"bg": "#0a6b2e",
+		"ink": "#ffe100",
+		"font": "sans",
+		"street": "x0_z1",
+		"what": "green currency-exchange booth (OPEN neon; branded 'Live Exchange / CHANGE' on its no.10-facing side) at the no.10/no.8 boundary"
+	},
+	{
+		"front": "21644667_9",
+		"fromLeft": 0.88,
+		"height": 3.3,
+		"kind": "board",
+		"text": "CANNABIS SHOP",
+		"sub": "MINI MARKET / SOUVENIR",
+		"width": 2.5,
+		"bg": "#0a6b2e",
+		"ink": "#ffffff",
+		"font": "sans",
+		"street": "x0_z1",
+		"what": "green cannabis / souvenir mini-market fascia (also reads SUPER MARKET) at the south end"
 	}
 ]
