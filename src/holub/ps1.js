@@ -13,9 +13,14 @@ import { pass, screenUV, screenSize, vec2, vec3, vec4, floor, fract, float, Fn, 
 import { SETTINGS } from '../settings.js';
 
 const LOOK = SETTINGS.look;
+// The art direction (game settings, `art`, tuned in the studio, ?studio): how the people and the pigeon are drawn.
+export const ART = SETTINGS.art;
 
 // The vertex grid's lines (0 turns the snapping off), shared by every snapped material.
 export const SNAP = uniform( LOOK.snap );
+
+// Colour levels a channel the bodies of people are cut to (0: not cut), shared by every person's material.
+export const BODY_LEVELS = uniform( ART.bodyLevels ?? 12 );
 
 export const snapVertex = Fn( () => {
 
@@ -35,6 +40,12 @@ export function ps1Look( { renderer, scene, camera } ) {
 	const lines = uniform( LOOK.lines ), levels = uniform( LOOK.levels ), dither = uniform( LOOK.dither ), grainAmount = uniform( LOOK.grain );
 	const contrast = uniform( LOOK.contrast ), saturation = uniform( LOOK.saturation );
 	const scenePass = pass( scene, camera );
+	// The scene is drawn only at about the resolution the picture is shown at (a little above, for clean edges),
+	// not at the screen's: most of the GPU's work saved.
+	let shown = LOOK.lines;
+	const fitScale = () => scenePass.setResolutionScale( shown ? Math.min( 1, ( shown * 1.5 ) / Math.max( 1, window.innerHeight * renderer.getPixelRatio() ) ) : 1 );
+	fitScale();
+	window.addEventListener( 'resize', fitScale );
 	const colour = scenePass.getTextureNode();
 
 	const output = Fn( () => {
@@ -69,7 +80,7 @@ export function ps1Look( { renderer, scene, camera } ) {
 			for ( const key of [ 'map', 'emissiveMap' ] ) {
 
 				const t = m[ key ];
-				if ( ! t || crisp.has( t ) ) continue;
+				if ( ! t || crisp.has( t ) || ! t.image ) continue; // not loaded yet (it comes nearest-filtered anyway)
 				t.magFilter = THREE.NearestFilter;
 				t.minFilter = THREE.NearestFilter;
 				t.generateMipmaps = false;
@@ -87,7 +98,13 @@ export function ps1Look( { renderer, scene, camera } ) {
 	// Live settings: { lines, levels, dither, grain, snap }.
 	const set = look => {
 
-		if ( look.lines !== undefined ) lines.value = look.lines;
+		if ( look.lines !== undefined ) {
+
+			lines.value = look.lines;
+			shown = look.lines;
+			fitScale();
+
+		}
 		if ( look.levels !== undefined ) levels.value = look.levels;
 		if ( look.dither !== undefined ) dither.value = look.dither;
 		if ( look.grain !== undefined ) grainAmount.value = look.grain;

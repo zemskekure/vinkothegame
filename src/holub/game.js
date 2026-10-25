@@ -5,6 +5,7 @@
 
 import * as THREE from 'three/webgpu';
 import { makePigeon } from './pigeon.js';
+import { ART } from './ps1.js';
 
 // --- the look ---------------------------------------------------------------------------------------------------
 
@@ -72,21 +73,49 @@ function roofGrid( roofGeo, bounds ) {
 
 // --- leftovers ----------------------------------------------------------------------------------------------------
 
-const FOOD = [
-	[ 'rohlík', () => new THREE.CapsuleGeometry( 0.025, 0.07, 3, 6 ).rotateZ( Math.PI / 2 ), 0xd9a45b ],
+// [ name, geometry, colour, photo ]: the photo (public/models/props, from the owner's texture set) is stretched
+// over the blocky shape when the art direction asks for it (game settings, art.photoFood).
+export const FOOD = [
+	[ 'rohlík', () => new THREE.CapsuleGeometry( 0.025, 0.07, 3, 6 ).rotateZ( Math.PI / 2 ), 0xd9a45b, 'rohlik' ],
 	[ 'hranolka', () => new THREE.BoxGeometry( 0.012, 0.012, 0.08 ), 0xf2cc4a ],
 	[ 'preclík', () => new THREE.TorusGeometry( 0.035, 0.012, 4, 8, Math.PI * 1.3 ).rotateX( Math.PI / 2 ), 0x8a4f22 ],
-	[ 'trdelník', () => new THREE.CylinderGeometry( 0.03, 0.03, 0.06, 7, 1, true ).rotateZ( Math.PI / 2 ), 0xb7742e ],
+	[ 'trdelník', () => new THREE.CylinderGeometry( 0.03, 0.03, 0.06, 7, 1, true ).rotateZ( Math.PI / 2 ), 0xb7742e, 'trdelnik' ],
 	[ 'drobky', () => new THREE.DodecahedronGeometry( 0.018 ), 0xe9cf9a ]
 ];
+
+const photos = new Map();
+export function foodMaterial( colour, photo, usePhoto = ART.photoFood ) {
+
+	const m = new THREE.MeshStandardNodeMaterial( { color: colour, roughness: 0.7, flatShading: true, emissive: colour, emissiveIntensity: 0.18 } );
+	if ( usePhoto && photo ) {
+
+		if ( ! photos.has( photo ) ) {
+
+			const t = new THREE.TextureLoader().load( `models/props/${photo}.jpg` );
+			t.colorSpace = THREE.SRGBColorSpace;
+			t.magFilter = t.minFilter = THREE.NearestFilter;
+			t.generateMipmaps = false;
+			photos.set( photo, t );
+
+		}
+
+		m.map = photos.get( photo );
+		m.color.setHex( 0xffffff );
+		m.emissiveIntensity = 0.06;
+
+	}
+
+	return m;
+
+}
 
 function scatterFood( scene, spots, surfaceAt, rnd ) {
 
 	const items = [];
 	for ( const [ x, z ] of spots ) {
 
-		const [ name, geo, colour ] = FOOD[ Math.floor( rnd() * FOOD.length ) ];
-		const m = new THREE.Mesh( geo(), new THREE.MeshStandardNodeMaterial( { color: colour, roughness: 0.7, flatShading: true, emissive: colour, emissiveIntensity: 0.18 } ) );
+		const [ name, geo, colour, photo ] = FOOD[ Math.floor( rnd() * FOOD.length ) ];
+		const m = new THREE.Mesh( geo(), foodMaterial( colour, photo ) );
 		const fx = x + ( rnd() - 0.5 ) * 1.6, fz = z + ( rnd() - 0.5 ) * 1.6;
 		m.position.set( fx, surfaceAt( fx, fz ) + 0.02, fz );
 		m.rotation.y = rnd() * Math.PI * 2;
@@ -138,7 +167,7 @@ export function startHolub( { scene, camera, dom, roofGeo, bounds, groundHeight,
 	scene.add( aim );
 
 	const bird = makePigeon();
-	bird.scale.setScalar( 1.15 ); // a little larger than life, to read on screen
+	bird.scale.setScalar( 1.15 * ( ART.pigeon?.size ?? 1 ) ); // a little larger than life, to read on screen (× the art direction's size)
 	scene.add( bird );
 
 	// State.
@@ -658,7 +687,7 @@ export function startHolub( { scene, camera, dom, roofGeo, bounds, groundHeight,
 
 	};
 
-	return { update, pos, keys, on: f => listeners.push( f ), addFood, surfaceAt, roofAt, say,
+	return { update, pos, keys, bird, on: f => listeners.push( f ), addFood, surfaceAt, roofAt, say,
 		set locked( v ) {
 
 			locked = v;

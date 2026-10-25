@@ -1,4 +1,5 @@
-// Game settings, edited on the admin page (?admin, src/admin.js). Four layers, each over the one before:
+// Game settings, edited on the admin page (?admin, src/admin.js) and the art direction studio (?studio,
+// src/studio.js: the `art` group). Four layers, each over the one before:
 //   1. the defaults bundled with the code (public/game-settings.json, so a missing file never breaks the game);
 //   2. the same file as served next to the game (./game-settings.json), so a server can change the defaults;
 //   3. the copy the grid dashboard keeps (../api/game-settings: the game is served at /game/ under it; when the game
@@ -10,7 +11,7 @@ import BUNDLED from '../public/game-settings.json';
 
 export const STORAGE_KEY = 'vinko.game-settings';
 export const API_URL = '../api/game-settings';
-export const TOP_KEYS = [ 'people', 'look', 'day', 'pigeon' ];
+export const TOP_KEYS = [ 'people', 'look', 'day', 'pigeon', 'art' ];
 
 const isObject = v => !! v && typeof v === 'object' && ! Array.isArray( v );
 

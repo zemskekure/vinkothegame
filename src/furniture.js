@@ -32,7 +32,7 @@ const brick = new THREE.MeshStandardNodeMaterial( { roughness: 0.9 } );
 }
 
 // Each model: a list of [ geometry, material ] parts, merged per material.
-const MODELS = {
+export const MODELS = {
 
 	// Cast-iron historic street lamp with a four-sided lantern (about 4.5 m).
 	lamp: [

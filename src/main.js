@@ -100,7 +100,7 @@ const centre = new THREE.Vector3( ( bounds.minX + bounds.maxX ) / 2, 0, ( bounds
 
 const sun = new THREE.DirectionalLight( 0xffe6c4, 3.0 );
 sun.castShadow = true;
-sun.shadow.mapSize.set( 4096, 4096 );
+sun.shadow.mapSize.set( 2048, 2048 );
 const half = Math.max( bounds.maxX - bounds.minX, bounds.maxZ - bounds.minZ ) * 0.62;
 Object.assign( sun.shadow.camera, { left: - half, right: half, top: half, bottom: - half, near: 10, far: 1600 } );
 sun.shadow.bias = - 0.0003;
@@ -726,8 +726,17 @@ if ( ps1 ) renderer.setPixelRatio( 1 );
 // The admin page: the settings and the map from above beside the running game.
 if ( ADMIN ) ( await import( './admin.js' ) ).startAdmin( { bounds, map: minimap.map, life, ps1, day, holub } );
 
+// Battery: at most 60 frames a second (30 in the pigeon game's low-resolution picture), however fast the screen
+// refreshes, and the sun's shadows redrawn every third frame, not every frame. ?fps=N sets the cap.
+const FPS = Number( params.get( 'fps' ) ) || ( ps1 ? 30 : 60 );
+renderer.shadowMap.autoUpdate = false;
+let lastFrame = 0, frameNo = 0;
 renderer.setAnimationLoop( () => {
 
+	const now = performance.now();
+	if ( now - lastFrame < 1000 / FPS - 2 ) return;
+	lastFrame = now;
+	if ( frameNo ++ % 3 === 0 ) renderer.shadowMap.needsUpdate = true;
 	timer.update();
 	const dt = Math.min( timer.getDelta(), 0.1 );
 	life.update( dt );

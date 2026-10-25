@@ -12,7 +12,7 @@
 
 import { SETTINGS, DEFAULTS, SERVER, LOCAL, API_URL, merge, writeLocal } from './settings.js';
 
-const STYLE = `
+export const STYLE = `
 #admin { position: fixed; left: 0; top: 0; bottom: 0; width: min(400px, 100vw); overflow-y: auto; z-index: 10; background: #f6f5f2; color: #1d1d1b; font: 13px/1.4 system-ui, sans-serif; box-shadow: 1px 0 0 #c9c6bf; }
 #admin * { box-sizing: border-box; }
 #admin header { position: sticky; top: 0; z-index: 1; padding: 10px 14px; background: #f6f5f2; border-bottom: 1px solid #d8d5ce; }
@@ -50,7 +50,7 @@ const STYLE = `
 `;
 
 // One slider row: [ key path, label, min, max, step, note ].
-const LOOK = [
+export const LOOK = [
 	[ 'look.lines', 'Rozlišení (řádky)', 0, 720, 10, '0 = plné rozlišení obrazovky' ],
 	[ 'look.levels', 'Úrovně barev', 0, 128, 1, '0 = bez omezení barev' ],
 	[ 'look.dither', 'Rastr (dither)', 0, 1, 0.05 ],
@@ -73,8 +73,40 @@ const DAY = [
 	[ 'day.minutes', 'Délka dne (min)', 0, 120, 1, '0 = čas stojí' ]
 ];
 
-const get = ( o, path ) => path.split( '.' ).reduce( ( a, k ) => a?.[ k ], o );
-const set = ( o, path, v ) => {
+// Saves the settings for everyone (PUT to the grid dashboard) or, without it, in this browser. Returns
+// 'server', 'local' or '' (not saved: download the JSON).
+export async function saveSettings( settings ) {
+
+	const body = JSON.stringify( { version: 1, ...settings }, null, '\t' );
+	try {
+
+		const r = await fetch( API_URL, { method: 'PUT', headers: { 'content-type': 'application/json' }, body, credentials: 'same-origin' } );
+		if ( r.ok ) {
+
+			writeLocal( null );
+			return 'server';
+
+		}
+
+	} catch { /* no dashboard behind the game */ }
+
+	return writeLocal( settings ) ? 'local' : '';
+
+}
+
+// The settings as a file to put on the server by hand.
+export function downloadSettings( settings ) {
+
+	const a = document.createElement( 'a' );
+	a.href = URL.createObjectURL( new Blob( [ JSON.stringify( { version: 1, ...settings }, null, '\t' ) + '\n' ], { type: 'application/json' } ) );
+	a.download = 'game-settings.json';
+	a.click();
+	setTimeout( () => URL.revokeObjectURL( a.href ), 1000 );
+
+}
+
+export const get = ( o, path ) => path.split( '.' ).reduce( ( a, k ) => a?.[ k ], o );
+export const set = ( o, path, v ) => {
 
 	const keys = path.split( '.' ), last = keys.pop();
 	keys.reduce( ( a, k ) => a[ k ] ??= {}, o )[ last ] = v;
@@ -561,39 +593,15 @@ export function startAdmin( { bounds, map, life, ps1, day, holub } ) {
 
 	};
 
-	const json = () => JSON.stringify( { version: 1, ...settings }, null, '\t' );
-	const download = () => {
-
-		const a = document.createElement( 'a' );
-		a.href = URL.createObjectURL( new Blob( [ json() + '\n' ], { type: 'application/json' } ) );
-		a.download = 'game-settings.json';
-		a.click();
-		setTimeout( () => URL.revokeObjectURL( a.href ), 1000 );
-
-	};
+	const download = () => downloadSettings( settings );
 
 	$( '[data-save]' ).addEventListener( 'click', async () => {
 
 		status( 'Ukládám…' );
-		let ok = false;
-		try {
-
-			const r = await fetch( API_URL, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: json(), credentials: 'same-origin' } );
-			ok = r.ok;
-
-		} catch { /* no dashboard behind the game */ }
-
-		if ( ok ) {
-
-			writeLocal( null );
-			status( 'Uloženo na server. Platí pro všechny hráče.', 'ok' );
-
-		} else if ( writeLocal( settings ) ) {
-
-			status( 'Server není k dispozici: uloženo jen v tomto prohlížeči. Soubor pro server: Stáhnout JSON.', 'warn' );
-
-		} else status( 'Nepodařilo se uložit. Stáhněte JSON.', 'warn' );
-
+		const where = await saveSettings( settings );
+		if ( where === 'server' ) status( 'Uloženo na server. Platí pro všechny hráče.', 'ok' );
+		else if ( where === 'local' ) status( 'Server není k dispozici: uloženo jen v tomto prohlížeči. Soubor pro server: Stáhnout JSON.', 'warn' );
+		else status( 'Nepodařilo se uložit. Stáhněte JSON.', 'warn' );
 		dirty = false;
 
 	} );

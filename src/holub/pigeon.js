@@ -3,26 +3,83 @@
 // legs. About 32 cm from beak to tail. Animated in code: walking with the head thrust forward and back at each
 // step, pecking, flapping and gliding, sitting fluffed up with the legs tucked away, and lifting the tail.
 
+//
+// The art direction (game settings, `art.pigeon`) picks plain colours or photographed feathers (public/models/
+// animals, from the owner's texture set) stretched over the same blocky shapes, PS1 style. The same build, with
+// other colours, feathers and proportions, makes the studio's (?studio) herring gull and mallard drake.
+
 import * as THREE from 'three/webgpu';
-import { snapVertex } from './ps1.js';
+import { snapVertex, ART } from './ps1.js';
+
+// Feather photos, nearest-filtered and tiled; loaded once each.
+const textures = new Map();
+function feathers( name, repeat = 1 ) {
+
+	const key = name + repeat;
+	if ( ! textures.has( key ) ) {
+
+		const t = new THREE.TextureLoader().load( `models/animals/${name}.jpg` );
+		t.colorSpace = THREE.SRGBColorSpace;
+		t.magFilter = t.minFilter = THREE.NearestFilter;
+		t.generateMipmaps = false;
+		t.wrapS = t.wrapT = THREE.RepeatWrapping;
+		t.repeat.set( repeat, repeat );
+		textures.set( key, t );
+
+	}
+
+	return textures.get( key );
+
+}
 
 // Its vertices snap to the console's screen grid like everything else alive in the game (src/holub/ps1.js).
 const mat = ( hex, extra = {} ) => Object.assign( new THREE.MeshStandardNodeMaterial( { color: hex, roughness: 0.8, flatShading: true, ...extra } ), { vertexNode: snapVertex() } );
-const P = {
-	body: mat( 0x8c95a4 ),
-	back: mat( 0x9aa3b2 ),
-	neck: mat( 0x5f7d73, { metalness: 0.35, roughness: 0.45 } ),
-	sheen: mat( 0x7a5f8c, { metalness: 0.35, roughness: 0.45 } ),
-	head: mat( 0x737c8c ),
-	wing: mat( 0x8a93a3 ),
-	bar: mat( 0x2a2c33 ),
-	tip: mat( 0x3c414c ),
-	beak: mat( 0x3a3434 ),
-	cere: mat( 0xe9e6dc ),
-	eye: mat( 0xe0701e, { roughness: 0.3 } ),
-	pupil: mat( 0x111111 ),
-	leg: mat( 0xc8574c )
+
+// Colours per bird: body, back, neck, sheen, head, wing, bar, tip, beak, cere, eye, leg; then the feather photos for
+// the body, the head and neck, and the wings (with the tint they get under a photo), and the size against a pigeon.
+const BIRDS = {
+	pigeon: { c: [ 0x8c95a4, 0x9aa3b2, 0x5f7d73, 0x7a5f8c, 0x737c8c, 0x8a93a3, 0x2a2c33, 0x3c414c, 0x3a3434, 0xe9e6dc, 0xe0701e, 0xc8574c ],
+		photo: { body: 'pigeon_body', head: 'pigeon_body', wing: 'pigeon_tail' }, size: 1 },
+	// Herring gull (Larus argentatus), on the Vltava embankment: white, pale grey back and wings, black tips, yellow beak.
+	seagull: { c: [ 0xeeeeea, 0xb9bec4, 0xf2f2ee, 0xf2f2ee, 0xf4f4f0, 0xb4b9c0, 0xb4b9c0, 0x1c1c1e, 0xe6c23a, 0xe6c23a, 0xe8d36a, 0xd9a07a ],
+		photo: { body: 'seagull_body', head: 'seagull_body', wing: 'seagull_wing' }, size: 1.7 },
+	// Mallard drake (Anas platyrhynchos), from the Slovanský ostrov: green head, brown chest, grey body.
+	duck: { c: [ 0x9d9a94, 0x8a7d6e, 0x2f6b3a, 0x6b3f2a, 0x2c6a36, 0x8f8a82, 0x3b4fa0, 0x3a3530, 0xd8b23a, 0xd8b23a, 0x2a1c12, 0xe08a2c ],
+		photo: { body: 'duck_body_grey', head: 'duck_head_green', neck: 'duck_chest_brown', wing: 'duck_body_grey' }, size: 1.6 }
 };
+
+const palettes = new Map();
+function palette( kind, photo ) {
+
+	const key = kind + photo;
+	if ( palettes.has( key ) ) return palettes.get( key );
+	const b = BIRDS[ kind ] || BIRDS.pigeon, [ body, back, neck, sheen, head, wing, bar, tip, beak, cere, eye, leg ] = b.c;
+	// A photo carries its own colours: the material only tints it a little towards the bird's own.
+	const shot = ( name, hex, extra = {} ) => photo && name ? mat( new THREE.Color( hex ).lerp( new THREE.Color( 0xffffff ), 0.75 ).getHex(), { map: feathers( name, 2 ), ...extra } ) : mat( hex, extra );
+	const P = {
+		body: shot( b.photo.body, body ),
+		back: shot( b.photo.body, back ),
+		neck: shot( b.photo.neck || b.photo.head, neck, { metalness: 0.35, roughness: 0.45 } ),
+		sheen: shot( b.photo.neck || b.photo.head, sheen, { metalness: 0.35, roughness: 0.45 } ),
+		head: shot( b.photo.head, head ),
+		wing: shot( b.photo.wing, wing ),
+		bar: mat( bar ),
+		tip: mat( tip ),
+		beak: mat( beak ),
+		cere: mat( cere ),
+		eye: mat( eye, { roughness: 0.3 } ),
+		pupil: mat( 0x111111 ),
+		leg: mat( leg )
+	};
+	palettes.set( key, P );
+	return P;
+
+}
+
+export const BIRD_KINDS = Object.keys( BIRDS );
+export const birdSize = kind => ( BIRDS[ kind ] || BIRDS.pigeon ).size;
+
+let P = null; // the palette of the bird being built
 
 const ball = ( r, m, sx = 1, sy = 1, sz = 1, seg = 7 ) => {
 
@@ -57,8 +114,10 @@ function wingMesh( side ) {
 
 }
 
-export function makePigeon() {
+// kind: 'pigeon', 'seagull', 'duck'; texture: 'plain' or 'feathers' (default: the art direction's).
+export function makePigeon( { kind = 'pigeon', texture = ART.pigeon?.texture } = {} ) {
 
+	P = palette( kind, texture === 'feathers' );
 	const root = new THREE.Group(); // at the feet, facing +z
 	const body = new THREE.Group(); // tilts and bobs
 	root.add( body );

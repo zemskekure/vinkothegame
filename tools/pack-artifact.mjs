@@ -10,7 +10,8 @@ const OUT = new URL( '../artifact/', import.meta.url );
 
 await mkdir( new URL( 'data/', OUT ), { recursive: true } );
 await mkdir( new URL( 'assets/', OUT ), { recursive: true } );
-await copyFile( new URL( 'assets/app.js', DIST ), new URL( 'assets/app.js', OUT ) );
+// The entry (assets/app.js) and the chunks it loads (the city, the admin page, the studio, the settings).
+for ( const name of await readdir( new URL( 'assets/', DIST ) ) ) if ( name.endsWith( '.js' ) ) await copyFile( new URL( `assets/${name}`, DIST ), new URL( `assets/${name}`, OUT ) );
 
 for ( const name of await readdir( new URL( 'data/', DIST ) ) ) {
 

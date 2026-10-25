@@ -18,16 +18,18 @@
 import * as THREE from 'three/webgpu';
 import { attribute, select, texture, uv, vec2, float, pow } from 'three/tsl';
 import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js';
-import { snapVertex } from './holub/ps1.js';
+import { snapVertex, BODY_LEVELS, ART } from './holub/ps1.js';
 
 export const SLOT = { keep: 0, top: 1, bottom: 2, hair: 3, skin: 4, face: 5 };
 const LOOKS = [ 'lookTop', 'lookBottom', 'lookHair', 'lookSkin', 'lookFace' ];
 const BLOCK_HEADS = ! new URLSearchParams( location.search ).has( 'modelheads' ); // ?modelheads keeps the modelled heads
 // In the pigeon game (?holub) the people are drawn like the rest of its late-90s picture: faceted (one normal per
 // triangle), their vertices snapped to the console's coarse screen grid (src/holub/ps1.js), and their colours cut
-// to a few levels a channel. The walking view keeps them smooth.
-const PS1 = window.GAME === 'holub' || /[?&](holub|admin)(=|&|$)/.test( location.search );
-const PS1_LEVELS = 12;
+// to a few levels a channel. The walking view keeps them smooth. How faceted, how many levels and the head's shape
+// are the art direction (game settings, `art`; tuned in the studio, ?studio).
+const PS1 = window.GAME === 'holub' || /[?&](holub|admin|studio)(=|&|$)/.test( location.search );
+const HEAD = { facets: ART.headFacets ?? 6, scale: ART.headScale ?? 1 };
+let FLAT = ART.flat !== false;
 
 export const BODIES = [
 	[ 'm', 'animated-men/longsleeve' ], [ 'm', 'animated-men/shirt' ], [ 'm', 'animated-men/casual' ], [ 'm', 'animated-men/suit' ],
@@ -206,11 +208,27 @@ export async function loadWardrobe() {
 
 }
 
+// The wardrobe without the textures the art direction left out of the streets (art.exclude: file names by kind);
+// a kind left with nothing keeps all of its textures.
+function allowed( tiles ) {
+
+	const out = {};
+	for ( const [ kind, list ] of Object.entries( tiles ) ) {
+
+		const no = new Set( ART.exclude?.[ kind ] || [] ), kept = list.filter( x => ! no.has( x.file ) );
+		out[ kind ] = kept.length ? kept : list;
+
+	}
+
+	return out;
+
+}
+
 // A person's look, see the top of the file. A photo face comes with its own skin and hair colours; tiles are
 // { t, sex, skin, hair }.
 export function dress( rnd, sex, wardrobe ) {
 
-	const T = wardrobe.tiles;
+	const T = allowed( wardrobe.tiles );
 	const paint = ( list, p, tiles = [], pt = 0 ) => {
 
 		if ( rnd() > p ) return [ 0, 0, 0, 0 ];
@@ -305,9 +323,10 @@ function lookMaterial( wardrobe, look ) {
 	m.colorNode = colour;
 	if ( PS1 ) {
 
-		// Quantised in display (gamma) space, so the dark clothes keep their steps too.
-		m.colorNode = pow( pow( colour.max( 0 ), float( 1 / 2.2 ) ).mul( PS1_LEVELS ).round().div( PS1_LEVELS ), float( 2.2 ) );
-		m.flatShading = true;
+		// Quantised in display (gamma) space, so the dark clothes keep their steps too (0 levels: not cut).
+		const n = BODY_LEVELS.max( 1 );
+		m.colorNode = select( BODY_LEVELS.greaterThan( 0 ), pow( pow( colour.max( 0 ), float( 1 / 2.2 ) ).mul( n ).round().div( n ), float( 2.2 ) ), colour );
+		m.flatShading = FLAT;
 		m.vertexNode = snapVertex();
 
 	}
@@ -321,6 +340,27 @@ export function useWardrobe( wardrobe ) {
 
 	SKINNED = lookMaterial( wardrobe, () => attribute( 'look', 'vec4' ) );
 	INSTANCED = lookMaterial( wardrobe, k => attribute( LOOKS[ k ], 'vec4' ) );
+
+}
+
+// The art direction's people settings: { headFacets, headScale, flat, bodyLevels }. Levels and flat shading change
+// the materials at once; the head's facets and size apply to bodies prepared after this (prepareBody).
+export function applyArt( art ) {
+
+	if ( art.headFacets !== undefined ) HEAD.facets = Math.max( 3, Math.round( art.headFacets ) );
+	if ( art.headScale !== undefined ) HEAD.scale = art.headScale;
+	if ( art.bodyLevels !== undefined ) BODY_LEVELS.value = art.bodyLevels;
+	if ( art.flat !== undefined && PS1 && art.flat !== FLAT ) {
+
+		FLAT = art.flat;
+		for ( const m of [ SKINNED, INSTANCED ] ) if ( m ) {
+
+			m.flatShading = FLAT;
+			m.needsUpdate = true;
+
+		}
+
+	}
 
 }
 
@@ -507,8 +547,9 @@ function mergeBody( gltf, spec ) {
 
 	}
 
-	// The head: a coarse faceted gem (6 sides, 4 rings) a size too big, PS1 style, with the photo face stretched
-	// straight on over its front half and hair on the rest; carried by the head bone.
+	// The head: a coarse faceted gem (by default 6 sides, 4 rings) a size too big, PS1 style, with the photo face
+	// stretched straight on over its front half and hair on the rest; carried by the head bone. Sides and size are the
+	// art direction's (HEAD).
 	const headUV = [];
 	if ( BLOCK_HEADS && headBone >= 0 ) {
 
@@ -516,9 +557,9 @@ function mergeBody( gltf, spec ) {
 		const box = new THREE.Box3();
 		for ( let i = 0; i < dominant.length; i ++ ) if ( dominant[ i ] ) box.expandByPoint( v.fromArray( position, i * 3 ).applyMatrix4( inv ) );
 		const size = box.getSize( new THREE.Vector3() ), mid = box.getCenter( new THREE.Vector3() );
-		const gem = new THREE.SphereGeometry( 0.5, 6, 4 ).toNonIndexed();
-		const g = gem.attributes.position, P = new THREE.Vector3(), out = [];
-		for ( let k = 0; k < g.count; k ++ ) out.push( P.set( g.getX( k ) * size.x * 1.15, g.getY( k ) * size.y * 1.1, g.getZ( k ) * size.z * 1.15 ).add( mid ).applyMatrix4( toBody ).clone() );
+		const gem = new THREE.SphereGeometry( 0.5, HEAD.facets, Math.max( 2, Math.round( HEAD.facets * 2 / 3 ) ) ).toNonIndexed();
+		const g = gem.attributes.position, P = new THREE.Vector3(), out = [], hs = HEAD.scale;
+		for ( let k = 0; k < g.count; k ++ ) out.push( P.set( g.getX( k ) * size.x * 1.15 * hs, g.getY( k ) * size.y * 1.1 * hs, g.getZ( k ) * size.z * 1.15 * hs ).add( mid ).applyMatrix4( toBody ).clone() );
 		const bb = new THREE.Box3().setFromPoints( out ), vo = position.length / 3;
 		const A = new THREE.Vector3(), B = new THREE.Vector3(), N = new THREE.Vector3();
 		for ( let k = 0; k < out.length; k += 3 ) {
@@ -666,7 +707,7 @@ export function prepareBody( gltf, spec ) {
 }
 
 // The per-vertex look of one person on a body geometry.
-function lookAttribute( geometry, look ) {
+export function lookAttribute( geometry, look ) {
 
 	const slot = geometry.attributes.slot.array, out = new Float32Array( slot.length * 4 );
 	for ( let i = 0; i < slot.length; i ++ ) if ( slot[ i ] > 0 ) out.set( look[ slot[ i ] - 1 ], i * 4 );
