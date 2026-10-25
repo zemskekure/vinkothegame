@@ -24,6 +24,8 @@ import { homedir } from 'node:os';
 import { join, normalize, extname, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
+import { gzip } from 'node:zlib';
+import { promisify } from 'node:util';
 import { randomUUID, timingSafeEqual } from 'node:crypto';
 import { loadGrid, viewsOf, describe } from './grid.mjs';
 import { openDB, getSettings, setSetting } from './db.mjs';
@@ -276,8 +278,58 @@ function serveFile( req, res, root, rel ) {
 	if ( existsSync( file ) && statSync( file ).isDirectory() ) file = join( file, 'index.html' );
 	if ( ! existsSync( file ) ) return send( res, 404, { error: 'not found' } );
 	const type = TYPES[ extname( file ).toLowerCase() ] || 'application/octet-stream';
-	res.writeHead( 200, { 'content-type': type, 'content-length': statSync( file ).size, 'cache-control': type.startsWith( 'text/html' ) ? 'no-store' : 'no-cache' } );
+	const stat = statSync( file );
+	if ( type.startsWith( 'text/html' ) ) {
+
+		res.writeHead( 200, { 'content-type': type, 'content-length': stat.size, 'cache-control': 'no-store' } );
+		return createReadStream( file ).pipe( res );
+
+	}
+
+	// The game's data (~90 MB of geometry) shrinks to about a fifth gzipped. An ETag lets the browser keep its copy
+	// until the file changes, instead of fetching everything on every visit.
+	const etag = `"${stat.size.toString( 36 )}-${Math.floor( stat.mtimeMs ).toString( 36 )}"`;
+	const headers = { 'content-type': type, 'cache-control': 'no-cache', etag, vary: 'accept-encoding' };
+	if ( req.headers[ 'if-none-match' ] === etag ) {
+
+		res.writeHead( 304, headers );
+		return res.end();
+
+	}
+
+	if ( COMPRESSED.test( type ) || /\.bin$/.test( file ) ) {
+
+		if ( /\bgzip\b/.test( req.headers[ 'accept-encoding' ] || '' ) ) {
+
+			gzipped( file, etag ).then( body => {
+
+				res.writeHead( 200, { ...headers, 'content-encoding': 'gzip', 'content-length': body.length } );
+				res.end( body );
+
+			}, error => send( res, 500, { error: error.message } ) );
+			return;
+
+		}
+
+	}
+
+	res.writeHead( 200, { ...headers, 'content-length': stat.size } );
 	createReadStream( file ).pipe( res );
+
+}
+
+// Gzipped copies of served files, kept in memory per version (ETag) of the file.
+const COMPRESSED = /^(text\/|application\/(json|javascript|octet-stream)|model\/gltf-binary|image\/svg)/;
+const gzipCache = new Map();
+const gzipAsync = promisify( gzip );
+function gzipped( file, etag ) {
+
+	const hit = gzipCache.get( file );
+	if ( hit?.etag === etag ) return hit.body;
+	const body = gzipAsync( readFileSync( file ), { level: 6 } );
+	gzipCache.set( file, { etag, body } );
+	body.catch( () => gzipCache.delete( file ) );
+	return body;
 
 }
 
