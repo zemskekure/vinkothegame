@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4200 520">
+  <rect width="4200" height="100" fill="#6e6c68"/>
+  <rect x="1180" y="10" width="1290" height="90" fill="#887d6a"/>
+  <path d="M1180 22H2470M1180 92H2470" stroke="#6b6253" stroke-width="10"/>
+  <path d="M1220 30V86M1270 30V86M1320 30V86M1370 30V86M1420 30V86M1470 30V86M1520 30V86M1570 30V86M1620 30V86M1670 30V86M1720 30V86M1770 30V86M1820 30V86M1870 30V86M1920 30V86M1970 30V86M2020 30V86M2070 30V86M2120 30V86M2170 30V86M2220 30V86M2270 30V86M2320 30V86M2370 30V86M2420 30V86" stroke="#a89d88" stroke-width="16"/>
+  <rect x="2500" y="6" width="1600" height="90" fill="#141414"/>
+  <path d="M2500 6H4100M2500 96H4100" stroke="#2c2c2c" stroke-width="6"/>
+  <text x="3150" y="82" text-anchor="middle" font-family="Arial Black, sans-serif" font-size="80" font-weight="bold" letter-spacing="4" fill="#f4f4f2">KFC</text>
+  <text x="550" y="70" text-anchor="middle" font-family="sans-serif" font-size="40" font-weight="bold" letter-spacing="8" fill="#f4f0ec">BUBBLIFY</text>
+  <g transform="translate(0 100)">
+  <rect width="4200" height="420" fill="#6e6c68"/>
+  <path d="M0 6H4200" stroke="#5a5855" stroke-width="12"/>
+  <rect x="200" y="70" width="700" height="350" fill="#2a2627"/>
+  <path d="M220 110H880V410H220Z" fill="#b8507e"/>
+  <path d="M240 130H860V300H240Z" fill="#d97aa4" opacity="0.6"/>
+  <path d="M220 110H880V410H220Z" fill="none" stroke="#7a5a3a" stroke-width="10"/>
+  <path d="M440 110V410M660 110V410" stroke="#7a5a3a" stroke-width="7"/>
+  <rect x="980" y="120" width="140" height="290" fill="#cfd2cc" stroke="#555" stroke-width="5"/>
+  <rect x="1200" y="0" width="1250" height="420" fill="#9a8f7c"/>
+  <rect x="1180" y="0" width="1290" height="46" fill="#887d6a"/>
+  <path d="M1200 18H2450" stroke="#b0a590" stroke-width="5"/>
+  <path d="M1230 30V46M1290 30V46M1350 30V46M1410 30V46M1470 30V46M2180 30V46M2240 30V46M2300 30V46M2360 30V46M2420 30V46" stroke="#6b6253" stroke-width="10"/>
+  <rect x="1240" y="46" width="160" height="374" fill="#b3a891"/>
+  <rect x="1530" y="46" width="160" height="374" fill="#b3a891"/>
+  <rect x="1980" y="46" width="160" height="374" fill="#b3a891"/>
+  <rect x="2270" y="46" width="160" height="374" fill="#b3a891"/>
+  <path d="M1270 60V400M1305 60V400M1340 60V400M1375 60V400M1560 60V400M1595 60V400M1630 60V400M1665 60V400M2010 60V400M2045 60V400M2080 60V400M2115 60V400M2300 60V400M2335 60V400M2370 60V400M2405 60V400" stroke="#968b75" stroke-width="5"/>
+  <path d="M1225 46H1415M1515 46H1705M1965 46H2155M2255 46H2445M1225 400H1415M1515 400H1705M1965 400H2155M2255 400H2445" stroke="#7e7462" stroke-width="14"/>
+  <rect x="1400" y="120" width="130" height="300" fill="#2f2b26"/>
+  <path d="M1720 420V200A115 115 0 0 1 1950 200V420Z" fill="#221f1c"/>
+  <path d="M1720 200A115 115 0 0 1 1950 200" fill="none" stroke="#7e7462" stroke-width="16"/>
+  <rect x="2140" y="120" width="130" height="300" fill="#2f2b26"/>
+  <rect x="2540" y="150" width="760" height="270" fill="#2b2420"/>
+  <path d="M2560 170H3280V410H2560Z" fill="#1f2326"/>
+  <path d="M2560 170H3280V410H2560ZM2800 170V410M3040 170V410" fill="none" stroke="#8a5e34" stroke-width="10"/>
+  <rect x="2810" y="180" width="220" height="80" fill="#c8102e"/>
+  <text x="2920" y="238" text-anchor="middle" font-family="Arial Black, sans-serif" font-size="48" font-weight="bold" fill="#ffffff">KFC</text>
+  <rect x="2580" y="200" width="200" height="150" fill="#f0e6d2"/>
+  <rect x="2580" y="200" width="200" height="34" fill="#c8102e"/>
+  <rect x="3340" y="150" width="170" height="270" fill="#7a7874"/>
+  <rect x="3520" y="150" width="300" height="270" fill="#1d1c1b"/>
+  <rect x="3860" y="180" width="300" height="240" fill="#5a3a24"/>
+  <path d="M3880 200H4140V410H3880ZM4010 200V410" fill="none" stroke="#3e281a" stroke-width="8"/>
+  <rect y="406" width="4200" height="14" fill="#5d5b57"/>
+  </g>
+</svg>

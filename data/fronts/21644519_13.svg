@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1290 420">
+  <rect width="1290" height="420" fill="#6e6c68"/>
+  <path d="M0 4H1290" stroke="#5a5855" stroke-width="8"/>
+  <rect x="0" y="22" width="660" height="96" fill="#dcdcd6"/>
+  <path d="M0 22H660M0 118H660" stroke="#8c8a84" stroke-width="5"/>
+  <path d="M250 42H600" stroke="#b49a5a" stroke-width="2"/>
+  <ellipse cx="140" cy="72" rx="118" ry="36" fill="none" stroke="#a4864a" stroke-width="5"/>
+  <text x="140" y="80" text-anchor="middle" font-family="Georgia, serif" font-size="40" font-weight="bold" fill="#a4864a">vagon</text>
+  <text x="140" y="100" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#a4864a">music pub &amp; club</text>
+  <text x="440" y="74" text-anchor="middle" font-family="Georgia, serif" font-size="30" letter-spacing="3" fill="#b49a5a">MUSIC</text>
+  <text x="440" y="106" text-anchor="middle" font-family="Georgia, serif" font-size="30" letter-spacing="3" fill="#b49a5a">PUB &amp; CLUB</text>
+  <rect x="20" y="118" width="520" height="302" fill="#2a2a2b"/>
+  <path d="M30 140H530V410H30Z" fill="#1b1c1e"/>
+  <path d="M150 140V410M290 140V410M410 140V410M30 200H530" stroke="#3b3a38" stroke-width="6"/>
+  <rect x="300" y="210" width="100" height="200" fill="#3e2e22"/>
+  <rect x="560" y="118" width="300" height="302" fill="#757370"/>
+  <path d="M560 118V420M860 118V420" stroke="#5e5c58" stroke-width="6"/>
+  <rect x="610" y="140" width="180" height="210" fill="#f2f2ee" stroke="#c9c7c0" stroke-width="4"/>
+  <text x="700" y="166" text-anchor="middle" font-family="sans-serif" font-size="16" font-weight="bold" fill="#1d1d1b">AUKČNÍ SÍŇ</text>
+  <text x="672" y="262" text-anchor="middle" font-family="Georgia, serif" font-size="90" fill="#1f7a4a">G</text>
+  <text x="726" y="306" text-anchor="middle" font-family="Georgia, serif" font-size="90" fill="#1d1d1b">N</text>
+  <text x="742" y="220" text-anchor="middle" font-family="sans-serif" font-size="26" font-weight="bold" fill="#1f7a4a">25</text>
+  <text x="700" y="336" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#1d1d1b">GALERIE NÁRODNÍ 25</text>
+  <rect x="860" y="60" width="430" height="360" fill="#3a3937"/>
+  <path d="M880 120H1270V420H880Z" fill="#232325"/>
+  <path d="M1000 120V420M1140 120V420" stroke="#4a4845" stroke-width="5"/>
+  <rect y="406" width="1290" height="14" fill="#5d5b57"/>
+</svg>

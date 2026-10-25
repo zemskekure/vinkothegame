@@ -575,6 +575,27 @@
 		},
 		"signs": false
 	},
+	"21644225": {
+		"note": "Bartolomějská north side: smooth white plaster house with a carved sandstone portal (cornice with cartouche and side volutes) round a dark double door at 7-10 m, a baroque shaped window with a deep curved reveal above it and an iron wall lantern near the left end (Street View 2026, marked 21644225_14).",
+		"colour": "#ebe7dd",
+		"trim": "#d6cbb2",
+		"rustic": "none",
+		"edges": {
+			"14": {
+				"ground": [
+					"blank",
+					"blank",
+					{
+						"kind": "door",
+						"frame": "dark",
+						"size": "wide"
+					}
+				],
+				"shopfront": "21644225_14.svg"
+			}
+		},
+		"signs": false
+	},
 	"21644233": {
 		"note": "Na Perštýně 13: this front is a tall blind firewall/gable in ochre plaster, heavily tagged, fronted by a graffiti-covered hoarding over a vacant plot — no real shopfront here despite OSM listing an absinth shop and a bureau de change; a cream neo-baroque house stands further right down the street (Street View 2026)",
 		"colour": "#c9ad74",
@@ -585,6 +606,92 @@
 		"grilles": false,
 		"graffiti": true,
 		"signs": false
+	},
+	"21644241": {
+		"note": "Bartolomějská 12 (south side): cream six-storey functionalist block with plain rectangular windows and curved corner balconies on the west; ground floor clad in red-brown glazed tiles at the entrance part and beige tiles further east, barred windows, glazed oak-framed entrance with the 'KRIMINALISTICKÝ ÚSTAV' board above (Street View 2026, marked 21644241_27, 21644250_16b).",
+		"colour": "#e8dcbf",
+		"trim": "#f0e8d6",
+		"floors": 6,
+		"rustic": "clad",
+		"grilles": true,
+		"roof": "flat",
+		"edges": {
+			"27": {
+				"ground": [
+					{
+						"kind": "window",
+						"bars": true
+					},
+					{
+						"kind": "door",
+						"frame": "wood",
+						"glazed": true,
+						"size": "wide"
+					},
+					{
+						"kind": "window",
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"bars": true
+					}
+				],
+				"shopfront": "21644241_27.svg"
+			}
+		},
+		"signs": false
+	},
+	"21644250": {
+		"note": "Bartolomějská 8 (south side): dark grey-brown neo-renaissance house rusticated in horizontal bands over the whole front, cream window surrounds with segmental pediments, a raised ground floor over an ochre-yellow plinth with small basement windows, and a tall round-arched carved oak double door at the east end. The first ~5 m of this front are the beige-tiled end of the cream functionalist neighbour with a brown garage door (Street View 2026, marked 21644250_16a/16b).",
+		"colour": "#82725f",
+		"trim": "#ddd3be",
+		"floors": 4,
+		"rustic": "banded",
+		"edges": {
+			"16": {
+				"ground": [
+					{
+						"kind": "garage",
+						"frame": "dark"
+					},
+					{
+						"kind": "window",
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "door",
+						"frame": "wood",
+						"arch": true,
+						"size": "wide"
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					}
+				]
+			}
+		}
 	},
 	"21644276": {
 		"note": "Bartolomějská / Karoliny Světlé 2 (Eurostars Thalia): cream neo-renaissance block, banded rusticated ground floor with grilled windows, round-arched first-floor windows in rusticated voussoir surrounds, carved portal with brown door under a balcony on consoles, rounded corner, wall lanterns; no hotel sign visible (Street View)",
@@ -808,12 +915,31 @@
 		"rustic": "banded"
 	},
 	"21644519": {
-		"note": "Národní 23: photo is centred on the Palác Metro passage entrance; only the upper-left corner shows this house (grey-beige stone with dressed, pedimented window surrounds). Ground floor appears to be the same dark grey stone arcade as Palác Metro. Colour uncertain; model's ochre-brown not confirmed. (Street View 2026)",
-		"colour": "#b99472",
-		"trim": "#d6bd9c",
+		"note": "Národní 23: grey-beige stone upper floors with pedimented windows; the ground floor is a dark grey granite arcade with recessed glazed shopfronts. The long light 'vagon music pub & club / MUSIC PUB & CLUB' fascia with gold lettering runs over its left part, and a granite pier carries the white 'AUKČNÍ SÍŇ / GN 25 / GALERIE NÁRODNÍ 25' board (Street View 2026, marked 21644519_13). Earlier note said the photo was centred on the passage; the marks now put the Vagon fascia and GN 25 pier here.",
+		"colour": "#cdc3b0",
+		"trim": "#ddd5c4",
 		"ground": "shops",
-		"rustic": "ornate",
-		"signs": false
+		"rustic": "clad",
+		"signs": false,
+		"edges": {
+			"13": {
+				"ground": [
+					{
+						"kind": "shop",
+						"frame": "dark",
+						"glazed": true,
+						"size": "wide"
+					},
+					"blank",
+					{
+						"kind": "shop",
+						"frame": "dark",
+						"glazed": true
+					}
+				],
+				"shopfront": "21644519_13.svg"
+			}
+		}
 	},
 	"21644527": {
 		"note": "Na Perštýně 1/3 (corner Národní): modern glass curtain-wall office block, dark stone ground floor recessed behind square columns (arcade) with canopy; Spaces coworking, exchange office, blue bank ATM wall (Street View) Drawn as a glass curtain wall (owner screenshots, Sept 2025).",
@@ -1482,14 +1608,47 @@
 		"rustic": "none"
 	},
 	"21649308": {
-		"note": "Národní 19: white functionalist block with stacked rectangular bay windows (oriels), ground floor of shops with black fascias and a dark-wood hostel entrance. Only the left half photographed; tree in front. (Street View 2026)",
+		"note": "Národní 19: white functionalist block with stacked rectangular oriels; ground floor of shops under black fascias: a narrow barber's at the left, the dark-wood double door of 'HOSTEL & PENSION DOWNTOWN' under a gold board in a grey stone frame at 3-6 m, then the black 'fivuza MARKET' shop at 8-13 m. Only the left half photographed; tree in front (Street View 2026, marked 21649308_0b).",
 		"colour": "#e8e5dc",
 		"trim": "#f1efe9",
 		"ground": "shops",
 		"rustic": "none",
 		"grilles": false,
 		"graffiti": false,
-		"signs": false
+		"signs": false,
+		"edges": {
+			"0": {
+				"ground": [
+					{
+						"kind": "shop",
+						"frame": "dark",
+						"glazed": true
+					},
+					{
+						"kind": "door",
+						"frame": "wood",
+						"glazed": true
+					},
+					"blank",
+					{
+						"kind": "shop",
+						"frame": "dark",
+						"glazed": true,
+						"size": "wide"
+					},
+					{
+						"kind": "shop",
+						"frame": "dark",
+						"glazed": true
+					},
+					{
+						"kind": "shop",
+						"frame": "dark",
+						"glazed": true
+					}
+				]
+			}
+		}
 	},
 	"21649324": {
 		"note": "Konviktská 8: low two-storey house with pale olive-green upper floor, white ground floor with a grilled window, steep red tiled roof with dormer; low white wall with a red door to its left. Photo for edge 0 shows the neighbouring yellow block no. 10 instead (Street View)",
@@ -1503,14 +1662,62 @@
 		"signs": false
 	},
 	"21649367": {
-		"note": "Národní 25, Palác Metro (already hand-modelled): cream neo-renaissance/neo-baroque upper floors with pedimented windows on consoles and rich cornice. Ground floor is a recessed arcade of dark grey stone (#6e6c68) with heavy square piers (not banded rustication), shopfronts set back, freestanding poster vitrines in front. Right end: stone portico with fluted columns carrying a balustraded balcony over the passage entrance. (Street View 2026)",
+		"note": "Národní 25-27, Palác Metro: cream neo-renaissance upper floors with pedimented windows. Dark grey granite arcade below: pink-lit BUBBLIFY shop at the left, the stone portico with four fluted columns and a balustraded balcony over the arched passage, then the long black KFC fascia over a brown-framed shopfront and a recessed entrance (Street View 2026, marked 21649367_19a/19b).",
 		"colour": "#ddd4c0",
 		"trim": "#ebe4d3",
 		"ground": "shops",
 		"rustic": "ornate",
 		"grilles": false,
 		"graffiti": false,
-		"signs": false
+		"signs": false,
+		"edges": {
+			"19": {
+				"ground": [
+					{
+						"kind": "shop",
+						"frame": "wood",
+						"glazed": true,
+						"size": "wide"
+					},
+					{
+						"kind": "door",
+						"frame": "grey",
+						"glazed": true
+					},
+					{
+						"kind": "door",
+						"frame": "dark"
+					},
+					{
+						"kind": "gate",
+						"arch": true,
+						"frame": "dark"
+					},
+					{
+						"kind": "door",
+						"frame": "dark"
+					},
+					{
+						"kind": "shop",
+						"frame": "wood",
+						"glazed": true,
+						"size": "wide"
+					},
+					{
+						"kind": "door",
+						"frame": "dark",
+						"size": "wide"
+					},
+					{
+						"kind": "shop",
+						"frame": "wood",
+						"glazed": true
+					}
+				],
+				"shopfront": "21649367_19.svg",
+				"shopfrontHeight": 5.2
+			}
+		}
 	},
 	"21649502": {
 		"note": "Karoliny Světlé 10 (plate 979/10): plain pale yellow house, white window frames, worn ground floor with a brown wooden gate and small shops (NÁPOJE - PIVO, shop BALT) (Street View)",
@@ -2410,6 +2617,32 @@
 		"colour": "#968a78",
 		"trim": "#c9b994",
 		"rustic": "rubble"
+	},
+	"46687530": {
+		"note": "Bartolomějská north side: long plain white plastered wall of the same white complex as the portal house, a tall round-headed barred window and an oval window above the ground floor, high lunette windows under the eaves, ground floor almost blank with a couple of small barred windows (Street View 2026, marked 46687530_5).",
+		"colour": "#e8e3d8",
+		"trim": "#f0ece4",
+		"rustic": "none",
+		"grilles": true,
+		"edges": {
+			"5": {
+				"ground": [
+					"blank",
+					{
+						"kind": "window",
+						"bars": true,
+						"size": "narrow"
+					},
+					"blank",
+					"blank",
+					{
+						"kind": "window",
+						"bars": true,
+						"size": "narrow"
+					}
+				]
+			}
+		}
 	},
 	"48864005": {
 		"note": "Národní, St Ursula's church: baroque front with salmon-pink recessed panels framed by white pilasters and cornices, central stone portal with statue in a niche above, oval oculi, statues on the gable. Current colours confirmed (pink a touch deeper). (Street View 2026)",

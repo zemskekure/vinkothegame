@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1700 420">
+  <rect width="1700" height="420" fill="#e8dcbf"/>
+  <rect y="60" width="660" height="360" fill="#7e3427"/>
+  <path d="M0 105H660M0 150H660M0 195H660M0 240H660M0 285H660M0 330H660M0 375H660" stroke="#6a2a20" stroke-width="3"/>
+  <path d="M60 60V420M120 60V420M180 60V420M240 60V420M300 60V420M360 60V420M420 60V420M480 60V420M540 60V420M600 60V420" stroke="#6a2a20" stroke-width="2" opacity="0.5"/>
+  <rect x="660" y="60" width="1040" height="360" fill="#cdbf9f"/>
+  <path d="M660 105H1700M660 150H1700M660 195H1700M660 240H1700M660 285H1700M660 330H1700M660 375H1700" stroke="#b5a785" stroke-width="3"/>
+  <path d="M0 60H1700" stroke="#d9cdb0" stroke-width="10"/>
+  <rect x="190" y="70" width="270" height="350" fill="#5a3a26"/>
+  <rect x="210" y="84" width="230" height="62" fill="#2e2a26"/>
+  <circle cx="325" cy="102" r="11" fill="none" stroke="#c9b98a" stroke-width="3"/>
+  <text x="325" y="132" text-anchor="middle" font-family="sans-serif" font-size="15" font-weight="bold" fill="#e8e2d4">KRIMINALISTICKÝ ÚSTAV</text>
+  <path d="M210 160H440V420H210Z" fill="#26292a"/>
+  <path d="M210 160H440V420H210ZM287 160V420M363 160V420M210 230H440" fill="none" stroke="#b07a42" stroke-width="10"/>
+  <path d="M30 120H150V300H30ZM510 120H630V300H510ZM720 120H860V300H720ZM960 120H1100V300H960ZM1230 120H1370V300H1230ZM1480 120H1620V300H1480Z" fill="#2b2a28" stroke="#d8ccb0" stroke-width="8"/>
+  <path d="M55 120V300M80 120V300M105 120V300M130 120V300M535 120V300M560 120V300M585 120V300M610 120V300M745 120V300M772 120V300M800 120V300M828 120V300M985 120V300M1012 120V300M1040 120V300M1068 120V300M1255 120V300M1282 120V300M1310 120V300M1338 120V300M1505 120V300M1532 120V300M1560 120V300M1588 120V300M30 210H150M510 210H630M720 210H860M960 210H1100M1230 210H1370M1480 210H1620" stroke="#1a1a1a" stroke-width="4"/>
+  <path d="M30 370H150M510 370H630M720 370H860M960 370H1100M1230 370H1370M1480 370H1620" stroke="#4a2018" stroke-width="20" opacity="0.6"/>
+  <rect y="408" width="1700" height="12" fill="#5e2a20"/>
+</svg>
