@@ -1562,13 +1562,6 @@ for ( let r = 0; r < sh; r ++ ) {
 		surface2[ i + 1 ] = st.openSurface === null ? 40 : clamp( st.openSurface * 255 );
 		surface2[ i + 2 ] = clamp( 128 - st.Fk * 25 );
 		surface2[ i + 3 ] = streetData.onPlatform( X, Y ) ? 0 : 255; // pavement kind: 0 tram stop island, 255 mosaic
-		// The piazzetta is one paved square (granite slabs), not road: OSM's lanes beside it leak in otherwise.
-		if ( terraces.piazzetta && pointInRings( [ terraces.piazzetta.ring ], X, Y ) ) {
-
-			surface[ i + 2 ] = clamp( 128 - 6 * 25 );
-			surface2[ i ] = surface2[ i + 1 ] = 128;
-
-		}
 
 	}
 
