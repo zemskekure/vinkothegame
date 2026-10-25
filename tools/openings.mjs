@@ -16,6 +16,8 @@ const WALK = new Set( [ 'footway', 'pedestrian', 'path', 'service', 'living_stre
 // Passages OSM tags that the owner, who walks there, says are not there (Na Perštýně by the Česká spořitelna
 // corner, 25 Oct 2026).
 const NOT_PASSAGES = new Set( [ 755987808 ] );
+// The National Theatre node, S-JTSK (scene x −420 … −280, z 230 … 460).
+const inTheatreNode = ( [ X, Y ] ) => X > - 743507 && X < - 743367 && Y > - 1043742 && Y < - 1043512;
 const WIDTH = { footway: 2.6, path: 2.2, pedestrian: 3.2, cycleway: 2.6, service: 3.4, living_street: 3.6 };
 
 export async function findOpenings( { AREA, buildingAt, buildings = [] } ) {
@@ -86,14 +88,10 @@ export async function findOpenings( { AREA, buildingAt, buildings = [] } ) {
 		if ( ! arcade && t.tunnel !== 'building_passage' ) continue;
 		if ( [ 'no', 'private' ].includes( t.access ) || [ 'no', 'private' ].includes( t.foot ) ) continue;
 
-		// On the cadastre, where the house footprints are: projected OSM sits ~10 m off them (tools/geo.mjs), which
-		// laid footways along the streets inside the houses and cut 50–70 m long false passages through them (DRN,
-		// Na Perštýně, Národní).
-		// The theatre and riverfront end of Národní (west of x −240, south of z 290 in the scene frame) is being
-		// reworked separately and keeps the uncorrected positions until that work is merged.
-		const raw = ( w.nodes || [] ).map( id => nodes.get( id ) ).filter( Boolean ).map( n => project( n.lon, n.lat ) );
-		const theatreEnd = raw.some( ( [ X, Y ] ) => X - ORIGIN.x < - 240 && - ( Y - ORIGIN.y ) > 290 );
-		const pts = theatreEnd ? raw : raw.map( toCadastre );
+		// On the cadastre, where the house footprints are: projected OSM sits ~10 m off them (tools/geo.mjs), which laid
+		// footways along the streets inside the houses and cut false passages through them (DRN, Na Perštýně, Národní).
+		// By the National Theatre too (the loggia on Národní, the passage under the office block on the piazzetta).
+		const pts = ( w.nodes || [] ).map( id => nodes.get( id ) ).filter( Boolean ).map( n => toCadastre( project( n.lon, n.lat ) ) );
 		const width = Number( t.width ) || WIDTH[ t.highway ] || 6;
 
 		for ( let i = 0; i + 1 < pts.length; i ++ ) {

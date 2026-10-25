@@ -4002,14 +4002,15 @@
 		"rustic": "none"
 	},
 	"21649685": {
-		"note": "Národní 1 / Lažanský palác (Kavárna Slavia): pale sandstone, pedimented windows, rusticated ground floor; edges 7/9 teal Slavia awnings, edge 6 grilled arched windows and a lantern (Street View 2026). Divadelní side (edge 5): vermiculated rustication, brown plank gate at ~3.5-6.3 m from the south, grilled arched windows, brown glazed arched door at ~17.5-20 m; from ~21.5 m a plain grey facade with boarded windows like the derelict neighbour (marked 21649685_5a/5b 2025-08).",
+		"note": "Národní 1 / Lažanský palác (Kavárna Slavia): pale sandstone, pedimented windows, rusticated ground floor; edges 7/9 teal Slavia awnings, edge 6 grilled arched windows and a lantern (Street View 2026). Divadelní side (edge 5): vermiculated rustication, brown plank gate at ~3.5-6.3 m from the south, grilled arched windows, brown glazed arched door at ~17.5-20 m; from ~21.5 m a plain grey facade with boarded windows like the derelict neighbour (marked 21649685_5a/5b 2025-08). The café is a raised ground floor: windows over a ~1.2 m stone plinth, awnings at their top (~3.8 m); its entrance with six steps under a canopy at the east end of edge 6 (Street View 2025).",
 		"colour": "#ddd5c2",
 		"trim": "#ece6d7",
 		"ground": "restaurant",
 		"rustic": "ornate",
 		"edges": {
 			"0": {
-				"awning": "#2f5b3c"
+				"awning": "#2f5b3c",
+				"awningAt": 3.8
 			},
 			"5": {
 				"ground": [
@@ -4068,7 +4069,8 @@
 					"text": "Slavia",
 					"board": "#2c6a56",
 					"ink": "#f4f1ea"
-				}
+				},
+				"awningAt": 3.8
 			},
 			"9": {
 				"awning": "#2c6a56",
@@ -4076,7 +4078,8 @@
 					"text": "Slavia",
 					"board": "#2c6a56",
 					"ink": "#f4f1ea"
-				}
+				},
+				"awningAt": 3.8
 			}
 		},
 		"floors": 5,

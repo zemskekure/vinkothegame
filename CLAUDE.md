@@ -55,8 +55,12 @@ Build time (`tools/`, Node):
   lacks), walls split around openings, roofs (DSM-fitted; landmark overrides in `LANDMARKS`), surfaces, furniture,
   then `collectPlaces()`; writes `public/data/scene.json` + binary buffers.
 - `streets.mjs`: carriageways, kerbs, pavements, furniture from OSM (benches/bins/bike stands kept off the road).
-- `kerbs.mjs`, `quay.mjs` (Smetanovo nábřeží railing and Čapadlo terrace), `terraces.mjs` (Národní over
-  Divadelní, the theatre piazzetta), `openings.mjs` (arcades/podloubí and passages through houses).
+- `kerbs.mjs`, `quay.mjs` (Smetanovo nábřeží railing and Čapadlo terrace), `terraces.mjs` (the National Theatre
+  node's levels: Národní's deck over Divadelní, the trench and the covered pavement under the piazzetta's edge,
+  the stairs, Nová scéna's undercroft, the garden wall on Divadelní; walk zones in `theatre.mjs`, drawn by
+  `src/theatre.js`), `openings.mjs` (arcades/podloubí and passages through houses).
+- Two levels in one place: a zone with `deck` holds only for the walker below the deck, one with `over` only for
+  the walker on it (src/main.js `zoneAt`); a barrier's optional 6th value blocks only below that height.
 - `places.mjs` (`collectPlaces`): hand-modelled places, bridges, tram stops, people and traffic lines; calls
   `walls.mjs` (OSM garden walls with gates) and `dress.mjs` (Betlémské náměstí signs, clock, terrace, enamel
   house-number and street-name plates).

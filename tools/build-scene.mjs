@@ -905,7 +905,7 @@ const embankment = { stone: [], posts: [], rails: [] };
 }
 
 // By the National Theatre: Národní's deck over Divadelní, the piazzetta's terrace (tools/terraces.mjs).
-const terraces = await buildTerraces( { terrain, tw, th, cell: TERRAIN_CELL, AREA, terrainAt, buildingAt } );
+const terraces = await buildTerraces( { terrain, tw, th, cell: TERRAIN_CELL, AREA, bareAt: ( X, Y ) => sample( dtm, X, Y ) - BASE_HEIGHT, buildings } );
 
 // A railing line (tools/quay.mjs format): a stone curb with the railing on top, a retaining wall down to the
 // lower level where there is one, open below `openTop` (or 2.8 m over the low side) where a passage runs under.
@@ -921,8 +921,9 @@ function drawRail( R ) {
 
 		const a = R[ i - 1 ], b = R[ i ];
 		if ( a.river || b.river || Math.hypot( b.X - a.X, b.Y - a.Y ) > 2 ) continue;
-		// A heavy stone parapet (the piazzetta) or a low curb under an iron railing.
-		const CURB = a.parapet ? 1.0 : 0.3, THICK = a.parapet ? 0.6 : 0.4;
+		// A heavy stone parapet (the piazzetta) or a low curb under an iron railing; a bare wall has neither (the
+		// back wall under the piazzetta's cantilever, the deck's face over a tunnel mouth).
+		const CURB = a.bare ? 0 : a.parapet ? 1.0 : 0.3, THICK = a.thick ?? ( a.parapet ? 0.6 : 0.4 );
 		const ta = a.top + CURB, tb = b.top + CURB;
 		const bx0 = a.X - a.nx * THICK, by0 = a.Y - a.ny * THICK, bx1 = b.X - b.nx * THICK, by1 = b.Y - b.ny * THICK;
 		if ( a.wall || b.wall ) {
@@ -936,6 +937,7 @@ function drawRail( R ) {
 
 		}
 
+		if ( a.bare ) continue;
 		// Stone curb under the railing: top and street side.
 		push( [ a.X, a.Y, ta ], [ b.X, b.Y, tb ], [ bx1, by1, tb ], [ a.X, a.Y, ta ], [ bx1, by1, tb ], [ bx0, by0, ta ] );
 		push( [ a.X, a.Y, ta ], [ bx1, by1, tb ], [ b.X, b.Y, tb ], [ a.X, a.Y, ta ], [ bx0, by0, ta ], [ bx1, by1, tb ] );
@@ -959,7 +961,7 @@ function drawRail( R ) {
 }
 
 if ( quay ) for ( const line of quay.lines ) drawRail( line );
-if ( terraces.tunnel ) for ( const line of terraces.rails.slice( 0, 2 ) ) for ( const p of line ) p.openTop = terraces.tunnel.ceil;
+if ( terraces?.tunnel && terraces.rails ) for ( const line of terraces.rails.slice( 0, 2 ) ) for ( const p of line ) p.openTop = terraces.tunnel.ceil;
 for ( const line of terraces.rails ) drawRail( line );
 
 // Which landmark (if any) a point lies in, from the OSM outlines.
@@ -985,19 +987,24 @@ for ( const o of openings ) {
 
 }
 
-// Nová scéna stands over an open undercroft along Národní: from the tram stop a few granite steps lead up under
-// the overhang to the level of the piazzetta, and two wide walk-throughs pass under the building to the square
-// behind (owner's Street View screenshots, Sept 2025). The front's corners from RÚIAN (scene frame).
-{
+// Nová scéna stands on an open undercroft (tools/terraces.mjs): its glass-block mass starts 3 m over the square
+// (OSM min_height), and the west part of the ground floor is open from Národní through to the piazzetta, with two
+// stone-clad blocks standing in it (Street View 2019). Its walls stop at the soffit there; the passages OSM maps
+// under it (drawn ten metres off, with the rest of OSM) are part of that open floor and dropped.
+if ( terraces.undercroft ) {
 
-	const SC = ( x, z ) => [ x + ORIGIN.x, ORIGIN.y - z ];
-	const [ ax, ay ] = SC( - 326.4, 343.5 ), [ bx, by ] = SC( - 292.5, 344.7 );
-	const len = Math.hypot( bx - ax, by - ay ), ux = ( bx - ax ) / len, uy = ( by - ay ) / len;
-	const [ nx, ny ] = uy > 0 ? [ uy, - ux ] : [ - uy, ux ]; // out to Národní (north, +Y)
-	openings.push( { kind: 'arcade', undercroft: true, modern: true, X: ( ax + bx ) / 2, Y: ( ay + by ) / 2, ux, uy, nx: ny > 0 ? nx : - nx, ny: Math.abs( ny ), len: + len.toFixed( 2 ), depth: 7, h: 4.6 } );
-	for ( const o of openings ) if ( o.modern && o.kind === 'passage' ) Object.assign( o, { w: o.drn ? 5 : 7, h: 4.6 } );
+	const u = terraces.undercroft;
+	const inside = ( X, Y ) => pointInRings( [ u.ring.map( ( [ x, z ] ) => [ x + ORIGIN.x, ORIGIN.y - z ] ) ], X, Y );
+	for ( let k = openings.length - 1; k >= 0; k -- ) if ( inside( openings[ k ].X, openings[ k ].Y ) ) openings.splice( k, 1 );
+	for ( const o of openings ) if ( o.modern && o.kind === 'passage' ) Object.assign( o, { w: o.drn ? 5 : 7, h: 4.6 } ); // as before, elsewhere
+	const xs = u.ring.map( p => p[ 0 ] ), zs = u.ring.map( p => p[ 1 ] );
+	const x0 = Math.min( ...xs ) - 1, x1 = u.lobby, z0 = Math.min( ...zs ) - 1, z1 = Math.max( ...zs ) + 1;
+	const zf = Math.max( ...u.front.map( p => p[ 1 ] ) );
+	const boxAt = ( xa, xb, za, zb, h ) => ( { o: { kind: 'passage', h }, box: { X: ( xa + xb ) / 2 + ORIGIN.x, Y: ORIGIN.y - ( za + zb ) / 2, ux: 1, uy: 0, hu: ( xb - xa ) / 2, hn: ( zb - za ) / 2 } } );
 	openingBoxes.length = 0;
 	openingBoxes.push( ...openings.map( o => ( { o, box: openingBox( o, 0.05, 0.4 ) } ) ) );
+	// On Národní the street face stands on the pavement half a metre below the square.
+	openingBoxes.push( boxAt( x0, x1, z0, zf + 1, + ( u.soffit - u.foot ).toFixed( 2 ) ), boxAt( x0, x1, zf + 1, z1, + ( u.soffit - u.level ).toFixed( 2 ) ) );
 
 }
 
@@ -1440,7 +1447,7 @@ for ( const b of buildings ) {
 
 				};
 
-				if ( extra.awning ) decor.awnings.push( [ ...at( 0.5, 0, Math.min( 3.0, floorH * 0.9 ) ), rot, + ( len * 0.8 ).toFixed( 2 ), extra.awning ] );
+				if ( extra.awning ) decor.awnings.push( [ ...at( 0.5, 0, extra.awningAt ?? Math.min( 3.0, floorH * 0.9 ) ), rot, + ( len * 0.8 ).toFixed( 2 ), extra.awning ] );
 				if ( extra.lanterns ) for ( let d = 4; d < len - 2; d += 9 ) decor.lanterns.push( [ ...at( d / len, 0, Math.min( 3.6, floorH * 1.05 ) ), rot ] );
 				// Balconies: { floor, from, to, depth }, floor 1 = the first floor above the ground floor, from / to
 				// fractions of the front from the left as seen from the street.
@@ -1751,6 +1758,21 @@ for ( let r = 0; r < sh; r ++ ) {
 		surface2[ i + 1 ] = st.openSurface === null ? 40 : clamp( st.openSurface * 255 );
 		surface2[ i + 2 ] = clamp( 128 - st.Fk * 25 );
 		surface2[ i + 3 ] = streetData.onPlatform( X, Y ) ? 0 : 255; // pavement kind: 0 tram stop island, 255 mosaic
+		const trench = terraces.trenchStreet( X, Y );
+		if ( trench === 'road' ) {
+
+			// Divadelní by the theatre: asphalt from the theatre to the covered pavement's kerb (tools/terraces.mjs).
+			surface[ i + 2 ] = surface2[ i + 2 ] = 153;
+			surface2[ i ] = 255;
+
+		} else if ( trench === 'deck' ) {
+
+			// The piazzetta's edge over it: large granite slabs, like the rest of the square.
+			surface[ i + 2 ] = surface2[ i + 2 ] = 53;
+			surface2[ i ] = 0;
+			surface2[ i + 3 ] = 0;
+
+		}
 
 	}
 
@@ -1812,12 +1834,13 @@ for ( let r = 0; r < sh; r ++ ) {
 
 
 const inKeptBuilding = ( X, Y ) => keptIds.has( buildingAt( X, Y ) );
-const pavement = buildPavementMesh( streetData, { AREA, toLocal, heightAt: quay ? ( X, Y ) => quay.clamp( X, Y, terrainAt( X, Y ) ) : terrainAt, inBuilding: ( X, Y ) => inKeptBuilding( X, Y ) || !! quay?.beyond( X, Y ), cut: quay?.beyond } );
+// Over Divadelní the street is a deck above the terrain grid (tools/terraces.mjs); along the river the quay walls clamp it.
+const pavement = buildPavementMesh( streetData, { AREA, toLocal, heightAt: ( X, Y ) => terraces.deckAt( X, Y ) ?? ( quay ? quay.clamp( X, Y, terrainAt( X, Y ) ) : terrainAt( X, Y ) ), inBuilding: ( X, Y ) => inKeptBuilding( X, Y ) || !! quay?.beyond( X, Y ) || !! terraces.trenchStreet( X, Y ), cut: quay?.beyond } );
 console.log( `pavements: ${pavement.positions.length / 3} vertices, ${( pavement.kerbLength / 1000 ).toFixed( 1 )} km of kerb` );
 
 const furniture = collectFurniture( streetData, {
 	toLocal,
-	heightAt: ( X, Y ) => terrainAt( X, Y ) + 0.03 + streetData.raise( streetData.at( X, Y ).Fk ),
+	heightAt: ( X, Y ) => ( terraces.deckAt( X, Y ) ?? terrainAt( X, Y ) ) + 0.03 + streetData.raise( streetData.at( X, Y ).Fk ),
 	dsmTrees: trees,
 	treeHeightAt: ( X, Y ) => {
 
