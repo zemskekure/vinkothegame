@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 3360 420" width="3360" height="420">
+  <rect width="3360" height="420" fill="#ebe5d6"/>
+  <rect y="0" width="3360" height="100" fill="#efe9dc"/>
+  <path d="M0 100H3360" stroke="#d6cfbf" stroke-width="5"/>
+  <path d="M0 142H3360M0 184H3360M0 226H3360M0 268H3360M0 310H3360M0 352H3360" stroke="#d4cdbd" stroke-width="3"/>
+  <rect y="398" width="3360" height="22" fill="#cfc6b2"/>
+  <g fill="#4a3324">
+    <rect x="80" y="128" width="120" height="206"/>
+    <rect x="360" y="128" width="120" height="206"/>
+    <rect x="640" y="128" width="120" height="206"/>
+    <rect x="920" y="128" width="120" height="206"/>
+    <rect x="1200" y="128" width="120" height="206"/>
+    <rect x="1480" y="128" width="120" height="206"/>
+    <rect x="2040" y="128" width="120" height="206"/>
+    <rect x="1770" y="124" width="100" height="296"/>
+    <rect x="2580" y="116" width="160" height="268"/>
+    <rect x="2860" y="116" width="160" height="268"/>
+  </g>
+  <g fill="#2c3132">
+    <rect x="88" y="136" width="104" height="190"/>
+    <rect x="368" y="136" width="104" height="190"/>
+    <rect x="648" y="136" width="104" height="190"/>
+    <rect x="928" y="136" width="104" height="190"/>
+    <rect x="1208" y="136" width="104" height="190"/>
+    <rect x="1488" y="136" width="104" height="190"/>
+    <rect x="2048" y="136" width="104" height="190"/>
+    <rect x="1778" y="132" width="84" height="40"/>
+    <rect x="1778" y="180" width="84" height="232"/>
+    <rect x="2590" y="126" width="140" height="44"/>
+    <rect x="2590" y="178" width="140" height="196"/>
+    <rect x="2870" y="126" width="140" height="44"/>
+    <rect x="2870" y="178" width="140" height="196"/>
+  </g>
+  <path d="M88 180H192M368 180H472M648 180H752M928 180H1032M1208 180H1312M1488 180H1592M2048 180H2152" stroke="#4a3324" stroke-width="6"/>
+  <path d="M140 180V326M420 180V326M700 180V326M980 180V326M1260 180V326M1540 180V326M2100 180V326M1820 132V172M2660 126V170M2940 126V170" stroke="#4a3324" stroke-width="6"/>
+  <path d="M1778 300H1862" stroke="#4a3324" stroke-width="6"/>
+  <path d="M92 186L136 280M372 186L416 280M652 186L696 280M932 186L976 280M1212 186L1256 280M1492 186L1536 280M2052 186L2096 280M1782 184L1840 300M2594 182L2660 320M2874 182L2940 320" stroke="#6b7676" stroke-width="6" opacity="0.5"/>
+  <g fill="#d8d0bf">
+    <rect x="74" y="334" width="132" height="10"/>
+    <rect x="354" y="334" width="132" height="10"/>
+    <rect x="634" y="334" width="132" height="10"/>
+    <rect x="914" y="334" width="132" height="10"/>
+    <rect x="1194" y="334" width="132" height="10"/>
+    <rect x="1474" y="334" width="132" height="10"/>
+    <rect x="2034" y="334" width="132" height="10"/>
+    <rect x="2574" y="384" width="172" height="10"/>
+    <rect x="2854" y="384" width="172" height="10"/>
+  </g>
+  <g>
+    <circle cx="2265" cy="146" r="17" fill="none" stroke="#8a2a2e" stroke-width="5"/>
+    <path d="M2276 140H2265V150H2278" fill="none" stroke="#c0392b" stroke-width="5"/>
+    <g font-family="Georgia, serif" font-size="20" fill="#8a2a2e" text-anchor="middle">
+      <text x="2265" y="196">G</text><text x="2265" y="222">A</text><text x="2265" y="248">L</text><text x="2265" y="274">E</text><text x="2265" y="300">R</text><text x="2265" y="326">I</text><text x="2265" y="352">E</text>
+    </g>
+  </g>
+  <g>
+    <rect x="2300" y="108" width="160" height="312" fill="#4a2f20"/>
+    <rect x="2310" y="118" width="140" height="50" fill="#2c3132"/>
+    <path d="M2380 118V168M2310 143H2450" stroke="#4a2f20" stroke-width="5"/>
+    <rect x="2310" y="176" width="66" height="236" fill="#5a3826"/>
+    <rect x="2384" y="176" width="66" height="236" fill="#5a3826"/>
+    <rect x="2320" y="188" width="46" height="100" fill="#6b4630"/><rect x="2394" y="188" width="46" height="100" fill="#6b4630"/>
+    <rect x="2320" y="300" width="46" height="100" fill="#6b4630"/><rect x="2394" y="300" width="46" height="100" fill="#6b4630"/>
+    <circle cx="2372" cy="294" r="4" fill="#cdbb8e"/><circle cx="2388" cy="294" r="4" fill="#cdbb8e"/>
+  </g>
+  <g>
+    <rect x="3150" y="114" width="140" height="306" fill="#f4f0e6"/>
+    <rect x="3168" y="130" width="104" height="290" fill="#8fa29f"/>
+    <path d="M3168 130L3190 152V420H3168Z" fill="#dcd6c8"/>
+    <path d="M3196 160L3250 300" stroke="#c4d0cc" stroke-width="8" opacity="0.6"/>
+  </g>
+</svg>
