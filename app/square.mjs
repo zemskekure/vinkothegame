@@ -179,6 +179,7 @@ export async function runSquare( { db, grid, data, live, env, id, budget = 40, s
 		'--add-dir', work, '--add-dir', photos, '--allowedTools', 'Read Write Glob Grep Task', '--disallowedTools', 'Edit Bash NotebookEdit WebFetch WebSearch' ];
 	if ( env.OWNER_PHOTOS_DIR && existsSync( env.OWNER_PHOTOS_DIR ) ) args.push( '--add-dir', env.OWNER_PHOTOS_DIR );
 	if ( settings.model ) args.push( '--model', settings.model );
+	if ( env.SQUARE_EFFORT ) args.push( '--effort', env.SQUARE_EFFORT );
 	if ( useAPI ) {
 
 		const left = Number( env.SQUARE_API_CAP || 70 ) - apiSpent( db );

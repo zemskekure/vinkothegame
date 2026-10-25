@@ -295,7 +295,8 @@ export function createJobs( { db, grid, data, live, work, base, env, gameURL, pr
 
 				}
 
-				next = { id: enqueue( pick.cell ) };
+				// On the API key the autopilot runs the street-photo tile pipeline (app/square.mjs), one tile after another.
+				next = { id: env.SQUARE_USE_API === '1' ? enqueueSquare( pick.cell ) : enqueue( pick.cell ) };
 
 			}
 
