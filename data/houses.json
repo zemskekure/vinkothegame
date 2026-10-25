@@ -270,6 +270,74 @@
 		},
 		"signs": false
 	},
+	"21643873": {
+		"note": "Betlémská 266/7: stone-grey neo-renaissance house, vermiculated rusticated ground floor, round-arched entrance with dark glazed doors and the red 266 plate, wall lantern, a long balustraded first-floor balcony, cherub reliefs on the pilasters. Its east end (front 1, start of front 3) is a sunlit beige-cream house with banded upper storeys and big dark-framed shop windows in a smooth ground floor, given as an edge override (Street View 2024-05, marked 21643873_1/3/9/11).",
+		"colour": "#c9c3b9",
+		"trim": "#e3ded5",
+		"ground": "windows",
+		"rustic": "banded",
+		"edges": {
+			"1": {
+				"colour": "#e2d5bb",
+				"trim": "#ece3d0",
+				"rustic": "none",
+				"ground": [
+					{
+						"kind": "shop",
+						"frame": "dark",
+						"glazed": true,
+						"size": "wide"
+					},
+					{
+						"kind": "shop",
+						"frame": "dark",
+						"glazed": true,
+						"size": "wide"
+					}
+				]
+			},
+			"3": {
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "shop",
+						"frame": "dark",
+						"glazed": true
+					}
+				]
+			},
+			"9": {
+				"lanterns": true,
+				"ground": [
+					{
+						"kind": "gate",
+						"frame": "dark",
+						"arch": true,
+						"glazed": true
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					}
+				]
+			},
+			"11": {
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					}
+				]
+			}
+		}
+	},
 	"21643903": {
 		"note": "Betlémské náměstí 1 (no. 269, U Halánků, Náprstek museum): pale yellow two-storey house with pilasters, red tile roof with dormers, dark red vertical banner, barred ground-floor windows and a wall lantern. Corrected colour (paler than #e8c46c) and ground (barred windows, not gate); seen only at the right edge of the photo (Street View)",
 		"signs": false,
@@ -290,11 +358,25 @@
 		"grilles": true,
 		"graffiti": false
 	},
+	"21643946": {
+		"note": "Náprstkova 273/8, the front marked on Náprstkova: a tall plain ochre plastered wall with cracks and a red pantile coping, no openings in view (Street View 2024-09, marked 21643946_7).",
+		"colour": "#d4b98c",
+		"trim": "#c9ab7c",
+		"ground": "blank",
+		"rustic": "none",
+		"edges": {
+			"7": {
+				"ground": [
+					"blank"
+				]
+			}
+		}
+	},
 	"21643954": {
-		"note": "Náprstkova: cream historicist house with a rusticated white ground floor, dark wooden glazed doors, restaurant with a pink awning, vertical black HOTEL banner",
+		"note": "Náprstkova 274/6: pinkish-beige five-storey historicist house (was cream), pedimented windows, balustraded balcony, vertical black HOTEL banner; banded ground floor with wedge voussoirs over arched dark doors (one with a Thai massage poster), wall lantern. Front 13 is the plain ochre wall with pantile coping running on from no. 273 to a small white doorway (plates 212, 2); front 9 hidden in its photo (Street View 2024, marked 21643954_7/12/13; owner photos 2026).",
 		"signs": false,
-		"colour": "#e8e0cf",
-		"trim": "#f3eee3",
+		"colour": "#dfccc2",
+		"trim": "#ebe0d8",
 		"ground": "restaurant",
 		"rustic": "banded",
 		"edges": {
@@ -303,7 +385,22 @@
 					"text": "HOTEL",
 					"board": "#141414",
 					"ink": "#f2f2f2"
-				}
+				},
+				"lanterns": true,
+				"ground": [
+					{
+						"kind": "door",
+						"frame": "dark",
+						"arch": true,
+						"glazed": true
+					},
+					{
+						"kind": "door",
+						"frame": "dark",
+						"arch": true,
+						"glazed": true
+					}
+				]
 			},
 			"9": {
 				"lanterns": true
@@ -312,12 +409,33 @@
 				"awning": "#b8475f"
 			},
 			"12": {
-				"awning": "#b8475f"
+				"awning": "#b8475f",
+				"ground": [
+					{
+						"kind": "door",
+						"frame": "dark",
+						"arch": true
+					}
+				]
+			},
+			"13": {
+				"colour": "#d4b98c",
+				"trim": "#e8dcc0",
+				"rustic": "none",
+				"ground": [
+					"blank",
+					{
+						"kind": "door",
+						"frame": "white",
+						"arch": true
+					}
+				]
 			}
-		}
+		},
+		"floors": 5
 	},
 	"21643962": {
-		"note": "Náprstkova 4 (no. 275): long curving pale grey-white two-storey baroque house, white window surrounds with sill panels, wavy string course, pair of wall lanterns by the glazed door, diamond-lattice grilles on ground-floor windows. Confirms current, colour greyer (Street View 2026)",
+		"note": "Náprstkova 4 (no. 275): long curving pale grey-white two-storey baroque house, white window surrounds with sill panels, wavy string course, pair of wall lanterns by the glazed door, diamond-lattice grilles on ground-floor windows. Confirms current, colour greyer (Street View 2026) Its short east side (front 2) is a plain white gable wall carrying a large painted mural of swimmers forming a ring around an infinity sign, wall lantern at the corner (marked 21643962_2, Street View 2024-05).",
 		"colour": "#e3e0d6",
 		"trim": "#f2f0ea",
 		"ground": "windows",
@@ -327,13 +445,19 @@
 		"edges": {
 			"1": {
 				"lanterns": true
+			},
+			"2": {
+				"colour": "#ece9e1",
+				"ground": [
+					"blank"
+				]
 			}
 		},
 		"floors": 2,
 		"graffiti": false
 	},
 	"21643971": {
-		"note": "Náprstkova 2 (no. 276): off-white historicist house, pedimented window heads, a band of rustication above the ground floor; café with five round-arched fanlight windows under a dark slate fascia lettered CAFÉ, potted plants, bracket lantern. Confirms current; rustic set to banded (Street View 2026)",
+		"note": "Náprstkova 2 / Karoliny Světlé 32 (no. 276): off-white historicist house, pedimented window heads, rustication band; Náprstkova café with arched fanlights under a slate CAFÉ fascia. Karoliny Světlé side (front 8): white block-rusticated ground floor, SYMBOLS letters over an arched glazed door, round-arched clothes-shop windows, street and 276/32 plates at the corner (Street View 2024-05, marked 21643971_8).",
 		"colour": "#eeece5",
 		"trim": "#f7f6f2",
 		"ground": "restaurant",
@@ -342,6 +466,36 @@
 		"edges": {
 			"0": {
 				"lanterns": true
+			},
+			"8": {
+				"ground": [
+					"blank",
+					{
+						"kind": "door",
+						"frame": "white",
+						"arch": true,
+						"glazed": true
+					},
+					{
+						"kind": "shop",
+						"frame": "white",
+						"arch": true,
+						"glazed": true,
+						"size": "wide"
+					},
+					{
+						"kind": "shop",
+						"frame": "white",
+						"arch": true,
+						"glazed": true,
+						"size": "wide"
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"arch": true
+					}
+				]
 			},
 			"9": {
 				"lanterns": true
@@ -352,7 +506,7 @@
 		"graffiti": false
 	},
 	"21643989": {
-		"note": "Karoliny Světlé 30: pale yellow house, cream window surrounds with pediment heads on consoles, white plaster ground-floor band with big black 'duende' letters and red wooden shutter doors (Café-Bar Duende) (Street View)",
+		"note": "Karoliny Světlé 30: pale yellow house, cream window surrounds with pediment heads on consoles, white plaster ground-floor band with big black 'duende' letters and red wooden shutter doors (Café-Bar Duende) (Street View) Drawn front: the first ~5 m of the front are still the white house with an arched door, then the Duende band with huge lower-case 'duende', red shutter doors, prayer flags in the open doorway and a chalkboard (Street View 2024-05, marked 21643989_3).",
 		"colour": "#e6daa8",
 		"trim": "#efe9d6",
 		"floors": 4,
@@ -360,30 +514,110 @@
 		"rustic": "none",
 		"grilles": false,
 		"graffiti": false,
-		"signs": false
+		"signs": false,
+		"edges": {
+			"3": {
+				"shopfront": "21643989_3.svg",
+				"ground": [
+					{
+						"kind": "door",
+						"frame": "wood",
+						"arch": true
+					},
+					{
+						"kind": "door",
+						"frame": "red"
+					},
+					{
+						"kind": "shop",
+						"frame": "wood",
+						"glazed": true,
+						"door": true
+					},
+					{
+						"kind": "door",
+						"frame": "red"
+					}
+				]
+			}
+		}
 	},
 	"21643997": {
-		"note": "Karoliny Světlé 30 (plate seen): same pale yellow front as Duende, pedimented window heads on consoles, plain white-grey ground floor with a minimarket behind brown shutter doors (Street View)",
+		"note": "Karoliny Světlé 30 (plate seen): same pale yellow front as Duende, pedimented window heads on consoles, plain white-grey ground floor with a minimarket behind brown shutter doors (Street View) Ground floor: brown shutter doors either side of the open minimarket door (marked 21643997_8).",
 		"colour": "#e3d7a6",
 		"trim": "#ece6d2",
 		"ground": "shops",
 		"rustic": "none",
 		"grilles": false,
 		"graffiti": false,
-		"signs": false
+		"signs": false,
+		"edges": {
+			"8": {
+				"ground": [
+					{
+						"kind": "door",
+						"frame": "wood"
+					},
+					{
+						"kind": "shop",
+						"frame": "wood",
+						"door": true,
+						"glazed": true
+					},
+					{
+						"kind": "door",
+						"frame": "wood"
+					}
+				]
+			}
+		}
 	},
 	"21644004": {
-		"note": "Karoliny Světlé 28 (plate 278): cream house, ground floor of big rusticated blocks with wedge voussoirs around a round-arched carriage gate with brown wooden doors; plain window surrounds above (Street View)",
+		"note": "Karoliny Světlé 28 (plate 278/279): cream house, big rusticated blocks with voussoirs round an arched carriage gate with brown doors, arched door with a round hanging bazaar sign. Boršov side (front 2): first ~4 m are the side of the pink corner house with a barred window, then cream with a red shutter door and a WINESDAY TODAY chalkboard (Street View 2024-05, marked 21644004_2/3).",
 		"colour": "#ecdcb0",
 		"trim": "#f2e8cc",
 		"ground": "gate",
 		"rustic": "banded",
 		"grilles": false,
 		"graffiti": false,
-		"signs": false
+		"signs": false,
+		"edges": {
+			"2": {
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "dark",
+						"bars": true
+					},
+					{
+						"kind": "door",
+						"frame": "red"
+					},
+					{
+						"kind": "door",
+						"frame": "wood",
+						"glazed": true
+					}
+				]
+			},
+			"3": {
+				"ground": [
+					{
+						"kind": "gate",
+						"frame": "wood",
+						"arch": true
+					},
+					{
+						"kind": "door",
+						"frame": "wood",
+						"arch": true
+					}
+				]
+			}
+		}
 	},
 	"21644039": {
-		"note": "Karoliny Světlé 26 (keystone '279', plate 26): salmon-pink house with a Madonna statue in a shell niche at first-floor level, black HEMINGWAY BAR board over round-arched ground-floor openings, wall lantern. Boršov photo (edge 8) shows the neighbouring house no. 28, not used (Street View)",
+		"note": "Karoliny Světlé 26: salmon-pink house with a shell niche and statue at first-floor level, black HEMINGWAY BAR board over a wide round-arched glazed opening with a stone '279' cartouche as keystone, glazed notice case, wall lantern (drawn front). The Boršov front (8) per the marks is the cream rusticated house with plates 28 and 279 and an arched brown door, given as an edge override (Street View 2024-05, marked 21644039_7/8).",
 		"colour": "#dca797",
 		"trim": "#e6bcad",
 		"ground": "restaurant",
@@ -392,32 +626,98 @@
 		"graffiti": false,
 		"edges": {
 			"7": {
-				"lanterns": true
+				"lanterns": true,
+				"shopfront": "21644039_7.svg",
+				"ground": [
+					{
+						"kind": "shop",
+						"frame": "dark",
+						"arch": true,
+						"glazed": true,
+						"size": "wide"
+					},
+					"blank"
+				]
+			},
+			"8": {
+				"colour": "#ecdcb0",
+				"trim": "#f2e8cc",
+				"rustic": "banded",
+				"ground": [
+					"blank",
+					{
+						"kind": "door",
+						"frame": "wood",
+						"arch": true
+					}
+				]
 			}
 		},
 		"signs": false
 	},
 	"21644047": {
-		"note": "Karoliny Světlé 24: pale cream-yellow house, window heads with consoles, dentil cornice over the ground floor, black WINESDAY letters on the wall, red and brown wooden shutter doors (Street View)",
+		"note": "Karoliny Světlé 24: pale cream-yellow house, window heads with consoles, dentil cornice over the ground floor, black WINESDAY letters on the wall, red and brown wooden shutter doors (Street View) Drawn front: WINESDAY letters on the cornice band, dark wood shop window with a green OTEVŘENO sign, open red shutters with chalkboards, round black 'W winesday' hanging sign (marked 21644047_6).",
 		"colour": "#ebdfb4",
 		"trim": "#f1e8cc",
 		"ground": "restaurant",
 		"rustic": "none",
 		"grilles": false,
 		"graffiti": false,
-		"signs": false
+		"signs": false,
+		"edges": {
+			"6": {
+				"shopfront": "21644047_6.svg",
+				"ground": [
+					{
+						"kind": "shop",
+						"frame": "wood",
+						"glazed": true
+					},
+					{
+						"kind": "door",
+						"frame": "red"
+					},
+					{
+						"kind": "door",
+						"frame": "wood",
+						"glazed": true
+					},
+					{
+						"kind": "shop",
+						"frame": "wood",
+						"glazed": true
+					},
+					{
+						"kind": "door",
+						"frame": "red"
+					}
+				]
+			}
+		}
 	},
 	"21644055": {
-		"note": "Karoliny Světlé 22 (plate 284): pale green house with white window surrounds, round bronze memorial plaque with bust of Karolina Světlá between first floor and ground floor, round-arched doorway (Street View)",
+		"note": "Karoliny Světlé 22 (plate 284): pale green house with white window surrounds, round bronze memorial plaque with bust of Karolina Světlá between first floor and ground floor, round-arched doorway (Street View) Ground floor: plain green wall with the 284 plate, then a white stone round-arched doorway with a green door (marked 21644055_3).",
 		"colour": "#c8d5c2",
 		"trim": "#eef0e8",
 		"rustic": "none",
 		"grilles": false,
 		"graffiti": false,
-		"signs": false
+		"signs": false,
+		"edges": {
+			"3": {
+				"ground": [
+					"blank",
+					{
+						"kind": "door",
+						"frame": "green",
+						"arch": true
+					}
+				]
+			}
+		}
 	},
 	"21644063": {
-		"note": "Karoliny Světlé 18: off-white neo-renaissance house, rusticated pilaster strips, pedimented first-floor windows, dentil cornice, round-arched gate with brown door and a glazed brown door (Život 90 / theatre notice boards); north part of the front is the pink-and-cream Hotel & Spa Carolline house (no. 20) with a vertical BERNARD banner. Current (brown stucco, graffiti, blank) was wrong: changed colour, trim, ground, rustic, graffiti (Street View)",
+		"note": "Karoliny Světlé 18: off-white neo-renaissance house, pedimented windows, brown wooden doors; north end is the pink Hotel Carolline house with a BERNARD banner. Betlémská (front 0) is a different house: ochre-yellow, grey-white stucco frames, scrolled pediments, dormers, plain doors, barred window, plaque, wide gate. Front 18: ~4 m of that yellow, then the grey rusticated house that runs on as no. 266 (Street View 2024-05, marked 21644063_0a/0b/2/18).",
 		"signs": false,
 		"colour": "#ece8dc",
 		"trim": "#f4f1e8",
@@ -427,17 +727,90 @@
 		"floors": 3,
 		"grilles": false,
 		"edges": {
+			"0": {
+				"colour": "#dccb98",
+				"trim": "#ece6d6",
+				"rustic": "ornate",
+				"ground": [
+					{
+						"kind": "door",
+						"frame": "dark"
+					},
+					{
+						"kind": "window",
+						"frame": "dark"
+					},
+					{
+						"kind": "door",
+						"frame": "dark"
+					},
+					{
+						"kind": "window",
+						"frame": "dark",
+						"bars": true
+					},
+					{
+						"kind": "door",
+						"frame": "dark"
+					},
+					{
+						"kind": "gate",
+						"frame": "dark",
+						"size": "wide"
+					}
+				]
+			},
 			"2": {
 				"banner": {
 					"text": "BERNARD",
 					"board": "#f4f4f2",
 					"ink": "#1f3d7a"
-				}
+				},
+				"ground": [
+					{
+						"kind": "door",
+						"frame": "wood",
+						"glazed": true
+					},
+					{
+						"kind": "window",
+						"frame": "dark",
+						"bars": true
+					},
+					{
+						"kind": "door",
+						"frame": "wood"
+					},
+					{
+						"kind": "door",
+						"frame": "wood",
+						"arch": true
+					}
+				]
+			},
+			"18": {
+				"colour": "#d0cac0",
+				"trim": "#e2ddd3",
+				"rustic": "banded",
+				"ground": [
+					{
+						"kind": "door",
+						"frame": "dark"
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					}
+				]
 			}
 		}
 	},
 	"21644071": {
-		"note": "Konviktská 3 / Betlémská 4: long neo-renaissance block; pale grey-white upper floors with beige stone window pediments, balustrades under first-floor windows and arched second-floor windows; heavy beige banded rustication on the ground floor over a plinth with grilled basement windows; arched gate (tagged) on edge 26 and pedimented wooden doorway at no. 3 on edge 33. No Bianco Nero sign visible (Street View)",
+		"note": "Konviktská 3 / Betlémská 4: long neo-renaissance block, pale grey-white upper floors with beige stone pediments and balustrades, arched second-floor windows; heavy beige banded rusticated ground floor with tall dark windows over a plinth; on Betlémská front 6 a big round-arched honey-coloured wooden door under a carved keystone head (Street View 2024-05, marked 21644071_4a/4b/6/8).",
 		"colour": "#e6e4dd",
 		"trim": "#d4cab6",
 		"floors": 4,
@@ -446,6 +819,75 @@
 		"grilles": false,
 		"graffiti": true,
 		"edges": {
+			"4": {
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "dark"
+					},
+					{
+						"kind": "window",
+						"frame": "dark"
+					},
+					{
+						"kind": "window",
+						"frame": "dark"
+					},
+					{
+						"kind": "window",
+						"frame": "dark"
+					},
+					{
+						"kind": "window",
+						"frame": "dark"
+					},
+					{
+						"kind": "window",
+						"frame": "dark"
+					},
+					{
+						"kind": "window",
+						"frame": "dark"
+					},
+					{
+						"kind": "window",
+						"frame": "dark"
+					},
+					{
+						"kind": "window",
+						"frame": "dark"
+					}
+				]
+			},
+			"6": {
+				"ground": [
+					{
+						"kind": "gate",
+						"frame": "wood",
+						"arch": true
+					},
+					{
+						"kind": "window",
+						"frame": "dark"
+					}
+				]
+			},
+			"8": {
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "dark"
+					},
+					{
+						"kind": "window",
+						"frame": "dark"
+					},
+					{
+						"kind": "window",
+						"frame": "dark"
+					}
+				]
+			},
 			"39": {
 				"lanterns": true
 			},
@@ -691,8 +1133,31 @@
 		"signs": false
 	},
 	"21644365": {
-		"note": "Divadelní 24 / Betlémská / Karoliny Světlé corner: renovated pale cream house, NOT the yellow brown-trim house the old note described. Smooth sandstone-clad ground floor with modern dark-framed glass shopfront doors; tall upper windows with simple iron French balconies; about five storeys. White Sage Therapy occupies the ground floor. A wall lantern sits on the narrow Karoliny Světlé passage side  Ground floor along Divadelní from the Betlémská corner: the wide White Sage shop window with a glazed double door, a second glazed shopfront, a grey metal garage door, the glazed house entrance (own Street View screenshots, May 2024).",
+		"note": "Divadelní 24 / Betlémská corner: pale cream renovated house, sandstone-clad ground floor; on Divadelní the White Sage shop window and glazed double door, a second shopfront, grey garage door, glazed house door (own screenshots 2024). Betlémská side (front 0) looks like no. 323: pale yellow, orange window frames, cornices and string course, flower boxes, ending at the vaulted arch over the lane (Street View 2024-05, marked 21644365_0a/0b).",
 		"edges": {
+			"0": {
+				"colour": "#f0d8a4",
+				"trim": "#d9984f",
+				"rustic": "none",
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "red"
+					},
+					{
+						"kind": "window",
+						"frame": "red"
+					},
+					{
+						"kind": "window",
+						"frame": "red"
+					},
+					{
+						"kind": "window",
+						"frame": "red"
+					}
+				]
+			},
 			"1": {
 				"lanterns": true
 			},
@@ -723,7 +1188,7 @@
 		"graffiti": false
 	},
 	"21644373": {
-		"note": "Karoliny Světlé 27 (plate 323/27): pale yellow three-storey house with orange window frames, cornices and plinth; seen obliquely, no Platina sign visible (Street View)",
+		"note": "Karoliny Světlé 27 (plate 323/27): pale yellow three-storey house with orange window frames, cornices and plinth; seen obliquely, no Platina sign visible (Street View) Betlémská side: same pale yellow with an orange string course, a dark door under the flying arch over the lane, a rubble-stone wall stub, a wall lantern and a vertical maroon BOOKQUET hotel banner; the house door has a stone frame and plate 3 (marked 21644373_15/17/18/19/21a/21b).",
 		"colour": "#edd394",
 		"trim": "#d99a4d",
 		"floors": 3,
@@ -731,7 +1196,67 @@
 		"rustic": "none",
 		"grilles": false,
 		"graffiti": false,
-		"signs": false
+		"signs": false,
+		"edges": {
+			"17": {
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "red"
+					},
+					{
+						"kind": "window",
+						"frame": "red"
+					}
+				]
+			},
+			"18": {
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "red"
+					},
+					{
+						"kind": "window",
+						"frame": "red"
+					}
+				]
+			},
+			"19": {
+				"ground": [
+					{
+						"kind": "door",
+						"frame": "dark"
+					}
+				]
+			},
+			"21": {
+				"lanterns": true,
+				"banner": {
+					"text": "BOOKQUET",
+					"board": "#5b2a2e",
+					"ink": "#f2eee6"
+				},
+				"ground": [
+					{
+						"kind": "door",
+						"frame": "wood"
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					}
+				]
+			}
+		}
 	},
 	"21644381": {
 		"note": "Smetanovo nábřeží: pale grey-lilac house, arched ground-floor windows and a big wooden door",
@@ -756,7 +1281,7 @@
 		"signs": false
 	},
 	"21644411": {
-		"note": "Karoliny Světlé 35/37: neo-renaissance house in the Bellevue style: cream-ochre banded lower floors with round-arched windows and an oriel, red-brick upper floors, dark MLÉKÁRNA shop board on the ground floor; seen obliquely (Street View)",
+		"note": "Karoliny Světlé 35/37: neo-renaissance house in the Bellevue style: cream-ochre banded lower floors with round-arched windows and an oriel, red-brick upper floors, dark MLÉKÁRNA shop board on the ground floor; seen obliquely (Street View) Ground floor on front 8: arched entrance, brown wooden shop window and door, then (under the red-brick upper floors) a boarded opening covered with a big blue graffiti piece (marked 21644411_8).",
 		"colour": "#dcc596",
 		"trim": "#e9d9b2",
 		"floors": 5,
@@ -764,10 +1289,31 @@
 		"rustic": "banded",
 		"grilles": false,
 		"graffiti": false,
-		"signs": false
+		"signs": false,
+		"edges": {
+			"8": {
+				"ground": [
+					{
+						"kind": "door",
+						"frame": "wood",
+						"arch": true
+					},
+					{
+						"kind": "shop",
+						"frame": "wood",
+						"glazed": true
+					},
+					{
+						"kind": "door",
+						"frame": "wood"
+					},
+					"blank"
+				]
+			}
+		}
 	},
 	"21644420": {
-		"note": "Karoliny Světlé 37 / Smetanovo nábřeží (Bellevue): red brick with cream sandstone bands, stepped crenellated gables, oriel bays, balcony with iron railing, cream ground floor heavily tagged with graffiti. Current colours confirmed; added graffiti; no corner turret seen, stepped gables instead (Street View)",
+		"note": "Karoliny Světlé 37 / Smetanovo nábřeží (Bellevue): red brick with cream sandstone bands, stepped crenellated gables, oriel bays, balcony with iron railing, cream ground floor heavily tagged with graffiti. Current colours confirmed; added graffiti; no corner turret seen, stepped gables instead (Street View) Ground floor: a row of tall dark windows behind heavy graffiti and a wooden glazed door with a big DUDE1 tag above it (marked 21644420_22a/22b).",
 		"colour": "#b2604a",
 		"trim": "#e3d0a6",
 		"ground": "windows",
@@ -775,7 +1321,50 @@
 		"floors": 5,
 		"grilles": false,
 		"graffiti": true,
-		"signs": false
+		"signs": false,
+		"edges": {
+			"22": {
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "dark"
+					},
+					{
+						"kind": "window",
+						"frame": "dark"
+					},
+					{
+						"kind": "window",
+						"frame": "dark"
+					},
+					{
+						"kind": "window",
+						"frame": "dark"
+					},
+					{
+						"kind": "window",
+						"frame": "dark"
+					},
+					{
+						"kind": "window",
+						"frame": "dark"
+					},
+					{
+						"kind": "door",
+						"frame": "wood",
+						"glazed": true
+					},
+					{
+						"kind": "window",
+						"frame": "dark"
+					},
+					{
+						"kind": "window",
+						"frame": "dark"
+					}
+				]
+			}
+		}
 	},
 	"21644438": {
 		"note": "Smetanovo nábřeží: red and cream striped neo-renaissance with stucco gables",

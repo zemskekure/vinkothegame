@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 420">
+  <rect width="820" height="420" fill="#dca797"/>
+  <rect x="35" y="30" width="570" height="92" fill="#1c1c1c"/>
+  <rect x="35" y="30" width="570" height="8" fill="#2e2e2e"/>
+  <text x="320" y="98" text-anchor="middle" font-family="Georgia, Times New Roman, serif" font-weight="bold" font-size="46" letter-spacing="2" fill="#e8e4da">HEMINGWAY BAR</text>
+  <path d="M640 40H690M665 40V70" stroke="#2a2a2a" stroke-width="5"/>
+  <path d="M652 70H678L674 102H656Z" fill="#33302c"/>
+  <rect x="658" y="76" width="14" height="20" fill="#f0d79a"/>
+  <path d="M45 410V255A265 95 0 0 1 575 255V410Z" fill="#cdb9a6"/>
+  <path d="M68 410V262A242 80 0 0 1 552 262V410Z" fill="#2b2420"/>
+  <path d="M80 262A230 70 0 0 1 540 262Z" fill="#3b4246"/>
+  <path d="M310 192V262M80 262H540M195 262V410M425 262V410" stroke="#5a463a" stroke-width="8"/>
+  <rect x="88" y="276" width="96" height="126" fill="#3a3d3e"/>
+  <rect x="207" y="276" width="206" height="126" fill="#332a24"/>
+  <rect x="436" y="276" width="96" height="126" fill="#3a3d3e"/>
+  <path d="M255 145H365L380 205H240Z" fill="#cfc2a8"/>
+  <text x="310" y="190" text-anchor="middle" font-family="Georgia, serif" font-size="36" fill="#6b5a44">279</text>
+  <rect x="620" y="228" width="105" height="178" fill="#1a1a1a"/>
+  <rect x="632" y="240" width="81" height="154" fill="#e7e0cf"/>
+  <path d="M645 262H700M645 280H695M645 298H702M645 330H690" stroke="#8a8478" stroke-width="3"/>
+  <rect y="406" width="820" height="14" fill="#b98d7f"/>
+</svg>
