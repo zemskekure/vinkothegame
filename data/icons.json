@@ -2,20 +2,51 @@
 	{
 		"kind": "letters",
 		"text": "MÁJ",
-		"x": 76.5, "z": 279.6, "y": 16.5, "facing": [ -0.222, -0.974 ],
-		"height": 4.5, "width": 11, "ink": "#ddd3bf", "side": "#3a3b3f",
+		"x": 76.5,
+		"z": 279.6,
+		"y": 16.5,
+		"facing": [
+			-0.222,
+			-0.974
+		],
+		"height": 4.5,
+		"width": 11,
+		"ink": "#ddd3bf",
+		"side": "#3a3b3f",
 		"note": "Máj (Národní 26): the big cream MÁJ letters with dark sides, on the white cladding above the orange window band high on the Národní front near the Spálená corner (owner's Street View screenshots, Sept 2025); front from RÚIAN edge (68.7, 281.6)–(102, 274)"
 	},
 	{
 		"kind": "butterfly",
-		"x": 61.5, "z": 282.0, "y": 13.5, "facing": [ 0.974, -0.222 ], "span": 9,
+		"x": 61.5,
+		"z": 282.0,
+		"y": 13.5,
+		"facing": [
+			0.974,
+			-0.222
+		],
+		"span": 9,
 		"note": "David Černý's Motýlek / Letadlo (Butterfly Effect), a butterfly with a propeller-plane body hanging off the north-west corner of Máj over the Národní / Spálená crossing (OSM node 323123830; seen in the owner's screenshots, Sept 2025)"
 	},
 	{
 		"kind": "cupola",
 		"code": 21651191,
-		"x": 40.5, "z": 288.7, "r": 2.3,
-		"drum": 3.2, "plaster": "#e2d3b0", "copper": "#5d8f7a",
+		"x": 40.5,
+		"z": 288.7,
+		"r": 2.3,
+		"drum": 3.2,
+		"plaster": "#e2d3b0",
+		"copper": "#5d8f7a",
 		"note": "Národní 24: the round corner tower over the Spálená corner, a windowed drum above the main cornice crowned by a green copper cupola and a small lantern (Street View 2025, owner's screenshots); centre from the rounded RÚIAN corner"
+	},
+	{
+		"kind": "tower",
+		"x": 102.5,
+		"z": 211.9,
+		"w": 5.8,
+		"shaft": 17.5,
+		"tip": 27.0,
+		"plaster": "#efebe1",
+		"roof": "#4f5b5d",
+		"note": "Kostel sv. Martina ve zdi: the square tower at the south-west corner (the 6 × 7 m notch of the RÚIAN outline), whitewashed, with a gallery, four corner turrets and a spire; top about 26.5 m above the street in the ČÚZK surface model (DMP 1G)"
 	}
 ]

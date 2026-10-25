@@ -299,6 +299,7 @@ for ( const b of buildings ) rasterize( b );
 	const osm = JSON.parse( await readFile( new URL( 'osm.json', RAW ) ) );
 	const nodes = new Map( osm.filter( e => e.type === 'node' ).map( n => [ n.id, n ] ) );
 	let added = 0;
+	const FOOTPRINT_FIXES = JSON.parse( await readFile( new URL( '../data/footprint-fixes.json', import.meta.url ) ) );
 	for ( const w of osm ) {
 
 		const t = w.tags || {};
@@ -306,6 +307,15 @@ for ( const b of buildings ) rasterize( b );
 		const ring = w.nodes.map( id => nodes.get( id ) ).filter( Boolean ).map( n => project( n.lon, n.lat ) );
 		if ( ring.length < 4 ) continue;
 		ring.pop();
+		// Hand corrections where an OSM outline is plainly off the aerial photo (data/footprint-fixes.json, scene frame).
+		for ( const { from, to } of FOOTPRINT_FIXES[ w.id ]?.move || [] ) {
+
+			const p = ring.find( q => Math.hypot( q[ 0 ] - ORIGIN.x - from[ 0 ], ORIGIN.y - q[ 1 ] - from[ 1 ] ) < 0.5 );
+			if ( p ) p.splice( 0, 2, ORIGIN.x + to[ 0 ], ORIGIN.y - to[ 1 ] );
+			else console.warn( `footprint fix: no corner of way ${w.id} at ${from}` );
+
+		}
+
 		const xs = ring.map( p => p[ 0 ] ), ys = ring.map( p => p[ 1 ] );
 		if ( Math.max( ...xs ) < AREA.xmin || Math.min( ...xs ) > AREA.xmax || Math.max( ...ys ) < AREA.ymin || Math.min( ...ys ) > AREA.ymax ) continue;
 		let cells = 0, covered = 0;

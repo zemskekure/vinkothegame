@@ -1642,6 +1642,10 @@
 		"note": "No address, len ~5 m: a low pale garden building/pavilion set among trees inside the Kranner's Fountain park, off Smetanovo nábřeží. No street front is visible; the photo shows mostly garden and trees with only a glimpse of a pale two-storey wall behind. Not describable in detail (Street View)",
 		"signs": false
 	},
+	"46669345": {
+		"note": "Kostel sv. Martina ve zdi (Martinská): whitewashed Gothic church with tall pointed windows and a steep tiled roof; tower at the south-west corner (src/icons.js, data/icons.json)",
+		"style": "chapel"
+	},
 	"48864005": {
 		"note": "Národní, St Ursula's church: baroque front with salmon-pink recessed panels framed by white pilasters and cornices, central stone portal with statue in a niche above, oval oculi, statues on the gable. Current colours confirmed (pink a touch deeper). (Street View 2026)",
 		"colour": "#dd9a86",

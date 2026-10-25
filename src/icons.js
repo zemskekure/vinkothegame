@@ -1,5 +1,6 @@
 // Local icons: the one-off things that make a corner recognisable at a glance and that the house descriptions
-// cannot express: big lettering on a department store, a sculpture hanging off a corner, a domed corner tower.
+// cannot express: big lettering on a department store, a sculpture hanging off a corner, a domed corner tower,
+// a church tower.
 // Placed by hand in data/icons.json (scene frame, heights above the ground), each with the source it was seen in.
 
 import * as THREE from 'three/webgpu';
@@ -12,6 +13,7 @@ export function addIcons( scene, icons, groundHeight, buildings ) {
 		if ( icon.kind === 'letters' ) addLetters( scene, icon, groundHeight );
 		else if ( icon.kind === 'butterfly' ) addButterfly( scene, icon, groundHeight );
 		else if ( icon.kind === 'cupola' ) addCupola( scene, icon, groundHeight, buildings );
+		else if ( icon.kind === 'tower' ) addTower( scene, icon, groundHeight );
 
 	}
 
@@ -215,6 +217,58 @@ function addCupola( scene, C, groundHeight, buildings ) {
 	kit.add( copper, new THREE.SphereGeometry( 0.48, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2 ).translate( 0, top + 0.75, 0 ) );
 	kit.add( M.gold, cyl( 0.04, 0.04, 1.0, 0, top + 1.1, 0, 8 ) );
 	kit.add( M.gold, ball( 0.12, 0, top + 1.6, 0 ) );
+	kit.build( g );
+
+}
+
+// ---------------------------------------------------------------------------
+// Church tower: a square whitewashed shaft with narrow slit windows and a cornice, a gallery with four small
+// corner turrets, and a steep pyramid spire in the middle with a cross.
+
+function addTower( scene, T, groundHeight ) {
+
+	const g = new THREE.Group();
+	g.position.set( T.x, groundHeight( T.x, T.z ), T.z );
+	g.rotation.y = T.rot || 0;
+	scene.add( g );
+
+	const kit = new Kit();
+	const white = plain( T.plaster || 0xf0ece2 ), stone = plain( 0xcfc6b4 ), dark = plain( 0x1d2226 );
+	const roof = plain( T.roof || 0x4c5a5e, { roughness: 0.6, metalness: 0.2 } );
+	const w = T.w, H = T.shaft;
+	kit.add( white, new THREE.BoxGeometry( w, H, w ).translate( 0, H / 2, 0 ) );
+	kit.add( stone, new THREE.BoxGeometry( w + 0.5, 0.45, w + 0.5 ).translate( 0, H + 0.2, 0 ) );
+	// Narrow pointed slit windows high up on each face, and a pair of belfry openings under the cornice.
+	for ( let k = 0; k < 4; k ++ ) {
+
+		const a = k * Math.PI / 2, nx = Math.sin( a ), nz = Math.cos( a );
+		for ( const [ y, h, ww ] of [ [ H * 0.45, 1.6, 0.35 ], [ H * 0.65, 1.6, 0.35 ], [ H - 2.6, 2.0, 0.6 ] ] ) {
+
+			for ( const off of y > H - 3 ? [ - 0.9, 0.9 ] : [ 0 ] ) {
+
+				kit.add( dark, new THREE.BoxGeometry( ww, h, 0.06 ).rotateY( a ).translate( nx * ( w / 2 + 0.02 ) + nz * off, y, nz * ( w / 2 + 0.02 ) - nx * off ) );
+
+			}
+
+		}
+
+	}
+
+	// Gallery parapet, corner turrets, spire.
+	const top = H + 0.45;
+	kit.add( white, new THREE.BoxGeometry( w + 0.3, 1.0, w + 0.3 ).translate( 0, top + 0.5, 0 ) );
+	for ( const [ sx, sz ] of [ [ 1, 1 ], [ 1, - 1 ], [ - 1, 1 ], [ - 1, - 1 ] ] ) {
+
+		const tx = sx * ( w / 2 - 0.1 ), tz = sz * ( w / 2 - 0.1 );
+		kit.add( white, cyl( 0.45, 0.45, 2.2, tx, top, tz, 10 ) );
+		kit.add( roof, new THREE.ConeGeometry( 0.6, 2.4, 10 ).translate( tx, top + 2.2 + 1.2, tz ) );
+
+	}
+
+	const spire = T.tip - top - 0.6;
+	kit.add( roof, new THREE.ConeGeometry( w * 0.42, spire, 4 ).rotateY( Math.PI / 4 ).translate( 0, top + 0.6 + spire / 2, 0 ) );
+	kit.add( M.gold, cyl( 0.04, 0.04, 1.4, 0, T.tip, 0, 6 ) );
+	kit.add( M.gold, new THREE.BoxGeometry( 0.7, 0.07, 0.07 ).translate( 0, T.tip + 1.0, 0 ) );
 	kit.build( g );
 
 }
