@@ -107,6 +107,10 @@ Write `review.json` in the square's work folder, next to `inventory.json`: an ob
   `npm run build` rasterizes these checked SVG drawings into ignored PNG textures for the game.
   Set `shopfrontHeight` only when the pictured ground floor is taller than the normal 4.2 m overlay, so the
   drawing covers the underlying procedural openings.
+- Read the photos through `node tools/square-marks.mjs <square>` first: `<work>/marked/` copies show where each
+  RÚIAN front starts and ends (labelled `<code>_<edge>`, the photographed one in yellow) and metre ticks along it,
+  counted from its left end. Describe a facade under the front the marks put it on; a house often spans the end
+  of one front and the start of the next.
 - One RÚIAN building can join houses that look nothing alike (a glass corner office and the baroque houses behind
   it). An edge can then carry its own `style`, `colour`, `trim` and `rustic`, which win over the house's.
 - Owner photos can clarify signs, doors and material details when Street View is ambiguous. Translate those
