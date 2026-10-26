@@ -17,7 +17,8 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { SETTINGS, DEFAULTS, LOCAL, SERVER, merge, writeLocal } from './settings.js';
 import { STYLE, LOOK, saveSettings, downloadSettings, get, set } from './admin.js';
 import { ps1Look } from './holub/ps1.js';
-import { BODIES, loadWardrobe, useWardrobe, prepareBody, makeSkinned, applyArt, lookAttribute } from './people.js';
+import { BODIES, SHAPE, loadWardrobe, useWardrobe, prepareBody, applyArt, lookAttribute, shapeWeights } from './people.js';
+import { rulesFrom, gameSeed, personSeed, generatePerson, lookOf, buildPerson as build } from './persona.js';
 import { makePigeon, birdSize } from './holub/pigeon.js';
 import { FOOD, foodMaterial } from './holub/game.js';
 import { MODELS } from './furniture.js';
@@ -27,17 +28,9 @@ const params = new URLSearchParams( location.search );
 const SKIES = [ 'golden_evening', 'blue_noon', 'grey_overcast_drizzle', 'pink_sunrise_haze', 'heavy_storm', 'night_full_moon' ];
 const SKY_NAMES = { golden_evening: 'Zlatý večer', blue_noon: 'Modré poledne', grey_overcast_drizzle: 'Zataženo', pink_sunrise_haze: 'Růžové ráno', heavy_storm: 'Bouřka', night_full_moon: 'Noc s úplňkem' };
 
-// The six people of the line-up: a body (src/people.js BODIES) and what they wear, by texture file name ('' for
-// the hair and skin means: the colours read from the face; for top and bottom: a plain colour).
-const LINEUP = [
-	{ body: 'animated-men/suit', face: 'face_04.jpg', hair: 'hair_02.jpg', top: '', bottom: 'navy_suit.jpg', skin: '', colour: [ 0x1f2a44, 0x24324d ] },
-	{ body: 'animated-women/dress', face: 'face_02.jpg', hair: '', top: 'floral_granny_dress.jpg', bottom: '', skin: 'light.jpg', colour: [ 0xd49aa4, 0x2a2b2f ] },
-	{ body: 'modular-men/hoodie', face: 'face_07.jpg', hair: 'hair_05.jpg', top: 'green_army_parka.jpg', bottom: 'blue_denim.jpg', skin: '', colour: [ 0x5a5e3a, 0x34496b ] },
-	{ body: 'modular-women/casual', face: 'face_32.jpg', hair: '', top: 'striped_breton.jpg', bottom: 'faded_black_jeans.jpg', skin: '', colour: [ 0xe6e3dc, 0x1a1a1c ] },
-	{ body: 'modular-men/worker', face: 'face_25.jpg', hair: 'hair_01.jpg', top: 'hi_vis_orange.jpg', bottom: 'grey_wool_trousers.jpg', skin: 'tanned.jpg', colour: [ 0xc4562f, 0x55575c ] },
-	{ body: 'animated-women/casual', face: 'face_09.jpg', hair: '', top: 'pink_anorak_nylon.jpg', bottom: 'blue_denim.jpg', skin: '', colour: [ 0xd49aa4, 0x4f6a90 ], seated: true }
-];
-const HEIGHTS = [ 1.82, 1.66, 1.78, 1.68, 1.8, 1.64 ];
+// The six people of the line-up are specs (src/persona.js): made by the generator from the crowd rules like the
+// people in the streets (the last one sitting on a bench), or as saved (art.lineup) after dressing them by hand.
+const SIZE = 6, SEATED = 5;
 
 // --- page and renderer -----------------------------------------------------------------------------------------
 
@@ -294,28 +287,17 @@ async function body( file ) {
 
 }
 
-const tile = ( kind, file ) => wardrobe.tiles[ kind ].find( t => t.file === file );
-const lin = hex => new THREE.Color().setHex( hex ).toArray();
-
-// A line-up person's look (src/people.js: per slot [ r, g, b, mode ]) from the chosen textures.
-function lookOf( p ) {
-
-	const face = tile( 'faces', p.face ) || wardrobe.tiles.faces[ 0 ];
-	const photo = t => [ 1, 1, 1, 2 + t.t ];
-	const cloth = ( file, hex ) => tile( 'clothes', file ) ? photo( tile( 'clothes', file ) ) : [ ...lin( hex ), 1 ];
-	const hair = tile( 'heads', p.hair ) ? photo( tile( 'heads', p.hair ) ) : [ ...( face.hair || lin( 0x3b281b ) ), 1 ];
-	const skin = tile( 'skin', p.skin ) ? photo( tile( 'skin', p.skin ) ) : [ ...( face.skin || lin( 0xe3b38f ) ), 1 ];
-	return [ cloth( p.top, p.colour?.[ 0 ] ?? 0x3c3e44 ), cloth( p.bottom, p.colour?.[ 1 ] ?? 0x2a2b2f ), hair, skin, photo( face ) ];
-
-}
-
-const lineup = LINEUP.map( ( d, i ) => ( { ...d, ...( art().lineup?.[ i ] || {} ), height: HEIGHTS[ i ] } ) );
+// A new line-up from the rules: the seeds dealt as in a game (a fixed seed in the rules gives the same people).
+let base = gameSeed( rulesFrom( art() ) );
+const generated = ( i, seed = personSeed( base, i ) ) => ( { ...generatePerson( rulesFrom( art() ), seed, wardrobe, { sitting: i === SEATED } ), seated: i === SEATED } );
+const saved = art().lineup || [];
+const lineup = Array.from( { length: SIZE }, ( _, i ) => saved[ i ]?.shape ? { ...generated( i ), ...saved[ i ], seated: i === SEATED } : generated( i ) );
 
 // A person standing (the clip's idle pose, held still) or sitting on a bench.
 async function person( p ) {
 
 	const b = await body( p.body );
-	const s = makeSkinned( b, lookOf( p ), p.height );
+	const s = build( p, b, wardrobe );
 	const clip = p.seated && b.clips.Sitting ? b.clips.Sitting : b.clips.Idle || b.clips.Walk;
 	s.mixer.clipAction( clip ).play();
 	s.mixer.setTime( clip.duration * ( p.seated ? 0.5 : 0.2 ) );
@@ -326,8 +308,9 @@ async function person( p ) {
 	const bench = model( MODELS.bench );
 	bench.rotation.y = Math.PI;
 	g.add( bench );
-	const sc = s.scale;
-	s.object.position.set( 0, 0.46 - b.sitting.bottom * sc + 0.01, 0.05 - b.sitting.hipsZ * sc );
+	const sc = s.scale, w = shapeWeights( p.shape );
+	const drop = b.sitting.drop.reduce( ( a, d, k ) => a + d * w[ k ], 0 );
+	s.object.position.set( 0, 0.46 - ( b.sitting.bottom + drop ) * sc + 0.01, 0.05 - b.sitting.hipsZ * sc );
 	g.add( s.object );
 	return { object: g, skinned: s };
 
@@ -531,6 +514,11 @@ panel.innerHTML = `
 		<p class="hint">Slunce, expozice a mlha platí i ve hře; směr slunce, okolní světlo a pozadí jen tady (ve hře je určuje denní doba).</p>
 	</section>
 	<section data-tab="people" hidden>
+		<h2>Generátor lidí</h2>
+		<div class="buttons"><button class="primary" data-shuffle>🎲 Zamíchat</button></div>
+		<div data-crowd></div>
+		<label class="row" title="0 = při každém spuštění hry noví lidé; jiné číslo = pokaždé titíž (na zkoušení)"><span>Pevné semínko</span><input type="number" min="0" step="1" data-seed style="grid-column: span 2"></label>
+		<p class="hint">Podle těchto pravidel se při každém spuštění hry vyrobí noví lidé do ulic. Zamíchat ukáže jinou šestici; posuvníky přepočítají tutéž šestici.</p>
 		<h2>Hlavy a tělo (všichni lidé)</h2><div data-heads></div>
 		<label class="check"><input type="checkbox" data-flat> Ploché stínování (fasety)</label>
 		<h2>Postava</h2>
@@ -538,6 +526,8 @@ panel.innerHTML = `
 		<label class="row"><span>Tělo</span><select data-body style="grid-column: span 2"></select></label>
 		<div data-wardrobe></div>
 		<p class="hint">Klik na náhled obleče vybranou postavu. „Vyřadit z ulic“ zakáže vybranou texturu pro náhodné lidi ve hře (zašedlé náhledy).</p>
+		<h2>Tvar postavy</h2>
+		<div data-shape></div>
 	</section>
 	<section data-tab="things" hidden>
 		<h2>Holub</h2>
@@ -725,6 +715,97 @@ flat.addEventListener( 'change', () => {
 } );
 rows.push( () => flat.checked = art().flat !== false );
 
+// The crowd's rules (art.crowd, src/persona.js): a change makes the same six people again by the new rules; the dice
+// deal six new ones.
+art().crowd = rulesFrom( art() );
+const regenerate = ( fresh = false ) => {
+
+	if ( fresh ) base = ( Math.random() * 4294967296 ) >>> 0;
+	lineup.forEach( ( p, i ) => {
+
+		const next = generated( i, fresh ? personSeed( base, i ) : p.seed );
+		for ( const key of Object.keys( p ) ) delete p[ key ];
+		Object.assign( p, next );
+
+	} );
+	saveLineup();
+	showWardrobe();
+	rebuilding = rebuilding.then( async () => {
+
+		for ( let i = 0; i < lineup.length; i ++ ) await buildPerson( i );
+
+	} );
+	return rebuilding;
+
+};
+
+addRows( $( '[data-crowd]' ), [
+	[ 'art.crowd.ugliness', 'Ošklivost', 0, 1, 0.01, '0 = jen trochu nedokonalí, 1 = pořádná PS1 groteska' ],
+	[ 'art.crowd.textured', 'Látky místo barev', 0, 1, 0.05, 'podíl oblečení z fotek látek (zbytek jednolitá barva)' ],
+	[ 'art.crowd.spread.fat', 'Rozptyl – tloušťka', 0, 2, 0.05 ],
+	[ 'art.crowd.spread.belly', 'Rozptyl – břicho', 0, 2, 0.05 ],
+	[ 'art.crowd.spread.legs', 'Rozptyl – délka nohou', 0, 2, 0.05 ],
+	[ 'art.crowd.spread.head', 'Rozptyl – hlava', 0, 2, 0.05 ],
+	[ 'art.crowd.spread.hunch', 'Rozptyl – shrbení', 0, 2, 0.05 ],
+	[ 'art.crowd.spread.height', 'Rozptyl – výška', 0, 2, 0.05 ]
+], null, () => regenerate() );
+$( '[data-shuffle]' ).addEventListener( 'click', () => regenerate( true ) );
+const seedInput = $( '[data-seed]' );
+seedInput.addEventListener( 'change', () => {
+
+	art().crowd.seed = Math.max( 0, Math.round( Number( seedInput.value ) || 0 ) ) >>> 0;
+	if ( art().crowd.seed ) base = art().crowd.seed;
+	changed();
+	regenerate( false );
+
+} );
+rows.push( () => seedInput.value = art().crowd?.seed || 0 );
+
+// The chosen person's shape (src/people.js SHAPE), height and width: the spec edited by hand, as a character
+// creator would.
+const SHAPE_NAMES = { fat: 'Tloušťka', belly: 'Břicho', hips: 'Boky', head: 'Hlava', hunch: 'Shrbení', shoulders: 'Ramena', legs: 'Nohy (délka)', torso: 'Trup (délka)', arms: 'Ruce (délka)', neck: 'Krk', tilt: 'Nakřivo', lumps: 'Hrbolatost' };
+const shapeRows = [];
+{
+
+	const host = $( '[data-shape]' );
+	const knobs = [ ...SHAPE.map( k => [ k, SHAPE_NAMES[ k ], - 1, 1.5, 0.01 ] ), [ 'height', 'Výška (m)', 1.4, 2.1, 0.01 ], [ 'width', 'Šířka', 0.85, 1.15, 0.01 ] ];
+	let pending = null;
+	for ( const [ key, label, min, max, step ] of knobs ) {
+
+		const row = document.createElement( 'label' );
+		row.className = 'row';
+		row.innerHTML = `<span>${label}</span><input type="range" min="${min}" max="${max}" step="${step}"><input type="number" min="${min}" max="${max}" step="${step}">`;
+		const [ range, num ] = row.querySelectorAll( 'input' );
+		const read = () => key === 'height' || key === 'width' ? lineup[ current ][ key ] ?? 1 : lineup[ current ].shape?.[ key ] ?? 0;
+		const write = v => {
+
+			v = Math.min( max, Math.max( min, Number( v ) ) );
+			if ( ! Number.isFinite( v ) ) return;
+			const p = lineup[ current ];
+			if ( key === 'height' || key === 'width' ) p[ key ] = v;
+			else ( p.shape ??= {} )[ key ] = v;
+			range.value = num.value = v;
+			saveLineup();
+			// Rebuilt at most once at a time; the last value wins.
+			const i = current;
+			if ( ! pending ) pending = rebuilding = rebuilding.then( async () => {
+
+				pending = null;
+				await buildPerson( i );
+
+			} );
+
+		};
+
+		range.addEventListener( 'input', () => write( range.value ) );
+		num.addEventListener( 'change', () => write( num.value ) );
+		shapeRows.push( () => range.value = num.value = read() );
+		host.appendChild( row );
+
+	}
+
+}
+
 // The person being dressed.
 let current = 0;
 const peopleBar = $( '[data-people]' );
@@ -829,7 +910,7 @@ function showWardrobe() {
 			b.className = ( t.file === chosen ? 'on ' : '' ) + ( out.has( t.file ) ? 'out' : '' );
 			b.title = t.file + ( out.has( t.file ) ? ' (vyřazeno z ulic)' : '' );
 			b.dataset.file = t.file;
-			b.innerHTML = `<img loading="lazy" alt="" src="models/people/${kind}/${t.file}">`;
+			b.innerHTML = `<img loading="lazy" alt="" src="models/people/${t.dir || kind}/${t.file}">`;
 			b.addEventListener( 'click', () => wear( key, t.file ) );
 			grid.appendChild( b );
 
@@ -839,11 +920,13 @@ function showWardrobe() {
 
 	}
 
+	shapeRows.forEach( f => f() );
+
 }
 
 function saveLineup() {
 
-	art().lineup = lineup.map( ( { body, face, hair, top, bottom, skin } ) => ( { body, face, hair, top, bottom, skin } ) );
+	art().lineup = lineup.map( ( { seated, ...spec } ) => structuredClone( spec ) );
 	changed();
 
 }
@@ -861,7 +944,7 @@ function wear( key, file ) {
 		if ( o.isSkinnedMesh ) mesh = o;
 
 	} );
-	mesh.geometry.setAttribute( 'look', lookAttribute( mesh.geometry, lookOf( p ) ) );
+	mesh.geometry.setAttribute( 'look', lookAttribute( mesh.geometry, lookOf( p, wardrobe ) ) );
 	invalidate();
 	showWardrobe();
 
@@ -938,7 +1021,15 @@ $( '[data-reset]' ).addEventListener( 'click', async () => {
 	settings = merge( DEFAULTS, null );
 	delete settings.version;
 	settings.art.studio ??= {};
-	lineup.forEach( ( p, i ) => Object.assign( p, LINEUP[ i ] ) );
+	base = gameSeed( rulesFrom( settings.art ) );
+	settings.art.crowd = rulesFrom( settings.art );
+	lineup.forEach( ( p, i ) => {
+
+		const next = generated( i );
+		for ( const key of Object.keys( p ) ) delete p[ key ];
+		Object.assign( p, next );
+
+	} );
 	applyLook();
 	showAll();
 	selectPerson( current );
@@ -1030,6 +1121,15 @@ window.__studio = {
 
 	},
 	people,
+	shuffle: () => regenerate( true ),
+	rebuild: i => rebuilding = rebuilding.then( () => buildPerson( i ) ),
+	view( x, y, z, tx, ty, tz ) {
+
+		camera.position.set( x, y, z );
+		controls.target.set( tx, ty, tz );
+		invalidate();
+
+	},
 	focus: name => focus( items.find( i => i.name === name ) || null ),
 	ready: true
 };

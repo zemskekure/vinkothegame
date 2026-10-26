@@ -62,3 +62,10 @@ Hooded Adventurer (medieval, with a sword).
 `faces/face_01.jpg` … `face_40.jpg` are not Quaternius'. They are generated images of fictional people made for this
 game (originals in `../textures/faces/` next to the repository, 1254 px PNG), scaled to 128 px JPEG here. Which body
 (m/f) each face goes on is in `manifest.json`.
+
+## Garment fronts (fronts/)
+
+`fronts/*.png` (a grey hoodie, a granny cardigan, a flannel shirt, a police-style jacket, a tourist T-shirt with the
+castle, a waiter's shirt) are generated images made for this game, like the faces (originals in
+`../textures/clothes/*_front.png`, 1254 px PNG with transparency), scaled to 192 px and cut to 64 colours. Which part
+is the garment's body and which patch is its plain fabric is in `manifest.json` (`crop`, `patch`).
