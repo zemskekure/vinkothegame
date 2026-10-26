@@ -4,7 +4,7 @@
 //     on the bar stools and on benches, and a few stand about in pairs. Walkers near the camera are skinned and
 //     animated; further away, and everyone seated or standing, they are instanced static poses.
 //   - Cars: a late-90s Prague street mix (src/vehicles.js, public/models/vehicles): Škoda Octavias and Favorits, a
-//     Trabant now and then, and low-poly sedans, hatchbacks, SUVs, vans, taxis and a police car (Kenney, CC0).
+//     Trabant now and then.
 //   - Cars stand at the kerbs where there is room to park (instanced, one batch per model), and a few drive the
 //     streets in their lanes (right-hand traffic), slowing behind the car ahead, re-entering at the start of a lane
 //     when they reach its end.

@@ -571,7 +571,7 @@ const batched = batchStatic( scene );
 for ( const mesh of [ terrain, terrainWide, pavement, wallMesh ] ) splitByTile( mesh );
 const roofTiles = splitByTile( roofs );
 const stillRoots = new Set( scene.children );
-// Models: Quaternius' people and Kenney's Car Kit (CC0); textures resolve next to them. The people are
+// Models: Quaternius' people (CC0) and the vehicles (public/models/vehicles/CREDITS.md); textures resolve next to them. The people are
 // meshopt-compressed.
 const gltfLoader = new GLTFLoader().setMeshoptDecoder( MeshoptDecoder );
 const loadModel = async ( path, dir ) => gltfLoader.parseAsync( await load( path, 'arrayBuffer', '' ), dir );
