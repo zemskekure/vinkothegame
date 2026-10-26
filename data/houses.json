@@ -2569,16 +2569,47 @@
 		}
 	},
 	"21644381": {
-		"note": "Smetanovo nábřeží: pale grey-lilac house, arched ground-floor windows and a big wooden door",
-		"colour": "#cdc6c6",
-		"trim": "#e6e1de",
+		"note": "Smetanovo nábř. 10 (house 324): ochre five-storey house with white window surrounds; ground floor of four round-arched windows with red geranium boxes and an arched dark wooden door at the south end, next to the mint-green corner house. Was lilac-grey in the model, the colour of no. 325; swapped back (Street View 2025)",
+		"colour": "#d6b97c",
+		"trim": "#ece3cb",
 		"ground": "windows",
-		"rustic": "banded"
+		"rustic": "banded",
+		"edges": {
+			"9": {
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "white",
+						"arch": true
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"arch": true
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"arch": true
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"arch": true
+					},
+					{
+						"kind": "door",
+						"frame": "wood",
+						"arch": true
+					}
+				]
+			}
+		}
 	},
 	"21644390": {
-		"note": "Smetanovo nábřeží: ochre house with round-arched windows",
-		"colour": "#cfb07a",
-		"trim": "#e4cfa2",
+		"note": "Smetanovo nábř. 12 (house 325): pale lilac-grey house with white trim; banded ground floor with round-arched windows in moulded surrounds over barred cellar windows, large first-floor windows under cornices; only the south end seen. Was ochre in the model, the colour of no. 324; swapped back (Street View 2025)",
+		"colour": "#cfcad0",
+		"trim": "#e8e6e6",
 		"ground": "windows",
 		"rustic": "banded"
 	},
@@ -2623,7 +2654,7 @@
 		}
 	},
 	"21644420": {
-		"note": "Karoliny Světlé 37 / Smetanovo nábřeží (Bellevue): red brick with cream sandstone bands, stepped crenellated gables, oriel bays, balcony with iron railing, cream ground floor heavily tagged with graffiti. Current colours confirmed; added graffiti; no corner turret seen, stepped gables instead (Street View) Ground floor: a row of tall dark windows behind heavy graffiti and a wooden glazed door with a big DUDE1 tag above it (marked 21644420_22a/22b).",
+		"note": "Karoliny Světlé 37 / Smetanovo nábř. 18 (Bellevue): red brick with cream sandstone. Karoliny Světlé side (edge 22): stepped gables, oriels, tagged cream ground floor with dark windows and a glazed wooden door under a DUDE1 tag. River side: a round corner tower just north of this square, a projecting bay with a wrought-iron gate in an arched portal (edge 14), then a big round-arched window in a sandstone surround on a high rusticated plinth (edge 12, drawn) (Street View 2025)",
 		"colour": "#b2604a",
 		"trim": "#e3d0a6",
 		"ground": "windows",
@@ -2633,6 +2664,29 @@
 		"graffiti": true,
 		"signs": false,
 		"edges": {
+			"12": {
+				"ground": [
+					"blank",
+					{
+						"kind": "window",
+						"frame": "wood",
+						"arch": true,
+						"size": "wide"
+					}
+				],
+				"shopfront": "21644420_12.svg",
+				"shopfrontHeight": 5
+			},
+			"14": {
+				"ground": [
+					"blank",
+					{
+						"kind": "gate",
+						"frame": "dark",
+						"arch": true
+					}
+				]
+			},
 			"22": {
 				"ground": [
 					{
@@ -2677,11 +2731,95 @@
 		}
 	},
 	"21644438": {
-		"note": "Smetanovo nábřeží: red and cream striped neo-renaissance with stucco gables",
-		"colour": "#b8655a",
-		"trim": "#e6d4b4",
+		"note": "Smetanovo nábř. 16 (house 330): continues the red-brick and sandstone row of no. 329 at the same cornice height, so five storeys, not seven. Ground floor (edge 12, drawn): a brick pier with a round bronze portrait medallion over a memorial tablet, then a sandstone portal with a broken pediment and an oculus, its door boarded with tagged plywood; a boarded oriel above. Further south tall sandstone-framed windows and stone balconies (Street View 2025)",
+		"colour": "#b2604a",
+		"trim": "#e3d0a6",
 		"ground": "windows",
-		"rustic": "ornate"
+		"rustic": "ornate",
+		"floors": 5,
+		"edges": {
+			"12": {
+				"ground": [
+					"blank",
+					{
+						"kind": "door",
+						"frame": "wood",
+						"size": "wide"
+					},
+					"blank"
+				],
+				"shopfront": "21644438_12.svg",
+				"shopfrontHeight": 5
+			}
+		},
+		"signs": false
+	},
+	"21644446": {
+		"note": "Betlémská 331/1 / Smetanovo nábř. 8: mint-green three-storey corner house, banded ground floor on a tall plinth with barred cellar windows. Betlémská front: two arched windows under grey ETCETERA ART letters, four more, a wall lantern, a round-arched stone portal with a brown panelled door, plates 331 and 1, a balcony on consoles above. River side: a first-floor balcony. East end (edge 7): cream with an ochre string course. New (Street View 2024-2025)",
+		"colour": "#c9d6c0",
+		"trim": "#e6ebdf",
+		"floors": 3,
+		"ground": "windows",
+		"rustic": "banded",
+		"grilles": false,
+		"graffiti": false,
+		"edges": {
+			"7": {
+				"colour": "#ebdfbd",
+				"trim": "#d7a55e"
+			},
+			"8": {
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "white",
+						"arch": true
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"arch": true
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"arch": true
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"arch": true
+					},
+					{
+						"kind": "door",
+						"frame": "wood",
+						"arch": true,
+						"size": "wide"
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"arch": true
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"arch": true
+					}
+				],
+				"balconies": [
+					{
+						"floor": 1,
+						"from": 0.58,
+						"to": 0.73,
+						"depth": 1
+					}
+				],
+				"shopfront": "21644446_8.svg",
+				"shopfrontHeight": 5.5
+			}
+		},
+		"signs": false
 	},
 	"21644471": {
 		"note": "Divadelní 5 / Smetanovo nábř. 4. River front: pale grey-white, stucco pediments, banded ground floor, one arched shop bay under a navy awning at 4-6 m; the DEELIVE bay starts just past this front (edge 4). Divadelní side: derelict, peeling grey-white plaster, boarded red-brown upper windows with big printed portraits, boarded tagged ground floor, grey garage gate ~10-12 m from the south (marked 21644471_0 2025-09, 21644471_2b 2024-05).",
