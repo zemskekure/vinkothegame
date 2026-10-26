@@ -104,7 +104,7 @@ export async function prepareGraffiti( { streets = [], groundFloors = [] } = {} 
 	};
 
 	const weights = kinds.map( k => KINDS[ k ].weight );
-	const place = ( scene, fronts, groundHeight = null ) => {
+	const place = ( scene, fronts, groundHeight = null, single = false ) => {
 
 	const tiles = new Map(), streetsSeen = { heavy: 0, normal: 0, light: 0 };
 	let count = 0;
@@ -167,7 +167,8 @@ export async function prepareGraffiti( { streets = [], groundFloors = [] } = {} 
 			// The quad, a couple of centimetres off the wall, each piece a little further than the last.
 			const off = 0.025 + placed.length * 0.004;
 			const cx = x0 + ex * s + nx * off, cz = z0 + ez * s + nz * off;
-			const key = `${Math.floor( cx / TILE )},${Math.floor( cz / TILE )}`;
+			// One mesh per 150 m square of the city; a streamed square's (src/main.js: `single`) all in one.
+			const key = single ? 0 : `${Math.floor( cx / TILE )},${Math.floor( cz / TILE )}`;
 			if ( ! tiles.has( key ) ) tiles.set( key, { pos: [], uv: [], normal: [] } );
 			const t = tiles.get( key ), [ ua, va, ub, vb ] = item.rect;
 			const A = [ cx - ex * w / 2, bottom, cz - ez * w / 2 ], B = [ cx + ex * w / 2, bottom, cz + ez * w / 2 ];

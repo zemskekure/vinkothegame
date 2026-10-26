@@ -29,7 +29,7 @@ default: the art direction is real signs only); `?cars` show cars. `?hd` the pla
 
 ## Rebuilding the scene
 
-The generated scene (`public/data/`, packed buffers, ~50 MB; see `docs/performance.md`) is committed; the raw source data (`data/raw/`, ~130 MB) is not
+The generated scene (`public/data/`, 150 squares of packed buffers, ~120 MB; see `docs/performance.md`) is committed; the raw source data (`data/raw/`, ~130 MB) is not
 (gitignored) and must be fetched before `tools/build-scene.mjs` can run:
 
 ```sh
@@ -37,19 +37,26 @@ NODE_USE_ENV_PROXY=1 node tools/fetch-data.mjs        # ČÚZK: RÚIAN buildings
 node tools/fetch-osm.mjs                              # OpenStreetMap (no key)
 MAPILLARY_TOKEN=… node tools/fetch-mapillary.mjs      # Mapillary image metadata (free token)
 MAPILLARY_TOKEN=… node tools/facades.mjs && node tools/facade-params.mjs   # facade colours / window rhythm from photos
-node tools/build-scene.mjs                            # → public/data/ (a few minutes)
+node --max-old-space-size=12000 tools/build-scene.mjs # → data/scene/ (gitignored; 6 min, 7.6 GB), then it runs
+                                                      # tools/tiles.mjs → public/data/: 256 m squares + index
 ```
+
+The game streams the city by square (`src/stream.js`, `docs/performance.md` "Streaming by square"):
+`public/data/scene.json` is only the index (bounds, the list of squares, hand-made places, streets, zones);
+each square's ground, pavements, houses, street maps, house mask, furniture… are in `public/data/tiles/<i>_<j>.bin`.
+Tools that need the whole city at once (facades.mjs, look-at.mjs, facade-views.mjs) read `data/scene/`.
 
 `NODE_USE_ENV_PROXY=1` is only needed behind an HTTP proxy. `node tools/pack-artifact.mjs` packs a build into
 `artifact/` for publishing as a single claude.ai artifact (not needed on a server).
 
 ## Coordinates
 
-- Source data: S-JTSK / Krovak East North (EPSG:5514), metres. Play area `AREA` in `tools/area.mjs`:
+- Source data: S-JTSK / Krovak East North (EPSG:5514), metres. Play area `AREA` in `tools/area.mjs` (Prague 1):
+  x −745206 … −741400, y −1044280 … −1041928 (3.8 × 2.35 km); the first area (`FIRST_AREA`, modelled in detail)
   x −743720 … −742800, y −1044180 … −1043060 (920 × 1120 m).
 - Scene ("local") frame: `x = X − ORIGIN.x`, `z = −(Y − ORIGIN.y)`, `ORIGIN = (−743087, −1043282)`; y up (metres,
   relative to `baseHeight`). **+x is east, +z is south** (north is −z, up on the minimap and the top view).
-  Bounds x −633 … 287, z −222 … 898.
+  Bounds x −2119 … 1687, z −1354 … 998 (the first area x −633 … 287, z −222 … 898).
 - `tools/geo.mjs` → `lonLatToSJTSK()` (async; returns `project( lon, lat ) → [ X, Y ]`).
 - RÚIAN building code (`kod`, e.g. 21643792) identifies a house everywhere (houses.json, street facades).
 

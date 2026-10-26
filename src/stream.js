@@ -72,7 +72,7 @@ export function createStream( { index, apply, release, frameBudget = 6, radii = 
 	let nextWorker = 0;
 
 	// Where the squares are wanted from: one or more points (where one is, where one is heading, a teleport's target).
-	let points = [], start = null, readyResolve, settledAt = 0;
+	let points = [], start = null, readyResolve, settledAt = 0, playing = false;
 	const waiters = [];
 	const rectDistance = ( s, x, z ) => {
 
@@ -96,7 +96,7 @@ export function createStream( { index, apply, release, frameBudget = 6, radii = 
 
 		for ( const s of all.values() ) s.d = Math.min( ...points.map( ( [ x, z, r = 0 ] ) => Math.max( 0, rectDistance( s, x, z ) - r ) ) );
 		// Before play only the ring round the start (the download is the wait); after, everything within LOAD.
-		const reach = readyResolve ? READY : LOAD;
+		const reach = playing ? LOAD : READY;
 		const wanted = [ ...all.values() ].filter( s => s.state === 'idle' && s.d < reach && ( s.failed || 0 ) < 3 ).sort( ( a, b ) => a.d - b.d );
 		for ( const s of wanted ) {
 
@@ -170,14 +170,15 @@ export function createStream( { index, apply, release, frameBudget = 6, radii = 
 	}
 
 	// Each frame (or as often as one likes before play): where one is, and how fast one goes.
-	function update( x, z, vx = 0, vz = 0, { budget = frameBudget, everything = false } = {} ) {
+	// `wait`: fetch, but put nothing in yet (the game isn't ready to take squares).
+	function update( x, z, vx = 0, vz = 0, { budget = frameBudget, everything = false, wait = false } = {} ) {
 
-		points = [ [ x, z ], [ x + vx * AHEAD, z + vz * AHEAD ], ...waiters.map( w => w.point ) ];
+		points = [ [ x, z ], [ x + vx * AHEAD, z + vz * AHEAD ], ...waiters.filter( w => w.point ).map( w => w.point ) ];
 		schedule();
 		// Nearest first, as many as the frame's budget allows (at least one).
 		results.sort( ( a, b ) => a.d - b.d );
 		const t0 = performance.now();
-		while ( results.length && ( everything || performance.now() - t0 < budget ) ) {
+		while ( ! wait && results.length && ( everything || performance.now() - t0 < budget ) ) {
 
 			put( results.shift() );
 			if ( ! everything ) break;
@@ -217,15 +218,21 @@ export function createStream( { index, apply, release, frameBudget = 6, radii = 
 
 	}
 
-	// Resolves once the squares within r of (x, z) are in (a teleport's target): they go first.
-	function whenLoaded( x, z, r = 120 ) {
+	// Resolves once the squares within r of (x, z) are in (a teleport's target): they go first. `pull: false` only
+	// waits for them to come in their turn (things standing there, like the icons).
+	function whenLoaded( x, z, r = 120, { pull = true } = {} ) {
 
 		return new Promise( resolve => {
 
-			const w = { x, z, r, resolve, point: [ x, z, 0 ] };
+			const w = { x, z, r, resolve, point: pull ? [ x, z, 0 ] : null };
 			waiters.push( w );
-			points.push( w.point );
-			schedule();
+			if ( pull ) {
+
+				points.push( w.point );
+				schedule();
+
+			}
+
 			check();
 
 		} );
@@ -304,6 +311,8 @@ export function createStream( { index, apply, release, frameBudget = 6, radii = 
 	return {
 		update, prime, whenLoaded, readyProgress, height, heightCoarse, surfaceByte, house, roof, squareAt, live,
 		setCoarse: c => coarse = c,
+		// Play has begun: from now on everything within LOAD is fetched (before, only the ring round the start).
+		play: () => playing = true,
 		get pending() { return results.length + inFlight; },
 		get settled() { return !! settledAt; },
 		isIn: ( x, z ) => !! squareAt( x, z ),

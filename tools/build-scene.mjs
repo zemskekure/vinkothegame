@@ -13,6 +13,7 @@
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import jpeg from 'jpeg-js';
 import { fromFile } from 'geotiff';
+import { execFileSync } from 'node:child_process';
 import poly2tri from 'poly2tri';
 import { ShapeUtils, Vector2, Color, SRGBColorSpace } from 'three';
 import { AREA, EAST_AREA, WEST_AREA, FIRST_AREA, ORIGIN, TILE } from './area.mjs';
@@ -2320,4 +2321,8 @@ await writeFile( new URL( 'scene.json', OUT ), JSON.stringify( {
 	streets
 } ) );
 
-console.log( 'written to data/scene/; node tools/tiles.mjs cuts it into public/data/' );
+console.log( 'written to data/scene/' );
+
+// Cut into the squares the game streams (tools/tiles.mjs → public/data/), in a process of its own (this one's
+// memory is still full of the build). SKIP_TILES=1 leaves it to be run by hand.
+if ( ! process.env.SKIP_TILES ) execFileSync( process.execPath, [ '--max-old-space-size=6000', new URL( 'tiles.mjs', import.meta.url ).pathname ], { stdio: 'inherit' } );

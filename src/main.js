@@ -218,12 +218,15 @@ function runChores( budget = Infinity ) {
 
 const stream = createStream( { index: data, apply: square => putSquare( square ), release: square => dropSquare( square ), radii: { ready: Number( params.get( 'ready' ) ) || 0, load: Number( params.get( 'load' ) ) || 0 } } );
 stream.setCoarse( new Int16Array( coarseBuf ) );
+if ( params.has( "debugstream" ) ) window.__stream = stream;
 const firstSquares = stream.prime( ...firstFocus );
 // Before play, the squares are put in as they arrive (no frame to keep smooth yet).
+// (Fetched from now on; put in once the materials and the rest below are made: `takeSquares`.)
+let takeSquares = false, takeChores = false;
 const pump = setInterval( () => {
 
-	stream.update( ...firstFocus, 0, 0, { everything: true } );
-	runChores();
+	stream.update( ...firstFocus, 0, 0, { everything: true, wait: ! takeSquares } );
+	if ( takeChores ) runChores();
 
 }, 25 );
 
@@ -334,6 +337,8 @@ setInterval( () => {
 
 }, 2000 );
 
+takeSquares = true;
+
 function putSquare( square ) {
 
 	const t0 = performance.now();
@@ -442,9 +447,9 @@ function putSquare( square ) {
 
 	} );
 	if ( emb || H.rails ) later( () => addEmbankment( group, emb, { pillars: H.posts?.pillars || [], thin: H.posts?.thin || [], rails: H.rails || [] } ) );
-	if ( Object.keys( H.furniture ).length ) later( () => addFurniture( group, H.furniture ) );
+	if ( Object.keys( H.furniture ).length ) later( () => addFurniture( group, H.furniture, { tile: Infinity } ) );
 	if ( H.walls?.length ) later( () => addWalls( group, H.walls ) );
-	if ( fronts?.length ) later( () => graffitiPlace?.( group, fronts, groundHeight ) );
+	if ( fronts?.length ) later( () => graffitiPlace?.( group, fronts, groundHeight, true ) );
 	// The trams' overhead line over this square (src/trams.js), once the trams are in.
 	later( () => trams.catenary?.( group, D.x0, D.z0, data.tiles.size ) );
 	window.__debug?.squareLog?.push( [ performance.now(), square.i, square.j, + ( performance.now() - t0 ).toFixed( 1 ), D.bytes ] );
@@ -622,6 +627,9 @@ function groundHeight( x, z, y = null, strict = false ) {
 
 }
 
+// The squares' chores (graffiti on the ground, the overhead line) can run from here on (groundHeight's data is in).
+takeChores = true;
+
 // River: a flat sheet just above the lowest terrain, hidden under the embankments elsewhere.
 const water = new THREE.Mesh(
 	new THREE.PlaneGeometry( bounds.maxX - bounds.minX, bounds.maxZ - bounds.minZ ).rotateX( - Math.PI / 2 ),
@@ -739,7 +747,7 @@ await loading.sub( 0.5 );
 // Signature places (rotunda, pub, café, champagne bar, museum gate, stairs) and street life (people, cars).
 const { seats } = addPlaces( scene, places, data.furniture, data.waterLevel );
 // Local icons: big lettering, sculptures, domed corner towers (data/icons.json), each once its square is in.
-addIcons( scene, ICONS, groundHeight, data.buildings, ( x, z ) => stream.whenLoaded( x, z, 1 ) );
+addIcons( scene, ICONS, groundHeight, data.buildings, ( x, z ) => stream.whenLoaded( x, z, 1, { pull: false } ) );
 const graffiti = { pieces: 0 };
 // The still city in few draw calls (src/batch.js): the hand-made pieces merged per material and 150 m square (the
 // squares of the streamed city are skipped: they come and go).
@@ -873,7 +881,14 @@ await loading.step( 'Stahuji okolí', 0.34, 0.76 );
 
 	const shown = setInterval( () => loading.stepProgress( stream.readyProgress() ), 100 );
 	await firstSquares;
-	while ( ! PS1 && ! stream.settled ) await new Promise( r => setTimeout( r, 100 ) );
+	if ( ! PS1 ) {
+
+		// The model's screenshots: everything within LOAD before the picture.
+		stream.play();
+		while ( ! stream.settled ) await new Promise( r => setTimeout( r, 100 ) );
+
+	}
+
 	clearInterval( shown );
 	clearInterval( pump );
 
@@ -1291,7 +1306,7 @@ renderer.setAnimationLoop( () => {
 	stillShadows( dt );
 	// None of the city's squares is drawn past the fog's far end, where it is all fog anyway (the plain ground
 	// beyond the area still is, so the horizon stays where it was).
-	for ( const { o, sphere } of beyondFog ) o.visible = camera.position.distanceTo( sphere.center ) - sphere.radius < scene.fog.far;
+	for ( const { o, sphere } of beyondFog ) o.visible = ! o.userData.pending && camera.position.distanceTo( sphere.center ) - sphere.radius < scene.fog.far;
 	// The streamed squares: fetched round where one is (and where one is heading), put in one a frame, let go far
 	// off; drawn within the haze.
 	const speed = v => THREE.MathUtils.clamp( v / Math.max( dt, 1e-3 ), - 60, 60 );
@@ -1318,15 +1333,20 @@ renderer.setAnimationLoop( () => {
 } );
 
 // Easter eggs (src/eastereggs.js): the black SUV across the garage gate on Náprstkova.
-stream.whenLoaded( - 20, 140, 1 ).then( async () => ( await import( './eastereggs.js' ) ).addEasterEggs( scene, groundHeight ) );
+stream.whenLoaded( - 20, 140, 1, { pull: false } ).then( async () => ( await import( './eastereggs.js' ) ).addEasterEggs( scene, groundHeight ) );
 
 // Every material's GPU pipeline prepared, so a sign, an awning or a tram that first comes into view doesn't stall a
 // frame while its shader is built (the hitch when turning the camera). Before play, what is within the haze of where
 // one starts and one of each thing the squares bring (the street furniture, the river wall's railing, the garden
 // walls); the rest of the hand-made city right after, in the background (src/main.js, __complete).
-function compileCity( near = null, onProgress = null ) {
+// The hand-made city's pieces (each with a shader of its own: hundreds, many seconds to compile) are prepared in
+// rings round where one starts: before play those within 250 m, after it those within 600 m, 1200 m, then the rest.
+// A piece whose ring isn't ready yet stays hidden (`pending`), rather than stall a frame while it compiles; beyond
+// 250 m the haze has begun.
+const RINGS = [ 250, 600, 1200, Infinity ];
+function compileCity( near = null, reach = Infinity, onProgress = null ) {
 
-	const restore = [];
+	const restore = [], within = [];
 	const set = ( o, key, value ) => {
 
 		if ( o[ key ] === value ) return;
@@ -1334,16 +1354,24 @@ function compileCity( near = null, onProgress = null ) {
 		o[ key ] = value;
 
 	};
-	// Before play the hand-made things within 500 m (each has a shader of its own: hundreds, seconds to compile); the
-	// rest right after, while the first seconds are played.
-	const reach = 500;
-	for ( const { o, sphere } of beyondFog ) set( o, 'visible', ! near || Math.hypot( sphere.center.x - near[ 0 ], sphere.center.z - near[ 1 ] ) - sphere.radius < reach );
+	for ( const { o, sphere } of beyondFog ) {
+
+		const inside = ! near || Math.hypot( sphere.center.x - near[ 0 ], sphere.center.z - near[ 1 ] ) - sphere.radius < reach;
+		set( o, 'visible', inside );
+		if ( inside ) within.push( o );
+
+	}
+
 	for ( const g of squareGroups ) set( g, 'visible', true );
 	scene.traverseVisible( o => o.frustumCulled && set( o, 'frustumCulled', false ) );
 	const done = renderer.compileAsync( scene, camera, null, onProgress ).catch( e => console.warn( 'compileAsync', e ) );
 	// The list of what to compile is taken at the call: everything goes back as it was at once.
 	for ( const [ o, key, value ] of restore.reverse() ) o[ key ] = value;
-	return done;
+	return done.then( () => {
+
+		for ( const o of within ) o.userData.pending = false;
+
+	} );
 
 }
 
@@ -1381,7 +1409,9 @@ const samples = new THREE.Group();
 	}
 
 	const focus = holub ? holub.pos : walking ? walker.pos : orbit.target;
-	await compileCity( [ focus.x, focus.z ], e => loading.stepProgress( e.loaded / e.total ) );
+	for ( const { o } of beyondFog ) o.userData.pending = true;
+	// (The model's screenshots, ?hd: everything before the picture.)
+	await compileCity( [ focus.x, focus.z ], PS1 ? RINGS[ 0 ] : Infinity, e => loading.stepProgress( e.loaded / e.total ) );
 	scene.remove( samples );
 	loading.done();
 
@@ -1390,6 +1420,14 @@ const samples = new THREE.Group();
 window.__debug = { setFps: f => FPS = f, stream, squareGroups, squareLog: [], goTo, graffiti, day, renderer, scene, batched, camera, isBlocked, groundHeight, walker, life, trams, boats, holub, solids, waterLevel: data.waterLevel };
 window.__THREE = THREE;
 window.__ready = true;
+stream.play();
+// The rest of the hand-made city's shaders, ring by ring from where one started (see RINGS).
+{
+
+	const from = ( holub ? holub.pos : walking ? walker.pos : orbit.target ).clone();
+	window.__rings = RINGS.slice( 1 ).reduce( ( p, r ) => p.then( () => compileCity( [ from.x, from.z ], r ) ), Promise.resolve() );
+
+}
 // The courier's first message, on the pager.
 if ( window.GAME === 'courier' ) setTimeout( () => hud.pager( 'Dneska žádné objednávky.', 'Projeď se po městě.' ), 1500 );
 window.__complete = false;
@@ -1428,4 +1466,4 @@ load( 'life.json', 'json' ).then( streetLife => Promise.all( [
 
 	}
 
-} ).then( () => compileCity() ).then( () => window.__complete = true ); // the rest of the city, the people's, trams' and boats' pipelines too
+} ).then( () => window.__rings ).then( () => compileCity( [ 0, 0 ], 0 ) ).then( () => window.__complete = true ); // the people's, trams' and boats' pipelines too, once the rings are done

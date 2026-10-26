@@ -4,7 +4,8 @@ The one place for what the game is, what's in it and what's next. Read it before
 date when something lands (move items between the status columns, add new ideas at the bottom of their section).
 The city it is played in, the Prague model, is a separate thing: see `docs/README.md` for the split.
 
-Last update: 2026-10-26 (pigeon flight; the owner's textures on cars, boats, furniture, trees, graffiti, sky; solid
+Last update: 2026-10-26 (Prague 1 and the city streamed by square; pigeon flight; the owner's textures on cars, boats,
+furniture, trees, graffiti, sky; solid
 trams and cars, riding the tram, passengers at the stops; the Old Town extension).
 
 ## 1. Vision
@@ -54,20 +55,32 @@ commit, injected by `vite.config.js`) shows in a corner and in the pause menu. T
 
 ## 3. The world
 
-- Old Town around Betlémské náměstí to Národní, Spálená and Žofín, **Kampa, Malá Strana and Petřín**, and east and
-  north through **Staroměstské náměstí, Josefov, Celetná, Dlouhá, Haštalské náměstí, Anežský klášter and náměstí
-  Republiky / Revoluční**; Vodičkova is covered in the south. The extensions have the first layer: terrain, streets
-  and pavements, RÚIAN houses with DSM-fitted roofs and generic fronts, trees and orthophoto ground. Detail per
-  100 m tile comes from the model's street-photo pipeline.
-- S-JTSK bounds: x −744950 … −742200, y −1044180 … −1042360 (scene x −1863 … 887, z −922 … 898); origin unchanged
-  at (−743087, −1043282). The north bound is 40 m past −1042400 so it clears Staroměstská náplavka along the Vltava
-  bend. The first area keeps its 50 cm ground detail and finer meshes; the rest has 1 m ground detail. The earlier
-  area (`WEST_AREA` in `tools/area.mjs`: Malá Strana plus the first area) keeps its own photo cuts
-  (`ortho-west*.jpg`), terrain blur and kerb measurements, so it looks as before apart from the seams at its former
-  north and east edges, where streets now run on.
+- **Prague 1**: the Old Town round Betlémské náměstí to Národní, Spálená and Žofín; **Kampa, Malá Strana, Petřín,
+  Hradčany, Pražský hrad and Strahov**; **Staroměstské náměstí, Josefov, Na Františku, the river north to Čechův
+  and Štefánikův most**; **náměstí Republiky, Na Poříčí, Florenc / Těšnov, Na Příkopě, Václavské náměstí and the
+  National Museum, Wilsonova and Hlavní nádraží**. Beyond the first area it is the first layer: terrain, streets and
+  pavements (squares paved throughout their mapped outline), RÚIAN houses with DSM-fitted roofs and generic fronts,
+  trees, orthophoto ground, generic bridge decks, mapped outdoor stairs (Zámecké schody, Staré zámecké schody…) and
+  retaining walls; under Wilsonova's flyovers the road below is a walking level of its own (Na Poříčí no longer
+  jumps onto the deck). Detail per 100 m tile comes from the model's street-photo pipeline.
+- S-JTSK bounds: x −745206 … −741400, y −1044280 … −1041928 (scene x −2119 … 1687, z −1354 … 998, 3.8 × 2.35 km);
+  origin unchanged at (−743087, −1043282). The south cut clears Resslova, the north cut Milady Horákové / Patočkova;
+  the west and north cuts keep the earlier ground texture's JPEG blocks aligned. Each earlier box keeps what was
+  measured in it: `WEST_AREA` (Malá Strana and the first area) and `EAST_AREA` (the Old Town extension) in
+  `tools/area.mjs` keep their raster cuts, photo cuts (`ortho-west*`, `ortho-east*`), terrain blur, river bank,
+  projection, building mask (`data/raw/building-mask-east.bin`) and kerbs, so the old area looks as before apart from
+  seams within ~30 m of its former edges (checked: terrain samples, street maps, house mask, ground detail and trees
+  identical inside; walls, roofs and pavements identical but for re-meshing within the meshes' tolerance).
+- **The city streams by square** (`docs/performance.md`, "Streaming by square"): 256 m squares, the ones round where
+  one starts before play, the rest by distance as one walks, rides or flies; far ones are let go. A square that isn't
+  in yet holds the walker at its edge; the big map's teleport waits for the target's squares (a second or two).
 - Rebuild on top of the raw cache: `node tools/fetch-data.mjs`, `node tools/fetch-osm.mjs` (the fetch keeps the
-  earlier area's JPEG cuts before replacing the full-area images), then
-  `node --max-old-space-size=16000 tools/build-scene.mjs` and `npm run build`.
+  earlier areas' JPEG cuts and building mask before replacing the full-area images), then
+  `node --max-old-space-size=12000 tools/build-scene.mjs` (6 min, 7.6 GB; on the 16 GB MacBook only with little else
+  running — the mini builds it too; it ends by cutting the squares, `tools/tiles.mjs`) and `npm run build`.
+- Tram routes: one per directed piece of track (72 on Prague 1's network, not every way through it); stop names
+  from OpenStreetMap over the whole area (`node tools/tram-stop-names.mjs`); line numbers are guessed from the old
+  area's ends (`LINES` in `src/trams.js`), so routes reaching Hradčany or Florenc get one of the middle lines.
 - The big map (Tab, or click the minimap) teleports you anywhere.
 - Landmarks modelled by hand from the data (`tools/karluv.mjs` → `src/karluv.js`, `tools/petrin.mjs` → `src/petrin.js`,
   `tools/domes.mjs` → `src/domes.js`): **Karlův most** in stone (arches, piers with cutwaters, parapets, setts, the 30
@@ -82,7 +95,10 @@ commit, injected by `vite.config.js`) shows in a corner and in the pause menu. T
   `?overview&view=250,40,-270,365,45,-280` (Týn), `?overview&view=240,13,-203,231.5,13,-221&orloj` (the orloj),
   `?overview&view=690,30,-160,735,30,-182` (Prašná brána).
 - Known gaps in the new area: houses have default fronts; nobody walks on Karlův most yet; the funicular has no cars;
-  Kinský palace's rococo front.
+  Kinský palace's rococo front. Prague 1 beyond the Old Town: the Castle, Strahov, the Museum and the station are
+  generic RÚIAN blocks with DSM roofs; enclosed stairs, Pleskot's tunnel under the Castle and the station's halls
+  need a passage survey; generic bridge decks show light wedges where they meet the banks; the tram line numbers
+  outside the old area are guesses.
 
 ## 4. People (NPCs)
 

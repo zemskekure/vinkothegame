@@ -174,24 +174,30 @@ function instance( scene, type, parts, entries, matrixOf, tile = Infinity, { str
 
 	}
 
-	for ( const list of tiles.values() ) for ( const [ geometry, material ] of parts ) {
+	for ( const [ key, list ] of tiles ) for ( const [ geometry, material ] of parts ) {
 
 		const matrices = list.map( entry => matrixOf( entry, new THREE.Matrix4() ) );
-		const merged = mergeInstances( geometry, matrices, kindOf ? { name: 'kind', values: list.map( kindOf ) } : null );
+		let merged = mergeInstances( geometry, matrices, kindOf ? { name: 'kind', values: list.map( kindOf ) } : null );
 		// Only the pictured materials read the picture's coordinates.
 		if ( ! [ pictured, bark, leaves ].includes( material ) ) merged.deleteAttribute( 'uv' );
-		const mesh = new THREE.Mesh( merged, material );
-		mesh.castShadow = true;
-		mesh.receiveShadow = true;
-		mesh.name = type;
-		mesh.userData.tile = true;
-		scene.add( mesh );
+		if ( merged.index ) merged = merged.toNonIndexed();
+		// Into one mesh per material and square (see addFurniture): lamps, bins and bench slats share the pictured
+		// material, and so on.
+		const k = `${key}|${material.id}`;
+		if ( ! batches.has( k ) ) batches.set( k, { material, list: [], names: new Set() } );
+		batches.get( k ).list.push( merged );
+		batches.get( k ).names.add( type );
 
 	}
 
 }
 
-export function addFurniture( scene, furniture ) {
+let batches = null;
+
+// `tile`: the trees' batches, metres a side (a streamed square passes Infinity: it is one batch already).
+export function addFurniture( scene, furniture, { tile = 300 } = {} ) {
+
+	batches = new Map();
 
 	const q = new THREE.Quaternion(), p = new THREE.Vector3(), s = new THREE.Vector3( 1, 1, 1 );
 	const up = new THREE.Vector3( 0, 1, 0 );
@@ -244,10 +250,23 @@ export function addFurniture( scene, furniture ) {
 	const crownH = 0.75; // crown blobs are squashed spheres
 	// (20-sided blobs: chunky, as the console games drew their trees.)
 	instance( scene, 'tree', [ [ new THREE.IcosahedronGeometry( 1, 0 ), leaves ] ], blobs,
-		( [ x, y, z, rot, r ], m ) => m.compose( p.set( x, y, z ), q.setFromAxisAngle( up, rot ), s.set( r, r * crownH, r ) ), 300, { stride: 6, kindOf: e => e[ 5 ] } );
+		( [ x, y, z, rot, r ], m ) => m.compose( p.set( x, y, z ), q.setFromAxisAngle( up, rot ), s.set( r, r * crownH, r ) ), tile, { stride: 6, kindOf: e => e[ 5 ] } );
 	instance( scene, 'trunk', [ [ cyl( 0.14, 0.24, 1, 0, 7 ), bark ] ], trees,
-		( [ x, y, z, , h ], m ) => m.compose( p.set( x, y, z ), q.identity(), s.set( 1, h * 0.62, 1 ) ), 300, { kindOf: e => kindOfTree( e[ 0 ], e[ 2 ] ) } );
+		( [ x, y, z, , h ], m ) => m.compose( p.set( x, y, z ), q.identity(), s.set( 1, h * 0.62, 1 ) ), tile, { kindOf: e => kindOfTree( e[ 0 ], e[ 2 ] ) } );
 
 	// Zebra crossings are painted from the aerial photo (ground detail in src/shading/surfaces.js).
+
+	for ( const { material, list, names } of batches.values() ) {
+
+		const mesh = new THREE.Mesh( list.length > 1 ? mergeGeometries( list ) : list[ 0 ], material );
+		mesh.castShadow = true;
+		mesh.receiveShadow = true;
+		mesh.name = [ ...names ].join( '+' );
+		mesh.userData.tile = true;
+		scene.add( mesh );
+
+	}
+
+	batches = null;
 
 }
