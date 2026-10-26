@@ -26,7 +26,7 @@ const MODELS = {
 	'boat-row': { src: 'kenney-water/Models/GLB format/boat-row-small.glb', size: 64 },
 	'boat-row-large': { src: 'kenney-water/Models/GLB format/boat-row-large.glb', size: 64 }
 };
-for ( const n of [ 'sedan', 'taxi', 'police', 'van', 'delivery', 'suv', 'hatchback-sports', 'garbage-truck', 'ambulance' ] ) MODELS[ `kenney-${n}` ] = { src: `kenney-car/Models/GLB format/${n}.glb`, size: 64 };
+for ( const n of [ 'sedan', 'taxi', 'police', 'van', 'delivery', 'suv', 'hatchback-sports' ] ) MODELS[ `kenney-${n}` ] = { src: `kenney-car/Models/GLB format/${n}.glb`, size: 64 };
 
 const KEEP = [ 'POSITION', 'NORMAL', 'TEXCOORD_0', 'COLOR_0' ];
 for ( const [ name, m ] of Object.entries( MODELS ) ) {
