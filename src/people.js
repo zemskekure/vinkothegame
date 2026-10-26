@@ -1116,13 +1116,21 @@ export function makeSkinned( body, look, height, shape = null, width = 1 ) {
 export function makeBatch( geometry, count ) {
 
 	const g = geometry.clone();
-	for ( const name of LOOKS ) g.setAttribute( name, new THREE.InstancedBufferAttribute( new Float32Array( Math.max( 1, count ) * 4 ), 4 ) );
+	// The five per-instance looks share one interleaved buffer: WebGPU allows only eight vertex buffers a pipeline, and
+	// five separate ones on top of the geometry's and the instance matrices went over it (the batch wasn't drawn).
+	const looks = new THREE.InstancedInterleavedBuffer( new Float32Array( Math.max( 1, count ) * 4 * LOOKS.length ), 4 * LOOKS.length );
+	LOOKS.forEach( ( name, k ) => g.setAttribute( name, new THREE.InterleavedBufferAttribute( looks, 4, k * 4 ) ) );
 	const mesh = new THREE.InstancedMesh( g, INSTANCED, Math.max( 1, count ) );
 	mesh.count = count;
 	mesh.castShadow = true;
 	mesh.receiveShadow = true;
 	mesh.frustumCulled = false;
-	mesh.setLook = ( i, look ) => LOOKS.forEach( ( name, k ) => g.attributes[ name ].array.set( look[ k ], i * 4 ) );
+	mesh.setLook = ( i, look ) => {
+
+		LOOKS.forEach( ( name, k ) => looks.array.set( look[ k ], i * 4 * LOOKS.length + k * 4 ) );
+		looks.needsUpdate = true;
+
+	};
 	// The shape knobs this pose has as morph targets, per instance.
 	// (A batch of one reads the weights from the mesh, a bigger one from its morph texture; three's morph node
 	// expects the mesh's own weights only in the first case.)
