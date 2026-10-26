@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="cs">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Vínko · Codex</title>
+	<link rel="stylesheet" href="/ui/style.css">
+	<style>
+		.feed { font: 13px/1.45 ui-monospace, monospace; max-height: 60vh; overflow: auto; }
+		.feed div { padding: 4px 0; border-bottom: 1px solid rgba(127,127,127,0.15); white-space: pre-wrap; word-break: break-word; }
+		.feed .run::before { content: '$ '; opacity: 0.5; }
+		.feed .run.bad { color: #b4472f; }
+		.feed .say { font-family: system-ui, sans-serif; font-size: 14px; }
+		.feed .think { opacity: 0.6; font-style: italic; }
+		.feed .edit::before { content: '✎ '; }
+		.now { padding: 8px 10px; border-left: 3px solid #c4533a; background: rgba(127,127,127,0.08); margin: 8px 0; font: 13px ui-monospace, monospace; word-break: break-word; }
+		.shots { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
+		.shots img { width: 100%; border-radius: 4px; display: block; }
+		.report { white-space: pre-wrap; font-size: 14px; }
+	</style>
+</head>
+<body>
+	<header>
+		<h1><a href="/">Vínko · mřížka</a> / Codex</h1>
+	</header>
+	<main class="cell-page"><div id="jobs"><p class="muted">Načítám…</p></div></main>
+	<script type="module">
+		import { api, esc } from '/ui/common.js';
+		const ago = t => { const s = Math.max( 0, Math.round( ( Date.now() - t ) / 1000 ) ); return s < 60 ? `před ${s} s` : s < 3600 ? `před ${Math.round( s / 60 )} min` : `před ${Math.round( s / 3600 )} h`; };
+		const since = d => { const m = Math.round( ( Date.now() - Date.parse( d ) ) / 60000 ); return isNaN( m ) ? '' : m < 60 ? `${m} min` : `${Math.floor( m / 60 )} h ${m % 60} min`; };
+		let follow = true;
+		async function load() {
+			const jobs = await api( '/api/codex' );
+			const el = document.getElementById( 'jobs' );
+			if ( ! jobs.length ) { el.innerHTML = '<p class="muted">Codex teď nic nedělá.</p>'; return; }
+			el.innerHTML = jobs.map( j => `
+				<section class="card">
+					<h2>${esc( j.title )}</h2>
+					<p>${j.running ? `<b>běží</b> ${since( j.started )}` : j.ended ? `hotovo ${esc( j.ended )} (${j.code === 0 ? 'v pořádku' : 'kód ' + j.code})` : 'čeká'}
+						· ${j.steps} kroků${j.lastActivity ? ` · poslední aktivita ${ago( j.lastActivity )}` : ''}${j.usage ? ` · ${Math.round( ( j.usage.input_tokens || 0 ) / 1000 )} k tokenů vstup` : ''}</p>
+					${j.current ? `<div class="now">▶ ${esc( j.current.replace( /^\/bin\/zsh -lc /, '' ).slice( 0, 300 ) )}</div>` : ''}
+					${j.report ? `<h3>Zpráva</h3><div class="report">${esc( j.report )}</div>` : ''}
+					${j.shots.length ? `<h3>Snímky</h3><div class="shots">${j.shots.map( s => `<a href="${s}" target="_blank"><img src="${s}" loading="lazy"></a>` ).join( '' )}</div>` : ''}
+					<h3>Co dělá</h3>
+					<div class="feed">${j.events.map( e => `<div class="${e.kind}${e.ok === false ? ' bad' : ''}">${esc( e.text )}</div>` ).join( '' )}</div>
+				</section>` ).join( '' );
+			if ( follow ) for ( const f of el.querySelectorAll( '.feed' ) ) f.scrollTop = f.scrollHeight;
+		}
+		load();
+		setInterval( load, 4000 );
+	</script>
+</body>
+</html>

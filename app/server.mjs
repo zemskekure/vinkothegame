@@ -18,7 +18,7 @@
 //   SQUARE_WORKTREES         where they go, default ../work next to this checkout
 
 import { createServer } from 'node:http';
-import { createReadStream, existsSync, mkdirSync, statSync, readFileSync } from 'node:fs';
+import { createReadStream, existsSync, mkdirSync, statSync, readFileSync, readdirSync } from 'node:fs';
 import { writeFile, rm, rename } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { join, normalize, extname, sep } from 'node:path';
@@ -357,6 +357,55 @@ function needJobs() {
 
 }
 
+// Jobs handed to the Codex CLI on this machine (<GRID_DATA>/codex-<name>/: brief.md, run.log with start and exit
+// lines, log.jsonl with its events, report.md at the end, shots/): what each is doing, for the /codex page.
+function codexJobs() {
+
+	const jobs = [];
+	for ( const dir of readdirSync( DATA ).filter( d => d.startsWith( 'codex-' ) ) ) {
+
+		const at = f => join( DATA, dir, f );
+		const read = f => existsSync( at( f ) ) ? readFileSync( at( f ), 'utf8' ) : '';
+		const run = read( 'run.log' );
+		const started = ( run.match( /^start (.+)$/m ) || [] )[ 1 ] || null;
+		const exit = run.match( /^exit (\d+) (.+)$/m );
+		const events = [];
+		let usage = null, current = null;
+		for ( const raw of read( 'log.jsonl' ).split( '\n' ) ) {
+
+			if ( ! raw.trim() ) continue;
+			let e;
+			try { e = JSON.parse( raw ); } catch { continue; }
+			const it = e.item || {};
+			if ( e.type === 'turn.completed' ) usage = e.usage || usage;
+			if ( e.type === 'item.started' && it.type === 'command_execution' ) current = it.command;
+			if ( e.type !== 'item.completed' ) continue;
+			if ( it.type === 'command_execution' ) {
+
+				current = null;
+				events.push( { kind: 'run', text: String( it.command || '' ).replace( /^\/bin\/zsh -lc /, '' ).slice( 0, 300 ), ok: it.exit_code === 0 || it.exit_code === undefined } );
+
+			} else if ( it.type === 'agent_message' ) events.push( { kind: 'say', text: String( it.text || '' ).slice( 0, 2000 ) } );
+			else if ( it.type === 'reasoning' ) events.push( { kind: 'think', text: String( it.text || '' ).slice( 0, 400 ) } );
+			else if ( it.type === 'file_change' ) events.push( { kind: 'edit', text: ( it.changes || [] ).map( c => `${c.kind || ''} ${c.path || ''}` ).join( ', ' ).slice( 0, 400 ) } );
+			else if ( it.type === 'todo_list' ) events.push( { kind: 'todo', text: ( it.items || [] ).map( t => `${t.completed ? '✔' : '○'} ${t.text}` ).join( '\n' ).slice( 0, 1500 ) } );
+
+		}
+
+		const shots = existsSync( at( 'shots' ) ) ? readdirSync( at( 'shots' ) ).filter( f => /\.(png|jpe?g)$/i.test( f ) ).map( f => ( { f, t: statSync( join( at( 'shots' ), f ) ).mtimeMs } ) ).sort( ( a, b ) => b.t - a.t ).map( x => `/files/codex/${dir}/shots/${encodeURIComponent( x.f )}` ) : [];
+		const log = existsSync( at( 'log.jsonl' ) ) ? statSync( at( 'log.jsonl' ) ).mtimeMs : null;
+		jobs.push( {
+			name: dir.slice( 6 ), title: ( read( 'brief.md' ).match( /^# (.+)$/m ) || [] )[ 1 ] || dir,
+			started, ended: exit ? exit[ 2 ] : null, code: exit ? Number( exit[ 1 ] ) : null, running: !! started && ! exit,
+			lastActivity: log, current, usage, steps: events.length, events: events.slice( - 60 ), report: read( 'report.md' ), shots
+		} );
+
+	}
+
+	return jobs;
+
+}
+
 async function route( req, res ) {
 
 	const url = new URL( req.url, 'http://local' );
@@ -374,6 +423,9 @@ async function route( req, res ) {
 	if ( m === 'GET' && p.startsWith( '/preview/' ) && WORK ) return serveFile( req, res, join( WORK, 'dist' ), p.slice( 9 ) );
 	if ( m === 'GET' && p.startsWith( '/files/refs/' ) ) return serveFile( req, res, REFS, p.slice( 12 ) );
 	if ( m === 'GET' && p.startsWith( '/files/shots/' ) ) return serveFile( req, res, SHOTS, p.slice( 13 ) );
+	if ( m === 'GET' && p === '/codex' ) return serveFile( req, res, UI, 'codex.html' );
+	if ( m === 'GET' && p === '/api/codex' ) return send( res, 200, codexJobs() );
+	if ( m === 'GET' && /^\/files\/codex\/codex-[\w-]+\/shots\/[^/]+$/.test( p ) ) return serveFile( req, res, DATA, decodeURIComponent( p.slice( 13 ) ) );
 
 	if ( m === 'GET' && p === '/api/grid' ) return send( res, 200, gridSummary() );
 
