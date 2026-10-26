@@ -332,23 +332,23 @@ function obb( ring, dir ) {
 
 }
 
-// A pointed (gothic) arch outline in the v–y plane: from v0 to v1, springing at y0, two quarter curves meeting in
-// the point at y1.
+// A pointed (gothic) arch outline in the v–y plane from v0 to v1, springing at y0: two arcs, each centred on the
+// opposite springing point (an equilateral arch), drawn up or down to the apex at y1.
 function pointedPath( path, v0, v1, floorY, y0, y1, steps = 6 ) {
 
-	const w = ( v1 - v0 ) / 2;
+	const S = v1 - v0, k = ( y1 - y0 ) / ( S * Math.sin( Math.PI / 3 ) );
 	path.moveTo( v0, floorY ).lineTo( v0, y0 );
 	for ( let i = 1; i <= steps; i ++ ) {
 
-		const t = i / steps * Math.PI / 2;
-		path.lineTo( v0 + w * ( 1 - Math.cos( t ) ), y0 + ( y1 - y0 ) * Math.sin( t ) );
+		const t = Math.PI - Math.PI / 3 * i / steps;
+		path.lineTo( v1 + S * Math.cos( t ), y0 + S * Math.sin( t ) * k );
 
 	}
 
 	for ( let i = steps - 1; i >= 0; i -- ) {
 
-		const t = i / steps * Math.PI / 2;
-		path.lineTo( v1 - w * ( 1 - Math.cos( t ) ), y0 + ( y1 - y0 ) * Math.sin( t ) );
+		const t = Math.PI / 3 * i / steps;
+		path.lineTo( v0 + S * Math.cos( t ), y0 + S * Math.sin( t ) * k );
 
 	}
 
