@@ -122,3 +122,9 @@ commit, injected by `vite.config.js`) shows in a corner and in the pause menu. T
 | Done | In progress | Next | Later |
 |---|---|---|---|
 | pigeon flight + story start; walking; jump; scooter; console HUD, loading bar, real pause; teleport map; PS1 look (pigeon); generated ugly people; trams, Czech cars, boats; Bjukitchen; Malá Strana first layer; studio + admin; friends NPCs; Perlová | performance (`perf/ps1`: fast load, smooth frames, PS1 look everywhere); start screen + character creator (`feat/start`) | deliveries (Bjukitchen first); sound | weather; easter eggs; more sponsored interiors; open-source split of the model |
+
+## Queue (owner's requests not started yet)
+
+- Trams and cars solid (the walker, the scooter and the pigeon collide with them).
+- Ride the tram: board at a stop, sit or stand inside (T3 and 15T interiors from the owner's textures `tram_t3_interior`, `tram_15t_interior`, `tram_seat_fabric`), ride along the line with the city passing by, get off at a stop.
+- Passengers getting on and off at tram stops.
