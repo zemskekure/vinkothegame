@@ -2076,7 +2076,7 @@
 		"signs": false
 	},
 	"21644187": {
-		"note": "Karoliny Světlé 4: grey sandstone ashlar neo-renaissance house, brown framed shop windows, door portico with columns and pediment, shell-shaped balcony bracket, wall lanterns. Edge 8 (Bartolomějská 304/1) looks like a different, 1930s travertine-clad building with green window frames (Street View)",
+		"note": "Karoliny Světlé 4 (earlier review): grey sandstone ashlar neo-renaissance house with a door portico, shell-shaped balcony bracket and wall lanterns. Its 5.2 m end on Bartolomějská was not seen: the photo filed as 21644187_8 is centred on the travertine house 304/1 next door (plates 304 and 1), so the earlier remark that edge 8 is travertine belongs to 304 (Street View 2025).",
 		"colour": "#a9a292",
 		"trim": "#bbb5a5",
 		"ground": "shops",
@@ -2090,8 +2090,215 @@
 		},
 		"signs": false
 	},
+	"21644195": {
+		"note": "Bartolomějská 304/1 (plates 304 and 1): 1940s six-storey house faced with grey-beige travertine slabs, bright green three- and four-part window frames, no surrounds. Dark polished granite ground floor: shop window, recessed wooden double door, tall grid-glazed panel, second shop window with a yellow band. Seen centred in the photo filed as 21644187_8 and at the left of 21644195_10; matched by the plates, not the marks (Street View 2025).",
+		"colour": "#c4bba8",
+		"trim": "#d2cab8",
+		"floors": 6,
+		"ground": "shops",
+		"rustic": "clad",
+		"grilles": false,
+		"style": "default",
+		"edges": {
+			"10": {
+				"ground": [
+					"shop",
+					{
+						"kind": "door",
+						"frame": "wood",
+						"glazed": true,
+						"size": "wide"
+					},
+					{
+						"kind": "window",
+						"frame": "dark",
+						"size": "narrow"
+					},
+					"shop"
+				],
+				"shopfront": "21644195_10.svg"
+			}
+		},
+		"signs": false
+	},
+	"21644209": {
+		"note": "Bartolomějská 305/3 (plate 305): 1940s six-storey house faced with small cream ceramic tiles, wide brown-framed windows, two columns of balconies with iron railings, set-back top floor. Ground floor from left: glazed shop, ARTISTIQUE salon under a black fascia, house door, Al Capone's bar with a cream 'The Cocktail Bar' fascia over a gold AL CAPONE'S board and a dark wood front; tags on the piers (Street View 2025).",
+		"colour": "#ddd5c3",
+		"trim": "#cfc6b4",
+		"floors": 6,
+		"ground": "shops",
+		"rustic": "none",
+		"grilles": false,
+		"graffiti": true,
+		"style": "default",
+		"edges": {
+			"6": {
+				"ground": [
+					"shop",
+					"shop",
+					{
+						"kind": "door",
+						"frame": "dark",
+						"glazed": true
+					},
+					"shop"
+				],
+				"balconies": [
+					{
+						"floor": 1,
+						"from": 0.15,
+						"to": 0.28,
+						"depth": 0.9
+					},
+					{
+						"floor": 2,
+						"from": 0.15,
+						"to": 0.28,
+						"depth": 0.9
+					},
+					{
+						"floor": 3,
+						"from": 0.15,
+						"to": 0.28,
+						"depth": 0.9
+					},
+					{
+						"floor": 4,
+						"from": 0.15,
+						"to": 0.28,
+						"depth": 0.9
+					},
+					{
+						"floor": 1,
+						"from": 0.74,
+						"to": 0.87,
+						"depth": 0.9
+					},
+					{
+						"floor": 2,
+						"from": 0.74,
+						"to": 0.87,
+						"depth": 0.9
+					},
+					{
+						"floor": 3,
+						"from": 0.74,
+						"to": 0.87,
+						"depth": 0.9
+					},
+					{
+						"floor": 4,
+						"from": 0.74,
+						"to": 0.87,
+						"depth": 0.9
+					}
+				],
+				"shopfront": "21644209_6.svg"
+			}
+		},
+		"signs": false
+	},
+	"21644217": {
+		"note": "Bartolomějská 306/5 and 306/7: at the west end a narrow beige-tiled house filled at street level by a tagged rust-brown garage gate with a glazed band (plate 5); then the long modernist police building, grey-beige tiles with a dense grid of brown-framed windows over a buff brick-tiled ground floor with big red-framed windows and a glazed entrance under a flat canopy; the short east end has grey banded rustication like the Unitas (Street View 2025).",
+		"colour": "#ccc5b5",
+		"trim": "#bcb4a3",
+		"floors": 6,
+		"ground": "windows",
+		"rustic": "none",
+		"grilles": false,
+		"graffiti": true,
+		"style": "default",
+		"edges": {
+			"10": {
+				"colour": "#dad8d0",
+				"trim": "#e6e3dc",
+				"rustic": "banded",
+				"ground": [
+					"window",
+					"window"
+				]
+			},
+			"12": {
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "red",
+						"size": "wide"
+					},
+					{
+						"kind": "window",
+						"frame": "red",
+						"size": "wide"
+					},
+					{
+						"kind": "window",
+						"frame": "red",
+						"size": "wide"
+					},
+					{
+						"kind": "door",
+						"frame": "wood",
+						"glazed": true,
+						"size": "wide"
+					},
+					{
+						"kind": "door",
+						"frame": "wood",
+						"glazed": true,
+						"size": "wide"
+					},
+					{
+						"kind": "window",
+						"frame": "red",
+						"size": "wide"
+					},
+					{
+						"kind": "window",
+						"frame": "red",
+						"size": "wide"
+					},
+					{
+						"kind": "window",
+						"frame": "red",
+						"size": "wide"
+					},
+					{
+						"kind": "window",
+						"frame": "red",
+						"size": "wide"
+					},
+					{
+						"kind": "window",
+						"frame": "red",
+						"size": "wide"
+					},
+					{
+						"kind": "window",
+						"frame": "red",
+						"size": "wide"
+					}
+				],
+				"shopfront": "21644217_12.svg",
+				"shopfrontHeight": 4.8
+			},
+			"14": {
+				"colour": "#cbbb9e",
+				"trim": "#bba98a",
+				"ground": [
+					{
+						"kind": "gate",
+						"frame": "dark",
+						"size": "wide"
+					}
+				],
+				"shopfront": "21644217_14.svg",
+				"shopfrontHeight": 5.5
+			}
+		},
+		"signs": false
+	},
 	"21644225": {
-		"note": "Bartolomějská north side: smooth white plaster house with a carved sandstone portal (cornice with cartouche and side volutes) round a dark double door at 7-10 m, a baroque shaped window with a deep curved reveal above it and an iron wall lantern near the left end (Street View 2026, marked 21644225_14).",
+		"note": "Bartolomějská 308/9 (Unitas). West part (edges 17, 15): light grey neo-renaissance front with deep banded rustication on the ground floor, windows with flower boxes, a round-arched wooden door with a fanlight beside the red number plate, rusticated quoin strips and pedimented windows above; four storeys. East part (edge 14, earlier review): smooth white plaster with the carved sandstone portal and wall lantern (Street View 2025).",
 		"colour": "#ebe7dd",
 		"trim": "#d6cbb2",
 		"rustic": "none",
@@ -2107,9 +2314,34 @@
 					}
 				],
 				"shopfront": "21644225_14.svg"
+			},
+			"15": {
+				"colour": "#dcdad3",
+				"trim": "#ebe8e1",
+				"rustic": "banded",
+				"ground": [
+					"window",
+					"window",
+					"window"
+				]
+			},
+			"17": {
+				"colour": "#dcdad3",
+				"trim": "#ebe8e1",
+				"rustic": "banded",
+				"ground": [
+					"window",
+					"window",
+					{
+						"kind": "door",
+						"frame": "wood",
+						"arch": true
+					}
+				]
 			}
 		},
-		"signs": false
+		"signs": false,
+		"floors": 4
 	},
 	"21644233": {
 		"note": "Na Perštýně 13 / Bartolomějská 13: weathered ochre baroque house with window hoods, a round plaque over the large herringbone-planked gate in a carved arch, grilled windows, an arched window with DANCE/OPEN posters and the black Absinth SHOP front with a striped panel at the tagged corner, then a graffiti hoarding over the vacant plot (earlier 'blind firewall' note was wrong). Průchodní: same ochre, rubble base, tagged doors, barred windows (Street View 2024-09/2025-09, marked)",
@@ -2338,8 +2570,62 @@
 			}
 		}
 	},
+	"21644268": {
+		"note": "Bartolomějská 312/6 (plate 312): pale yellow-cream neo-baroque apartment house, four storeys and an ornate dormer gable; first- and second-floor windows under stucco cartouche pediments; smooth ground floor with plain windows and, near the middle, a wide flat-topped gateway standing open into a courtyard (Street View 2025).",
+		"colour": "#e9ddb8",
+		"trim": "#f2ebd8",
+		"floors": 4,
+		"ground": "windows",
+		"rustic": "none",
+		"grilles": false,
+		"graffiti": false,
+		"style": "default",
+		"edges": {
+			"22": {
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "wood"
+					},
+					{
+						"kind": "window",
+						"frame": "wood"
+					},
+					{
+						"kind": "window",
+						"frame": "wood"
+					},
+					{
+						"kind": "window",
+						"frame": "wood"
+					},
+					{
+						"kind": "gate",
+						"frame": "dark",
+						"size": "wide"
+					},
+					{
+						"kind": "window",
+						"frame": "wood"
+					},
+					{
+						"kind": "window",
+						"frame": "wood"
+					},
+					{
+						"kind": "window",
+						"frame": "wood"
+					},
+					{
+						"kind": "window",
+						"frame": "wood"
+					}
+				]
+			}
+		}
+	},
 	"21644276": {
-		"note": "Bartolomějská / Karoliny Světlé 2 (Eurostars Thalia): cream neo-renaissance block, banded rusticated ground floor with grilled windows, round-arched first-floor windows in rusticated voussoir surrounds, carved portal with brown door under a balcony on consoles, rounded corner, wall lanterns; no hotel sign visible (Street View)",
+		"note": "Bartolomějská 2 / Karoliny Světlé 2 (Eurostars Thalia): cream neo-renaissance block, banded rusticated ground floor with grilled segment-arched windows, round-arched first-floor windows in rusticated voussoirs, pedimented windows above, rounded corner; on Karoliny Světlé a carved round-arched portal with a brown double door under a balcony on big consoles, about mid-front. No hotel sign seen (Street View 2025).",
 		"colour": "#ebe3d0",
 		"trim": "#f4efe3",
 		"floors": 5,
@@ -2348,11 +2634,194 @@
 		"grilles": true,
 		"graffiti": false,
 		"edges": {
+			"3": {
+				"ground": [
+					{
+						"kind": "window",
+						"arch": true,
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"arch": true,
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"arch": true,
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"arch": true,
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"arch": true,
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"arch": true,
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"arch": true,
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"arch": true,
+						"bars": true
+					}
+				]
+			},
 			"13": {
 				"lanterns": true
 			},
 			"14": {
-				"lanterns": true
+				"lanterns": true,
+				"ground": [
+					{
+						"kind": "window",
+						"arch": true,
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"arch": true,
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"arch": true,
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"arch": true,
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"arch": true,
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"arch": true,
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"arch": true,
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"arch": true,
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"arch": true,
+						"bars": true
+					},
+					{
+						"kind": "door",
+						"frame": "wood",
+						"arch": true,
+						"size": "wide"
+					},
+					{
+						"kind": "window",
+						"arch": true,
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"arch": true,
+						"bars": true
+					}
+				],
+				"shopfront": "21644276_14.svg",
+				"shopfrontHeight": 5
+			}
+		},
+		"signs": false,
+		"style": "default"
+	},
+	"21644284": {
+		"note": "Bartolomějská 314/4: long cream-yellow neo-renaissance block of five storeys with a central risalit under a triangular pediment, windows with stucco heads and pediments, iron wall lanterns; smooth ground floor with brown-framed windows over basement vents and a round-arched carved stone portal with a fanlight under the pediment, placed at the middle by symmetry (Street View 2025).",
+		"colour": "#e5d5ad",
+		"trim": "#f0e6cc",
+		"floors": 5,
+		"ground": "windows",
+		"rustic": "none",
+		"grilles": false,
+		"graffiti": false,
+		"style": "default",
+		"edges": {
+			"10": {
+				"lanterns": true,
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "wood"
+					},
+					{
+						"kind": "window",
+						"frame": "wood"
+					},
+					{
+						"kind": "window",
+						"frame": "wood"
+					},
+					{
+						"kind": "window",
+						"frame": "wood"
+					},
+					{
+						"kind": "window",
+						"frame": "wood"
+					},
+					{
+						"kind": "window",
+						"frame": "wood"
+					},
+					{
+						"kind": "gate",
+						"frame": "wood",
+						"arch": true
+					},
+					{
+						"kind": "window",
+						"frame": "wood"
+					},
+					{
+						"kind": "window",
+						"frame": "wood"
+					},
+					{
+						"kind": "window",
+						"frame": "wood"
+					},
+					{
+						"kind": "window",
+						"frame": "wood"
+					},
+					{
+						"kind": "window",
+						"frame": "wood"
+					},
+					{
+						"kind": "window",
+						"frame": "wood"
+					}
+				],
+				"shopfront": "21644284_10.svg"
 			}
 		},
 		"signs": false

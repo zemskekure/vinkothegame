@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 510 550">
+  <rect width="510" height="550" fill="#cbbb9e"/>
+  <path d="M0 25H510M0 50H510M0 75H510M0 100H510M0 125H510M0 150H510M0 175H510M0 200H510M0 225H510M0 250H510M0 275H510M0 300H510M0 325H510M0 350H510M0 375H510M0 400H510M0 425H510M0 450H510M0 475H510M0 500H510M0 525H510" stroke="#b9a888" stroke-width="2"/>
+  <rect x="242" y="6" width="26" height="16" fill="#2b2b2b"/>
+  <rect x="28" y="30" width="454" height="520" fill="#4b3021"/>
+  <rect x="38" y="40" width="434" height="120" fill="#7b4b2e"/>
+  <path d="M110 40V160M182 40V160M254 40V160M326 40V160M398 40V160" stroke="#5e3a24" stroke-width="5"/>
+  <rect x="38" y="168" width="434" height="210" fill="#3d2a1f"/>
+  <path d="M46 176h100v46h-100zM154 176h100v46h-100zM262 176h100v46h-100zM370 176h96v46h-96zM46 228h100v46h-100zM154 228h100v46h-100zM262 228h100v46h-100zM370 228h96v46h-96zM46 280h100v46h-100zM154 280h100v46h-100zM262 280h100v46h-100zM370 280h96v46h-96zM46 332h100v40h-100zM154 332h100v40h-100zM262 332h100v40h-100zM370 332h96v40h-96z" fill="#9aaaa8"/>
+  <rect x="38" y="386" width="434" height="164" fill="#734632"/>
+  <path d="M255 386V550" stroke="#4b3021" stroke-width="6"/>
+  <path d="M60 200q40 50 90 0M210 250q30-40 70 10q20 30 60-20M330 330q30-30 60 0M80 300l30-40 20 40 30-35" stroke="#1b1b1f" stroke-width="5" fill="none"/>
+  <path d="M60 470q30-60 60 0t60-10q20-40 50 5M290 430q40 30 80-10q30-30 70 20M70 520l40-30 30 30 40-35M300 500q50-40 100 0" stroke="#f1efe8" stroke-width="7" fill="none"/>
+  <path d="M120 430q20-25 45 0t45 0M340 465q25-30 55 0" stroke="#d64f86" stroke-width="6" fill="none"/>
+</svg>

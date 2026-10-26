@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1520 420">
+  <rect width="1520" height="420" fill="#ddd4c2"/>
+  <path d="M0 9H1520M0 19H1520M0 29H1520" stroke="#cbc1ae" stroke-width="2"/>
+  <rect y="32" width="1520" height="10" fill="#45474a"/>
+  <path d="M0 42H50V420H0ZM470 42H530V420H470ZM950 42H1010V420H950Z" fill="#4b4d50"/>
+  <rect y="398" width="1520" height="22" fill="#3c3e41"/>
+  <rect x="50" y="42" width="420" height="356" fill="#2b2e30"/>
+  <rect x="62" y="54" width="396" height="66" fill="#56646a"/>
+  <rect x="62" y="128" width="396" height="264" fill="#3e4b51"/>
+  <path d="M62 128L300 392H62Z" fill="#8a9a9e" opacity="0.25"/>
+  <path d="M260 128V392M62 124H458" stroke="#2b2e30" stroke-width="8"/>
+  <rect x="530" y="42" width="420" height="72" fill="#141414"/>
+  <text x="740" y="86" text-anchor="middle" font-family="serif" font-size="34" letter-spacing="7" fill="#d8c69a">ARTISTIQUE</text>
+  <text x="740" y="105" text-anchor="middle" font-family="sans-serif" font-size="10" letter-spacing="3" fill="#cdbb90">HAIR · SKIN · BEAUTY</text>
+  <rect x="530" y="114" width="420" height="284" fill="#2a2c2e"/>
+  <rect x="542" y="122" width="396" height="270" fill="#45525a"/>
+  <path d="M542 122L760 392H542Z" fill="#8a9a9e" opacity="0.22"/>
+  <path d="M740 122V392" stroke="#2a2c2e" stroke-width="7"/>
+  <text x="740" y="374" text-anchor="middle" font-family="sans-serif" font-size="11" letter-spacing="2" fill="#eeeeea">AUTHENTIC BEAUTY CONCEPT</text>
+  <path d="M958 300q12-20 22 2t26-6M960 334q20 10 40-8M962 250l14 20 10-18 12 16" stroke="#1d1d24" stroke-width="3" fill="none"/>
+  <rect x="1010" y="42" width="125" height="356" fill="#2c2a28"/>
+  <rect x="1022" y="56" width="101" height="58" fill="#53616a"/>
+  <rect x="1022" y="122" width="101" height="276" fill="#3a3430"/>
+  <rect x="1034" y="138" width="77" height="130" fill="#5a6870"/>
+  <rect x="1135" y="42" width="385" height="356" fill="#3a2417"/>
+  <rect x="1142" y="46" width="371" height="56" fill="#efe6c8" stroke="#2a1a10" stroke-width="4"/>
+  <text x="1327" y="86" text-anchor="middle" font-family="serif" font-size="38" fill="#1c1712">The Cocktail Bar</text>
+  <rect x="1215" y="108" width="224" height="38" fill="#d6a43a" stroke="#6b4a1c" stroke-width="3"/>
+  <text x="1327" y="136" text-anchor="middle" font-family="serif" font-size="26" font-weight="bold" letter-spacing="2" fill="#2b1a0e">AL CAPONE'S</text>
+  <rect x="1148" y="154" width="78" height="244" fill="#2a1a10"/>
+  <rect x="1158" y="166" width="58" height="118" fill="#4f5a5e"/>
+  <path d="M1162 300h50v84h-50z" fill="none" stroke="#5a3a24" stroke-width="4"/>
+  <rect x="1240" y="154" width="200" height="198" fill="#20160f"/>
+  <path d="M1252 292H1428M1252 242H1428" stroke="#5a3a20" stroke-width="5"/>
+  <path d="M1262 262h6v28h-6zM1278 256h6v34h-6zM1294 266h6v24h-6zM1312 258h6v32h-6zM1330 262h6v28h-6zM1348 256h6v34h-6zM1366 264h6v26h-6zM1384 258h6v32h-6zM1402 262h6v28h-6zM1270 212h6v28h-6zM1290 206h6v34h-6zM1310 214h6v26h-6zM1334 208h6v32h-6zM1358 212h6v28h-6zM1380 206h6v34h-6zM1404 214h6v26h-6z" fill="#b8862e"/>
+  <rect x="1240" y="352" width="200" height="46" fill="#3a2417"/>
+  <path d="M1250 362h180v26h-180z" fill="none" stroke="#5a3a24" stroke-width="4"/>
+  <rect x="1452" y="154" width="58" height="198" fill="#4a565a"/>
+  <rect x="1452" y="352" width="58" height="46" fill="#3a2417"/>
+</svg>
