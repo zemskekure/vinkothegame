@@ -27,8 +27,45 @@ import { startDay } from './holub/sky.js';
 import { SETTINGS } from './settings.js';
 import { batchStatic, splitByTile } from './batch.js';
 import { unpackWalls, unpackRoofs, unpackTerrain, unpackPavement, unpackSurfaces } from './unpack.js';
+import * as loading from './loading.js';
+import { getHud } from './hud.js';
+import { backToStart } from './start.js';
 
-async function load( name, type = 'arrayBuffer', dir = 'data/' ) {
+// The loading bar (src/loading.js): the download, then each build step below with its share.
+loading.show();
+
+async function load( name, type = 'arrayBuffer', dir = 'data/', track = false ) {
+
+	// Already downloaded (or downloading) behind the start screen (src/start.js).
+	const kept = dir === 'data/' ? await window.__preload?.[ name ] : null;
+	if ( kept ) {
+
+		delete window.__preload[ name ];
+		return new Response( kept )[ type ]();
+
+	}
+
+	if ( ! window.PACKED_DATA && track ) {
+
+		// One of the first files: read as it comes, for the loading bar.
+		const r = await fetch( `${dir}${name}` );
+		if ( ! r.body ) return r[ type ]();
+		const total = Number( r.headers.get( 'content-length' ) ) || 0, reader = r.body.getReader(), chunks = [];
+		let got = 0;
+		for ( ;; ) {
+
+			const { done, value } = await reader.read();
+			if ( done ) break;
+			chunks.push( value );
+			got += value.length;
+			if ( total ) loading.fileProgress( name, Math.min( 0.99, got / total ) );
+
+		}
+
+		loading.fileProgress( name, 1 );
+		return new Response( new Blob( chunks ) )[ type ]();
+
+	}
 
 	if ( ! window.PACKED_DATA ) return ( await fetch( `${dir}${name}` ) )[ type ]();
 
@@ -44,17 +81,10 @@ async function load( name, type = 'arrayBuffer', dir = 'data/' ) {
 // over the wire once the server gzips them.
 // (let: each download is let go once unpacked, below.)
 let [ data, wallsBuf, wallTableBuf, roofsBuf, roofTableBuf, terrainBuf, surfacesBuf, pavementBuf, footprintBuf, embankmentBuf ] = await Promise.all( [
-	load( 'scene.json', 'json' ),
-	load( 'walls.bin' ),
-	load( 'walls-table.bin' ),
-	load( 'roofs.bin' ),
-	load( 'roofs-table.bin' ),
-	load( 'terrain.bin' ),
-	load( 'surfaces.bin' ),
-	load( 'pavement.bin' ),
-	load( 'footprints.bin' ),
-	load( 'embankment.bin' )
+	load( 'scene.json', 'json', 'data/', true ),
+	...[ 'walls.bin', 'walls-table.bin', 'roofs.bin', 'roofs-table.bin', 'terrain.bin', 'surfaces.bin', 'pavement.bin', 'footprints.bin', 'embankment.bin' ].map( n => load( n, 'arrayBuffer', 'data/', true ) )
 ] );
+await loading.step( 'Skládám terén', 0.4, 0.46 );
 
 const { bounds } = data;
 const params = new URLSearchParams( location.search );
@@ -222,12 +252,18 @@ const surfaceTex = surfaceTexture( surfaceBytes ), surface2Tex = surfaceTexture(
 // The aerial photo's ground detail: 25 cm over the first area, 50 cm over the whole area.
 const loadDetail = async name => {
 
-	const tex = await new THREE.TextureLoader().loadAsync( `data/${name}` );
+	// From the start screen's download if it has it (src/start.js), else from the server.
+	const kept = await window.__preload?.[ name ];
+	const url = kept ? URL.createObjectURL( kept ) : `data/${name}`;
+	if ( kept ) delete window.__preload[ name ];
+	const tex = await new THREE.TextureLoader().loadAsync( url );
+	if ( kept ) URL.revokeObjectURL( url );
 	tex.flipY = false; // row 0 = north, like the surface maps
 	tex.anisotropy = renderer.getMaxAnisotropy();
 	return tex;
 
 };
+await loading.step( 'Pokládám dlažbu', 0.46, 0.5 );
 const groundDetail = await loadDetail( 'ground-detail.jpg' );
 const groundDetailWide = data.firstBounds ? await loadDetail( 'ground-detail-wide.jpg' ) : null;
 const groundMaterial = createGroundMaterial( surfaceTex, surface2Tex, bounds, groundDetail, FB, groundDetailWide );
@@ -456,6 +492,8 @@ scene.add( water );
 // ---------------------------------------------------------------------------
 // Buildings
 
+await loading.step( 'Stavím domy', 0.5, 0.58 );
+
 // Roofs: flat-shaded so every hip and gable face reads crisply.
 const roofs = new THREE.Mesh( ( () => {
 
@@ -541,12 +579,15 @@ const groundFloorTexture = new THREE.DataTexture( gfData, GF_TEXELS, Math.max( 1
 groundFloorTexture.magFilter = groundFloorTexture.minFilter = THREE.NearestFilter;
 groundFloorTexture.needsUpdate = true;
 
+await loading.sub( 0.5 );
 const wallMesh = new THREE.Mesh( wallGeo, createFacadeMaterial( data.places?.cutouts || [], groundFloorTexture ) );
 wallMesh.castShadow = wallMesh.receiveShadow = true;
 scene.add( wallMesh );
 
 // ---------------------------------------------------------------------------
 // Street furniture and trees (OpenStreetMap, plus canopy peaks found in the surface model)
+
+await loading.step( 'Rozmisťuji lavičky a stromy', 0.58, 0.66 );
 
 // The chimney courtyard's benches and lamps, the museum gate's lanterns: ordinary furniture and decor.
 const places = data.places;
@@ -577,6 +618,7 @@ await addShopfronts( scene, data.decor?.shopfronts );
 addEmbankment( scene, embankmentBuf, data.embankment );
 embankmentBuf = null;
 
+await loading.sub( 0.5 );
 // Signature places (rotunda, pub, café, champagne bar, museum gate, stairs) and street life (people, cars).
 const { seats } = addPlaces( scene, places, data.furniture, data.waterLevel );
 // Local icons: big lettering, sculptures, domed corner towers (data/icons.json).
@@ -586,6 +628,7 @@ const graffiti = await addGraffiti( scene, graffitiFronts, { streets: data.stree
 graffitiFronts = null;
 // The still city in few draw calls (src/batch.js): the hand-made pieces merged per material and 150 m square, the
 // big meshes cut into 200 m squares that are skipped when out of view.
+await loading.step( 'Slučuji město', 0.66, 0.72 );
 const batched = batchStatic( scene );
 const tiles = [ terrain, pavement, wallMesh, roofs ].map( mesh => splitByTile( mesh ) );
 const roofTiles = tiles[ 3 ];
@@ -637,6 +680,7 @@ const gltfLoader = new GLTFLoader().setMeshoptDecoder( MeshoptDecoder );
 const loadModel = async ( path, dir ) => gltfLoader.parseAsync( await load( path, 'arrayBuffer', '' ), dir );
 // The player (src/player.js): a person of the streets, as made in the character creator, in place of the plain figure.
 // Built before the crowd (addLife, at the end of this file): the crowd's material then takes over the shared atlas.
+await loading.step( HOLUB ? 'Čechrám peří' : 'Oblékám postavu', 0.72, 0.76 );
 const player = HOLUB ? null : await ( await import( './player.js' ) ).makePlayer( loadModel );
 // The people, the trams and the boats come after the city (see the end of this file): one can walk while their
 // models download. Until then they are empty stand-ins.
@@ -740,11 +784,9 @@ walkerLevel = () => walker.placed ? walker.y : null;
 // Trams and their overhead line (poles kept out of houses).
 let trams = { update() {} }, boats = { update() {} };
 
-const hud = {
-	mode: document.getElementById( 'mode' ),
-	help: document.getElementById( 'help' ),
-	place: document.getElementById( 'place' )
-};
+// The HUD (src/hud.js): the street's name as an area title, key hints, the speedometer, the pause menu.
+const hud = getHud();
+await loading.step( 'Kreslím mapu', 0.76, 0.8 );
 
 // Minimap: places to find, and the landmarks.
 const placeMarkers = [];
@@ -772,9 +814,27 @@ for ( const s of places?.signs || [] ) {
 if ( places?.sitkov ) placeMarkers.push( { x: places.sitkov.x, z: places.sitkov.z, icon: 'V', colour: '#4f7a68' } );
 if ( places?.bandstand ) placeMarkers.push( { x: places.bandstand.x, z: places.bandstand.z, icon: '♫', colour: '#26352d' } );
 
+// Bridges for the maps (src/minimap.js): Most Legií along its axis (the tollhouse bays wider, the carriageway between
+// the pavements in road colour), and the generic OSM decks (Karlův most, the footbridges) as their strips, footways
+// and pedestrian decks in pavement colour, the rest in road colour.
+const mapBridges = [];
+if ( places?.legie ) {
+
+	const lg = places.legie, P = lg.pts.map( p => [ p[ 0 ], p[ 1 ] ] );
+	const bay = P.slice( 0, Math.floor( lg.bay.s1 / lg.step ) + 1 );
+	mapBridges.push( [
+		{ pts: bay, w: lg.bay.half * 2, fill: 'pavement' },
+		{ pts: P, w: lg.half * 2, fill: 'pavement' },
+		{ pts: P, w: ( lg.half - lg.rail - lg.walk ) * 2, fill: 'road', inner: true }
+	] );
+
+}
+
+for ( const b of places?.bridges || [] ) mapBridges.push( [ { pts: [ [ b.x0, b.z0 ], [ b.x1, b.z1 ] ], w: b.w, fill: /footway|path|pedestrian|cycleway/.test( b.kind ) ? 'pavement' : 'road' } ] );
+
 const isTouch = matchMedia( '(pointer: coarse)' ).matches || navigator.maxTouchPoints > 0 && ! matchMedia( '(pointer: fine)' ).matches;
 const minimap = createMinimap( {
-	bounds, surface: surfaceBytes, surface2, S, waterLevel: data.waterLevel, markers: placeMarkers, touch: isTouch,
+	bounds, surface: surfaceBytes, surface2, S, waterLevel: data.waterLevel, markers: placeMarkers, touch: isTouch, bridges: mapBridges,
 	terrainHeight,
 	isHouse: ( x, z ) => {
 
@@ -785,7 +845,6 @@ const minimap = createMinimap( {
 
 	}
 } );
-if ( isTouch ) document.getElementById( 'hud' ).style.maxWidth = 'calc(100vw - 172px)';
 
 // Start on Betlémské náměstí, at the west end of the square by Oliva Nera's terrace, looking at the chapel.
 function startAt() {
@@ -814,14 +873,8 @@ function setMode( walk ) {
 	walking = walk;
 	orbit.enabled = ! walk;
 	walker.setEnabled( walk, touch );
-	hud.mode.textContent = ( walk ? 'Pohled shora' : 'Projít se ulicemi' ) + ( touch ? '' : ' (M)' );
-	hud.help.textContent = touch
-		? ( walk ? 'Joystick vlevo dole chůze (až k okraji běh) · táhni prstem kamerou' : 'Táhni prstem pro otáčení · dvěma prsty přiblížení a posun' )
-		: walk
-			? 'Klikni a ovládej kameru myší · WASD chůze · Shift běh · B skútr · kolečko zoom · V pohled z očí · Tab mapa'
-			: 'Táhni myší pro otáčení · kolečko přiblížení · pravé tlačítko posun';
-	hud.place.style.display = walk ? 'block' : 'none';
 	minimap.setVisible( walk );
+	hud.touchButtons( [ [ 'MENU', () => pauseGame() ], [ walk ? 'SHORA' : 'NA ULICI', () => setMode( ! walking ) ] ] );
 
 	if ( walk ) {
 
@@ -834,7 +887,7 @@ function setMode( walk ) {
 
 	} else if ( wasWalking ) {
 
-		if ( document.pointerLockElement ) document.exitPointerLock();
+		releasePointer();
 		const t = walker.pos.clone();
 		camera.position.set( t.x - 160, 180, t.z + 180 );
 		orbit.target.set( t.x, 5, t.z );
@@ -843,24 +896,24 @@ function setMode( walk ) {
 
 }
 
-hud.mode.addEventListener( 'click', () => setMode( ! walking ) );
 window.addEventListener( 'keydown', e => {
 
-	if ( e.code === 'KeyM' && ! HOLUB ) setMode( ! walking );
+	if ( e.code === 'KeyM' && ! HOLUB && ! hud.paused ) setMode( ! walking );
 
 } );
 // The pigeon (?holub) instead of the walker: by default on Betlémské náměstí by the terrace, facing the chapel
 // (game settings, `pigeon.start`: x, z, heading).
 const holubStart = SETTINGS.pigeon.start;
 const holub = HOLUB ? startHolub( { scene, camera, dom: renderer.domElement, roofGeo: roofTiles.userData.geometry, bounds, groundHeight, waterLevel: data.waterLevel, places, furniture: data.furniture, life, start: holubStart, indoors: ( x, z ) => { const zn = zoneAt( x, z ); return !! zn && zn.y !== undefined && zn.ceil === undefined; } } ) : null;
-// The pigeon's first day (egg, tutorial) and the clock that moves the sun and the light.
-const story = holub ? startStory( { scene, camera, holub, start: holubStart } ) : null;
+// The pigeon starts in the city, on the pavement, ready to go; the first day's story (the egg in a nest on a cornice,
+// a short tutorial: src/holub/story.js) only with ?vejce. The clock moves the sun and the light.
+const story = holub && params.has( 'vejce' ) ? startStory( { scene, camera, holub, start: holubStart } ) : null;
 const day = holub ? startDay( { renderer, scene, sky, sun, hemi, centre: shadowCentre, hour: SETTINGS.day.startHour, minutes: SETTINGS.day.minutes, tune: SETTINGS.look } ) : null;
 if ( HOLUB ) {
 
 	orbit.enabled = false;
 	minimap.setVisible( true );
-	hud.place.style.display = 'block';
+	hud.touchButtons( [ [ 'MENU', () => pauseGame() ] ] );
 	document.title = 'Letím jak holub';
 
 } else setMode( ! params.has( 'overview' ) ); // start on foot; ?overview for the view from above
@@ -874,12 +927,14 @@ if ( params.has( 'view' ) && ! walking ) {
 
 }
 
-// Nearest street name for the walking HUD.
-const streetPts = data.streets.flatMap( st => st.paths.flatMap( path => {
+// Nearest street name for the HUD: the street whose centre line passes nearest (the segments between the path's
+// points, so a long street with few points still wins over the end of a short side street).
+const streetSegs = data.streets.flatMap( st => st.paths.flatMap( path => {
 
-	const pts = [];
-	for ( let i = 0; i < path.length; i += 3 ) pts.push( [ path[ i ], path[ i + 2 ], st.name ] );
-	return pts;
+	const segs = [];
+	for ( let i = 3; i < path.length; i += 3 ) segs.push( [ path[ i - 3 ], path[ i - 1 ], path[ i ], path[ i + 2 ], st.name ] );
+	if ( path.length === 3 ) segs.push( [ path[ 0 ], path[ 2 ], path[ 0 ], path[ 2 ], st.name ] );
+	return segs;
 
 } ) );
 
@@ -889,9 +944,10 @@ const quarter = x => x < FB.minX ? 'Malá Strana' : 'Staré Město';
 function nearestStreet( x, z ) {
 
 	let best = null, bd = 40 * 40;
-	for ( const [ sx, sz, name ] of streetPts ) {
+	for ( const [ x0, z0, x1, z1, name ] of streetSegs ) {
 
-		const d = ( sx - x ) ** 2 + ( sz - z ) ** 2;
+		const dx = x1 - x0, dz = z1 - z0, t = Math.max( 0, Math.min( 1, ( ( x - x0 ) * dx + ( z - z0 ) * dz ) / ( dx * dx + dz * dz || 1 ) ) );
+		const d = ( x0 + t * dx - x ) ** 2 + ( z0 + t * dz - z ) ** 2;
 		if ( d < bd ) {
 
 			bd = d;
@@ -908,8 +964,8 @@ function nearestStreet( x, z ) {
 // The big map (a click on the dial, or Tab): click a place to be there at once, on foot or as the pigeon.
 function openBigMap() {
 
-	if ( minimap.isOpen || ! ( holub || walking ) ) return;
-	if ( document.pointerLockElement ) document.exitPointerLock();
+	if ( minimap.isOpen || hud.paused || ! ( holub || walking ) ) return;
+	releasePointer();
 	const me = holub ? holub.pos : walker.pos;
 	const wasLocked = holub?.locked;
 	if ( holub ) holub.locked = true;
@@ -924,6 +980,7 @@ function openBigMap() {
 
 			if ( holub ) holub.place( x, z, holub.heading );
 			else walker.teleport( x, z, walker.yaw );
+			hud.replace();
 
 		}
 	} );
@@ -933,13 +990,71 @@ function openBigMap() {
 minimap.view.addEventListener( 'click', openBigMap );
 addEventListener( 'keydown', e => {
 
-	if ( e.code !== 'Tab' || minimap.isOpen || e.target.closest?.( 'input, textarea, select' ) ) return;
+	if ( e.code !== 'Tab' || minimap.isOpen || hud.paused || e.target.closest?.( 'input, textarea, select' ) ) return;
 	e.preventDefault();
 	openBigMap();
 
 } );
 
-document.getElementById( 'credit' ).textContent = data.attribution + ' · fasády podle fotek © Mapillary (CC BY-SA) · lidé: Quaternius (CC0) · vozidla (CC BY): Han66st, K. Siitonen, FPSunreal, creativecipher, Polygonal_64, norlinmartin; Kenney (CC0) · rendering after Slop New York (MIT, Mr.doob)';
+// The credits (data.attribution among them) are in the pause menu and on the start screen (src/ui.js CREDITS).
+
+// ---------------------------------------------------------------------------
+// Pause: Esc (or MENU on a touch screen, or the tab going to the background) opens the menu; the city stands still
+// under it, the last picture dimmed behind. The pointer is let go, and caught again on "Pokračovat".
+
+let paused = false, resumed = false, ownRelease = false;
+function releasePointer() {
+
+	if ( ! document.pointerLockElement ) return;
+	ownRelease = true;
+	document.exitPointerLock();
+
+}
+
+const fine = matchMedia( '(pointer: fine)' ).matches;
+hud.menu = () => [
+	...( HOLUB ? [] : [ walking ? { id: 'above', label: 'Pohled shora', run: () => setMode( false ) } : { id: 'street', label: 'Na ulici', run: () => setMode( true ) } ] ),
+	...( window.GAME === 'courier' ? [ { id: 'creator', label: 'Upravit postavu', run: () => backToStart( { creator: true } ) } ] : [] ),
+	{ id: 'menu', label: 'Hlavní menu', run: () => backToStart() }
+];
+async function pauseGame() {
+
+	if ( ADMIN || hud.paused || minimap.isOpen || ! window.__ready ) return;
+	paused = true;
+	walker.keys.clear();
+	releasePointer();
+	await hud.pause();
+	paused = false;
+	resumed = true;
+	walker.keys.clear();
+	if ( fine && ( walking || holub ) ) {
+
+		try {
+
+			renderer.domElement.requestPointerLock()?.catch?.( () => {} );
+
+		} catch { /* a click on the picture catches it */ }
+
+	}
+
+}
+
+addEventListener( 'keydown', e => {
+
+	if ( e.code !== 'Escape' || e.defaultPrevented ) return;
+	e.preventDefault();
+	pauseGame();
+
+} );
+// Esc while the pointer is caught: the browser lets it go and the page may never see the key.
+document.addEventListener( 'pointerlockchange', () => {
+
+	if ( document.pointerLockElement ) return;
+	if ( ownRelease ) ownRelease = false;
+	else pauseGame();
+
+} );
+document.addEventListener( 'visibilitychange', () => document.hidden && pauseGame() );
 
 // ---------------------------------------------------------------------------
 
@@ -952,7 +1067,7 @@ window.addEventListener( 'resize', () => {
 } );
 
 const timer = new THREE.Timer();
-let labelTimer = 0;
+let labelTimer = 0, hudMode = null;
 
 // The pigeon game is shown as a late-90s console picture (src/holub/ps1.js); ?hd turns that off.
 const ps1 = PS1 ? ps1Look( { renderer, scene, camera } ) : null;
@@ -1034,7 +1149,10 @@ renderer.setAnimationLoop( () => {
 	window.__frameLog?.push( now );
 	frameNo ++;
 	timer.update();
-	const dt = Math.min( timer.getDelta(), 0.1 );
+	// Paused: nothing moves and the last picture stays; back from the pause, no jump for the time it was away.
+	if ( paused ) return;
+	const dt = resumed ? 0 : Math.min( timer.getDelta(), 0.1 );
+	resumed = false;
 	life.update( dt );
 	trams.update( dt );
 	boats.update( dt );
@@ -1042,32 +1160,38 @@ renderer.setAnimationLoop( () => {
 	if ( holub ) {
 
 		holub.update( dt );
-		story.update( dt );
+		story?.update( dt );
 		day.update( dt );
 		minimap.update( holub.pos.x, holub.pos.z, holub.yaw, holub.heading );
-		labelTimer -= dt;
-		if ( labelTimer <= 0 ) {
-
-			labelTimer = 0.3;
-			hud.place.textContent = nearestStreet( holub.pos.x, holub.pos.z ) || quarter( holub.pos.x );
-
-		}
 
 	} else if ( walking ) {
 
 		walker.update( dt );
 		minimap.update( walker.pos.x, walker.pos.z, walker.yaw, walker.heading );
-		labelTimer -= dt;
-		if ( labelTimer <= 0 ) {
-
-			labelTimer = 0.3;
-			hud.place.textContent = nearestStreet( walker.pos.x, walker.pos.z ) || quarter( walker.pos.x );
-
-		}
+		hud.speed( walker.riding ? Math.abs( walker.speed ) * 3.6 : null );
 
 	} else {
 
 		orbit.update();
+
+	}
+
+	// The HUD: the street's name when it changes, the mode's keys when the mode does.
+	labelTimer -= dt;
+	if ( labelTimer <= 0 && window.__ready ) {
+
+		labelTimer = 0.3;
+		const mode = holub ? 'pigeon' : ! walking ? 'above' : walker.riding ? 'ride' : 'walk';
+		if ( mode !== hudMode ) {
+
+			hud.mode( mode );
+			hud.hints( mode, hudMode ? 6 : 12 );
+			hudMode = mode;
+
+		}
+
+		const me = holub ? holub.pos : walking ? walker.pos : null;
+		if ( me ) hud.place( nearestStreet( me.x, me.z ), quarter( me.x ) );
 
 	}
 
@@ -1089,12 +1213,14 @@ renderer.setAnimationLoop( () => {
 
 } );
 
+// Easter eggs (src/eastereggs.js): the black SUV across the garage gate on Náprstkova.
+( await import( './eastereggs.js' ) ).addEasterEggs( scene, groundHeight );
+
 // Every material's GPU pipeline prepared before play, all round the city, so a sign, an awning or a tram that first
 // comes into view doesn't stall a frame while its shader is built (the hitch when turning the camera).
 {
 
-	const loading = document.getElementById( 'loading' );
-	loading.textContent = 'Připravuji obraz…';
+	await loading.step( 'Připravuji obraz', 0.8, 1 );
 	const hidden = [];
 	scene.traverse( o => {
 
@@ -1109,7 +1235,7 @@ renderer.setAnimationLoop( () => {
 	} );
 	try {
 
-		await renderer.compileAsync( scene, camera );
+		await renderer.compileAsync( scene, camera, null, e => loading.stepProgress( e.loaded / e.total ) );
 
 	} catch ( e ) {
 
@@ -1118,18 +1244,20 @@ renderer.setAnimationLoop( () => {
 	}
 
 	for ( const o of hidden ) o.frustumCulled = true;
-	loading.remove();
+	loading.done();
 
 }
 
 window.__debug = { setFps: f => FPS = f, graffiti, renderer, scene, batched, camera, isBlocked, groundHeight, walker, life, trams, boats, holub, waterLevel: data.waterLevel };
 window.__THREE = THREE;
 window.__ready = true;
+// The courier's first message, on the pager.
+if ( window.GAME === 'courier' ) setTimeout( () => hud.pager( 'Dneska žádné objednávky.', 'Projeď se po městě.' ), 1500 );
 window.__complete = false;
 
-// Street life: the people (cars hidden for now, ?cars shows them), the trams and the boats, loaded once the city is up.
+// Street life: the people (?nocars hides the cars), the trams and the boats, loaded once the city is up.
 load( 'life.json', 'json' ).then( streetLife => Promise.all( [
-	addLife( scene, streetLife, { seats, benches: data.furniture.bench, groundHeight, loadModel, camera, cars: params.has( 'cars' ) } ).then( l => Object.assign( life, l ) ),
+	addLife( scene, streetLife, { seats, benches: data.furniture.bench, groundHeight, loadModel, camera, cars: ! params.has( 'nocars' ), dom: renderer.domElement, player: () => holub ? holub.pos : walking ? walker.pos : null, hour: () => day ? day.hour : null } ).then( l => Object.assign( life, l ) ),
 	addTrams( scene, streetLife?.trams, groundHeight, ( x, z ) => cameraBlocked( x, z ) || onLegie( places?.legie, x, z ) ).then( t => trams = window.__debug.trams = t ),
 	addBoats( scene, { loadModel, groundHeight, waterLevel: data.waterLevel } ).then( b => boats = window.__debug.boats = b )
 ] ) ).then( () => renderer.compileAsync( scene, camera ).catch( () => {} ) ).then( () => window.__complete = true ); // the people's, trams' and boats' pipelines too

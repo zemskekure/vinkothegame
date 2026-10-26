@@ -1,6 +1,9 @@
 // Minimap (GTA-style): a round map around the player that turns with the camera, drawn from the scene's own data
 // (houses, carriageways, pavements, parks, the river) into a 1 px = 1 m image once; the player arrow in the middle,
-// the signature places as markers (pinned to the rim when out of range) and N on the rim.
+// the signature places as markers (pinned to the rim when out of range) and N on the rim. Framed in the HUD's
+// console style (src/hud.js): a thick black rim with a cream ring.
+
+const PIXEL = `'Pixelify Sans', system-ui, sans-serif`;
 
 const COLOURS = {
 	river: [ 104, 149, 178 ],
@@ -11,7 +14,7 @@ const COLOURS = {
 	ground: [ 160, 156, 148 ]
 };
 
-export function createMinimap( { bounds, surface, surface2, S, isHouse, terrainHeight, waterLevel, markers, touch } ) {
+export function createMinimap( { bounds, surface, surface2, S, isHouse, terrainHeight, waterLevel, markers, touch, bridges = [] } ) {
 
 	const W = S.width, H = S.height;
 	const map = document.createElement( 'canvas' );
@@ -44,12 +47,35 @@ export function createMinimap( { bounds, surface, surface2, S, isHouse, terrainH
 	for ( let i = 0; i < W * H; i ++ ) if ( edge[ i ] ) d.data.set( [ 150, 138, 122 ], i * 4 );
 	ctx.putImageData( d, 0, 0 );
 
+	// Bridges: the decks over the river would be drawn as water (the terrain under them), so they are drawn over it.
+	// A bridge is a list of strips { pts: [ [ x, z ], … ], w, fill, inner } in the scene frame, metres: each a band of
+	// its width along its line, pavement or road coloured; first a darker parapet edge round all but the inner strips
+	// (Most Legií's carriageway between its pavements).
+	ctx.save();
+	ctx.scale( 1 / S.cell, 1 / S.cell );
+	ctx.translate( - bounds.minX, - bounds.minZ );
+	ctx.lineJoin = 'round';
+	ctx.lineCap = 'butt';
+	const band = ( s, w, colour ) => {
+
+		ctx.beginPath();
+		s.pts.forEach( ( [ x, z ], i ) => i ? ctx.lineTo( x, z ) : ctx.moveTo( x, z ) );
+		ctx.lineWidth = w;
+		ctx.strokeStyle = `rgb(${colour.join( ',' )})`;
+		ctx.stroke();
+
+	};
+
+	for ( const s of bridges.flat() ) if ( ! s.inner ) band( s, s.w + 2 * S.cell, [ 70, 72, 76 ] );
+	for ( const s of bridges.flat() ) band( s, s.w, COLOURS[ s.fill ] );
+	ctx.restore();
+
 	// The on-screen dial.
 	const size = touch ? 128 : 190;
 	const view = document.createElement( 'canvas' );
 	const dpr = Math.min( 2, window.devicePixelRatio || 1 );
 	view.width = view.height = size * dpr;
-	view.style.cssText = `position:fixed;${ touch ? 'right:12px;top:12px' : 'left:16px;bottom:16px' };width:${size}px;height:${size}px;border-radius:50%;box-shadow:0 2px 10px rgba(0,0,0,0.45);border:3px solid rgba(20,24,30,0.75);z-index:2;cursor:pointer;display:none`;
+	view.style.cssText = `position:fixed;${ touch ? 'right:16px;top:16px' : 'left:24px;bottom:24px' };width:${size}px;height:${size}px;border-radius:50%;box-sizing:border-box;border:4px solid #000;box-shadow:0 0 0 3px #f4ecd2,0 0 0 6px #000,7px 7px 0 6px rgba(0,0,0,0.45);z-index:2;cursor:pointer;display:none`;
 	view.title = 'Mapa (Tab): klikni a přenes se';
 	document.body.appendChild( view );
 	const v = view.getContext( '2d' );
@@ -111,15 +137,19 @@ export function createMinimap( { bounds, surface, surface2, S, isHouse, terrainH
 
 		}
 
-		// North on the rim.
+		// North on the rim: an orange tab with a hard edge.
 		const [ nx, ny ] = toDial( x, z - 1e6 );
-		const nl = Math.hypot( nx, ny );
-		v.fillStyle = 'rgba(20,24,30,0.8)';
+		const nl = Math.hypot( nx, ny ), nr = R - 11 * dpr;
+		v.fillStyle = '#c4562f';
 		v.beginPath();
-		v.arc( R + nx / nl * ( R - 9 * dpr ), R + ny / nl * ( R - 9 * dpr ), 8 * dpr, 0, Math.PI * 2 );
+		v.arc( R + nx / nl * nr, R + ny / nl * nr, 10 * dpr, 0, Math.PI * 2 );
 		v.fill();
-		v.fillStyle = '#fff';
-		v.fillText( 'N', R + nx / nl * ( R - 9 * dpr ), R + ny / nl * ( R - 9 * dpr ) + 0.5 * dpr );
+		v.lineWidth = 2 * dpr;
+		v.strokeStyle = '#000';
+		v.stroke();
+		v.font = `${ 16 * dpr }px ${PIXEL}`;
+		v.fillStyle = '#ffd34a';
+		v.fillText( 'N', R + nx / nl * nr, R + ny / nl * nr + 1 * dpr );
 
 		// The player: an arrow in the figure's heading.
 		const [ hx, hy ] = toDial( x + Math.sin( heading ), z + Math.cos( heading ) );
@@ -133,12 +163,19 @@ export function createMinimap( { bounds, surface, surface2, S, isHouse, terrainH
 		v.lineTo( 0, 3.5 * dpr );
 		v.lineTo( - 6.5 * dpr, 7 * dpr );
 		v.closePath();
-		v.fillStyle = '#c4533a';
+		v.fillStyle = '#ffd34a';
 		v.fill();
 		v.lineWidth = 2 * dpr;
-		v.strokeStyle = '#fff';
+		v.strokeStyle = '#000';
 		v.stroke();
 		v.restore();
+
+		// A dark inner edge, as if the map sat in a bezel.
+		v.beginPath();
+		v.arc( R, R, R - 1.5 * dpr, 0, Math.PI * 2 );
+		v.lineWidth = 3 * dpr;
+		v.strokeStyle = 'rgba(0,0,0,0.35)';
+		v.stroke();
 
 	}
 
@@ -149,16 +186,20 @@ export function createMinimap( { bounds, surface, surface2, S, isHouse, terrainH
 
 		if ( open ) return;
 		const layer = document.createElement( 'div' );
-		layer.style.cssText = 'position:fixed;inset:0;z-index:20;background:rgba(14,16,20,0.78);display:flex;align-items:center;justify-content:center;cursor:crosshair';
+		layer.style.cssText = `position:fixed;inset:0;z-index:20;background:rgba(10,12,18,0.86);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;cursor:crosshair;font:16px ${PIXEL};color:#f4ecd2`;
+		const head = document.createElement( 'div' );
+		head.style.cssText = 'font-size:32px;line-height:1;color:#ffd34a;text-shadow:3px 3px 0 #000;pointer-events:none';
+		head.textContent = 'MAPA';
 		const big = document.createElement( 'canvas' );
-		const fit = Math.min( ( innerWidth - 40 ) / W, ( innerHeight - 90 ) / H );
-		big.style.cssText = `width:${Math.floor( W * fit )}px;height:${Math.floor( H * fit )}px;box-shadow:0 4px 30px rgba(0,0,0,0.6);border:3px solid rgba(20,24,30,0.9);image-rendering:pixelated`;
+		const fit = Math.min( ( innerWidth - 48 ) / W, ( innerHeight - 140 ) / H );
+		big.style.cssText = `width:${Math.floor( W * fit )}px;height:${Math.floor( H * fit )}px;box-sizing:border-box;border:4px solid #000;box-shadow:0 0 0 3px #f4ecd2,0 0 0 6px #000,8px 8px 0 6px rgba(0,0,0,0.5);image-rendering:pixelated`;
 		big.width = Math.floor( W * fit * dpr );
 		big.height = Math.floor( H * fit * dpr );
 		const tip = document.createElement( 'div' );
-		tip.style.cssText = 'position:fixed;left:50%;bottom:18px;transform:translateX(-50%);color:#fff;font:600 14px system-ui,sans-serif;text-shadow:0 1px 3px #000;pointer-events:none';
-		tip.textContent = 'Klikni, kam se přenést · Esc zavřít';
-		layer.append( big, tip );
+		tip.style.cssText = 'min-height:22px;padding:4px 12px;background:rgba(16,20,30,0.92);border:3px solid #000;text-shadow:2px 2px 0 #000;pointer-events:none;white-space:nowrap;max-width:calc(100vw - 32px);overflow:hidden;text-overflow:ellipsis';
+		const idle = 'Klikni, kam se přenést · Esc zavřít';
+		tip.textContent = idle;
+		layer.append( head, big, tip );
 		document.body.appendChild( layer );
 
 		const b = big.getContext( '2d' ), kx = big.width / W, ky = big.height / H;
@@ -185,11 +226,11 @@ export function createMinimap( { bounds, surface, surface2, S, isHouse, terrainH
 
 		const [ px, py ] = toBig( x, z );
 		b.beginPath();
-		b.arc( px, py, 6 * dpr, 0, Math.PI * 2 );
-		b.fillStyle = '#c4533a';
+		b.arc( px, py, 7 * dpr, 0, Math.PI * 2 );
+		b.fillStyle = '#ffd34a';
 		b.fill();
-		b.lineWidth = 2 * dpr;
-		b.strokeStyle = '#fff';
+		b.lineWidth = 3 * dpr;
+		b.strokeStyle = '#000';
 		b.stroke();
 
 		const at = e => {
@@ -225,7 +266,7 @@ export function createMinimap( { bounds, surface, surface2, S, isHouse, terrainH
 		layer.addEventListener( 'pointermove', e => {
 
 			const p = at( e );
-			tip.textContent = p && labelAt ? `${labelAt( p[ 0 ], p[ 1 ] ) || 'Sem'} · klikni pro přenesení` : 'Klikni, kam se přenést · Esc zavřít';
+			tip.textContent = p && labelAt ? `${labelAt( p[ 0 ], p[ 1 ] ) || 'Sem'} · klikni pro přenesení` : idle;
 
 		} );
 		layer.addEventListener( 'click', e => {

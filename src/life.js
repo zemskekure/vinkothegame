@@ -17,6 +17,8 @@ import { rulesFrom, gameSeed, personSeed, generatePerson, lookOf } from './perso
 import { SETTINGS } from './settings.js';
 import { vehicleModel } from './vehicles.js';
 import { carFleet } from './cars.js';
+import { addFriends } from './friends.js';
+import { addPerlova } from './perlova.js';
 
 // How often each car turns up. Every one is made from the owner's pictures (src/cars.js); `model`: a downloaded model
 // ( file, real length in metres ) to draw instead. Only Czech street cars (the owner's choice): the generic kit cars
@@ -80,7 +82,7 @@ function sample( path, s, out ) {
 
 // ---------------------------------------------------------------------------
 
-export async function addLife( scene, life, { seats = [], benches = [], groundHeight, loadModel, camera, cars = true } ) {
+export async function addLife( scene, life, { seats = [], benches = [], groundHeight, loadModel, camera, cars = true, dom, player, hour } ) {
 
 	if ( ! life ) return { update() {} };
 
@@ -105,6 +107,10 @@ export async function addLife( scene, life, { seats = [], benches = [], groundHe
 	const rules = rulesFrom( SETTINGS.art ), seed = gameSeed( rules );
 	let made = 0;
 	const person = options => generatePerson( rules, personSeed( seed, made ++ ), wardrobe, options );
+	// People of their own: the owner's friends (src/friends.js; only where their private folder is), who keep their
+	// seats and bench, and the women on Perlová (src/perlova.js; game settings `world.perlova`).
+	const friends = await addFriends( scene, { wardrobe, bodies, rules, groundHeight, camera, dom, player } );
+	const perlova = SETTINGS.world?.perlova === false ? null : addPerlova( scene, { wardrobe, bodies, rules, groundHeight, camera, hour } );
 	// The sum of the knobs' displacements of one point (a seat's lowest point), weighted by a shape.
 	const moved = ( drop, shape ) => {
 
@@ -198,6 +204,7 @@ export async function addLife( scene, life, { seats = [], benches = [], groundHe
 	// setting at zero still empties them.
 	for ( const [ x, y, z, rot, h = 0.45, share ] of seats ) {
 
+		if ( friends.taken( x, z ) ) continue;
 		const p = share === undefined ? SETTINGS.people.seatedShare : ( SETTINGS.people.seatedShare > 0 ? share : 0 );
 		if ( rnd() < p ) sitAt( x, y, z, rot, h, 0.06 );
 
@@ -205,6 +212,7 @@ export async function addLife( scene, life, { seats = [], benches = [], groundHe
 	for ( let i = 0; i < benches.length; i += 5 ) {
 
 		const [ x, y, z, rot ] = benches.slice( i, i + 5 );
+		if ( friends.taken( x, z ) ) continue;
 		for ( const ox of [ - 0.45, 0.45 ] ) {
 
 			// Bench model: seat along local x, sitters face its −z; the hips over the back third of the seat.
@@ -495,6 +503,8 @@ export async function addLife( scene, life, { seats = [], benches = [], groundHe
 		}
 
 		for ( const b of batches ) b.mesh.instanceMatrix.needsUpdate = true;
+		friends.update( dt );
+		perlova?.update( dt );
 
 	}
 
@@ -506,6 +516,6 @@ export async function addLife( scene, life, { seats = [], benches = [], groundHe
 	}
 
 	update( 0 );
-	return { update, placeWalkers, walks, agents, bodies, seed, people: agents.length, cars: parked.length + movers.length, carMeshes: Object.fromEntries( carTypes.map( ( n, k ) => [ n, batches[ k ]?.mesh ] ) ) };
+	return { update, placeWalkers, walks, agents, bodies, seed, friends, perlova, people: agents.length, cars: parked.length + movers.length, carMeshes: Object.fromEntries( carTypes.map( ( n, k ) => [ n, batches[ k ]?.mesh ] ) ) };
 
 }

@@ -23,13 +23,32 @@ Last update: 2026-10-26.
 
 | Mode | What it is | State |
 |---|---|---|
-| **Holub (pigeon)** | Hatch from an egg (`?vejce`), a short tutorial, then the city from the air and the pavement: walk, sit, peck crumbs, fly. Controls: A/D turn, W flap/faster, S brake, Space climb, C dive, mouse looks; the camera settles behind after 1.2 s. Day and night (T skips time). | playable (`?holub`) |
+| **Holub (pigeon)** | Starts straight in the city on the pavement of Betlémské náměstí: walk, sit, peck crumbs, fly. Controls: A/D turn, W flap/faster, S brake, Space climb, C dive, mouse looks; the camera settles behind after 1.2 s. Day and night (T skips time). The egg and the first day's tutorial (`src/holub/story.js`) only with `?vejce`. | playable (`?holub`) |
 | **Kurýr (food-delivery courier)** | A character made in the creator, on foot or on a delivery scooter (B): leans into turns, bumps over setts and tram rails, 40 km/h top. Later: deliveries from real restaurants to addresses, against the clock, for tips. | riding works; creator + start screen in progress (`feat/start`); deliveries planned |
-| **Jen se projet (free roam)** | On foot, no goal. | works (default today) |
+| **Jen se projet (free roam)** | On foot, no goal. Space jumps (a 0.7 m hop, legs tucked; not on the scooter). | works (default today) |
 | Overview | The city from above (M). | works |
 
 Start screen: choose Holub / Kurýr / Jen se projet; deep links (`?at=…`, `?holub`, `?overview`, `?studio`) skip it.
-(in progress, `feat/start`)
+While it is up, the city's first files download, then (at low priority) the drawn fronts, the people's bodies and
+wardrobe, the scooter, life.json, trams and boats, so the game starts from the cache. The build's version (date and
+commit, injected by `vite.config.js`) shows in a corner and in the pause menu. Title and subtitle: `GAME_TITLE`,
+`GAME_SUBTITLE` in `src/ui.js` (the name isn't decided).
+
+### UI (late-90s console HUD)
+
+- One look for the start screen, the creator, the loading screen and the HUD: `src/ui.js` (shared styles, the menu
+  list, the pixel title, the credits panel). Lettering: Pixelify Sans (OFL, self-hosted in `public/fonts/`, Czech
+  diacritics), at 16 / 24 / 32 / 48 px only so it stays crisp; the big "PRAHA" title is drawn on a canvas.
+- Loading (`src/loading.js`): one bar through the download and the build steps in `src/main.js` (terrain, ground,
+  houses, furniture, batching, the player, the map, the GPU pipelines with compileAsync's own progress); the bar creeps
+  inside a step and a stripe runs on the compositor, so it never stands still.
+- HUD (`src/hud.js`): nothing permanent but the minimap (thick black rim, orange N tab). The street's name comes in as
+  an area title when you enter a street; key caps for a few seconds at start and on every mode change (H toggles
+  them); the scooter's speedometer; the pigeon's clock and tally; the courier's messages on a pager.
+- Pause (Esc, MENU on touch, or the tab going to the background): the game stands still (no updates, the last frame
+  dimmed), the pointer is let go and caught again on Pokračovat. Menu: Pokračovat, Pohled shora / Na ulici, Upravit
+  postavu (courier), Hlavní menu, Ovládání, Autoři a licence (all attributions; also on the start screen).
+- The big map (Tab) in the same frame. Touch: MENU / SHORA buttons top left, the joystick, a SKOK button.
 
 ## 3. The world
 
@@ -45,9 +64,21 @@ Start screen: choose Holub / Kurýr / Jen se projet; deep links (`?at=…`, `?ho
   `src/people.js` (Quaternius CC0 rigs, faceted photo heads, one texture atlas). Rules in `art.crowd` (ugliness,
   textured share, spreads, fixed seed); `?seed=N` fixes the crowd.
 - Walkers on pavements, people seated at café terraces and inside venues (a share of seats only).
-- Planned: **Perlová street**: a few sex workers standing by the walls, more at night (non-explicit, no interaction
-  beyond other NPCs; a settings switch to turn them off). Locals vs tourists mix (faces need tagging). NPC reactions
-  to the pigeon (shoo, feed). Short deadpan lines when you pass.
+- **Friends** (`src/friends.js`): the owner's real friends as named NPCs with their own photo faces, a fixed body and
+  clothes from a seed made from their name. All of them round the front right-hand table in Hostinec U Rotundy (four
+  on the chairs, the rest standing at the table's end, a beer each), some also about the city (spots in `SPOTS`:
+  `kampa` on a bench on Kampa, `betlem` on Betlémské náměstí, `divadlo` on the Národní divadlo tram island). Come
+  within 4 m and the nearest one's name and a line of theirs show above the head (a small DOM label of its own).
+  **Their faces are private** (the repo is public): they live in `public/models/people/friends/` (gitignored) with
+  `friends.json` (name, file, sex, lines, spots), put there by `node tools/friends.mjs [faces folder]`; the build only
+  asks for them when the folder is there (`__FRIENDS__` in `vite.config.js`). Names, lines and places are edited in
+  that `friends.json`. Their faces are never in the crowd's face pool, and the crowd leaves their seats free.
+- **Perlová** (`src/perlova.js`): four women standing by the house walls on Perlová (Staré Město), idle like anyone
+  standing about, no interaction. One by day, three in the evening (and on foot, where the clock stands at the game's
+  evening), four at night (the pigeon's day cycle). Off with `world.perlova: false` in `public/game-settings.json`
+  (also a switch on the admin page, Mapa a lidé).
+- Planned: Locals vs tourists mix (faces need tagging). NPC reactions to the pigeon (shoo, feed). Short deadpan lines
+  from strangers when you pass.
 
 ## 5. Vehicles
 
@@ -70,7 +101,7 @@ Start screen: choose Holub / Kurýr / Jen se projet; deep links (`?at=…`, `?ho
 
 ## 7. Story, missions, easter eggs
 
-- Pigeon story: egg → tutorial → free (`src/holub/story.js`). More chapters: ideas below.
+- Pigeon story: egg → tutorial → free (`src/holub/story.js`), only with `?vejce` now. More chapters: ideas below.
 - Ideas (not built yet):
   - Pigeon side missions: steal a trdelník, chase off a rival pigeon from the Hus statue... (to collect)
   - Courier deliveries with a map pin → on-screen arrow (borrowed from *Pigeon: A Love Story*).
@@ -90,4 +121,4 @@ Start screen: choose Holub / Kurýr / Jen se projet; deep links (`?at=…`, `?ho
 
 | Done | In progress | Next | Later |
 |---|---|---|---|
-| pigeon flight + story start; walking; scooter; teleport map; PS1 look (pigeon); generated ugly people; trams, Czech cars, boats; Bjukitchen; Malá Strana first layer; studio + admin | performance (`perf/ps1`: fast load, smooth frames, PS1 look everywhere); start screen + character creator (`feat/start`) | Perlová NPCs; deliveries (Bjukitchen first); sound | weather; easter eggs; more sponsored interiors; open-source split of the model |
+| pigeon flight + story start; walking; jump; scooter; console HUD, loading bar, real pause; teleport map; PS1 look (pigeon); generated ugly people; trams, Czech cars, boats; Bjukitchen; Malá Strana first layer; studio + admin; friends NPCs; Perlová | performance (`perf/ps1`: fast load, smooth frames, PS1 look everywhere); start screen + character creator (`feat/start`) | deliveries (Bjukitchen first); sound | weather; easter eggs; more sponsored interiors; open-source split of the model |
