@@ -183,6 +183,7 @@ const surfaceTexture = buf => {
 };
 
 const surface2 = new Uint8Array( surface2Buf );
+const surfaceBytes = new Uint8Array( surfaceBuf );
 const groundDetail = await new THREE.TextureLoader().loadAsync( 'data/ground-detail.jpg' );
 groundDetail.flipY = false; // row 0 = north, like the surface maps
 groundDetail.anisotropy = renderer.getMaxAnisotropy();
@@ -547,6 +548,20 @@ function cameraBlocked( x, z ) {
 }
 
 const walker = new Walker( camera, renderer.domElement, ( x, z ) => groundHeight( x, z, walker.placed ? walker.y : null ), isBlocked, scene, cameraBlocked, ceilingAt );
+walker.setScooter( loadModel );
+// How rough the street is under the scooter: 0 asphalt, ½ paving stones, 1 granite setts (surface2: the carriageway's
+// surface on the road, the open area's off it), plus a jolt across the tram rails.
+walker.roughAt = ( x, z ) => {
+
+	const col = Math.min( S.width - 1, Math.max( 0, Math.floor( ( x - bounds.minX ) / S.cell ) ) );
+	const row = Math.min( S.height - 1, Math.max( 0, Math.floor( ( z - bounds.minZ ) / S.cell ) ) );
+	const i = ( row * S.width + col ) * 4;
+	const onRoad = surfaceBytes[ i + 2 ] > 128;
+	const code = onRoad ? surface2[ i ] : surface2[ i + 1 ];
+	const rails = surfaceBytes[ i + 3 ] < 20 ? 0.6 : 0;
+	return Math.max( rails, code === 40 ? 0.3 : 1 - code / 255 );
+
+};
 walkerHeight = () => walker.placed ? walker.y + 0.5 : Infinity;
 walkerLevel = () => walker.placed ? walker.y : null;
 
@@ -620,7 +635,7 @@ function setMode( walk ) {
 	hud.help.textContent = touch
 		? ( walk ? 'Joystick vlevo dole chůze (až k okraji běh) · táhni prstem kamerou' : 'Táhni prstem pro otáčení · dvěma prsty přiblížení a posun' )
 		: walk
-			? 'Klikni a ovládej kameru myší · WASD chůze · Shift běh · B moped · kolečko zoom · V pohled z očí · Tab mapa'
+			? 'Klikni a ovládej kameru myší · WASD chůze · Shift běh · B skútr · kolečko zoom · V pohled z očí · Tab mapa'
 			: 'Táhni myší pro otáčení · kolečko přiblížení · pravé tlačítko posun';
 	hud.place.style.display = walk ? 'block' : 'none';
 	minimap.setVisible( walk );

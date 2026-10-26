@@ -1,17 +1,21 @@
 import * as THREE from 'three/webgpu';
 import { makeFigure } from './figures.js';
-import { makeMoped } from './moped.js';
+import { makeScooter, SCOOTER } from './scooter.js';
 
 const RADIUS = 0.35;
 const WALK = 1.7, RUN = 5.2;
-// On the moped: top speed about 40 km/h, brisk town acceleration, steering that tightens as it slows.
-const MOPED = { max: 11, reverse: 2, accel: 4.5, brake: 9, drag: 1.6, turn: 2.2 };
+// On the scooter (a 110 cc automatic): top speed 40 km/h (11.1 m/s), the automatic gearbox pulling hardest from
+// a standstill and fading towards the top (about 0–30 km/h in 3 s), firm brakes, a little engine braking and air
+// drag when coasting. The bars turn the front wheel; the scooter turns by its wheelbase, tighter when slow, and
+// leans into the turn by how fast it turns at that speed (tan lean = v × yaw rate / g).
+const RIDE = { max: 11.1, reverse: 1.6, accel: 4.2, brake: 7.5, coast: 0.6, air: 0.012, steer: 0.62, wheelbase: 1.3, steerRate: 3, grip: 7, maxLean: 0.5 };
 
 // Third-person walking (GTA-style): your figure in the street with the camera behind it. Mouse look (pointer
 // lock) and WASD, Shift to run, the wheel to zoom, V for first person; on touch screens a joystick (bottom left)
 // to walk and a drag anywhere else to look. The figure turns towards where it walks; the camera pulls in when a
 // house stands between it and the figure. Terrain following, sliding collisions against building footprints.
-// B gets on or off a moped: W/S throttle and brake, A/D steer, and the camera swings in behind.
+// B gets on or off the scooter: W/S throttle and brake (S reverses slowly from a stop), A/D steer, and the camera
+// swings in behind.
 export class Walker {
 
 	constructor( camera, dom, groundHeight, isBlocked, scene, cameraBlocked = isBlocked, ceilingAt = () => Infinity ) {
@@ -38,11 +42,19 @@ export class Walker {
 		this.avatar = makeFigure( 0xc4533a, 0x3b4350, 0xeee9df );
 		this.avatar.visible = false;
 		scene.add( this.avatar );
-		this.moped = makeMoped();
-		this.moped.visible = false;
-		scene.add( this.moped );
+		this.scene = scene;
+		this.scooter = new THREE.Group();
+		this.scooter.visible = false;
+		scene.add( this.scooter );
 		this.riding = false;
 		this.speed = 0;
+		this.steer = 0; // front wheel angle (rad)
+		this.lean = 0; // roll into the turn (rad)
+		this.pitchRide = 0; // nose up / down over bumps and when braking
+		this.bump = 0; // vertical jolt from the cobbles (m)
+		this.bumpV = 0;
+		this.roughAt = () => 0; // 0 smooth asphalt … 1 granite setts, set by the game
+		this.camTarget = new THREE.Vector3();
 		this.lookTime = 0;
 
 		dom.addEventListener( 'click', () => {
@@ -168,11 +180,24 @@ export class Walker {
 
 	}
 
+	// The scooter's model is loaded by the game (it needs the model loader).
+	setScooter( loadModel ) {
+
+		this.scene.remove( this.scooter );
+		this.scooter = makeScooter( loadModel );
+		this.scooter.visible = this.enabled && this.riding;
+		this.scene.add( this.scooter );
+
+	}
+
 	setRiding( on ) {
 
 		this.riding = on;
-		this.speed = 0;
-		this.moped.visible = this.enabled && on;
+		this.speed = this.steer = this.lean = this.pitchRide = this.bump = this.bumpV = 0;
+		this.scooter.visible = this.enabled && on;
+		// The rider sits on the scooter and tilts with it; off it, the figure stands in the street again.
+		( on ? this.scooter.userData.lean ?? this.scene : this.scene ).add( this.avatar );
+		if ( on ) this.heading = Math.atan2( Math.sin( this.heading ), Math.cos( this.heading ) );
 
 	}
 
@@ -181,7 +206,7 @@ export class Walker {
 		this.enabled = enabled;
 		this.joystick.style.display = enabled && touch ? 'block' : 'none';
 		this.avatar.visible = enabled && ! this.firstPerson;
-		this.moped.visible = enabled && this.riding;
+		this.scooter.visible = enabled && this.riding;
 		if ( ! enabled ) this.stick.x = this.stick.y = 0;
 
 	}
@@ -281,8 +306,8 @@ export class Walker {
 
 	}
 
-	// Moped: the throttle and brake set the speed, steering turns the heading, and the move is taken in short steps
-	// so a fast moped cannot skip through a thin wall. Hitting something slides along it and loses most speed.
+	// Scooter: the throttle and brake set the speed, the bars turn the heading, and the move is taken in short steps
+	// so a fast scooter cannot skip through a thin wall. Hitting something slides along it and loses most speed.
 	ride( dt ) {
 
 		const safe = { x: this.pos.x, z: this.pos.z, y: this.y, heading: this.heading };
@@ -297,14 +322,28 @@ export class Walker {
 		}
 
 		let v = this.speed;
-		if ( throttle > 0 ) v += ( v < 0 ? MOPED.brake : MOPED.accel * throttle ) * dt;
-		else if ( throttle < 0 ) v -= ( v > 0 ? MOPED.brake : MOPED.accel ) * - throttle * dt;
-		else v -= Math.sign( v ) * Math.min( Math.abs( v ), MOPED.drag * dt );
-		v = THREE.MathUtils.clamp( v, - MOPED.reverse, MOPED.max );
+		const forward = Math.max( 0, v ) / RIDE.max;
+		if ( throttle > 0 && v >= - 0.05 ) v += RIDE.accel * throttle * ( 1 - forward * forward ) * dt;
+		else if ( throttle > 0 ) v = Math.min( 0, v + RIDE.brake * dt );
+		else if ( throttle < 0 && v > 0.05 ) v = Math.max( 0, v - RIDE.brake * - throttle * dt );
+		else if ( throttle < 0 ) v = Math.max( - RIDE.reverse, v - 1.5 * - throttle * dt );
+		// Coasting: engine braking and rolling, plus air drag growing with the square of the speed.
+		if ( ! throttle || throttle > 0 && v > 0 ) v -= Math.sign( v ) * Math.min( Math.abs( v ), ( throttle ? 0 : RIDE.coast ) + RIDE.air * v * v ) * dt;
+		v = THREE.MathUtils.clamp( v, - RIDE.reverse, RIDE.max );
 
-		// Turning the bars only turns a moving moped, and less at speed.
-		const grip = Math.min( 1, Math.abs( v ) / 2.5 ) * ( 1 - 0.45 * Math.abs( v ) / MOPED.max );
-		this.heading -= steer * MOPED.turn * grip * Math.sign( v ) * dt;
+		// The bars: eased towards the input, and turned less the faster it goes, as a rider does: never more than
+		// keeps the sideways pull under RIDE.grip (v² tan steer / wheelbase).
+		const reach = Math.min( RIDE.steer, Math.atan( RIDE.grip * RIDE.wheelbase / Math.max( 1e-3, v * v ) ) );
+		this.steer += THREE.MathUtils.clamp( steer * reach - this.steer, - RIDE.steerRate * dt, RIDE.steerRate * dt );
+		const yawRate = v * Math.tan( this.steer ) / RIDE.wheelbase;
+		this.heading -= yawRate * dt;
+
+		// Lean into the turn (balance: tan lean = v × yaw rate / g), eased; pitch: the nose dips under the brakes and
+		// rises a touch under power.
+		const leanTarget = THREE.MathUtils.clamp( Math.atan( v * yawRate / 9.81 ), - RIDE.maxLean, RIDE.maxLean );
+		this.lean += ( leanTarget - this.lean ) * Math.min( 1, dt * 6 );
+		const accel = ( v - this.speed ) / Math.max( dt, 1e-3 );
+		this.pitchRide += ( THREE.MathUtils.clamp( - accel * 0.006, - 0.05, 0.03 ) - this.pitchRide ) * Math.min( 1, dt * 5 );
 
 		const p = this.pos;
 		const sx = Math.sin( this.heading ), sz = Math.cos( this.heading );
@@ -322,13 +361,19 @@ export class Walker {
 
 		this.speed = v;
 
-		// The camera settles behind the rider unless the mouse looked around in the last moment.
+		// Cobbles: small wheels on granite setts patter, a sprung bounce kicked by the stones at speed.
+		const rough = this.roughAt( p.x, p.z );
+		const kick = ( Math.random() - 0.5 ) * Math.abs( v ) * ( 0.04 + 0.5 * rough );
+		this.bumpV += ( kick - this.bump * 900 * dt - this.bumpV * 24 * dt );
+		this.bump = THREE.MathUtils.clamp( this.bump + this.bumpV * dt, - 0.03, 0.03 );
+
+		// The camera settles behind the rider unless the mouse looked around in the last moment; quicker the faster.
 		this.lookTime = Math.max( 0, this.lookTime - dt );
 		if ( ! this.lookTime && Math.abs( v ) > 0.5 ) {
 
-			let d = this.heading + Math.PI - this.yaw;
+			let d = ( v > 0 ? this.heading + Math.PI : this.yaw ) - this.yaw;
 			d = Math.atan2( Math.sin( d ), Math.cos( d ) );
-			this.yaw += d * Math.min( 1, dt * 2.5 );
+			this.yaw += d * Math.min( 1, dt * ( 1.2 + 2 * Math.abs( v ) / RIDE.max ) );
 
 		}
 
@@ -360,19 +405,31 @@ export class Walker {
 
 		const p = this.pos;
 		p.y = this.y;
-		this.avatar.position.copy( p );
-		this.avatar.rotation.y = this.heading;
 		if ( this.riding ) {
 
-			// The rider stands on the floorboard, a little back, leaning into the bars.
-			this.moped.position.copy( p );
-			this.moped.rotation.y = this.heading;
-			this.avatar.position.y += 0.32;
-			this.avatar.position.x -= Math.sin( this.heading ) * 0.15;
-			this.avatar.position.z -= Math.cos( this.heading ) * 0.15;
+			// The rider sits astride the seat, in the scooter's leaning frame.
+			this.scooter.position.copy( p );
+			this.scooter.rotation.y = this.heading;
+			const lean = this.scooter.userData.lean;
+			if ( lean ) {
+
+				lean.position.y = this.bump;
+				lean.rotation.set( this.pitchRide, 0, this.lean, 'XZY' );
+
+			}
+
+			const seat = this.scooter.userData.seat ?? new THREE.Vector3( 0, SCOOTER.seatY, SCOOTER.seatZ );
+			this.avatar.position.set( 0, seat.y - 0.47, seat.z );
+			this.avatar.rotation.set( 0, 0, 0 );
+
+		} else {
+
+			this.avatar.position.copy( p );
+			this.avatar.rotation.y = this.heading;
 
 		}
-		this.avatar.userData.setPose( { phase: this.phase, stride: this.stride, t: this.time } );
+
+		this.avatar.userData.setPose( { phase: this.phase, stride: this.stride, t: this.time, ride: this.riding } );
 
 		const cam = this.camera;
 		if ( this.firstPerson ) {
@@ -383,11 +440,24 @@ export class Walker {
 
 		}
 
-		// Behind and above the figure; nearer when a house is in the way.
-		const tx = p.x, ty = p.y + 1.55, tz = p.z;
+		// Behind and above the figure; nearer when a house is in the way. On the scooter the camera's aim trails the
+		// rider softly (and a little ahead at speed), and ignores the cobbles' jolts, so the picture stays calm.
+		let tx = p.x, ty = p.y + 1.55, tz = p.z;
+		const ct = this.camTarget;
+		if ( this.riding && dt ) {
+
+			const ahead = this.speed * 0.12;
+			ct.x += ( p.x + Math.sin( this.heading ) * ahead - ct.x ) * Math.min( 1, dt * 9 );
+			ct.z += ( p.z + Math.cos( this.heading ) * ahead - ct.z ) * Math.min( 1, dt * 9 );
+			ct.y += ( p.y + 1.45 - ct.y ) * Math.min( 1, dt * 5 );
+			tx = ct.x; ty = ct.y; tz = ct.z;
+
+		} else ct.set( tx, ty, tz );
 		const cp = Math.cos( this.pitch ), dx = Math.sin( this.yaw ) * cp, dy = Math.sin( this.pitch ), dz = Math.cos( this.yaw ) * cp;
-		let allowed = this.distance;
-		for ( let s = 0.4; s <= this.distance; s += 0.2 ) {
+		// Riding, the camera stands a little further back, more at speed.
+		const want = this.distance + ( this.riding ? 0.6 + 1.4 * Math.abs( this.speed ) / RIDE.max : 0 );
+		let allowed = want;
+		for ( let s = 0.4; s <= want; s += 0.2 ) {
 
 			const x = tx + dx * s, y = ty + dy * s, z = tz + dz * s;
 			if ( this.cameraBlocked( x, z ) || y < this.groundHeight( x, z ) + 0.25 || y > this.ceilingAt( x, z ) - 0.15 ) {
