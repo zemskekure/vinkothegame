@@ -410,6 +410,9 @@ export class Walker {
 		if ( this.riding ) {
 
 			// The rider sits astride the seat, in the scooter's leaning frame.
+			// The wheels roll the way the scooter went (backwards too).
+			const moved = Math.hypot( p.x - this.scooter.position.x, p.z - this.scooter.position.z );
+			if ( moved < 2 ) this.scooter.userData.roll?.( moved * Math.sign( this.speed || 1 ) );
 			this.scooter.position.copy( p );
 			this.scooter.rotation.y = this.heading;
 			const lean = this.scooter.userData.lean;
