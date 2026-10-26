@@ -755,7 +755,7 @@ addEventListener( 'keydown', e => {
 
 } );
 
-document.getElementById( 'credit' ).textContent = data.attribution + ' · fasády podle fotek © Mapillary (CC BY-SA) · lidé: Quaternius (CC0) · vozidla: Han66st, Kuutti Siitonen, FPSunreal, creativecipher, Polygonal_64, norlinmartin (CC BY 4.0, models/vehicles/CREDITS.md), Kenney (CC0) · rendering after Slop New York (MIT, Mr.doob)';
+document.getElementById( 'credit' ).textContent = data.attribution + ' · fasády podle fotek © Mapillary (CC BY-SA) · lidé: Quaternius (CC0) · vozidla (CC BY): Han66st, K. Siitonen, FPSunreal, creativecipher, Polygonal_64, norlinmartin; Kenney (CC0) · rendering after Slop New York (MIT, Mr.doob)';
 
 // ---------------------------------------------------------------------------
 

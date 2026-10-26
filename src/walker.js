@@ -5,10 +5,10 @@ import { makeScooter, SCOOTER } from './scooter.js';
 const RADIUS = 0.35;
 const WALK = 1.7, RUN = 5.2;
 // On the scooter (a 110 cc automatic): top speed 40 km/h (11.1 m/s), the automatic gearbox pulling hardest from
-// a standstill and fading towards the top (about 0–30 km/h in 3 s), firm brakes, a little engine braking and air
+// a standstill and fading towards the top (about 0–30 km/h in 2.5 s), firm brakes, a little engine braking and air
 // drag when coasting. The bars turn the front wheel; the scooter turns by its wheelbase, tighter when slow, and
 // leans into the turn by how fast it turns at that speed (tan lean = v × yaw rate / g).
-const RIDE = { max: 11.1, reverse: 1.6, accel: 4.2, brake: 7.5, coast: 0.6, air: 0.012, steer: 0.62, wheelbase: 1.3, steerRate: 3, grip: 7, maxLean: 0.5 };
+const RIDE = { max: 11.1, reverse: 1.6, accel: 3.8, brake: 7.5, coast: 0.6, air: 0.006, steer: 0.62, wheelbase: 1.3, steerRate: 3, grip: 6, maxLean: 0.45 };
 
 // Third-person walking (GTA-style): your figure in the street with the camera behind it. Mouse look (pointer
 // lock) and WASD, Shift to run, the wheel to zoom, V for first person; on touch screens a joystick (bottom left)
@@ -323,7 +323,7 @@ export class Walker {
 
 		let v = this.speed;
 		const forward = Math.max( 0, v ) / RIDE.max;
-		if ( throttle > 0 && v >= - 0.05 ) v += RIDE.accel * throttle * ( 1 - forward * forward ) * dt;
+		if ( throttle > 0 && v >= - 0.05 ) v += RIDE.accel * throttle * ( 1 - forward ** 4 ) * dt;
 		else if ( throttle > 0 ) v = Math.min( 0, v + RIDE.brake * dt );
 		else if ( throttle < 0 && v > 0.05 ) v = Math.max( 0, v - RIDE.brake * - throttle * dt );
 		else if ( throttle < 0 ) v = Math.max( - RIDE.reverse, v - 1.5 * - throttle * dt );
@@ -335,7 +335,9 @@ export class Walker {
 		// keeps the sideways pull under RIDE.grip (v² tan steer / wheelbase).
 		const reach = Math.min( RIDE.steer, Math.atan( RIDE.grip * RIDE.wheelbase / Math.max( 1e-3, v * v ) ) );
 		this.steer += THREE.MathUtils.clamp( steer * reach - this.steer, - RIDE.steerRate * dt, RIDE.steerRate * dt );
-		const yawRate = v * Math.tan( this.steer ) / RIDE.wheelbase;
+		// At a crawl the rider paddles it round with the feet: it still turns while the throttle is held.
+		const crawl = throttle && Math.abs( v ) < 1.2 ? Math.sign( throttle ) * 1.2 : v;
+		const yawRate = crawl * Math.tan( this.steer ) / RIDE.wheelbase;
 		this.heading -= yawRate * dt;
 
 		// Lean into the turn (balance: tan lean = v × yaw rate / g), eased; pitch: the nose dips under the brakes and
