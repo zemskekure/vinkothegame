@@ -584,6 +584,14 @@ export async function addLife( scene, life, { seats = [], benches = [], groundHe
 
 	}
 
-	return { update, placeWalkers, walks, boxes, agents, bodies, seed, friends, perlova, people: agents.length, cars: parked.length + movers.length, carMeshes: Object.fromEntries( carTypes.map( ( n, k ) => [ n, batches[ k ]?.mesh ] ) ) };
+	// A new person for someone else to animate (the tram passengers, src/passengers.js): their spec, body and look.
+	const newPerson = options => {
+
+		const spec = person( options );
+		return { spec, body: Math.max( 0, BODIES.findIndex( b => b.file === spec.body ) ), look: lookOf( spec, wardrobe ) };
+
+	};
+
+	return { update, placeWalkers, walks, boxes, newPerson, agents, bodies, seed, friends, perlova, people: agents.length, cars: parked.length + movers.length, carMeshes: Object.fromEntries( carTypes.map( ( n, k ) => [ n, batches[ k ]?.mesh ] ) ) };
 
 }

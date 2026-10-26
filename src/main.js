@@ -20,6 +20,7 @@ import { createMinimap } from './minimap.js';
 import { addTrams } from './trams.js';
 import { Solids } from './solids.js';
 import { startRide } from './ride.js';
+import { addPassengers } from './passengers.js';
 import { addBoats } from './boats.js';
 import { onLegie } from './bridges.js';
 import { SUN, ANIMATE } from './kit.js';
@@ -792,8 +793,8 @@ walkerLevel = () => walker.placed ? walker.y : null;
 
 // Trams and their overhead line (poles kept out of houses).
 let trams = { update() {} }, boats = { update() {} };
-// Riding the trams (src/ride.js), once the trams are in.
-let ride = { update() {} }, passengers = null;
+// Riding the trams (src/ride.js) and the people at the stops (src/passengers.js), once the trams and people are in.
+let ride = { update() {} }, passengers = { update() {} };
 
 // The HUD (src/hud.js): the street's name as an area title, key hints, the speedometer, the pause menu.
 const hud = getHud();
@@ -1167,6 +1168,7 @@ renderer.setAnimationLoop( () => {
 	life.update( dt );
 	trams.update( dt );
 	boats.update( dt );
+	passengers.update( dt );
 	const me = holub ? holub.pos : walking ? walker.pos : null;
 	if ( me ) solids.gather( me.x, me.z );
 
@@ -1289,7 +1291,9 @@ load( 'life.json', 'json' ).then( streetLife => Promise.all( [
 
 	if ( trams.trams ) {
 
+		passengers = addPassengers( { scene, life, trams, platforms: places?.stops || [], groundHeight, player: () => holub ? holub.pos : walking ? walker.pos : null } );
 		if ( ! holub ) ride = window.__debug.ride = startRide( { trams, walker, hud, passengers, groundHeight: ( x, z ) => groundHeight( x, z ), isBlocked } );
+		window.__debug.passengers = passengers;
 
 	}
 
