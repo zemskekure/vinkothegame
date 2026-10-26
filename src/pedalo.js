@@ -206,9 +206,9 @@ function buildJetty( scene, terrainHeight, waterLevel ) {
 		{ x: pier.x, z: pier.z, y, along: pier.d, face: pier.n },
 		{ x: top[ 0 ], z: top[ 1 ], y: terrainHeight( ...top ), along: side, face: g.d }
 	];
-	for ( const s of boards ) for ( const o of [ - 1.1, 1.1 ] ) kit.add( M.woodDark, beam( 0.1, 2.3, 0.1, s.x + s.along[ 0 ] * o, s.y + 1.15, s.z + s.along[ 1 ] * o, ...s.face ) );
+	for ( const s of boards ) for ( const o of [ - 1.2, 1.2 ] ) kit.add( M.woodDark, beam( 0.1, 2.3, 0.1, s.x + s.along[ 0 ] * o - s.face[ 0 ] * 0.08, s.y + 1.15, s.z + s.along[ 1 ] * o - s.face[ 1 ] * 0.08, ...s.face ) );
 	kit.build( scene, { shadows: false } );
-	const tex = textTexture( [ [ 'PŮJČOVNA LODIČEK', 132, 104 ], [ 'LABUTĚ · ŠLAPADLA · LOĎKY', 60, 196 ] ], { w: 1024, h: 256, bg: '#f1e8cf', ink: '#1e3f6c', border: '#1e3f6c', weight: '700' } );
+	const tex = textTexture( [ [ 'PŮJČOVNA LODIČEK', 116, 104 ], [ 'LABUTĚ · ŠLAPADLA · LOĎKY', 54, 194 ] ], { w: 1024, h: 256, bg: '#f1e8cf', ink: '#1e3f6c', border: '#1e3f6c', weight: '700' } );
 	const boardMaterial = new THREE.MeshStandardNodeMaterial( { map: tex, roughness: 0.7, side: THREE.DoubleSide } ), plane = new THREE.PlaneGeometry( 2.6, 0.65 );
 	for ( const s of boards ) {
 
