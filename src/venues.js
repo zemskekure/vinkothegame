@@ -1304,11 +1304,13 @@ function addVenueInterior( scene, room ) {
 	const { w, d, h, door, doorW, doorH } = room;
 	const kit = new Kit();
 	const seats = [];
-	const seat = ( x, z, rot ) => {
+	// `share`, when given, is the chance someone sits there, in place of the game-wide setting.
+	const seat = ( x, z, rot, share ) => {
 
 		const p = new THREE.Vector3( x, 0, z ).applyMatrix4( g.matrixWorld );
 		const dir = new THREE.Vector3( Math.sin( rot ), 0, Math.cos( rot ) ).transformDirection( g.matrixWorld );
-		seats.push( [ + p.x.toFixed( 2 ), + room.y.toFixed( 2 ), + p.z.toFixed( 2 ), + Math.atan2( - dir.x, - dir.z ).toFixed( 3 ) ] );
+		const s = [ + p.x.toFixed( 2 ), + room.y.toFixed( 2 ), + p.z.toFixed( 2 ), + Math.atan2( - dir.x, - dir.z ).toFixed( 3 ) ];
+		seats.push( share === undefined ? s : [ ...s, 0.45, share ] );
 
 	};
 

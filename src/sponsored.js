@@ -610,8 +610,19 @@ export function addSponsoredInterior( g, room, seat ) {
 	seed = 11;
 	const P = room.palette || {};
 	const vaultY = shell( kit, room, P );
-	LAYOUTS[ room.layout ]?.( kit, room, P, seat, vaultY );
-	FURNISH[ room.style ]?.( kit, room, P, seat, vaultY );
+	// A café is never full: of each table's two places (the chair, then the bench opposite) only some are taken,
+	// in a pattern that spreads the guests along the room and leaves most of the bench free (about 3 in 8 places).
+	// The places left empty are not offered to the crowd at all; the taken ones are always sat in.
+	const TAKEN = [ [ 0, 1 ], [ 0, 0 ], [ 1, 1 ], [ 1, 0 ], [ 0, 0 ], [ 0, 1 ], [ 1, 0 ], [ 0, 0 ] ];
+	let n = 0;
+	const some = ( x, z, rot ) => {
+
+		const i = n ++, table = TAKEN[ ( i >> 1 ) % TAKEN.length ];
+		if ( table[ i & 1 ] ) seat( x, z, rot, 1 );
+
+	};
+	LAYOUTS[ room.layout ]?.( kit, room, P, some, vaultY );
+	FURNISH[ room.style ]?.( kit, room, P, some, vaultY );
 	kit.build( g, { shadows: false } );
 	return g;
 

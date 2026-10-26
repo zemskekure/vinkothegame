@@ -183,7 +183,14 @@ export async function addLife( scene, life, { seats = [], benches = [], groundHe
 
 	};
 
-	for ( const [ x, y, z, rot, h = 0.45 ] of seats ) if ( rnd() < SETTINGS.people.seatedShare ) sitAt( x, y, z, rot, h, 0.06 );
+	// A seat may carry its own chance of being taken (the sponsored cafés pick theirs, src/sponsored.js); the admin
+	// setting at zero still empties them.
+	for ( const [ x, y, z, rot, h = 0.45, share ] of seats ) {
+
+		const p = share === undefined ? SETTINGS.people.seatedShare : ( SETTINGS.people.seatedShare > 0 ? share : 0 );
+		if ( rnd() < p ) sitAt( x, y, z, rot, h, 0.06 );
+
+	}
 	for ( let i = 0; i < benches.length; i += 5 ) {
 
 		const [ x, y, z, rot ] = benches.slice( i, i + 5 );
