@@ -150,8 +150,10 @@ export function collectOldTown( ctx, { places, zone, L } ) {
 
 						const [ ax, ay ] = ring[ i ], [ bx, by ] = ring[ ( i + 1 ) % ring.length ], dx = bx - ax, dy = by - ay, l = Math.hypot( dx, dy );
 						if ( l < 4 ) continue;
-						const t = Math.max( 0, Math.min( 1, ( ( OX - ax ) * dx + ( OY - ay ) * dy ) / ( l * l ) ) ), px = ax + dx * t, py = ay + dy * t, d = Math.hypot( OX - px, OY - py );
+						const t = Math.max( 0, Math.min( 1, ( ( OX - ax ) * dx + ( OY - ay ) * dy ) / ( l * l ) ) ), d = Math.hypot( OX - ax - dx * t, OY - ay - dy * t );
 						if ( best && d >= best.d ) continue;
+						// The dials' frame (7 m wide) kept within that wall.
+						const m = Math.min( 0.5, 3.6 / l ), tc = Math.max( m, Math.min( 1 - m, t ) ), px = ax + dx * tc, py = ay + dy * tc;
 						let nx = dy / l, ny = - dx / l;
 						if ( inRing( ring, px + nx * 0.5, py + ny * 0.5 ) ) [ nx, ny ] = [ - nx, - ny ];
 						best = { d, px, py, nx, ny };

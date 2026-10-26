@@ -109,7 +109,7 @@ function orloj( scene, kit, h, add ) {
 	const bearing = 155 * Math.PI / 180, [ nx, nz ] = h.orlojN || [ Math.sin( bearing ), - Math.cos( bearing ) ];
 	const ry = Math.atan2( nx, nz ), off = 0, xs = 0;
 	// Face space: x along the wall, y up, z out of it.
-	const F = g => g.rotateY( ry ).translate( h.orloj[ 0 ] + nx * 0.05, 0, h.orloj[ 1 ] + nz * 0.05 );
+	const F = g => g.rotateY( ry ).translate( h.orloj[ 0 ] + nx * 0.1, 0, h.orloj[ 1 ] + nz * 0.1 );
 	add = ( m, g ) => kit.add( m, g );
 	const y0 = h.ground;
 	const put = ( m, ...g ) => g.forEach( q => add( m, F( q ) ) );
@@ -160,7 +160,7 @@ function orloj( scene, kit, h, add ) {
 	const moving = new THREE.Group();
 	moving.userData.dynamic = true; // turns on the hour (ANIMATE): kept out of the static batches (src/batch.js)
 	moving.rotation.y = ry;
-	moving.position.set( h.orloj[ 0 ] + nx * 0.05, 0, h.orloj[ 1 ] + nz * 0.05 );
+	moving.position.set( h.orloj[ 0 ] + nx * 0.1, 0, h.orloj[ 1 ] + nz * 0.1 );
 	scene.add( moving );
 	const mats = [ plain( 0x7a5a3a, { flatShading: true } ), plain( 0x5a6a7a, { flatShading: true } ), plain( 0x7a3a3a, { flatShading: true } ) ];
 	const tables = wins.map( ( x, w ) => {
