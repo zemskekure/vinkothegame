@@ -7,6 +7,7 @@
 //   GRID_DATA                data directory outside git (SQLite file, uploads, logs, screenshots), default ~/vinko-grid-data
 //   GRID_CELL                cell size in metres, default 100 (changing it renames the cells)
 //   GRID_PASSWORD            when set, every request needs HTTP Basic auth with this password (any user name)
+//   GAME_PASSWORD            a second password that opens only the game (/game/, reading its settings): for friends
 //   GRID_WORK                the checkout Claude Code sessions work in (a separate clone); without it, no sessions
 //   GRID_BRANCH              the branch sessions start from and merge into, default the work checkout's current one
 //   CLAUDE_CODE_OAUTH_TOKEN  for headless Claude Code on the owner's subscription (claude setup-token)
@@ -42,7 +43,7 @@ mkdirSync( DATA, { recursive: true } );
 const ENV = { ...readEnv( join( DATA, '.env' ) ), ...process.env };
 
 const PORT = Number( ENV.PORT || 8030 );
-const PASSWORD = ENV.GRID_PASSWORD || '';
+const PASSWORD = ENV.GRID_PASSWORD || '', GAME_PASSWORD = ENV.GAME_PASSWORD || '';
 const REPO = fileURLToPath( new URL( '../', import.meta.url ) ).replace( /\/$/, '' );
 const UI = join( REPO, 'app/ui' );
 const GAME = join( REPO, 'dist' );
@@ -339,16 +340,31 @@ function gzipped( file, etag ) {
 
 }
 
+// Who is asking: the owner (GRID_PASSWORD: everything), a player (GAME_PASSWORD: only the game), or nobody.
 function authorised( req ) {
 
-	if ( ! PASSWORD ) return true;
+	if ( ! PASSWORD ) return 'full';
 	const [ scheme, token ] = ( req.headers.authorization || '' ).split( ' ' );
 	if ( scheme !== 'Basic' || ! token ) return false;
 	const given = Buffer.from( Buffer.from( token, 'base64' ).toString( 'utf8' ).split( ':' ).slice( 1 ).join( ':' ) );
-	const want = Buffer.from( PASSWORD );
-	return given.length === want.length && timingSafeEqual( given, want );
+	const is = pw => {
+
+		const want = Buffer.from( pw );
+		return !! pw && given.length === want.length && timingSafeEqual( given, want );
+
+	};
+
+	return is( PASSWORD ) ? 'full' : is( GAME_PASSWORD ) ? 'game' : false;
 
 }
+
+// What the game password opens: the game itself and its settings, read-only.
+const forPlayers = req => {
+
+	const p = new URL( req.url, 'http://local' ).pathname;
+	return req.method === 'GET' && ( p === '/game' || p.startsWith( '/game/' ) || p === '/api/game-settings' );
+
+};
 
 function needJobs() {
 
@@ -697,7 +713,8 @@ async function route( req, res ) {
 
 createServer( async ( req, res ) => {
 
-	if ( ! authorised( req ) ) {
+	const who = authorised( req );
+	if ( ! who || ( who === 'game' && ! forPlayers( req ) ) ) {
 
 		res.writeHead( 401, { 'www-authenticate': 'Basic realm="vinko grid"' } );
 		return res.end( 'Přihlaste se.' );
