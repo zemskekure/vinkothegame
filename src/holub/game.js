@@ -6,6 +6,7 @@
 import * as THREE from 'three/webgpu';
 import { makePigeon } from './pigeon.js';
 import { ART } from './ps1.js';
+import { getHud } from '../hud.js';
 
 // --- the look ---------------------------------------------------------------------------------------------------
 
@@ -183,12 +184,10 @@ export function startHolub( { scene, camera, dom, roofGeo, bounds, groundHeight,
 	const splatDark = new THREE.MeshStandardNodeMaterial( { color: 0x6f6a58, roughness: 0.6 } );
 	const dropGeo = new THREE.SphereGeometry( 0.018, 6, 4 );
 
-	// --- HUD
-	const hud = document.getElementById( 'hud' );
-	hud.innerHTML = `<h1>Letím jak holub</h1><p id="help">Klikni do obrazu · myš kamera · WASD chůze · v letu A/D zatáčení, W mávat a zrychlit, S brzdit, C střemhlav · mezerník vzlétnout a mávat · C dolů / sednout · E zobnout · Q bobek · Shift rychleji</p><p id="score"></p>`;
-	const scoreEl = document.getElementById( 'score' );
+	// --- HUD (src/hud.js): the tally in a corner, and what the bird says (the keys: src/main.js).
+	const hud = getHud();
 	const toast = document.createElement( 'div' );
-	Object.assign( toast.style, { position: 'fixed', left: '50%', top: '18%', transform: 'translateX(-50%)', font: '700 26px/1 system-ui, sans-serif', color: '#fff3d6', textShadow: '0 2px 0 #3b2412, 0 0 12px #000', opacity: 0, transition: 'opacity .3s', pointerEvents: 'none' } );
+	Object.assign( toast.style, { position: 'fixed', left: '50%', top: '18%', transform: 'translateX(-50%)', font: '32px/1 \'Pixelify Sans\', system-ui, sans-serif', color: '#ffd34a', textShadow: '-2px 0 #000, 2px 0 #000, 0 -2px #000, 0 2px #000, 4px 4px 0 #000', opacity: 0, transition: 'opacity .3s', pointerEvents: 'none', zIndex: 3 } );
 	document.body.appendChild( toast );
 	let toastTimer = 0;
 	const say = text => {
@@ -201,7 +200,7 @@ export function startHolub( { scene, camera, dom, roofGeo, bounds, groundHeight,
 
 	const showScore = () => {
 
-		scoreEl.textContent = `🍞 ${score.food} / ${foodTotal}   ·   💩 ${score.drops}   ·   🎯 ${score.hits}`;
+		hud.tally( [ [ 'DROBKY', `${score.food}/${foodTotal}` ], [ 'BOBKY', score.drops ], [ 'ZÁSAHY', score.hits ] ] );
 
 	};
 
@@ -267,14 +266,10 @@ export function startHolub( { scene, camera, dom, roofGeo, bounds, groundHeight,
 	const isTouch = matchMedia( '(pointer: coarse)' ).matches || navigator.maxTouchPoints > 0 && ! matchMedia( '(pointer: fine)' ).matches;
 	if ( isTouch ) {
 
-		document.getElementById( 'help' ).textContent = 'Joystick vlevo: chůze a let · táhni prstem: rozhlížení · tlačítka vpravo';
-		hud.style.maxWidth = 'calc(100vw - 170px)';
-		hud.style.fontSize = '12px';
-		Object.assign( document.getElementById( 'place' ).style, { top: '118px', bottom: 'auto', left: '12px', right: 'auto', transform: 'none', fontSize: '13px' } );
 		const css = ( el, st ) => Object.assign( el.style, st );
 		const pad = document.createElement( 'div' ), knob = document.createElement( 'div' );
-		css( pad, { position: 'fixed', left: '22px', bottom: '22px', width: '140px', height: '140px', borderRadius: '50%', background: 'rgba(30,20,12,0.28)', border: '2px solid rgba(255,236,200,0.45)', zIndex: 5, touchAction: 'none' } );
-		css( knob, { position: 'absolute', left: '45px', top: '45px', width: '50px', height: '50px', borderRadius: '50%', background: 'rgba(255,236,200,0.75)', pointerEvents: 'none' } );
+		css( pad, { position: 'fixed', left: '22px', bottom: '22px', width: '140px', height: '140px', borderRadius: '50%', background: 'rgba(16,20,30,0.45)', border: '4px solid #000', boxShadow: '0 0 0 2px #f4ecd2', zIndex: 5, touchAction: 'none' } );
+		css( knob, { position: 'absolute', left: '45px', top: '45px', width: '50px', height: '50px', borderRadius: '50%', background: '#ffd34a', border: '3px solid #000', boxSizing: 'border-box', pointerEvents: 'none' } );
 		pad.appendChild( knob );
 		document.body.appendChild( pad );
 		const setStick = t => {
@@ -330,12 +325,12 @@ export function startHolub( { scene, camera, dom, roofGeo, bounds, groundHeight,
 		const button = ( label, title, { hold, tap } ) => {
 
 			const b = document.createElement( 'div' );
-			b.innerHTML = `<div style="font-size:26px;line-height:1">${label}</div><div style="font-size:10px;margin-top:2px">${title}</div>`;
-			css( b, { width: '68px', height: '68px', borderRadius: '50%', display: 'grid', placeContent: 'center', textAlign: 'center', background: 'rgba(30,20,12,0.45)', border: '2px solid rgba(255,236,200,0.6)', color: '#fff3d6', userSelect: 'none', webkitUserSelect: 'none', touchAction: 'none' } );
+			b.innerHTML = `<div style="font-size:24px;line-height:1">${label}</div><div style="font:16px/1 'Pixelify Sans',system-ui,sans-serif;margin-top:2px">${title}</div>`;
+			css( b, { width: '68px', height: '68px', boxSizing: 'border-box', display: 'grid', placeContent: 'center', textAlign: 'center', background: 'rgba(16,20,30,0.7)', border: '3px solid #000', boxShadow: 'inset -3px -3px 0 rgba(0,0,0,0.4), inset 3px 3px 0 rgba(255,255,255,0.12)', color: '#f4ecd2', userSelect: 'none', webkitUserSelect: 'none', touchAction: 'none' } );
 			b.addEventListener( 'touchstart', e => {
 
 				e.preventDefault();
-				b.style.background = 'rgba(255,190,110,0.6)';
+				b.style.background = 'rgba(196,86,47,0.9)';
 				if ( hold ) keys.add( hold );
 				tap?.();
 
@@ -343,7 +338,7 @@ export function startHolub( { scene, camera, dom, roofGeo, bounds, groundHeight,
 			const up = e => {
 
 				e.preventDefault();
-				b.style.background = 'rgba(30,20,12,0.45)';
+				b.style.background = 'rgba(16,20,30,0.7)';
 				if ( hold ) keys.delete( hold );
 
 			};
@@ -353,7 +348,7 @@ export function startHolub( { scene, camera, dom, roofGeo, bounds, groundHeight,
 
 		};
 		button( '🕊️', 'letět', { hold: 'Space' } );
-		button( '⬇️', 'dolů / sednout', { hold: 'KeyC', tap: () => {
+		button( '⬇️', 'dolů', { hold: 'KeyC', tap: () => {
 
 			if ( mode !== 'fly' && mode !== 'glide' ) sitToggle();
 

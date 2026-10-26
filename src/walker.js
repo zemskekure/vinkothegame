@@ -8,6 +8,9 @@ const WALK = 1.7, RUN = 5.2;
 // a standstill and fading towards the top (about 0–30 km/h in 2.5 s), firm brakes, a little engine braking and air
 // drag when coasting. The bars turn the front wheel; the scooter turns by its wheelbase, tighter when slow, and
 // leans into the turn by how fast it turns at that speed (tan lean = v × yaw rate / g).
+// A jump: a short hop, as in a late-90s game: 0.7 m up, quick (half a second in the air), the same on stairs and
+// terraces (the hop rides on the ground's height as it is under the feet), never through a ceiling over the head.
+const JUMP = { height: 0.7, gravity: 22, head: 1.85 };
 const RIDE = { max: 11.1, reverse: 1.6, accel: 3.8, brake: 7.5, coast: 0.6, air: 0.006, steer: 0.62, wheelbase: 1.3, steerRate: 3, grip: 6, maxLean: 0.45 };
 
 // Third-person walking (GTA-style): your figure in the street with the camera behind it. Mouse look (pointer
@@ -15,7 +18,7 @@ const RIDE = { max: 11.1, reverse: 1.6, accel: 3.8, brake: 7.5, coast: 0.6, air:
 // to walk and a drag anywhere else to look. The figure turns towards where it walks; the camera pulls in when a
 // house stands between it and the figure. Terrain following, sliding collisions against building footprints.
 // B gets on or off the scooter: W/S throttle and brake (S reverses slowly from a stop), A/D steer, and the camera
-// swings in behind.
+// swings in behind. Space jumps (on foot; a touch screen has a button for it).
 export class Walker {
 
 	constructor( camera, dom, groundHeight, isBlocked, scene, cameraBlocked = isBlocked, ceilingAt = () => Infinity ) {
@@ -55,6 +58,9 @@ export class Walker {
 		this.bumpV = 0;
 		this.roughAt = () => 0; // 0 smooth asphalt … 1 granite setts, set by the game
 		this.camTarget = new THREE.Vector3();
+		this.hop = 0; // height of the jump over the ground (m)
+		this.hopV = 0;
+		this.jumpWanted = false;
 		this.lookTime = 0;
 
 		dom.addEventListener( 'click', () => {
@@ -108,12 +114,19 @@ export class Walker {
 		window.addEventListener( 'pointercancel', endLook );
 
 		this.joystick = this.createJoystick();
+		this.jumpButton = this.createJumpButton();
 
 		window.addEventListener( 'keydown', e => {
 
 			this.keys.add( e.code );
 			if ( e.code === 'KeyV' && this.enabled ) this.setFirstPerson( ! this.firstPerson );
 			if ( e.code === 'KeyB' && this.enabled ) this.setRiding( ! this.riding );
+			if ( e.code === 'Space' && this.enabled ) {
+
+				e.preventDefault(); // not a click on whatever button has the focus
+				if ( ! e.repeat ) this.jump();
+
+			}
 
 		} );
 		window.addEventListener( 'keyup', e => this.keys.delete( e.code ) );
@@ -139,9 +152,9 @@ export class Walker {
 	createJoystick() {
 
 		const base = document.createElement( 'div' );
-		base.style.cssText = 'position:fixed;left:28px;bottom:28px;width:120px;height:120px;border-radius:50%;background:rgba(20,24,30,0.35);border:2px solid rgba(255,255,255,0.5);touch-action:none;display:none;z-index:2';
+		base.style.cssText = 'position:fixed;left:28px;bottom:28px;width:120px;height:120px;border-radius:50%;background:rgba(16,20,30,0.45);border:4px solid #000;box-shadow:0 0 0 2px #f4ecd2;box-sizing:border-box;touch-action:none;display:none;z-index:2';
 		const knob = document.createElement( 'div' );
-		knob.style.cssText = 'position:absolute;left:35px;top:35px;width:50px;height:50px;border-radius:50%;background:rgba(232,217,181,0.9);pointer-events:none';
+		knob.style.cssText = 'position:absolute;left:31px;top:31px;width:50px;height:50px;border-radius:50%;background:#ffd34a;border:3px solid #000;box-sizing:border-box;pointer-events:none';
 		base.appendChild( knob );
 		document.body.appendChild( base );
 
@@ -180,6 +193,30 @@ export class Walker {
 
 	}
 
+	// A button for the jump, bottom right, on touch screens.
+	createJumpButton() {
+
+		const b = document.createElement( 'div' );
+		b.textContent = 'SKOK';
+		b.style.cssText = `position:fixed;right:28px;bottom:40px;width:76px;height:76px;box-sizing:border-box;display:none;place-items:center;z-index:2;touch-action:none;user-select:none;-webkit-user-select:none;
+			background:rgba(16,20,30,0.7);border:3px solid #000;box-shadow:inset -3px -3px 0 rgba(0,0,0,0.4),inset 3px 3px 0 rgba(255,255,255,0.12);color:#ffd34a;font:16px 'Pixelify Sans',system-ui,sans-serif;text-shadow:2px 2px 0 #000`;
+		b.addEventListener( 'pointerdown', e => {
+
+			e.preventDefault();
+			this.jump();
+
+		} );
+		document.body.appendChild( b );
+		return b;
+
+	}
+
+	jump() {
+
+		if ( this.enabled && ! this.riding && this.hop === 0 ) this.jumpWanted = true;
+
+	}
+
 	// The scooter's model is loaded by the game (it needs the model loader).
 	setScooter( loadModel ) {
 
@@ -193,6 +230,9 @@ export class Walker {
 	setRiding( on ) {
 
 		this.riding = on;
+		this.hop = this.hopV = 0;
+		this.jumpWanted = false;
+		this.jumpButton.style.display = this.enabled && this.touch && ! on ? 'grid' : 'none';
 		this.speed = this.steer = this.lean = this.pitchRide = this.bump = this.bumpV = 0;
 		this.scooter.visible = this.enabled && on;
 		// The rider sits on the scooter and tilts with it; off it, the figure stands in the street again.
@@ -204,7 +244,9 @@ export class Walker {
 	setEnabled( enabled, touch ) {
 
 		this.enabled = enabled;
+		this.touch = touch;
 		this.joystick.style.display = enabled && touch ? 'block' : 'none';
+		this.jumpButton.style.display = enabled && touch && ! this.riding ? 'grid' : 'none';
 		this.avatar.visible = enabled && ! this.firstPerson;
 		this.scooter.visible = enabled && this.riding;
 		if ( ! enabled ) this.stick.x = this.stick.y = 0;
@@ -297,7 +339,33 @@ export class Walker {
 
 		}
 
-		// Walk / run cycle: stride eases in and out; running takes longer, quicker steps.
+		// The jump: up at the speed that reaches JUMP.height, down under gravity, onto whatever the ground is by then.
+		// A ceiling (an arcade, the deck over a street) stops the head.
+		if ( this.jumpWanted ) {
+
+			this.jumpWanted = false;
+			this.hopV = Math.sqrt( 2 * JUMP.gravity * JUMP.height );
+
+		}
+
+		if ( this.hop > 0 || this.hopV > 0 ) {
+
+			this.hopV -= JUMP.gravity * dt;
+			this.hop += this.hopV * dt;
+			const room = this.ceilingAt( this.pos.x, this.pos.z ) - this.y - JUMP.head;
+			if ( this.hop > room ) {
+
+				this.hop = Math.max( 0, room );
+				this.hopV = Math.min( 0, this.hopV );
+
+			}
+
+			if ( this.hop <= 0 ) this.hop = this.hopV = 0;
+
+		}
+
+		// Walk / run cycle: stride eases in and out; running takes longer, quicker steps. In the air the legs stop.
+		if ( this.hop > 0 ) moving = 0;
 		this.stride += ( ( moving ? Math.min( 1.25, 0.75 + moving / RUN * 0.5 ) : 0 ) - this.stride ) * Math.min( 1, dt * 8 );
 		this.phase += dt * ( moving > WALK + 0.5 ? 9.5 : 6.2 ) * Math.min( 1, this.stride + 0.2 );
 		this.time += dt;
@@ -430,16 +498,19 @@ export class Walker {
 		} else {
 
 			this.avatar.position.copy( p );
+			this.avatar.position.y += this.hop;
 			this.avatar.rotation.y = this.heading;
 
 		}
 
-		this.avatar.userData.setPose( { phase: this.phase, stride: this.stride, t: this.time, ride: this.riding } );
+		// In the air: the legs tucked up, more the higher.
+		const air = this.riding ? 0 : Math.min( 1, this.hop / 0.25 );
+		this.avatar.userData.setPose( { phase: this.phase, stride: this.stride, t: this.time, ride: this.riding, air } );
 
 		const cam = this.camera;
 		if ( this.firstPerson ) {
 
-			cam.position.set( p.x, p.y + 1.65, p.z );
+			cam.position.set( p.x, p.y + 1.65 + this.hop, p.z );
 			cam.rotation.set( - this.pitch, this.yaw, 0, 'YXZ' );
 			return;
 
@@ -457,7 +528,7 @@ export class Walker {
 			ct.y += ( p.y + 1.45 - ct.y ) * Math.min( 1, dt * 5 );
 			tx = ct.x; ty = ct.y; tz = ct.z;
 
-		} else ct.set( tx, ty, tz );
+		} else ct.set( tx, ty += this.hop * 0.5, tz ); // the camera follows half the jump
 		const cp = Math.cos( this.pitch ), dx = Math.sin( this.yaw ) * cp, dy = Math.sin( this.pitch ), dz = Math.cos( this.yaw ) * cp;
 		// Riding, the camera stands a little further back, more at speed.
 		const want = this.distance + ( this.riding ? 0.6 + 1.4 * Math.abs( this.speed ) / RIDE.max : 0 );

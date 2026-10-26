@@ -83,7 +83,8 @@ export function startStory( { scene, camera, holub, start } ) {
 
 	// The objective panel.
 	const panel = document.createElement( 'div' );
-	Object.assign( panel.style, { position: 'fixed', left: '50%', bottom: '74px', transform: 'translateX(-50%)', maxWidth: 'min(620px, calc(100vw - 32px))', padding: '10px 16px', background: 'rgba(30, 20, 12, 0.72)', color: '#fff3d6', borderRadius: '10px', font: '16px/1.4 system-ui, sans-serif', textAlign: 'center', pointerEvents: 'none', transition: 'opacity .4s' } );
+	panel.className = 'ui-panel'; // the HUD's look (src/ui.js)
+	Object.assign( panel.style, { position: 'fixed', left: '50%', top: '16px', transform: 'translateX(-50%)', maxWidth: 'min(620px, calc(100vw - 32px))', padding: '8px 16px', boxSizing: 'border-box', font: '16px/1.4 \'Pixelify Sans\', system-ui, sans-serif', textAlign: 'center', textShadow: '2px 2px 0 #000', pointerEvents: 'none', transition: 'opacity .4s', zIndex: 3 } );
 	document.body.appendChild( panel );
 	const show = () => {
 

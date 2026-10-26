@@ -29,7 +29,8 @@ export function startDay( { renderer, scene, sky, sun, hemi, centre, hour = 18.6
 	const fogNear = scene.fog?.near ?? 0, fogFar = scene.fog?.far ?? 1;
 	const dir = new THREE.Vector3();
 	const label = document.createElement( 'div' );
-	Object.assign( label.style, { position: 'fixed', right: '14px', top: '12px', font: '600 14px system-ui, sans-serif', color: '#fff3d6', textShadow: '0 1px 2px #000', pointerEvents: 'none' } );
+	label.id = 'hud-clock'; // styled with the HUD (src/hud.js)
+	label.className = 'ui-panel';
 	document.body.appendChild( label );
 	window.addEventListener( 'keydown', e => {
 
@@ -72,7 +73,7 @@ export function startDay( { renderer, scene, sky, sun, hemi, centre, hour = 18.6
 		renderer.toneMappingExposure = ( a.exp + ( b.exp - a.exp ) * t ) * ( tune.exposure ?? 1 );
 
 		const hh = Math.floor( time ), mm = Math.floor( ( time - hh ) * 60 );
-		label.textContent = `${up ? '☀️' : '🌙'} ${hh}:${String( mm ).padStart( 2, '0' )}`;
+		label.innerHTML = `<small>${up ? 'DEN' : 'NOC'}</small> ${hh}:${String( mm ).padStart( 2, '0' )}`;
 
 	}
 

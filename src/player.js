@@ -7,6 +7,8 @@
 // and the scooter work as they did:
 //   - on foot, the body's own Idle / Walk / Run clips blend by the stride, and the walk and run cycles are driven by
 //     the walker's step phase (one cycle per two steps), so the feet keep the walker's cadence;
+//   - in a jump (`air`, 0…1: how far up), there is no jump clip in the bodies, so the idle pose with the legs tucked
+//     up by hand (thighs forward, knees bent) and the arms out a little;
 //   - on the scooter, the idle pose with the joints bent by hand: thighs forward along the seat, shins down to the
 //     floorboard, the back leaning a little into the ride, the arms out to the handlebars. The hips are set on the
 //     seat where the plain figure's were (the walker places the avatar 0.47 m under the seat).
@@ -100,6 +102,8 @@ const SEAT = 0.47 + 0.09; // the hip joints over the avatar's origin when riding
 // Bends on the scooter (rad, about the body's left–right axis; negative swings a limb forward). Bones by three's
 // names for them (the model's "UpperLeg.L" loses its dot).
 const RIDE = { UpperLegL: - 1.42, UpperLegR: - 1.42, LowerLegL: 1.5, LowerLegR: 1.5, Abdomen: 0.12, UpperArmL: - 0.95, UpperArmR: - 0.95, LowerArmL: - 0.55, LowerArmR: - 0.55 };
+// In the air, fully up (scaled by `air`): one knee higher than the other, as in a hop.
+const AIR = { UpperLegL: - 0.95, UpperLegR: - 0.55, LowerLegL: 1.35, LowerLegR: 0.9, UpperArmL: - 0.45, UpperArmR: - 0.45, LowerArmL: - 0.4, LowerArmR: - 0.4 };
 
 function dress( walker, { body, skinned }, { ride = false } = {} ) {
 
@@ -137,7 +141,7 @@ function dress( walker, { body, skinned }, { ride = false } = {} ) {
 	// What the clips left before the bends, put back each frame (a bone no clip moves would bend further every frame).
 	const unbent = new Map();
 	let last = 0;
-	avatar.userData.setPose = ( { phase = 0, stride = 0, t = 0, ride = false } ) => {
+	avatar.userData.setPose = ( { phase = 0, stride = 0, t = 0, ride = false, air = 0 } ) => {
 
 		const dt = Math.min( 0.1, Math.max( 0, t - last ) );
 		last = t;
@@ -154,16 +158,18 @@ function dress( walker, { body, skinned }, { ride = false } = {} ) {
 		mixer.update( dt );
 
 		object.position.set( 0, 0, 0 );
-		if ( ! ride ) return;
+		if ( ! ride && ! air ) return;
 
-		for ( const [ name, angle ] of Object.entries( RIDE ) ) {
+		for ( const [ name, angle ] of Object.entries( ride ? RIDE : AIR ) ) {
 
 			const bone = bones[ name ];
 			if ( ! bone ) continue;
 			unbent.set( bone, bone.quaternion.clone() );
-			bend( bone, angle );
+			bend( bone, ride ? angle : angle * air );
 
 		}
+
+		if ( ! ride ) return;
 
 		// The hips onto the seat.
 		avatar.updateWorldMatrix( true, true );

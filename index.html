@@ -3,29 +3,28 @@
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>Praha – Betlémská čtvrť</title>
+	<title>Praha</title>
+	<link rel="icon" href="data:,">
+	<link rel="preload" href="fonts/pixelify-sans-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="preload" href="fonts/pixelify-sans-latin-ext-400-normal.woff2" as="font" type="font/woff2" crossorigin>
 	<style>
-		html, body { margin: 0; height: 100%; overflow: hidden; background: #b9cbd8; font: 14px/1.4 system-ui, sans-serif; color: #fff; }
+		/* The game's lettering: Pixelify Sans (OFL, public/fonts/), self-hosted; Latin and Latin Extended (Czech). */
+		@font-face { font-family: 'Pixelify Sans'; font-weight: 400; font-display: block; src: url(fonts/pixelify-sans-latin-400-normal.woff2) format('woff2');
+			unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+		@font-face { font-family: 'Pixelify Sans'; font-weight: 400; font-display: block; src: url(fonts/pixelify-sans-latin-ext-400-normal.woff2) format('woff2');
+			unicode-range: U+0100-02AF, U+0304, U+0308, U+0329, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+		@font-face { font-family: 'Pixelify Sans'; font-weight: 700; font-display: block; src: url(fonts/pixelify-sans-latin-700-normal.woff2) format('woff2');
+			unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+		@font-face { font-family: 'Pixelify Sans'; font-weight: 700; font-display: block; src: url(fonts/pixelify-sans-latin-ext-700-normal.woff2) format('woff2');
+			unicode-range: U+0100-02AF, U+0304, U+0308, U+0329, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+		html, body { margin: 0; height: 100%; overflow: hidden; background: #10141a; color: #f4ecd2;
+			font: 16px/1.4 'Pixelify Sans', system-ui, sans-serif; font-synthesis: none; -webkit-font-smoothing: none; -moz-osx-font-smoothing: unset; font-smooth: never; }
 		canvas { display: block; touch-action: none; }
-		#hud { position: fixed; left: 16px; top: 16px; padding: 10px 14px; background: rgba(20, 24, 30, 0.6); border-radius: 8px; max-width: 320px; user-select: none; }
-		#hud h1 { margin: 0 0 4px; font-size: 15px; }
-		#hud p { margin: 2px 0; opacity: 0.85; }
-		#hud button { margin-top: 6px; padding: 5px 10px; border: 0; border-radius: 5px; background: #e8d9b5; color: #222; font: inherit; cursor: pointer; }
-		#place { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); padding: 6px 14px; background: rgba(20, 24, 30, 0.6); border-radius: 6px; font-size: 16px; display: none; }
-		#credit { position: fixed; right: 10px; bottom: 6px; font-size: 11px; opacity: 0.75; text-shadow: 0 1px 2px #000; }
-		#loading { position: fixed; inset: 0; display: grid; place-items: center; background: #1d232b; font-size: 18px; }
-		@media (max-width: 600px) { #hud { left: 8px; top: 8px; max-width: calc(100vw - 32px); font-size: 12px; } #place { bottom: 60px; right: 12px; left: auto; transform: none; font-size: 13px; } #credit { display: none; } }
+		#loading { position: fixed; inset: 0; z-index: 30; background: #10141a; }
 	</style>
 </head>
 <body>
-	<div id="loading">Načítám Prahu…</div>
-	<div id="hud">
-		<h1>Praha · Betlémská čtvrť</h1>
-		<p id="help"></p>
-		<button id="mode"></button>
-	</div>
-	<div id="place"></div>
-	<div id="credit"></div>
+	<div id="loading"></div>
 	<script type="module" src="/src/entry.js"></script>
 </body>
 </html>

@@ -4,6 +4,8 @@
 import * as THREE from 'three/webgpu';
 
 const urls = import.meta.glob( '../data/fronts-rendered/*.webp', { query: '?url', import: 'default', eager: true } );
+// The drawings' addresses (the start screen fetches them ahead, src/start.js); the small ones are inlined.
+export const FRONT_URLS = Object.values( urls ).filter( u => ! u.startsWith( 'data:' ) );
 
 export async function addShopfronts( scene, fronts ) {
 

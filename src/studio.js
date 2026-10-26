@@ -22,6 +22,7 @@ import { makePigeon, birdSize } from './holub/pigeon.js';
 import { FOOD, foodMaterial } from './holub/game.js';
 import { MODELS } from './furniture.js';
 import { createFacadeMaterial } from './shading/facade.js';
+import * as loading from './loading.js';
 
 const params = new URLSearchParams( location.search );
 const SKIES = [ 'golden_evening', 'blue_noon', 'grey_overcast_drizzle', 'pink_sunrise_haze', 'heavy_storm', 'night_full_moon' ];
@@ -34,9 +35,7 @@ const SIZE = 6, SEATED = 5;
 // --- page and renderer -----------------------------------------------------------------------------------------
 
 document.title = 'Ateliér · Letím jak holub';
-for ( const id of [ 'hud', 'place', 'credit' ] ) document.getElementById( id )?.style.setProperty( 'display', 'none' );
-const loading = document.getElementById( 'loading' );
-if ( loading ) loading.textContent = 'Připravuji ateliér…';
+loading.message( 'Připravuji ateliér' );
 
 let settings = structuredClone( SETTINGS );
 delete settings.version;
@@ -1060,7 +1059,7 @@ resize();
 applyLook();
 showAll();
 selectPerson( 0 );
-loading?.remove();
+loading.done();
 
 // Drawn on demand: the set is still, so a frame is drawn only after something changed (the camera, a control, a
 // texture arriving), for a short while after it (the orbit's damping), and never more than 60 times a second
