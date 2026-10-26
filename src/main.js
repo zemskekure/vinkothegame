@@ -16,6 +16,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { createMinimap } from './minimap.js';
 import { addTrams } from './trams.js';
+import { addBoats } from './boats.js';
 import { onLegie } from './bridges.js';
 import { SUN, ANIMATE } from './kit.js';
 import { HOLUB_SUN, PIXEL_SCALE, holubLook, startHolub } from './holub/game.js';
@@ -567,6 +568,7 @@ walkerLevel = () => walker.placed ? walker.y : null;
 
 // Trams and their overhead line (poles kept out of houses).
 const trams = await addTrams( scene, places?.life?.trams, groundHeight, ( x, z ) => cameraBlocked( x, z ) || onLegie( places?.legie, x, z ) );
+const boats = await addBoats( scene, { loadModel, groundHeight, waterLevel: data.waterLevel } );
 
 const hud = {
 	mode: document.getElementById( 'mode' ),
@@ -753,7 +755,7 @@ addEventListener( 'keydown', e => {
 
 } );
 
-document.getElementById( 'credit' ).textContent = data.attribution + ' · fasády podle fotek © Mapillary (CC BY-SA) · lidé: Quaternius (CC0) · auta: Kenney (CC0) · rendering after Slop New York (MIT, Mr.doob)';
+document.getElementById( 'credit' ).textContent = data.attribution + ' · fasády podle fotek © Mapillary (CC BY-SA) · lidé: Quaternius (CC0) · vozidla: Han66st, Kuutti Siitonen, FPSunreal, creativecipher, Polygonal_64, norlinmartin (CC BY 4.0, models/vehicles/CREDITS.md), Kenney (CC0) · rendering after Slop New York (MIT, Mr.doob)';
 
 // ---------------------------------------------------------------------------
 
@@ -790,6 +792,7 @@ renderer.setAnimationLoop( () => {
 	const dt = Math.min( timer.getDelta(), 0.1 );
 	life.update( dt );
 	trams.update( dt );
+	boats.update( dt );
 
 	if ( holub ) {
 
@@ -828,6 +831,6 @@ renderer.setAnimationLoop( () => {
 } );
 
 document.getElementById( 'loading' ).remove();
-window.__debug = { camera, isBlocked, groundHeight, walker, life, trams, holub };
+window.__debug = { camera, isBlocked, groundHeight, walker, life, trams, boats, holub, waterLevel: data.waterLevel };
 window.__THREE = THREE;
 window.__ready = true;
