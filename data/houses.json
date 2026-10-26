@@ -1,4 +1,200 @@
 {
+	"21643148": {
+		"note": "Karlova 182 (left edge of 21643156_0, top corner of 46662006_10b): terracotta-red house with white window surrounds, a flower box on the first floor and a white console cornice over the ground floor; the shop sits in a wide white stucco arch with a white board in black capitals (…RAGUE visible) and a tagged panel below. Floors not countable. (Street View 2024)",
+		"colour": "#c8553d",
+		"trim": "#f1ebdf",
+		"ground": "shops",
+		"rustic": "none",
+		"graffiti": true,
+		"edges": {
+			"1": {
+				"ground": [
+					{
+						"kind": "shop",
+						"arch": true,
+						"frame": "white",
+						"size": "wide"
+					}
+				]
+			}
+		},
+		"signs": false
+	},
+	"21643156": {
+		"note": "Karlova 183 (one grazing photo): cream house with salmon-pink window bays and ground floor, three narrow bays with triangular pediments on the first floor; white stucco arches frame a doorway with a black iron lattice gate under a fanlight grille (pass 2) and an arched shop door. The marks also put the left part of the next, ochre house in this front: arched souvenir shops with goods hung outside and a round red sign. (Street View 2024)",
+		"colour": "#efe8da",
+		"trim": "#f8f5ef",
+		"ground": "shops",
+		"rustic": "none",
+		"edges": {
+			"0": {
+				"ground": [
+					{
+						"kind": "door",
+						"arch": true,
+						"frame": "dark"
+					},
+					{
+						"kind": "shop",
+						"arch": true,
+						"frame": "wood"
+					},
+					{
+						"kind": "shop",
+						"arch": true
+					},
+					{
+						"kind": "shop",
+						"arch": true
+					}
+				],
+				"shopfront": "21643156_0.svg"
+			}
+		},
+		"signs": false
+	},
+	"21643164": {
+		"note": "Karlova 184/12, Anenská 184/9 (plate 9): on Anenská a salmon-pink three-storey house, plain white window surrounds, ground-floor windows with lozenge grilles, a black wall lantern at the west end, and the white shield PASSAGE / DISCO DUCK / CLOCK TOWER beside the arched passage entrance (pass 2: drawn on front 9). Karlova front only at grazing angles: cream, rich rococo stucco, grey-green window frames over arched shops. (Street View 2024)",
+		"colour": "#edb8a5",
+		"trim": "#f7f3ec",
+		"ground": "shops",
+		"rustic": "none",
+		"grilles": true,
+		"edges": {
+			"8": {
+				"ground": [
+					{
+						"kind": "gate",
+						"arch": true,
+						"frame": "white"
+					},
+					{
+						"kind": "window",
+						"bars": true,
+						"frame": "white"
+					},
+					{
+						"kind": "window",
+						"bars": true,
+						"frame": "white"
+					}
+				]
+			},
+			"9": {
+				"ground": [
+					{
+						"kind": "window",
+						"bars": true,
+						"frame": "white"
+					},
+					{
+						"kind": "window",
+						"bars": true,
+						"frame": "white",
+						"size": "wide"
+					}
+				],
+				"shopfront": "21643164_9.svg"
+			},
+			"18": {
+				"colour": "#eee5cc",
+				"trim": "#cdd3c3",
+				"rustic": "ornate"
+			}
+		},
+		"signs": false
+	},
+	"21643172": {
+		"note": "Anenská 185/7, back of U Malvaze (blue plate 7): pale cream two-storey house, tall ground floor, five first-floor windows. Ground floor west to east: tall plain window with a red sill, barred window with flower box, brass plaque, lantern, round-arched stone portal with keystone into the restaurant courtyard, lantern, two barred windows with flower boxes; burgundy U MALVAZE banners over the lanterns. Pass 2: portal drawn round the cut passage (11.9-14.6 m). (Street View 2024)",
+		"colour": "#ece0bb",
+		"trim": "#f6f2e8",
+		"floors": 2,
+		"rustic": "none",
+		"grilles": true,
+		"edges": {
+			"13": {
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "window",
+						"bars": true,
+						"frame": "white"
+					},
+					{
+						"kind": "gate",
+						"arch": true
+					},
+					{
+						"kind": "window",
+						"bars": true,
+						"frame": "white"
+					},
+					{
+						"kind": "window",
+						"bars": true,
+						"frame": "white"
+					}
+				],
+				"shopfront": "21643172_13.svg"
+			}
+		},
+		"signs": false
+	},
+	"21643181": {
+		"note": "Anenská 186/5, Palác Unitaria (plate 5; west end in 21643202_1): plain beige inter-war house of three storeys, roof terrace railing with flower pots, a two-storey studio window, wide plain windows. Ground floor west to east: glazed double door in a brown stone frame, notice case, open doorway under bronze UNITARIA letters, notice case, five low windows with white geometric grilles; drainpipe at the join with U Malvaze. (Street View 2024)",
+		"colour": "#e8d9b3",
+		"trim": "#d9c9a2",
+		"floors": 3,
+		"ground": "windows",
+		"rustic": "none",
+		"grilles": true,
+		"edges": {
+			"17": {
+				"ground": [
+					{
+						"kind": "door",
+						"frame": "wood",
+						"glazed": true
+					},
+					{
+						"kind": "door",
+						"frame": "dark",
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"bars": true,
+						"frame": "white"
+					},
+					{
+						"kind": "window",
+						"bars": true,
+						"frame": "white"
+					},
+					{
+						"kind": "window",
+						"bars": true,
+						"frame": "white"
+					},
+					{
+						"kind": "window",
+						"bars": true,
+						"frame": "white"
+					},
+					{
+						"kind": "window",
+						"bars": true,
+						"frame": "white"
+					}
+				],
+				"shopfront": "21643181_17.svg"
+			}
+		},
+		"signs": false
+	},
 	"21643253": {
 		"note": "Smetanovo nábřeží by Karlův most: pale cream house with a great arched gateway over the street",
 		"colour": "#ece4d2",
@@ -313,6 +509,44 @@
 				]
 			}
 		}
+	},
+	"21643466": {
+		"note": "Liliová 220/11: only its northern bay is at the left edge of the photo aimed at it (the camera stood further north; the frame centre is the portal of No. 221). Pale yellow three-storey house with plain cream window surrounds and a deeper ochre ground floor; a dark green board at the frame edge is unreadable. (Street View 2024)",
+		"colour": "#ecd49b",
+		"trim": "#f4ead0",
+		"floors": 3
+	},
+	"21643474": {
+		"note": "Liliová 221/13, Anenská 221/11 (plates in 21643466_3 and 21643164_9): white baroque house, two tall storeys and dormers. Liliová: banded rustication, carved carriage portal at the south end with a studded chevron oak gate, two lozenge grilles, broken pediment with cartouche and eagle. Anenská: gabled west face with pilaster strips, arched wooden door, plates, one barred window. Pass 2: drawn rustication courses set 45 cm apart like the shader's. (Street View 2024)",
+		"colour": "#ebe7de",
+		"trim": "#f5f2ec",
+		"floors": 2,
+		"ground": "windows",
+		"rustic": "banded",
+		"grilles": true,
+		"graffiti": false,
+		"style": "default",
+		"edges": {
+			"7": {
+				"shopfront": "21643474_7.svg"
+			},
+			"13": {
+				"rustic": "none",
+				"ground": [
+					{
+						"kind": "door",
+						"arch": true,
+						"frame": "wood"
+					},
+					{
+						"kind": "window",
+						"bars": true,
+						"size": "wide"
+					}
+				]
+			}
+		},
+		"signs": false
 	},
 	"21643741": {
 		"note": "Liliová 4 (no. 250): its first ~7 m from the north are a pale pink historicist house with a banded ground floor, barred windows and a wall lantern; the rest is a plain white three-storey house with Choco-Café U Červené židle: wood-framed shop windows at ~8-10 and ~17.5-21 m, black wrought-iron vine trellises between them and a brown hanging CHOCO CAFÉ sign (marked 21643741_15a/b, Street View 2024). Drawn front.",
@@ -5436,6 +5670,38 @@
 				]
 			}
 		}
+	},
+	"43628966": {
+		"note": "Clementinum, the south flank of the church of St Salvator along Karlova: ochre-beige plaster with pilasters and cornices, tall round-arched windows with leaded hexagonal glazing, a low grey stone plinth; no street openings on this stretch, two memorial plaques, a large graffiti tag on the lower wall at the west end. Pass 2: colour a shade deeper, from the sunlit wall in 43628966_48a/b; the model drew it near-white. (Street View 2024)",
+		"colour": "#d2bc91",
+		"trim": "#e7dcc3",
+		"ground": "blank",
+		"rustic": "none",
+		"graffiti": true,
+		"style": "chapel"
+	},
+	"46661832": {
+		"note": "Vlašská kaple (Italian Chapel): its plain oval body bulges onto Karlova, beige plaster with flat pilaster strips, a weathered stained plinth and thermal windows high under a tiled eave; no openings on this side. The portal front with two arched gateways, balustrade statues and the lantern tower faces east down Karlova (end of 46662006_10b). Pass 2: colour a shade deeper. (Street View 2024)",
+		"colour": "#ddc8a2",
+		"trim": "#ece2cb",
+		"ground": "blank",
+		"rustic": "none",
+		"style": "chapel"
+	},
+	"46662006": {
+		"note": "South flank of the church of St Clement on Karlova: a base of big brown sandstone ashlar blocks about 2.8 m high under a moulded cap, white plaster above with recessed panels, tall round-arched windows, pilasters; no street openings. The east 8-9 m of the front is a plainer cream house with a large barred window in a sandstone frame, a wall lantern and a blue plate. Pass 2: base and house ground floor drawn, edge rustication off. (Street View 2024)",
+		"colour": "#ebe7dc",
+		"trim": "#f3efe6",
+		"ground": "blank",
+		"rustic": "clad",
+		"style": "chapel",
+		"edges": {
+			"10": {
+				"rustic": "none",
+				"shopfront": "46662006_10.svg"
+			}
+		},
+		"signs": false
 	},
 	"46669345": {
 		"note": "Kostel sv. Martina ve zdi (Martinská): Gothic church of dark rubble stone (grey, ochre and rust stones) with sandstone tracery windows and buttresses, NOT whitewashed; steep tiled roof; tower at the south-west corner (data/icons.json) (Street View 2024–26, owner screenshots Sept 2025)",
