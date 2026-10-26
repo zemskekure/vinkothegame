@@ -345,7 +345,7 @@ function husMonument( kit, m ) {
 function marianColumn( kit, c ) {
 
 	const y = c.y;
-	kit.add( O.granite, cyl( 2.4, 2.6, 0.5, c.x, y, c.z, 8 ), cyl( 1.5, 1.6, 2.6, c.x, y + 0.5, c.z, 8 ) );
+	kit.add( O.granite, cyl( 1.6, 1.8, 0.5, c.x, y, c.z, 8 ), cyl( 1.0, 1.1, 2.6, c.x, y + 0.5, c.z, 8 ) );
 	kit.add( O.granite, box( 1.2, 0.5, 1.2, c.x, y + 3.1, c.z ) );
 	kit.add( O.cream, cyl( 0.42, 0.5, c.column - 4.6, c.x, y + 3.6, c.z, 10 ) );
 	kit.add( O.cream, box( 1.0, 0.5, 1.0, c.x, y + c.column - 1.0, c.z ), box( 1.2, 0.3, 1.2, c.x, y + c.column - 0.5, c.z ) );
@@ -356,10 +356,10 @@ function marianColumn( kit, c ) {
 	if ( angels.length === 3 ) angels.push( [ 2 * c.x - angels[ 2 ][ 0 ], 2 * c.z - angels[ 2 ][ 1 ] ] );
 	for ( const [ ax, az ] of angels ) {
 
-		kit.add( O.granite, box( 0.8, 1.2, 0.8, ax, y + 0.5, az ) );
+		kit.add( O.granite, box( 0.8, 0.8, 0.8, ax, y, az ) );
 		const ry = Math.atan2( ax - c.x, az - c.z );
-		figure( { push: ( [ m, g ] ) => kit.add( O.cream, g.rotateY( ry ).translate( ax, y + 1.7, az ) ) }, O.cream, { h: 1.6, pose: 'raise' } );
-		kit.add( O.cream, new THREE.BoxGeometry( 0.9, 0.6, 0.06 ).rotateY( ry ).translate( ax - Math.sin( ry ) * 0.3, y + 3.0, az - Math.cos( ry ) * 0.3 ) );
+		figure( { push: ( [ m, g ] ) => kit.add( O.cream, g.rotateY( ry ).translate( ax, y + 0.8, az ) ) }, O.cream, { h: 1.6, pose: 'raise' } );
+		kit.add( O.cream, new THREE.BoxGeometry( 0.9, 0.6, 0.06 ).rotateY( ry ).translate( ax - Math.sin( ry ) * 0.3, y + 2.1, az - Math.cos( ry ) * 0.3 ) );
 
 	}
 

@@ -250,6 +250,17 @@ export function collectOldTown( ctx, { places, zone, L } ) {
 
 		}
 
+		// OSM's angels and the Hus group also come in as generic street statues: drawn here instead.
+		const F = ctx.furniture?.statue;
+		if ( F ) {
+
+			const near = ( x, z ) => ( out.marian && Math.hypot( x - out.marian.x, z - out.marian.z ) < 5 ) || ( out.hus && Math.hypot( x - out.hus.x, z - out.hus.z ) < 9 );
+			const kept = [];
+			for ( let i = 0; i < F.length; i += 5 ) if ( ! near( F[ i ], F[ i + 2 ] ) ) kept.push( ...F.slice( i, i + 5 ) );
+			ctx.furniture.statue = kept;
+
+		}
+
 		const mer = wayRing( 340086966 );
 		if ( mer.length > 1 ) out.meridian = mer.map( ( [ X, Y ] ) => [ ...L( X, Y ), + terrainAt( X, Y ).toFixed( 2 ) ] );
 

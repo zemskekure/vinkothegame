@@ -74,9 +74,13 @@ commit, injected by `vite.config.js`) shows in a corner and in the pause menu. T
   lattice, galleries) and the funicular's track; St Nicholas's dome and belfry on Malá Strana, St Francis's dome on
   Křižovnické náměstí, Klementinum's Astronomical Tower. Views: `?at=-470,-270,1.2` (on the bridge),
   `?at=-400,-246,-1.94` (to the Old Town tower), `?overview&view=-560,30,-170,-470,10,-280` (the bridge from the river).
-- Known gaps in the new area: houses have default fronts; nobody walks on Karlův most yet; the funicular has no cars.
-  The eastern and northern landmarks (Týn, the Old Town Hall, Prašná brána, Obecní dům) are generic RÚIAN blocks with
-  DSM roofs so far.
+- East of the river (`tools/oldtown.mjs` → `src/oldtown.js`): Týn's two towers with their spiky helmets, the Old Town
+  Hall tower and the **orloj**, Prašná brána (walk through its passage), Obecní dům's dome and mosaic front, the Hus
+  monument, the Marian column, the meridian. Views: `?at=275,-265,1.2` (Staroměstské náměstí),
+  `?overview&view=250,40,-270,365,45,-280` (Týn), `?overview&view=240,13,-203,231.5,13,-221&orloj` (the orloj),
+  `?overview&view=690,30,-160,735,30,-182` (Prašná brána).
+- Known gaps in the new area: houses have default fronts; nobody walks on Karlův most yet; the funicular has no cars;
+  Kinský palace's rococo front.
 
 ## 4. People (NPCs)
 
@@ -126,6 +130,8 @@ commit, injected by `vite.config.js`) shows in a corner and in the pause menu. T
   - Pigeon side missions: steal a trdelník, chase off a rival pigeon from the Hus statue... (to collect)
   - Courier deliveries with a map pin → on-screen arrow (borrowed from *Pigeon: A Love Story*).
   - Easter eggs: ideas to collect here (locations, what triggers them).
+  - **Built:** the orloj strikes the hour (real clock): Death rings his bell, the windows open, the twelve apostles
+    pass by (45 s). `?orloj` makes it strike every minute.
   - Weather (rain, fog), seasons (Christmas market stalls in front of Betlémská kaple).
   - Sound: footsteps by surface, tram bell and squeal, pigeons, street noise, the river.
   - A screensaver mode: the pigeon flies over Prague on its own.
