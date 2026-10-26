@@ -5,6 +5,7 @@ import { createFacadeMaterial, PLASTER } from './shading/facade.js';
 import { createRoofMaterial, createGroundMaterial, createWaterMaterial } from './shading/surfaces.js';
 import { Walker } from './walker.js';
 import { addFurniture } from './furniture.js';
+import { streetFronts, addGraffiti } from './graffiti.js';
 import { addSigns } from './signs.js';
 import { addDecor, addEmbankment } from './decor.js';
 import { addPlaces } from './places.js';
@@ -476,13 +477,16 @@ const roofs = new THREE.Mesh( ( () => {
 roofs.castShadow = roofs.receiveShadow = true;
 scene.add( roofs );
 
-// The walls (built in a function of their own, so their arrays can go once they are on the GPU).
+// The walls (built in a function of their own, so their arrays can go once they are on the GPU), and the street
+// fronts' ground floors for the graffiti (src/graffiti.js).
+let graffitiFronts = [];
 const wallGeo = ( () => {
 
 	const ws = data.wallStride;
 	const wallData = unpackWalls( wallsBuf, wallTableBuf, data.packed[ 'walls.bin' ], ws );
 	wallsBuf = wallTableBuf = null;
 	const walls = wallData.walls;
+	graffitiFronts = streetFronts( walls, ws, wallData.index );
 	const wallGeo = new THREE.BufferGeometry();
 	const wib = new THREE.InterleavedBuffer( walls, ws );
 	// Packed into vec4s: WebGPU allows at most 16 values passed from vertex to fragment shader.
@@ -577,6 +581,9 @@ embankmentBuf = null;
 const { seats } = addPlaces( scene, places, data.furniture, data.waterLevel );
 // Local icons: big lettering, sculptures, domed corner towers (data/icons.json).
 addIcons( scene, ICONS, groundHeight, data.buildings );
+// Tags, throw-ups, stickers and torn posters on the ground floors.
+const graffiti = await addGraffiti( scene, graffitiFronts, { streets: data.streets, groundFloors: groundRows, groundHeight } ).catch( e => console.warn( 'graffiti', e ) );
+graffitiFronts = null;
 // The still city in few draw calls (src/batch.js): the hand-made pieces merged per material and 150 m square, the
 // big meshes cut into 200 m squares that are skipped when out of view.
 const batched = batchStatic( scene );
@@ -1115,7 +1122,7 @@ renderer.setAnimationLoop( () => {
 
 }
 
-window.__debug = { setFps: f => FPS = f, renderer, scene, batched, camera, isBlocked, groundHeight, walker, life, trams, boats, holub, waterLevel: data.waterLevel };
+window.__debug = { setFps: f => FPS = f, graffiti, renderer, scene, batched, camera, isBlocked, groundHeight, walker, life, trams, boats, holub, waterLevel: data.waterLevel };
 window.__THREE = THREE;
 window.__ready = true;
 window.__complete = false;
