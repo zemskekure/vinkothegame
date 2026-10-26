@@ -1,0 +1,44 @@
+{
+	"bjukitchen": {
+		"name": "Bjukitchen",
+		"note": "Café and bakery-kitchen, Jungmannova 33/27 on the corner of Charvátova (owner photos 2026-10). The grey shopfront with its colour panels faces Jungmannova (edge 3), the door at its corner end; behind it one long vaulted room runs along Charvátova (edge 2), the café's windows on that side.",
+		"house": 21650608,
+		"style": "bju",
+		"layout": "longCafe",
+		"room": { "edge": 2, "to": 27.4, "inFrom": 0.7, "inTo": 7.4, "h": 3.75, "end": 3 },
+		"door": { "edge": 3, "from": 5.64, "to": 6.75, "h": 2.3 },
+		"glazing": [
+			{ "edge": 3, "from": 0.84, "to": 2.44, "y0": 1.15, "y1": 2.86 },
+			{ "edge": 3, "from": 5.32, "to": 7.07, "y0": 0.1, "y1": 2.86 },
+			{ "edge": 2, "from": 1.82, "to": 2.98, "y0": 1.06, "y1": 2.83 },
+			{ "edge": 2, "from": 10.02, "to": 11.18, "y0": 1.06, "y1": 2.83 },
+			{ "edge": 2, "from": 14.22, "to": 15.38, "y0": 1.06, "y1": 2.83 },
+			{ "edge": 2, "from": 18.42, "to": 19.58, "y0": 1.06, "y1": 2.83 },
+			{ "edge": 1, "from": 3.42, "to": 4.58, "y0": 1.06, "y1": 2.83 }
+		],
+		"terrace": { "edge": 3, "kind": "garden", "colour": "#5d6b4b", "spots": [ [ 2.0, 2.3 ], [ 4.3, 2.3 ] ] },
+		"doorstep": { "edge": 3, "plants": [ 5.2, 7.2 ], "pumpkins": [ 4.75, 5.0, 7.5 ] },
+		"plates": [
+			{ "edge": 3, "at": 7.9, "y": 4.55, "kind": "street", "text": "JUNGMANNOVA", "sub": "NOVÉ MĚSTO – PRAHA 1" },
+			{ "edge": 3, "at": 7.9, "y": 3.35, "kind": "cp", "text": "33", "sub": [ "NOVÉ MĚSTO", "PRAHA 1" ] },
+			{ "edge": 3, "at": 7.9, "y": 3.0, "kind": "or", "text": "27" }
+		],
+		"marker": { "icon": "B", "colour": "#e8483c" },
+		"palette": {
+			"wall": "#f1ece1",
+			"vault": "#ebe6db",
+			"floor": [ "#7d776d", "#5d5850" ],
+			"counter": "#e7d9a1",
+			"top": "#e2c491",
+			"bench": "#2d5b47",
+			"table": "#ede3c1",
+			"chair": "#d7c097",
+			"accentTable": "#e8483c",
+			"accentChair": "#28319a",
+			"shelf": "#ece4cd",
+			"shelfWood": "#c7a273",
+			"brand": "#e8483c",
+			"crates": [ "#f0d35a", "#3d74c9", "#5aa56a" ]
+		}
+	}
+}

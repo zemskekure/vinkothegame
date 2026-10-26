@@ -658,7 +658,7 @@ const hud = {
 // Minimap: places to find, and the landmarks.
 const placeMarkers = [];
 if ( places?.rotunda ) placeMarkers.push( { x: places.rotunda.x, z: places.rotunda.z, icon: 'R', colour: '#8a6d4b' } );
-for ( const room of places?.interiors || [] ) placeMarkers.push( { x: room.x, z: room.z, icon: { pub: 'H', cafe: 'S', champagne: 'C', slavia: 'K', vecerka: 'Ph' }[ room.style ], colour: { pub: '#2f6b45', cafe: '#333', champagne: '#b08a2e', slavia: '#2f5b3c', vecerka: '#9e1b1b' }[ room.style ] } );
+for ( const room of places?.interiors || [] ) placeMarkers.push( room.marker || { x: room.x, z: room.z, icon: { pub: 'H', cafe: 'S', champagne: 'C', slavia: 'K', vecerka: 'Ph' }[ room.style ], colour: { pub: '#2f6b45', cafe: '#333', champagne: '#b08a2e', slavia: '#2f5b3c', vecerka: '#9e1b1b' }[ room.style ] } );
 if ( places?.gate ) placeMarkers.push( { x: places.gate.x, z: places.gate.z, icon: 'M', colour: '#8f2a22' } );
 if ( places?.stairs ) placeMarkers.push( { x: places.stairs.top[ 0 ], z: places.stairs.top[ 2 ], icon: '⇵', colour: '#5d6a78' } );
 if ( data.furniture.chimney?.length ) placeMarkers.push( { x: data.furniture.chimney[ 0 ], z: data.furniture.chimney[ 2 ], icon: 'K', colour: '#9b4a32' } );

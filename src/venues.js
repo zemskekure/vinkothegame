@@ -24,6 +24,7 @@ import * as THREE from 'three/webgpu';
 import { color, positionLocal, mix, float, vec2, floor, fract, abs, max, smoothstep, step } from 'three/tsl';
 import { hash2D, noise2D } from './shading/common.js';
 import { Kit, M, plain, glow, box, cyl, ball, onFront, textTexture, board, planks, tiles, roomWall } from './kit.js';
+import { addSponsoredInterior, addGardenTerrace, addDoorstep } from './sponsored.js';
 
 // ---------------------------------------------------------------------------
 // Materials
@@ -1311,6 +1312,14 @@ function addVenueInterior( scene, room ) {
 
 	};
 
+	// Sponsored venues (data/venues.json): a shell from data and a layout preset (src/sponsored.js).
+	if ( room.shell ) {
+
+		addSponsoredInterior( g, room, seat );
+		return seats;
+
+	}
+
 	const dl = door - doorW / 2, dr = door + doorW / 2, t = 0.08;
 	if ( room.style === 'slavia' ) {
 
@@ -1337,7 +1346,8 @@ export function addVenues( scene, places, furniture ) {
 	for ( const room of places.interiors ) seats.push( ...addVenueInterior( scene, room ) );
 	for ( const room of places.interiors ) if ( room.side?.lobby ) addSlaviaLobby( scene, room );
 	const kit = new Kit();
-	for ( const t of places.terraces ) addTables( kit, t, seats );
+	for ( const t of places.terraces ) ( t.kind === 'garden' ? addGardenTerrace : addTables )( kit, t, seats );
+	for ( const room of places.interiors ) if ( room.outside ) addDoorstep( kit, room.outside );
 	// Champagneria: parasols over every other table; a round bench around the square's tree.
 	const champ = places.terraces.find( t => t.kind === 'champagne' );
 	champ?.tables.forEach( ( [ x, y, z, rot ], i ) => {

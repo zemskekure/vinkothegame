@@ -4350,6 +4350,17 @@
 		},
 		"signs": false
 	},
+	"21650608": {
+		"note": "Jungmannova 33/27 on the corner of Charvátova: pale render; Bjukitchen on the ground floor. Drawn fronts: the grey wooden shopfront on Jungmannova with its band of colour panels (pale, violet, green, red with the wordmark, white), the pink and deep blue verticals, the poster window with the red B mark and the door at the corner end (edge 3); the café's windows on Charvátova (edges 2 and 1). Owner photos 2026-10; the room behind is data/venues.json.",
+		"colour": "#e0d9c8",
+		"trim": "#ece7da",
+		"signs": false,
+		"edges": {
+			"1": { "shopfront": "21650608_1.svg" },
+			"2": { "shopfront": "21650608_2.svg" },
+			"3": { "shopfront": "21650608_3.svg" }
+		}
+	},
 	"21650659": {
 		"colour": "#dccb9e",
 		"rustic": "none",
