@@ -22,6 +22,8 @@ import { collectWalls } from './walls.mjs';
 import { collectTheatre } from './theatre.mjs';
 import { OSM_OFFSET } from './geo.mjs';
 import { collectVenues } from './venues.mjs';
+import { collectKarluv } from './karluv.mjs';
+import { collectPetrin } from './petrin.mjs';
 
 export function collectPlaces( ctx ) {
 
@@ -973,6 +975,40 @@ export function collectPlaces( ctx ) {
 
 	}
 
+	// --- Karlův most and its towers (tools/karluv.mjs): its own deck, parapets, piers, statues and lamps; the OSM ways
+	// of the bridge are left out of the generic decks below, and what OSM maps on it (the statues and lamps as street
+	// furniture, the parapets as walls, trees the surface model saw in the statues) is drawn by src/karluv.js instead.
+	places.karluv = null;
+	const karluv = collectKarluv( ctx, { places, zone, L, S, groundY } );
+	if ( karluv ) {
+
+		places.karluv = karluv.K;
+		bridgeSegs0.push( ...karluv.segs );
+		const F = ctx.furniture || {};
+		let dropped = 0;
+		for ( const type of [ 'lamp', 'statue', 'bollard', 'bench', 'bin', 'bikestand', 'tree' ] ) {
+
+			const a = F[ type ];
+			if ( ! a ) continue;
+			const kept = [];
+			for ( let i = 0; i < a.length; i += 5 ) {
+
+				if ( karluv.onDeck( ...S( a[ i ], a[ i + 2 ] ), 1.5 ) ) dropped ++;
+				else kept.push( ...a.slice( i, i + 5 ) );
+
+			}
+
+			F[ type ] = kept;
+
+		}
+
+		console.log( `places: ${dropped} OSM furniture points on Karlův most left to src/karluv.js` );
+
+	}
+
+	// --- Petřín: the lookout tower and the funicular's track (tools/petrin.mjs, src/petrin.js).
+	places.petrin = collectPetrin( ctx, { L } );
+
 	// --- bridges (OSM bridge=yes ways, clipped to the area): a deck strip per way segment at the height of the land
 	// at its ends, walkable; piers down to the river under the road decks every 25 m (src/bridges.js).
 	places.bridges = [];
@@ -1019,6 +1055,7 @@ export function collectPlaces( ctx ) {
 		// A bridge reaching beyond the first area is moved onto the cadastre as a whole (tools/geo.mjs), not just its
 		// part beyond: the deck must lie on the bridge the surface model sees.
 		const w = way.pts.every( p => inFirst( p.raw.X, p.raw.Y ) ) ? way : { ...way, pts: way.pts.map( p => ( { X: p.raw.X + OSM_OFFSET[ 0 ], Y: p.raw.Y + OSM_OFFSET[ 1 ] } ) ) };
+		if ( karluv && t.name === 'Karlův most' ) continue; // above
 		if ( legieAxis && w.pts.every( p => p.X < AREA.xmin || p.X > AREA.xmax || legieAxis.some( ( [ X, Y ] ) => Math.hypot( p.X - X, p.Y - Y ) < 24 ) ) ) continue; // Most Legií, above
 		const kind = t.railway === 'tram' ? 'tram' : t.highway;
 		if ( ! BRIDGE_W[ kind ] || w.pts.length < 2 ) continue;
@@ -1135,7 +1172,7 @@ export function collectPlaces( ctx ) {
 
 	for ( const g of bridgeSegs ) {
 
-		if ( g.kind === 'legie' ) continue;
+		if ( g.kind === 'legie' || g.kind === 'karluv' ) continue;
 		const [ ax, az ] = L( ...g.A ), [ bx, bz ] = L( ...g.B );
 		const len = Math.hypot( bx - ax, bz - az ), lx = ( bx - ax ) / len, lz = ( bz - az ) / len;
 		const y0 = + g.ya.toFixed( 2 ), y1 = + g.yb.toFixed( 2 );
@@ -1218,6 +1255,17 @@ export function collectPlaces( ctx ) {
 	places.life = streetLife( ctx, L );
 	places.barriers ||= [];
 	collectWalls( { places, project: ctx.project, L, S, yAtLocal, streetData, AREA, underDeck: ctx.underDeck } );
+	// OSM draws Karlův most's parapets as walls: src/karluv.js builds them, and tools/karluv.mjs their barriers.
+	if ( karluv ) {
+
+		const onEdge = ( x0, z0, x1, z1 ) => karluv.onDeck( ...S( ( x0 + x1 ) / 2, ( z0 + z1 ) / 2 ), 1.2 ) && ! karluv.onDeck( ...S( ( x0 + x1 ) / 2, ( z0 + z1 ) / 2 ), - 2.5 );
+		const nw = places.walls.length;
+		places.walls = places.walls.filter( w => ! onEdge( w.x0, w.z0, w.x1, w.z1 ) );
+		places.barriers = places.barriers.filter( b => b[ 4 ] !== - 99 || ! onEdge( b[ 0 ], b[ 1 ], b[ 2 ], b[ 3 ] ) );
+		console.log( `places: ${nw - places.walls.length} OSM walls on Karlův most's edges left out` );
+
+	}
+
 
 	// The garden at the west end of Konviktská and Betlémská (the park by the embankment): a cream wall about 1.4 m
 	// high with a clipped hedge over it along the streets, not open lawn (Street View 2024-05 down Konviktská).

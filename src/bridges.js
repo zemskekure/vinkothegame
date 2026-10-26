@@ -438,3 +438,6 @@ export function addLegie( scene, lg, waterLevel = 0 ) {
 	kit.build( scene );
 
 }
+
+// Shared with Karlův most (src/karluv.js).
+export { legieFrame as deckFrame, strip, beam, wire };

@@ -10,6 +10,8 @@ import { addOpenings } from './openings.js';
 import { addStops } from './stops.js';
 import { addBridges, addLegie } from './bridges.js';
 import { addLandmarks } from './landmarks.js';
+import { addKarluv } from './karluv.js';
+import { addPetrin } from './petrin.js';
 import { addDress, SEATS as dressSeats } from './dress.js';
 import { addFlights } from './flights.js';
 import { addVenues } from './venues.js';
@@ -284,6 +286,8 @@ export function addPlaces( scene, places, furniture = {}, waterLevel = 0 ) {
 	addStops( scene, places.stops );
 	addBridges( scene, places.bridges, places.piers, waterLevel );
 	addLegie( scene, places.legie, waterLevel );
+	addKarluv( scene, places.karluv, waterLevel );
+	addPetrin( scene, places.petrin );
 	addLandmarks( scene, places, waterLevel );
 	addDress( scene, places );
 	seats.push( ...dressSeats );
