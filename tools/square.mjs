@@ -16,7 +16,7 @@
 // (default ../vinko-streetview/). Street View images are reference only: never commit them, never use them as
 // textures or measure geometry off them (CLAUDE.md).
 
-import { readFile, writeFile, mkdir, copyFile } from 'node:fs/promises';
+import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { existsSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { homedir } from 'node:os';
@@ -351,9 +351,10 @@ async function merge() {
 			if ( ! front ) continue;
 			const src = path.join( WORK, 'fronts', e.shopfront );
 			if ( ! existsSync( src ) ) { errors.push( `${e.shopfront}: missing from ${path.join( WORK, 'fronts' )}` ); continue; }
-			const svg = await readFile( src, 'utf8' );
+			// The reviewer's notes in XML comments are dropped; they would otherwise trip the check for <! declarations.
+			const svg = ( await readFile( src, 'utf8' ) ).replace( /<!--[\s\S]*?-->/g, '' );
 			errors.push( ...validateShopfrontSvg( svg, front ).map( issue => `${e.shopfront}: ${issue}` ) );
-			svgFiles.push( { src, dst: path.join( ROOT, 'data/fronts', e.shopfront ) } );
+			svgFiles.push( { svg, dst: path.join( ROOT, 'data/fronts', e.shopfront ) } );
 
 		}
 
@@ -411,7 +412,7 @@ async function merge() {
 	}
 
 	if ( svgFiles.length ) await mkdir( path.join( ROOT, 'data/fronts' ), { recursive: true } );
-	for ( const file of svgFiles ) await copyFile( file.src, file.dst );
+	for ( const file of svgFiles ) await writeFile( file.dst, file.svg );
 	await writeFile( HP, JSON.stringify( H, null, '\t' ) + '\n' );
 	await writeFile( SG, JSON.stringify( updatedSigns, null, '\t' ) + '\n' );
 	console.log( `square ${name}: merged ${houses} houses, ${groundFloors} described ground floors, ${balconies} balconies, ${svgFiles.length} drawn fronts, ${signs} signs` );
