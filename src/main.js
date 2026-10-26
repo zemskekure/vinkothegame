@@ -19,6 +19,7 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { createMinimap } from './minimap.js';
 import { addTrams } from './trams.js';
 import { Solids } from './solids.js';
+import { startRide } from './ride.js';
 import { addBoats } from './boats.js';
 import { onLegie } from './bridges.js';
 import { SUN, ANIMATE } from './kit.js';
@@ -791,6 +792,8 @@ walkerLevel = () => walker.placed ? walker.y : null;
 
 // Trams and their overhead line (poles kept out of houses).
 let trams = { update() {} }, boats = { update() {} };
+// Riding the trams (src/ride.js), once the trams are in.
+let ride = { update() {} }, passengers = null;
 
 // The HUD (src/hud.js): the street's name as an area title, key hints, the speedometer, the pause menu.
 const hud = getHud();
@@ -1177,12 +1180,14 @@ renderer.setAnimationLoop( () => {
 	} else if ( walking ) {
 
 		walker.update( dt );
+		ride.update( true );
 		minimap.update( walker.pos.x, walker.pos.z, walker.yaw, walker.heading );
 		hud.speed( walker.riding ? Math.abs( walker.speed ) * 3.6 : null );
 
 	} else {
 
 		orbit.update();
+		ride.update( false );
 
 	}
 
@@ -1191,7 +1196,7 @@ renderer.setAnimationLoop( () => {
 	if ( labelTimer <= 0 && window.__ready ) {
 
 		labelTimer = 0.3;
-		const mode = holub ? 'pigeon' : ! walking ? 'above' : walker.riding ? 'ride' : 'walk';
+		const mode = holub ? 'pigeon' : ! walking ? 'above' : walker.aboard ? 'tram' : walker.riding ? 'ride' : 'walk';
 		if ( mode !== hudMode ) {
 
 			hud.mode( mode );
@@ -1273,11 +1278,19 @@ load( 'life.json', 'json' ).then( streetLife => Promise.all( [
 		if ( l.boxes ) solids.add( l.boxes );
 
 	} ),
-	addTrams( scene, streetLife?.trams, groundHeight, ( x, z ) => cameraBlocked( x, z ) || onLegie( places?.legie, x, z ) ).then( t => {
+	addTrams( scene, streetLife?.trams, groundHeight, ( x, z ) => cameraBlocked( x, z ) || onLegie( places?.legie, x, z ), { platforms: places?.stops || [] } ).then( t => {
 
 		trams = window.__debug.trams = t;
 		if ( t.boxes ) solids.add( t.boxes );
 
 	} ),
 	addBoats( scene, { loadModel, groundHeight, waterLevel: data.waterLevel } ).then( b => boats = window.__debug.boats = b )
-] ) ).then( () => renderer.compileAsync( scene, camera ).catch( () => {} ) ).then( () => window.__complete = true ); // the people's, trams' and boats' pipelines too
+] ) ).then( () => {
+
+	if ( trams.trams ) {
+
+		if ( ! holub ) ride = window.__debug.ride = startRide( { trams, walker, hud, passengers, groundHeight: ( x, z ) => groundHeight( x, z ), isBlocked } );
+
+	}
+
+} ).then( () => renderer.compileAsync( scene, camera ).catch( () => {} ) ).then( () => window.__complete = true ); // the people's, trams' and boats' pipelines too

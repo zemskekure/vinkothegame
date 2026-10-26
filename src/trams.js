@@ -18,6 +18,7 @@ import * as THREE from 'three/webgpu';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { crispTexture, DIR } from './vehicles.js';
 import { box } from './solids.js';
+import NAMES from './tram-stops.json';
 
 const CRUISE = 9, ACCEL = 1.0, BRAKE = 1.3, DWELL = 12;
 const WIRE_H = 5.7;
@@ -56,7 +57,7 @@ function bounds( joints ) {
 
 // One section's geometry (+z forward, rails at y = 0). `sec`: its place in the train ({ k, n, f0, f1 } with the
 // fractions of each side picture it wears), `atlas`: the type's rectangles in the atlas.
-function sectionGeometry( spec, L, sec, atlas, info ) {
+function sectionGeometry( spec, L, sec, atlas, info, open = false ) {
 
 	const W = spec.width / 2, H = spec.height, r = spec.roof;
 	const cabFront = sec.k === 0, cabBack = sec.k === sec.n - 1;
@@ -127,7 +128,7 @@ function sectionGeometry( spec, L, sec, atlas, info ) {
 		strip( ring( zf ), tip, i => faceUV[ i ] );
 		cap( tip, true, endUV( atlas.front, true, W - tipInset ) );
 
-	} else cap( ring( L / 2 ), true, jointUV );
+	} else if ( ! open ) cap( ring( L / 2 ), true, jointUV );
 
 	if ( cabBack ) {
 
@@ -135,7 +136,7 @@ function sectionGeometry( spec, L, sec, atlas, info ) {
 		strip( tip, ring( zb ), i => faceUV[ i ] );
 		cap( tip, false, endUV( atlas.rear, false, W - tipInset ) );
 
-	} else cap( ring( - L / 2 ), false, jointUV );
+	} else if ( ! open ) cap( ring( - L / 2 ), false, jointUV );
 
 	// The pantograph: its cut-out picture standing on the roof along the track, both ways round.
 	if ( sec.panto !== null ) {
@@ -172,7 +173,13 @@ function car( type, info ) {
 		// The pantograph's place along this section (+z forward, from its middle).
 		const panto = pantoIn ? L / 2 - ( spec.panto - b[ k ] ) * spec.length : null;
 		const sec = { k, n: b.length - 1, f0: b[ k ], f1: b[ k + 1 ], right: [ r[ k ], r[ k + 1 ] ], left: [ l[ k ], l[ k + 1 ] ], panto };
-		sections.push( { L, geometry: sectionGeometry( spec, L, sec, atlas, info ) } );
+		// The open one, without the faces at the joints, for riding: one walks through from section to section.
+		let open = null;
+		sections.push( { L, geometry: sectionGeometry( spec, L, sec, atlas, info ), get open() {
+
+			return open ||= sectionGeometry( spec, L, sec, atlas, info, true );
+
+		} } );
 
 	}
 
@@ -192,7 +199,7 @@ function train( type, info, material ) {
 
 			const model = new THREE.Mesh( s.geometry, material );
 			model.castShadow = model.receiveShadow = true;
-			list.push( { L: s.L, gap: k === 0 && c > 0 ? 1.0 : 0, model, car: c, k } );
+			list.push( { L: s.L, gap: k === 0 && c > 0 ? 1.0 : 0, model, car: c, k, shape: s } );
 
 		} );
 
@@ -285,7 +292,65 @@ function addCatenary( scene, paths, groundHeight, isBlocked ) {
 
 }
 
-export async function addTrams( scene, routes, groundHeight, isBlocked = () => false ) {
+// Line numbers. The routes are OpenStreetMap's tracks cut at the edges of the area, not timetables, so a route gets
+// the number of a line that runs between the same two edges (dpp.cz's network map): Anděl (south-west, over Most
+// Legií or along Újezd), Malostranská (north-west), Staroměstská (north, along the river), Jiráskovo náměstí (south,
+// along the river), Karlovo náměstí (south-east, Myslíkova / Spálená), Vodičkova and Lazarská (east). Approximate.
+const ENDS = { andel: [ - 1134, 891 ], malostranska: [ - 672, - 637 ], staromestska: [ - 29, - 637 ], jirasek: [ - 398, 892 ], karlovo: [ - 17, 892 ], vodickova: [ 281, 598 ], lazarska: [ 34, 626 ] };
+const LINES = {
+	'andel karlovo': 9, 'andel jirasek': 5, 'andel malostranska': 12, 'andel staromestska': 20, 'jirasek karlovo': 3,
+	'jirasek staromestska': 17, 'jirasek malostranska': 2, 'karlovo staromestska': 18, 'karlovo malostranska': 22,
+	'malostranska staromestska': 23, 'karlovo lazarska': 24, 'lazarska vodickova': 9
+};
+function lineOf( pts ) {
+
+	const end = ( x, z ) => Object.entries( ENDS ).sort( ( a, b ) => Math.hypot( a[ 1 ][ 0 ] - x, a[ 1 ][ 1 ] - z ) - Math.hypot( b[ 1 ][ 0 ] - x, b[ 1 ][ 1 ] - z ) )[ 0 ][ 0 ];
+	const key = [ end( pts[ 0 ], pts[ 1 ] ), end( pts[ pts.length - 2 ], pts[ pts.length - 1 ] ) ].sort().join( ' ' );
+	return LINES[ key ] ?? null;
+
+}
+
+// A route's stops as { s, name, side, platform }: the name of the nearest OpenStreetMap tram stop
+// (src/tram-stops.json), the platform (src/stops.js) beside the track there if there is one, and which side of the
+// track it is on (+1 the tram's left, −1 its right; with no platform the right, as Prague's doors are).
+function stopsOf( path, stops, platforms ) {
+
+	return stops.map( s => {
+
+		const [ x, z ] = at( path, s ), [ x2, z2 ] = at( path, s + 2 );
+		const dl = Math.hypot( x2 - x, z2 - z ) || 1, lx = ( z2 - z ) / dl, lz = - ( x2 - x ) / dl;
+		let name = null, nd = 120;
+		for ( const [ n, nx, nz ] of NAMES ) {
+
+			const d = Math.hypot( nx - x, nz - z );
+			if ( d < nd ) [ name, nd ] = [ n, d ];
+
+		}
+
+		let platform = null, pd = 9;
+		for ( const p of platforms ) {
+
+			const d = Math.abs( ( p.x - x ) * lx + ( p.z - z ) * lz );
+			const along = Math.abs( ( p.x - x ) * lz - ( p.z - z ) * lx );
+			if ( d < pd && d < p.width / 2 + 2.4 && along < p.len / 2 + 5 ) [ platform, pd ] = [ p, d ];
+
+		}
+
+		const side = platform ? Math.sign( ( platform.x - x ) * lx + ( platform.z - z ) * lz ) || - 1 : - 1;
+		return { s, name: name || platform?.name || 'Zastávka', side, platform, x, z };
+
+	} ).filter( ( st, i, all ) => {
+
+		// OpenStreetMap often has two nodes for one stop (the stop and where the tram halts): one stop of a name
+		// within 80 m, the one by a platform if either is.
+		const twin = all.find( ( o, j ) => j !== i && o.name === st.name && Math.abs( o.s - st.s ) < 80 );
+		return ! twin || ( st.platform && ! twin.platform ) || ( !! st.platform === !! twin.platform && st.s < twin.s );
+
+	} );
+
+}
+
+export async function addTrams( scene, routes, groundHeight, isBlocked = () => false, { platforms = [] } = {} ) {
 
 	if ( ! routes?.length ) return { update() {} };
 	const paths = routes.map( r => makePath( r.pts ) );
@@ -309,9 +374,15 @@ export async function addTrams( scene, routes, groundHeight, isBlocked = () => f
 		const sections = train( pick( i ), info, material );
 		for ( const sec of sections ) scene.add( sec.model );
 		const length = sections.reduce( ( n, sec, k ) => n + sec.L + ( k ? sec.gap : 0 ), 0 );
-		return { path, spec: FLEET[ sections.type ], type: sections.type, stops: r.stops, sections, length, s: length + 2 + ( ( i * 137 ) % Math.max( 1, path.length - length - 10 ) ), v: CRUISE * 0.6, dwell: 0, served: new Set() };
+		const stopInfo = stopsOf( path, r.stops, platforms );
+		return { path, stops: stopInfo.map( st => st.s ), spec: FLEET[ sections.type ], type: sections.type, stopInfo, line: lineOf( r.pts ), sections, length, s: length + 2 + ( ( i * 137 ) % Math.max( 1, path.length - length - 10 ) ), v: CRUISE * 0.6, dwell: 0, served: new Set(), atStop: null, ridden: false };
 
 	} );
+
+	// Who wants to know when a tram stops and opens its doors (src/passengers.js): f( tram, stop ).
+	const arrivals = [];
+	// The stop a tram will stop at next (its info), if any.
+	const nextStop = t => t.stopInfo.find( st => st.s + t.length / 2 > t.s - 1 && ! t.served.has( st.s ) ) ?? null;
 
 	function update( dt ) {
 
@@ -320,6 +391,10 @@ export async function addTrams( scene, routes, groundHeight, isBlocked = () => f
 			if ( t.dwell > 0 ) {
 
 				t.dwell -= dt;
+				// With someone aboard at the end of the line (no stop left before the edge of the city), it waits
+				// there with its doors open until they get off.
+				if ( t.ridden && ! nextStop( t ) ) t.dwell = Math.max( t.dwell, 2 );
+				if ( t.dwell <= 0 ) t.atStop = null;
 
 			} else {
 
@@ -336,6 +411,8 @@ export async function addTrams( scene, routes, groundHeight, isBlocked = () => f
 						t.served.add( next );
 						t.dwell = DWELL;
 						t.v = 0;
+						t.atStop = t.stopInfo.find( st => st.s === next );
+						for ( const f of arrivals ) f( t, t.atStop );
 
 					}
 
@@ -344,7 +421,12 @@ export async function addTrams( scene, routes, groundHeight, isBlocked = () => f
 				t.v += Math.max( - BRAKE * dt, Math.min( ACCEL * dt, target - t.v ) );
 				if ( target === 0 ) t.v = Math.max( t.v, 0.5 );
 				t.s += t.v * dt;
-				if ( t.s > t.path.length - 1 ) {
+				if ( t.s > t.path.length - 1 && t.ridden ) {
+
+					t.s = t.path.length - 1;
+					t.v = 0;
+
+				} else if ( t.s > t.path.length - 1 ) {
 
 					t.s = t.length + 1;
 					t.v = CRUISE * 0.5;
@@ -394,6 +476,43 @@ export async function addTrams( scene, routes, groundHeight, isBlocked = () => f
 
 	}
 
-	return { update, trams, boxes };
+	// A place in a train: `u` metres back from its front, `w` across (+ its left), `y` over the rails, as
+	// { x, y, z, yaw, sec, lz } (lz: along the section, from its middle).
+	function place( t, u, w = 0, y = 0, out = {} ) {
+
+		let front = 0, sec = t.sections[ 0 ];
+		for ( const s of t.sections ) {
+
+			sec = s;
+			if ( u <= front + s.L + s.gap / 2 ) break;
+			front += s.L + s.gap;
+
+		}
+
+		const p = sec.model.position, yaw = sec.model.rotation.y, lz = sec.L / 2 - ( u - front );
+		out.x = p.x + lz * Math.sin( yaw ) + w * Math.cos( yaw );
+		out.z = p.z + lz * Math.cos( yaw ) - w * Math.sin( yaw );
+		out.y = p.y + y;
+		out.yaw = yaw;
+		out.sec = sec;
+		out.lz = lz;
+		return out;
+
+	}
+
+	// Where each section starts, metres back from the train's front.
+	for ( const t of trams ) {
+
+		let front = 0;
+		for ( const sec of t.sections ) {
+
+			sec.front = front;
+			front += sec.L + sec.gap;
+
+		}
+
+	}
+
+	return { update, trams, boxes, place, nextStop, onArrive: f => arrivals.push( f ) };
 
 }

@@ -74,6 +74,21 @@ export class Solids {
 
 	}
 
+	// Whether a point is inside a vehicle (the third-person camera keeps out of them).
+	inside( x, y, z ) {
+
+		for ( const b of this.near ) {
+
+			if ( y < b.y0 || y > b.y1 + 0.15 ) continue;
+			const dx = x - b.x, dz = z - b.z;
+			if ( Math.abs( dx * b.s + dz * b.c ) < b.hl + 0.15 && Math.abs( dx * b.c - dz * b.s ) < b.hw + 0.15 ) return true;
+
+		}
+
+		return false;
+
+	}
+
 	// The highest roof over ( x, z ), or −Infinity.
 	top( x, z ) {
 
