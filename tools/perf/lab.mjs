@@ -14,6 +14,21 @@ page.on( 'console', m => m.type() === 'error' && console.log( 'console', m.text(
 await page.addInitScript( () => window.__frameLog = [] );
 await page.goto( url, { timeout: 600000 } );
 await page.waitForFunction( () => window.__ready, null, { timeout: 600000 } );
+await page.waitForFunction( () => window.__complete !== false, null, { timeout: 30000 } ).catch( () => console.log( 'not complete' ) );
+if ( process.env.FLY ) await page.evaluate( fly => {
+
+	const [ x, z, heading ] = fly.split( ',' ).map( Number ), h = window.__debug.holub;
+	h.place( x, z, heading );
+	h.keys.add( 'Space' );
+	setTimeout( () => h.keys.add( 'KeyW' ), 600 );
+	setInterval( () => {
+
+		h.keys.delete( 'Space' );
+		setTimeout( () => h.keys.add( 'Space' ), 300 );
+
+	}, 2500 );
+
+}, process.env.FLY );
 await page.waitForTimeout( 6000 );
 const measure = () => page.evaluate( () => new Promise( res => {
 

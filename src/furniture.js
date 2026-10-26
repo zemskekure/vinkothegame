@@ -79,18 +79,31 @@ export const MODELS = {
 
 };
 
+// One batch per 150 m square of the city, so the squares out of view (or lost in the haze, src/main.js) are skipped.
+const TILE = 150;
 function instance( scene, type, parts, entries, matrixOf ) {
 
 	const count = entries.length / 5;
 	if ( ! count ) return;
-	for ( const [ geometry, material ] of parts ) {
+	const tiles = new Map();
+	for ( let i = 0; i < count; i ++ ) {
 
-		const mesh = new THREE.InstancedMesh( geometry, material, count );
+		const key = `${Math.floor( entries[ i * 5 ] / TILE )},${Math.floor( entries[ i * 5 + 2 ] / TILE )}`;
+		if ( ! tiles.has( key ) ) tiles.set( key, [] );
+		tiles.get( key ).push( entries.slice( i * 5, i * 5 + 5 ) );
+
+	}
+
+	for ( const list of tiles.values() ) for ( const [ geometry, material ] of parts ) {
+
+		const mesh = new THREE.InstancedMesh( geometry, material, list.length );
 		const m = new THREE.Matrix4();
-		for ( let i = 0; i < count; i ++ ) mesh.setMatrixAt( i, matrixOf( entries.slice( i * 5, i * 5 + 5 ), m ) );
+		list.forEach( ( entry, i ) => mesh.setMatrixAt( i, matrixOf( entry, m ) ) );
+		mesh.computeBoundingSphere();
 		mesh.castShadow = true;
 		mesh.receiveShadow = true;
 		mesh.name = type;
+		mesh.userData.tile = true;
 		scene.add( mesh );
 
 	}
@@ -146,7 +159,8 @@ export function addFurniture( scene, furniture ) {
 	}
 
 	const crownH = 0.75; // crown blobs are squashed spheres
-	instance( scene, 'tree', [ [ new THREE.IcosahedronGeometry( 1, 1 ), leaves ] ], blobs,
+	// (20-sided blobs: chunky, as the console games drew their trees.)
+	instance( scene, 'tree', [ [ new THREE.IcosahedronGeometry( 1, 0 ), leaves ] ], blobs,
 		( [ x, y, z, rot, r ], m ) => m.compose( p.set( x, y, z ), q.setFromAxisAngle( up, rot ), s.set( r, r * crownH, r ) ) );
 	instance( scene, 'trunk', [ [ cyl( 0.14, 0.24, 1, 0, 7 ), bark ] ], trees,
 		( [ x, y, z, , h ], m ) => m.compose( p.set( x, y, z ), q.identity(), s.set( 1, h * 0.62, 1 ) ) );

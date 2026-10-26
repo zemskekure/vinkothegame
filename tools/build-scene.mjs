@@ -2156,6 +2156,11 @@ for ( const [ key, row ] of groundFloorRow ) {
 
 }
 
+// Street life (walking lines, driving lanes, parked cars, tram routes) in a file of its own: the game loads it with
+// the people, after the city is up (src/main.js).
+await writeFile( new URL( 'life.json', OUT ), JSON.stringify( places.life ) );
+delete places.life;
+
 await writeFile( new URL( 'scene.json', OUT ), JSON.stringify( {
 	attribution: 'Data © ČÚZK (RÚIAN, ZABAGED®, DMR 5G, DMP 1G) · © OpenStreetMap contributors (ODbL)',
 	baseHeight: BASE_HEIGHT,

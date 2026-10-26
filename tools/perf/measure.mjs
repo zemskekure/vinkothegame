@@ -61,12 +61,15 @@ async function loadTest() {
 		const ok = await page.waitForFunction( () => window.__ready, null, { timeout: 600000, polling: 100 } ).then( () => true, () => false );
 		const ready = ( Date.now() - t0 ) / 1000;
 		const bytesAtReady = bytes;
+		// Everything streamed in after the city (people, trams, boats): window.__complete.
+		await page.waitForFunction( () => window.__complete !== false, null, { timeout: 600000, polling: 100 } ).catch( () => {} );
+		const complete = ( Date.now() - t0 ) / 1000;
 		await page.waitForTimeout( visit === 'cold' ? 15000 : 3000 );
 		const heap = await page.evaluate( () => performance.memory ? Math.round( performance.memory.usedJSHeapSize / 1e6 ) : null );
 		cdp.off( 'Network.loadingFinished', onDone );
 		cdp.off( 'Network.responseReceived', onResp );
 		console.log( [ ...perUrl ].sort( ( a, b ) => b[ 1 ] - a[ 1 ] ).slice( 0, 25 ).map( ( [ u, b ] ) => `  ${( b / 1e6 ).toFixed( 2 )} MB ${u}` ).join( '\n' ) );
-		out[ visit ] = { ok, ready: + ready.toFixed( 1 ), mbAtReady: + ( bytesAtReady / 1e6 ).toFixed( 2 ), mbTotal: + ( bytes / 1e6 ).toFixed( 2 ), requests, heap, errors: log.slice( 0, 5 ) };
+		out[ visit ] = { ok, ready: + ready.toFixed( 1 ), complete: + complete.toFixed( 1 ), mbAtReady: + ( bytesAtReady / 1e6 ).toFixed( 2 ), mbTotal: + ( bytes / 1e6 ).toFixed( 2 ), requests, heap, errors: log.slice( 0, 5 ) };
 		console.log( label, visit, JSON.stringify( out[ visit ] ) );
 
 	}
@@ -86,13 +89,17 @@ async function viewTest( name ) {
 	await page.addInitScript( () => {
 
 		window.__frameLog = [];
+		window.__frameCost = [];
 
 	} );
 	const q = VIEWS[ name ];
 	const fly = /fly=([-\d.,]+)/.exec( q );
-	const url = base + '?fps=240' + ( q ? '&' + q.replace( /&?fly=[-\d.,]+/, '' ) : '' );
+	// With the frame cap lifted (?fps=1000): how long a frame takes, the headroom under the game's 60 a second.
+	// (Headless Chrome's animation frames don't tick at a display's rate, so a capped run measures the ticks.)
+	const url = base + '?fps=1000' + ( q ? '&' + q.replace( /&?fly=[-\d.,]+/, '' ) : '' );
 	await page.goto( url, { timeout: 600000, waitUntil: 'domcontentloaded' } );
 	await page.waitForFunction( () => window.__ready, null, { timeout: 600000 } );
+	await page.waitForFunction( () => window.__complete !== false, null, { timeout: 600000 } );
 	if ( fly ) {
 
 		const [ x, z, heading ] = fly[ 1 ].split( ',' ).map( Number );
@@ -113,14 +120,15 @@ async function viewTest( name ) {
 
 	}
 
-	await page.waitForTimeout( 7000 );
-	const r = await page.evaluate( () => new Promise( res => {
+	await page.waitForTimeout( 5000 );
+	const stats = seconds => page.evaluate( seconds => new Promise( res => {
 
-		const info = window.__debug.renderer.info;
 		window.__frameLog.length = 0;
+		window.__frameCost.length = 0;
 		let calls = 0, tris = 0, n = 0;
 		const sample = setInterval( () => {
 
+			if ( ! window.__frameInfo ) return;
 			calls += window.__frameInfo[ 0 ];
 			tris += window.__frameInfo[ 1 ];
 			n ++;
@@ -131,12 +139,17 @@ async function viewTest( name ) {
 			clearInterval( sample );
 			const ts = window.__frameLog;
 			const d = ts.slice( 1 ).map( ( t, i ) => t - ts[ i ] ).sort( ( a, b ) => a - b );
-			const avg = d.reduce( ( a, b ) => a + b, 0 ) / d.length;
-			res( { frames: d.length, avg: + avg.toFixed( 1 ), p50: + d[ d.length >> 1 ].toFixed( 1 ), p95: + d[ Math.floor( d.length * 0.95 ) ].toFixed( 1 ), max: + d[ d.length - 1 ].toFixed( 1 ), calls: Math.round( calls / n ), ktris: Math.round( tris / n / 1000 ), heap: performance.memory ? Math.round( performance.memory.usedJSHeapSize / 1e6 ) : null } );
+			const c = window.__frameCost.slice().sort( ( a, b ) => a - b );
+			const avg = a => a.reduce( ( x, y ) => x + y, 0 ) / a.length;
+			res( { frames: d.length, avg: + avg( d ).toFixed( 1 ), p50: + d[ d.length >> 1 ].toFixed( 1 ), p95: + d[ Math.floor( d.length * 0.95 ) ].toFixed( 1 ), max: + d[ d.length - 1 ].toFixed( 1 ), over20: + ( d.filter( x => x > 20 ).length / d.length * 100 ).toFixed( 1 ),
+				cpu: c.length ? + avg( c ).toFixed( 1 ) : null, cpu95: c.length ? + c[ Math.floor( c.length * 0.95 ) ].toFixed( 1 ) : null,
+				calls: n ? Math.round( calls / n ) : null, ktris: n ? Math.round( tris / n / 1000 ) : null, heap: performance.memory ? Math.round( performance.memory.usedJSHeapSize / 1e6 ) : null } );
 
-		}, 8000 );
+		}, seconds * 1000 );
 
-	} ) );
+	} ), seconds );
+	const r = await stats( 8 );
+
 	r.errors = log.slice( 0, 5 );
 	console.log( label, name, JSON.stringify( r ) );
 	if ( shots ) await page.screenshot( { path: `${shots}/${label}-${name}.png` } );

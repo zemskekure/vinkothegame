@@ -296,9 +296,29 @@ const zones = data.places?.zones || [];
 // An underpass zone (`under`: Čapadlo under Smetanovo nábřeží) is the ground only for someone below its ceiling
 // (y: the asker's height; null: anyone else, who stays on the street above). Decks: see `deck` / `over` below.
 let walkerLevel = () => null;
+// The zones by 8 m square (each listed in every square its rectangle can reach), in their order in the list, so a
+// lookup tries the few nearby ones only, first match first as before.
+const ZONE_CELL = 8, zoneGrid = new Map();
+zones.forEach( zn => {
+
+	const r = Math.hypot( zn.hu, zn.hn );
+	for ( let i = Math.floor( ( zn.x - r ) / ZONE_CELL ); i <= Math.floor( ( zn.x + r ) / ZONE_CELL ); i ++ ) {
+
+		for ( let j = Math.floor( ( zn.z - r ) / ZONE_CELL ); j <= Math.floor( ( zn.z + r ) / ZONE_CELL ); j ++ ) {
+
+			const key = i * 100000 + j;
+			if ( ! zoneGrid.has( key ) ) zoneGrid.set( key, [] );
+			zoneGrid.get( key ).push( zn );
+
+		}
+
+	}
+
+} );
+const NO_ZONES = [];
 function zoneAt( x, z, y = walkerLevel() ) {
 
-	for ( const zn of zones ) {
+	for ( const zn of zoneGrid.get( Math.floor( x / ZONE_CELL ) * 100000 + Math.floor( z / ZONE_CELL ) ) || NO_ZONES ) {
 
 		if ( zn.under && ( y === null || y === undefined || y > zn.ceil ) ) continue;
 		const dx = x - zn.x, dz = z - zn.z;
@@ -545,7 +565,7 @@ addIcons( scene, ICONS, groundHeight, data.buildings );
 const batched = batchStatic( scene );
 const tiles = [ terrain, pavement, wallMesh, roofs ].map( mesh => splitByTile( mesh ) );
 const roofTiles = tiles[ 3 ];
-const beyondFog = [ ...batched.list, ...tiles.flatMap( g => g.children ) ];
+const beyondFog = [ ...batched.list, ...tiles.flatMap( g => g.children ), ...scene.children.filter( o => o.isInstancedMesh && o.userData.tile ) ];
 const stillRoots = new Set( scene.children );
 // Models: Quaternius' people (CC0) and the vehicles (public/models/vehicles/CREDITS.md); textures resolve next to them. The people are
 // meshopt-compressed.
@@ -881,7 +901,7 @@ if ( ps1 ) {
 if ( ADMIN ) ( await import( './admin.js' ) ).startAdmin( { bounds, map: minimap.map, life, ps1, day, holub } );
 
 // Battery: at most 60 frames a second (30 in the pigeon game), however fast the screen refreshes. ?fps=N sets the cap.
-const FPS = Number( params.get( 'fps' ) ) || ( HOLUB ? 30 : 60 );
+let FPS = Number( params.get( 'fps' ) ) || ( HOLUB ? 30 : 60 );
 // The shadowed square (see the sun above) follows one around in 50 m steps.
 function aimShadows( x, z, close ) {
 
@@ -982,24 +1002,31 @@ renderer.setAnimationLoop( () => {
 	// beyond the area still is, so the horizon stays where it was).
 	for ( const m of beyondFog ) {
 
-		const b = m.geometry.boundingSphere;
+		const b = m.isInstancedMesh ? m.boundingSphere : m.geometry.boundingSphere;
 		m.visible = camera.position.distanceTo( b.center ) - b.radius < scene.fog.far;
 
 	}
 
 	if ( ps1 ) ps1.render(); else renderer.render( scene, camera );
-	if ( window.__frameLog ) window.__frameInfo = [ renderer.info.render.drawCalls, renderer.info.render.triangles ];
+	// Measuring (tools/perf/): draw calls, triangles and the frame's own time on the main thread.
+	if ( window.__frameLog ) {
+
+		window.__frameInfo = [ renderer.info.render.drawCalls, renderer.info.render.triangles ];
+		window.__frameCost?.push( performance.now() - now );
+
+	}
 
 } );
 
 document.getElementById( 'loading' ).remove();
-window.__debug = { renderer, scene, batched, camera, isBlocked, groundHeight, walker, life, trams, boats, holub, waterLevel: data.waterLevel };
+window.__debug = { setFps: f => FPS = f, renderer, scene, batched, camera, isBlocked, groundHeight, walker, life, trams, boats, holub, waterLevel: data.waterLevel };
 window.__THREE = THREE;
 window.__ready = true;
+window.__complete = false;
 
 // Street life: the people (cars hidden for now, ?cars shows them), the trams and the boats, loaded once the city is up.
-Promise.all( [
-	addLife( scene, places?.life, { seats, benches: data.furniture.bench, groundHeight, loadModel, camera, cars: params.has( 'cars' ) } ).then( l => Object.assign( life, l ) ),
-	addTrams( scene, places?.life?.trams, groundHeight, ( x, z ) => cameraBlocked( x, z ) || onLegie( places?.legie, x, z ) ).then( t => trams = window.__debug.trams = t ),
+load( 'life.json', 'json' ).then( streetLife => Promise.all( [
+	addLife( scene, streetLife, { seats, benches: data.furniture.bench, groundHeight, loadModel, camera, cars: params.has( 'cars' ) } ).then( l => Object.assign( life, l ) ),
+	addTrams( scene, streetLife?.trams, groundHeight, ( x, z ) => cameraBlocked( x, z ) || onLegie( places?.legie, x, z ) ).then( t => trams = window.__debug.trams = t ),
 	addBoats( scene, { loadModel, groundHeight, waterLevel: data.waterLevel } ).then( b => boats = window.__debug.boats = b )
-] ).then( () => window.__complete = true );
+] ) ).then( () => window.__complete = true );
