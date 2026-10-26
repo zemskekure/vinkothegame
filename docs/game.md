@@ -159,3 +159,4 @@ pictures land). One material per atlas, instanced or merged.
 - Trams and cars solid (the walker, the scooter and the pigeon collide with them).
 - Ride the tram: board at a stop, sit or stand inside (T3 and 15T interiors from the owner's textures `tram_t3_interior`, `tram_15t_interior`, `tram_seat_fabric`), ride along the line with the city passing by, get off at a stop.
 - Passengers getting on and off at tram stops.
+- PS4 (DualShock 4) / gamepad support via the Gamepad API: left stick move/steer, right stick camera, ✕ jump/flap, □ scooter, ○ tram/land, R2/L2 run/throttle/brake, △ map, Options pause; PlayStation symbols in the HUD, rumble on landing/bumps. (Owner: later.)
