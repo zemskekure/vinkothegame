@@ -12,12 +12,11 @@
 
 import * as THREE from 'three/webgpu';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { SETTINGS, DEFAULTS, LOCAL, SERVER, merge, writeLocal } from './settings.js';
 import { STYLE, LOOK, saveSettings, downloadSettings, get, set } from './admin.js';
 import { ps1Look } from './holub/ps1.js';
-import { BODIES, SHAPE, loadWardrobe, useWardrobe, prepareBody, applyArt, lookAttribute, shapeWeights } from './people.js';
+import { BODIES, SHAPE, loadWardrobe, useWardrobe, applyArt, lookAttribute, shapeWeights } from './people.js';
+import { SHAPE_NAMES, CATS, BODY_DIRS as NAMES, bodyLoader } from './wardrobe-ui.js';
 import { rulesFrom, gameSeed, personSeed, generatePerson, lookOf, buildPerson as build } from './persona.js';
 import { makePigeon, birdSize } from './holub/pigeon.js';
 import { FOOD, foodMaterial } from './holub/game.js';
@@ -270,22 +269,7 @@ function bird( kind ) {
 const wardrobe = await loadWardrobe();
 useWardrobe( wardrobe );
 applyArt( art() );
-const gltfLoader = new GLTFLoader().setMeshoptDecoder( MeshoptDecoder );
-const buffers = new Map();
-const bodyCache = new Map();
-async function body( file ) {
-
-	if ( ! bodyCache.has( file ) ) {
-
-		if ( ! buffers.has( file ) ) buffers.set( file, await ( await fetch( `models/people/${file}.glb` ) ).arrayBuffer() );
-		const spec = BODIES.find( b => b.file === file );
-		bodyCache.set( file, prepareBody( await gltfLoader.parseAsync( buffers.get( file ).slice( 0 ), 'models/people/' ), spec ) );
-
-	}
-
-	return bodyCache.get( file );
-
-}
+const body = bodyLoader();
 
 // A new line-up from the rules: the seeds dealt as in a game (a fixed seed in the rules gives the same people).
 let base = gameSeed( rulesFrom( art() ) );
@@ -682,7 +666,7 @@ const rebuildPeople = () => {
 	rebuilding = rebuilding.then( async () => {
 
 		applyArt( art() );
-		bodyCache.clear();
+		body.clear();
 		for ( let i = 0; i < lineup.length; i ++ ) await buildPerson( i );
 
 	} );
@@ -763,7 +747,6 @@ rows.push( () => seedInput.value = art().crowd?.seed || 0 );
 
 // The chosen person's shape (src/people.js SHAPE), height and width: the spec edited by hand, as a character
 // creator would.
-const SHAPE_NAMES = { fat: 'Tloušťka', belly: 'Břicho', hips: 'Boky', head: 'Hlava', hunch: 'Shrbení', shoulders: 'Ramena', legs: 'Nohy (délka)', torso: 'Trup (délka)', arms: 'Ruce (délka)', neck: 'Krk', tilt: 'Nakřivo', lumps: 'Hrbolatost' };
 const shapeRows = [];
 {
 
@@ -824,7 +807,6 @@ lineup.forEach( ( p, i ) => {
 } );
 
 const bodySelect = $( '[data-body]' );
-const NAMES = { 'animated-men': 'muž', 'animated-women': 'žena', 'modular-men': 'muž (modular)', 'modular-women': 'žena (modular)' };
 bodySelect.addEventListener( 'change', async () => {
 
 	lineup[ current ].body = bodySelect.value;
@@ -833,14 +815,6 @@ bodySelect.addEventListener( 'change', async () => {
 
 } );
 
-// Wardrobe categories: [ key, label, kind, part, none label ].
-const CATS = [
-	[ 'face', 'Tvář', 'faces', null, null ],
-	[ 'hair', 'Vlasy (zadní a horní strany hlavy)', 'heads', null, 'z tváře' ],
-	[ 'top', 'Nahoře', 'clothes', 'top', 'barva' ],
-	[ 'bottom', 'Dole', 'clothes', 'bottom', 'barva' ],
-	[ 'skin', 'Kůže', 'skin', null, 'z tváře' ]
-];
 
 const wardrobeHost = $( '[data-wardrobe]' );
 function showWardrobe() {
