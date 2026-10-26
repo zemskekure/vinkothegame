@@ -90,6 +90,7 @@ export const KEYS = {
 	walk: [ [ [ 'W', 'A', 'S', 'D' ], 'chůze' ], [ [ 'Shift' ], 'běh' ], [ [ 'Mezerník' ], 'skok' ], [ [ 'B' ], 'skútr' ], [ [ 'V' ], 'z očí' ], [ [ 'Tab' ], 'mapa' ], [ [ 'M' ], 'shora' ], [ [ 'Esc' ], 'menu' ] ],
 	tram: [ [ [ 'W', 'A', 'S', 'D' ], 'ulička' ], [ [ 'C' ], 'sednout' ], [ [ 'E' ], 'vystoupit (na zastávce)' ], [ [ 'Myš' ], 'rozhlížení' ], [ [ 'Esc' ], 'menu' ] ],
 	ride: [ [ [ 'W' ], 'plyn' ], [ [ 'S' ], 'brzda' ], [ [ 'A', 'D' ], 'řízení' ], [ [ 'B' ], 'sesednout' ], [ [ 'Tab' ], 'mapa' ], [ [ 'Esc' ], 'menu' ] ],
+	boat: [ [ [ 'W', 'S' ], 'šlapat' ], [ [ 'A', 'D' ], 'kormidlo' ], [ [ 'V' ], 'z očí' ], [ [ 'E' ], 'vrátit (u mola)' ], [ [ 'Esc' ], 'menu' ] ],
 	pigeon: [ [ [ 'W', 'A', 'S', 'D' ], 'chůze a let' ], [ [ 'Mezerník' ], 'vzlétnout / výš' ], [ [ 'S' ], 'v letu: přistát' ], [ [ 'C' ], 'níž / sednout' ], [ [ 'E' ], 'zobnout' ], [ [ 'Q' ], 'bobek' ], [ [ 'Tab' ], 'mapa' ], [ [ 'Esc' ], 'menu' ] ],
 	above: [ [ [ 'Myš' ], 'otáčení' ], [ [ 'Kolečko' ], 'přiblížení' ], [ [ 'M' ], 'na ulici' ], [ [ 'Esc' ], 'menu' ] ]
 };
@@ -97,6 +98,7 @@ const TOUCH_KEYS = {
 	walk: 'Joystick vlevo dole: chůze (až k okraji běh) · táhni prstem: kamera',
 	ride: 'Joystick: plyn, brzda a řízení · táhni prstem: kamera',
 	tram: 'Joystick: ulička · táhni prstem: rozhlížení',
+	boat: 'Joystick: šlapat a kormidlo · táhni prstem: kamera',
 	pigeon: 'Joystick vlevo: chůze a let · táhni prstem: rozhlížení · tlačítka vpravo',
 	above: 'Táhni prstem: otáčení · dvěma prsty: přiblížení a posun'
 };

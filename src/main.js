@@ -22,6 +22,7 @@ import { Solids } from './solids.js';
 import { startRide } from './ride.js';
 import { addPassengers } from './passengers.js';
 import { addBoats } from './boats.js';
+import { addPedalo, jettyZones, cutJettyGap } from './pedalo.js';
 import { onLegie } from './bridges.js';
 import { SUN, ANIMATE } from './kit.js';
 import { HOLUB_SUN, PIXEL_SCALE, holubLook, startHolub } from './holub/game.js';
@@ -341,6 +342,9 @@ function terrainHeight( x, z ) {
 // it holds only for a walker down at its level (`y`, the walker's height; null: above, on the deck); the deck's own
 // zone (`over`) only for one up on it.
 const zones = data.places?.zones || [];
+// The pedal-boat rental's pontoon and gangway on Slovanský ostrov (src/pedalo.js).
+zones.push( ...jettyZones( terrainHeight, data.waterLevel ) );
+cutJettyGap( data, terrainHeight );
 // An underpass zone (`under`: Čapadlo under Smetanovo nábřeží) is the ground only for someone below its ceiling
 // (y: the asker's height; null: anyone else, who stays on the street above). Decks: see `deck` / `over` below.
 let walkerLevel = () => null;
@@ -795,6 +799,8 @@ walkerLevel = () => walker.placed ? walker.y : null;
 let trams = { update() {} }, boats = { update() {} };
 // Riding the trams (src/ride.js) and the people at the stops (src/passengers.js), once the trams and people are in.
 let ride = { update() {} }, passengers = { update() {} };
+// The swan pedal boats for hire at Slovanský ostrov (src/pedalo.js), once the boats are in.
+let pedalo = { update() {} };
 
 // The HUD (src/hud.js): the street's name as an area title, key hints, the speedometer, the pause menu.
 const hud = getHud();
@@ -1184,6 +1190,7 @@ renderer.setAnimationLoop( () => {
 	if ( holub ) {
 
 		holub.update( dt );
+		pedalo.update( dt, false );
 		story?.update( dt );
 		day.update( dt );
 		minimap.update( holub.pos.x, holub.pos.z, holub.yaw, holub.heading );
@@ -1192,6 +1199,7 @@ renderer.setAnimationLoop( () => {
 
 		walker.update( dt );
 		ride.update( true );
+		pedalo.update( dt, true );
 		minimap.update( walker.pos.x, walker.pos.z, walker.yaw, walker.heading );
 		hud.speed( walker.riding ? Math.abs( walker.speed ) * 3.6 : null );
 
@@ -1199,6 +1207,7 @@ renderer.setAnimationLoop( () => {
 
 		orbit.update();
 		ride.update( false );
+		pedalo.update( dt, false );
 
 	}
 
@@ -1207,7 +1216,7 @@ renderer.setAnimationLoop( () => {
 	if ( labelTimer <= 0 && window.__ready ) {
 
 		labelTimer = 0.3;
-		const mode = holub ? 'pigeon' : ! walking ? 'above' : walker.aboard ? 'tram' : walker.riding ? 'ride' : 'walk';
+		const mode = holub ? 'pigeon' : ! walking ? 'above' : walker.aboard?.boat ? 'boat' : walker.aboard ? 'tram' : walker.riding ? 'ride' : 'walk';
 		if ( mode !== hudMode ) {
 
 			hud.mode( mode );
@@ -1295,7 +1304,13 @@ load( 'life.json', 'json' ).then( streetLife => Promise.all( [
 		if ( t.boxes ) solids.add( t.boxes );
 
 	} ),
-	addBoats( scene, { loadModel, groundHeight, waterLevel: data.waterLevel } ).then( b => boats = window.__debug.boats = b )
+	addBoats( scene, { loadModel, groundHeight, waterLevel: data.waterLevel } ).then( b => {
+
+		boats = window.__debug.boats = b;
+		pedalo = window.__debug.pedalo = addPedalo( { scene, camera, walker, hud, boats, groundHeight, terrainHeight, waterLevel: data.waterLevel, bounds } );
+		solids.add( pedalo.boxes );
+
+	} )
 ] ) ).then( () => {
 
 	if ( trams.trams ) {

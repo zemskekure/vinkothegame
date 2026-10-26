@@ -95,7 +95,7 @@ export async function addBoats( scene, { loadModel, groundHeight, waterLevel } )
 			}
 
 			if ( ! wet( x, z ) ) return;
-			boats.push( { mesh, i, cx: x, cz: z, x, z, heading, loop, draught: DRAUGHT[ name ] ?? 0.1, phase: x * 0.37 + z * 0.11, dir: 1, t: Math.abs( x + z ) % 7 } );
+			boats.push( { name, mesh, i, cx: x, cz: z, x, z, heading, loop, draught: DRAUGHT[ name ] ?? 0.1, phase: x * 0.37 + z * 0.11, dir: 1, t: Math.abs( x + z ) % 7 } );
 
 		} );
 		return mesh;
@@ -148,6 +148,8 @@ export async function addBoats( scene, { loadModel, groundHeight, waterLevel } )
 	}
 
 	update( 0 );
-	return { update, boats };
+	// The kinds' geometry and the atlas's sizes, for the hired swan (src/pedalo.js).
+	const kinds = Object.fromEntries( types.map( ( n, t ) => [ n, models[ t ] ] ) );
+	return { update, boats, kinds, info };
 
 }

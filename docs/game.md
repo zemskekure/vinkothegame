@@ -4,7 +4,7 @@ The one place for what the game is, what's in it and what's next. Read it before
 date when something lands (move items between the status columns, add new ideas at the bottom of their section).
 The city it is played in, the Prague model, is a separate thing: see `docs/README.md` for the split.
 
-Last update: 2026-10-26 (pigeon flight; the owner's textures on cars, boats, furniture, trees, graffiti, sky; solid
+Last update: 2026-10-26 (the swan pedal boats for hire at Slovanka; pigeon flight; the owner's textures on cars, boats, furniture, trees, graffiti, sky; solid
 trams and cars, riding the tram, passengers at the stops; the Old Town extension).
 
 ## 1. Vision
@@ -28,6 +28,7 @@ trams and cars, riding the tram, passengers at the stops; the Old Town extension
 | **Kurýr (food-delivery courier)** | A character made in the creator, on foot or on a delivery scooter (B): leans into turns, bumps over setts and tram rails, 40 km/h top. Later: deliveries from real restaurants to addresses, against the clock, for tips. | riding works; creator + start screen in progress (`feat/start`); deliveries planned |
 | **Jen se projet (free roam)** | On foot, no goal. Space jumps (a 0.7 m hop, legs tucked; not on the scooter). | works (default today) |
 | Tramvají (as a passenger) | On foot at a stop: when a tram stands with its doors open, "[E] nastoupit" (a tap on it on a touch screen); inside, through one's own eyes, W A S D walk the aisle, C sits down, the board top left shows the line and the next stop; "[E] vystoupit" at a stop puts one on the platform. Not from the scooter (B first). `src/ride.js`. | works |
+| Labutí šlapadlo (swan pedal boat) | On foot on the pontoon of Slovanka, the rental on the west side of Slovanský ostrov (OSM's pier and gangway, walkable; `?at=-484,559,1.62` is the gangway's top on the island), beside a moored swan: "[E] půjčit labuť". W/S pedal (about 6 km/h at most, gathering and losing way slowly), A/D the tiller (a slow turn with momentum), the swan heaves and rolls a little, rings spread from the stern; the camera behind and above (mouse looks round, swings back), V into the seat behind the neck. Land, the jetty, the bridges' decks (Most Legií, the footbridge to Žofín), the weirs (Šítkovský jez, the one in the arm by Mánes, drawn as a sill with white water) and the other boats stop it with a soft bump. The board top left: "LABUŤ · Půjčovné: N min · 50 Kč" (50 Kč a started 10 minutes) and the speed; alongside the pontoon "[E] vrátit" ties it up and puts one ashore ("Zaplaceno … Kč"). The map (Tab) or M take one off. Every boat is solid (`src/solids.js`): the pigeon lands on swans. `src/pedalo.js`. | works |
 | Overview | The city from above (M). | works |
 
 Start screen: choose Holub / Kurýr / Jen se projet; deep links (`?at=…`, `?holub`, `?overview`, `?studio`) skip it.
@@ -142,7 +143,7 @@ pictures land). One material per atlas, instanced or merged.
   Only the parked cars in view and nearer than the haze are drawn. `?cars=models` brings back the downloaded Octavia,
   Favorit and Trabant models (CC BY, `public/models/vehicles/CREDITS.md`); the picture cars were kept for all eight
   because they read as sharper and more Prague than the models, and all share one look. No brand badges in UI.
-- **Boats** (`src/boats.js`, `boat-atlas.png`): swan pedal boats, pedal boats and rowing boats by Slovanský ostrov,
+- **Boats** (`src/boats.js`, `boat-atlas.png`): swan pedal boats (for hire, see Ways to play; `src/pedalo.js`), pedal boats and rowing boats by Slovanský ostrov,
   the paddle steamer and a glass-roofed sightseeing boat moored on Smetanovo nábřeží; made like the cars, with the
   width along the boat from the top picture and cabins, seats and the swan's neck narrower above the gunwale.
 - **Street furniture** (`src/furniture.js`, `furniture-atlas.png` 256 px): historic lamp posts, cast-iron bins and
@@ -195,7 +196,7 @@ pictures land). One material per atlas, instanced or merged.
 
 | Done | In progress | Next | Later |
 |---|---|---|---|
-| pigeon flight + story start; walking; jump; scooter; console HUD, loading bar, real pause; teleport map; PS1 look (pigeon); generated ugly people; trams, Czech cars, boats; Bjukitchen; Malá Strana first layer; studio + admin; friends NPCs; Perlová | performance (`perf/ps1`: fast load, smooth frames, PS1 look everywhere); start screen + character creator (`feat/start`) | deliveries (Bjukitchen first); sound | weather; easter eggs; more sponsored interiors; open-source split of the model |
+| pigeon flight + story start; walking; jump; scooter; console HUD, loading bar, real pause; teleport map; PS1 look (pigeon); generated ugly people; trams, Czech cars, boats; the swan pedal boat; Bjukitchen; Malá Strana first layer; studio + admin; friends NPCs; Perlová | performance (`perf/ps1`: fast load, smooth frames, PS1 look everywhere); start screen + character creator (`feat/start`) | deliveries (Bjukitchen first); sound | weather; easter eggs; more sponsored interiors; open-source split of the model |
 
 ## Queue (owner's requests not started yet)
 
