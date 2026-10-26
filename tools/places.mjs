@@ -1157,15 +1157,16 @@ export function collectPlaces( ctx ) {
 		return Math.hypot( X - g.A[ 0 ] - t * dx, Y - g.A[ 1 ] - t * dy ) < g.w / 2 + 1;
 
 	} );
-	// Whether a wall at X, Y running along ( ux, uy ) passes across under a deck whose road is over a metre above the
-	// wall's top `top` (scene heights): not along it (the parapets of Karlův most are OSM walls too) and not at its
-	// edges, but across its inner part (the river wall under Most Legií by Malá Strana). tools/walls.mjs.
+	// Whether a wall at X, Y running along ( ux, uy ) passes under a deck whose road is over a metre above the wall's
+	// top `top` (scene heights): across its inner part (the river wall under Most Legií by Malá Strana), or along it
+	// well inside its edges (the walls in the river under Karlův most's Old Town end), but not the walls along its
+	// edges, which are its parapets (OSM draws Karlův most's as walls). tools/walls.mjs.
 	ctx.underDeck = ( X, Y, ux, uy, top ) => bridgeSegs.some( g => {
 
 		const dx = g.B[ 0 ] - g.A[ 0 ], dy = g.B[ 1 ] - g.A[ 1 ], l = Math.hypot( dx, dy );
-		const t = ( ( X - g.A[ 0 ] ) * dx + ( Y - g.A[ 1 ] ) * dy ) / ( l * l );
-		if ( t < 0 || t > 1 || Math.abs( ( X - g.A[ 0 ] ) * dy - ( Y - g.A[ 1 ] ) * dx ) / l > g.w / 2 - 1 ) return false;
-		return Math.abs( ( ux * dx + uy * dy ) / l ) < 0.7 && g.ya + ( g.yb - g.ya ) * t > top + 1;
+		const t = ( ( X - g.A[ 0 ] ) * dx + ( Y - g.A[ 1 ] ) * dy ) / ( l * l ), o = Math.abs( ( X - g.A[ 0 ] ) * dy - ( Y - g.A[ 1 ] ) * dx ) / l;
+		if ( t < 0 || t > 1 || o > g.w / 2 - 0.3 ) return false;
+		return ( Math.abs( ( ux * dx + uy * dy ) / l ) < 0.7 || o < g.w / 2 - 2 ) && g.ya + ( g.yb - g.ya ) * t > top + 1;
 
 	} );
 	console.log( `places: ${bridgeSegs.length} bridge deck segments, ${places.piers.length} piers` );
