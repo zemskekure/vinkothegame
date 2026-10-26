@@ -47,12 +47,23 @@ const _m = new THREE.Matrix4(), _r = new THREE.Matrix4(), _leg = new THREE.Matri
 const rx = a => _r.makeRotationX( a );
 
 // Fills `out` (one Matrix4 per part, model space) for a pose:
-//   { walk: phase (rad) or null, stride: 0…1, sit: bool, breath: phase }
-export function pose( out, { phase = 0, stride = 0, sit = false, t = 0 } ) {
+//   { walk: phase (rad) or null, stride: 0…1, sit: bool, ride: bool (on the scooter), breath: phase }
+export function pose( out, { phase = 0, stride = 0, sit = false, ride = false, t = 0 } ) {
 
 	let hip = [ 0, 0 ], knee = [ 0, 0 ], shoulder = [ 0, 0 ], elbow = [ 0.15, 0.15 ];
 	let pelvisY = HIP_Y, lean = 0;
-	if ( sit ) {
+	if ( ride ) {
+
+		// Astride a scooter: thighs forward along the seat, shins down to the floorboard, arms out to the bars,
+		// leaning a little into the ride.
+		hip = [ 1.45, 1.45 ];
+		knee = [ 1.62, 1.62 ];
+		shoulder = [ 0.95, 0.95 ];
+		elbow = [ 0.45, 0.45 ];
+		pelvisY = 0.5;
+		lean = 0.14;
+
+	} else if ( sit ) {
 
 		hip = [ 1.57, 1.5 ];
 		knee = [ 1.57, 1.45 ];
@@ -99,7 +110,7 @@ export function pose( out, { phase = 0, stride = 0, sit = false, t = 0 } ) {
 		set( 'thigh' + side, thigh );
 		const shin = thigh.clone().multiply( _leg.makeTranslation( 0, - THIGH, 0 ) ).multiply( rx( knee[ i ] ) );
 		set( 'shin' + side, shin );
-		const foot = shin.clone().multiply( _leg.makeTranslation( 0, - SHIN, 0 ) ).multiply( rx( - knee[ i ] + hip[ i ] - ( sit ? 0 : hip[ i ] ) ) );
+		const foot = shin.clone().multiply( _leg.makeTranslation( 0, - SHIN, 0 ) ).multiply( rx( - knee[ i ] + hip[ i ] - ( sit || ride ? 0 : hip[ i ] ) ) );
 		set( 'foot' + side, foot );
 
 		const ax = i === 0 ? SHOULDER_X : - SHOULDER_X;

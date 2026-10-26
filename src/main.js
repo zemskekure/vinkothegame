@@ -16,6 +16,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { createMinimap } from './minimap.js';
 import { addTrams } from './trams.js';
+import { addBoats } from './boats.js';
 import { onLegie } from './bridges.js';
 import { SUN, ANIMATE } from './kit.js';
 import { HOLUB_SUN, PIXEL_SCALE, holubLook, startHolub } from './holub/game.js';
@@ -252,6 +253,7 @@ const loadDetail = async name => {
 const groundDetail = await loadDetail( 'ground-detail.jpg' );
 const groundDetailWide = data.firstBounds ? await loadDetail( 'ground-detail-wide.jpg' ) : null;
 const groundMaterial = createGroundMaterial( surfaceTex, surface2Tex, bounds, groundDetail, FB, groundDetailWide );
+const surfaceBytes = new Uint8Array( surfaceBuf );
 const terrain = new THREE.Mesh( terrainGeo, groundMaterial );
 terrain.receiveShadow = true;
 scene.add( terrain );
@@ -643,11 +645,26 @@ function cameraBlocked( x, z ) {
 }
 
 const walker = new Walker( camera, renderer.domElement, ( x, z ) => groundHeight( x, z, walker.placed ? walker.y : null ), isBlocked, scene, cameraBlocked, ceilingAt );
+walker.setScooter( loadModel );
+// How rough the street is under the scooter: 0 asphalt, ½ paving stones, 1 granite setts (surface2: the carriageway's
+// surface on the road, the open area's off it), plus a jolt across the tram rails.
+walker.roughAt = ( x, z ) => {
+
+	const col = Math.min( S.width - 1, Math.max( 0, Math.floor( ( x - bounds.minX ) / S.cell ) ) );
+	const row = Math.min( S.height - 1, Math.max( 0, Math.floor( ( z - bounds.minZ ) / S.cell ) ) );
+	const i = ( row * S.width + col ) * 4;
+	const onRoad = surfaceBytes[ i + 2 ] > 128;
+	const code = onRoad ? surface2[ i ] : surface2[ i + 1 ];
+	const rails = surfaceBytes[ i + 3 ] < 20 ? 0.6 : 0;
+	return Math.max( rails, code === 40 ? 0.3 : 1 - code / 255 );
+
+};
 walkerHeight = () => walker.placed ? walker.y + 0.5 : Infinity;
 walkerLevel = () => walker.placed ? walker.y : null;
 
 // Trams and their overhead line (poles kept out of houses).
-const trams = addTrams( scene, places?.life?.trams, groundHeight, ( x, z ) => cameraBlocked( x, z ) || onLegie( places?.legie, x, z ) );
+const trams = await addTrams( scene, places?.life?.trams, groundHeight, ( x, z ) => cameraBlocked( x, z ) || onLegie( places?.legie, x, z ) );
+const boats = await addBoats( scene, { loadModel, groundHeight, waterLevel: data.waterLevel } );
 
 const hud = {
 	mode: document.getElementById( 'mode' ),
@@ -716,7 +733,7 @@ function setMode( walk ) {
 	hud.help.textContent = touch
 		? ( walk ? 'Joystick vlevo dole chůze (až k okraji běh) · táhni prstem kamerou' : 'Táhni prstem pro otáčení · dvěma prsty přiblížení a posun' )
 		: walk
-			? 'Klikni a ovládej kameru myší · WASD chůze · Shift běh · B moped · kolečko zoom · V pohled z očí · Tab mapa'
+			? 'Klikni a ovládej kameru myší · WASD chůze · Shift běh · B skútr · kolečko zoom · V pohled z očí · Tab mapa'
 			: 'Táhni myší pro otáčení · kolečko přiblížení · pravé tlačítko posun';
 	hud.place.style.display = walk ? 'block' : 'none';
 	minimap.setVisible( walk );
@@ -837,7 +854,7 @@ addEventListener( 'keydown', e => {
 
 } );
 
-document.getElementById( 'credit' ).textContent = data.attribution + ' · fasády podle fotek © Mapillary (CC BY-SA) · lidé: Quaternius (CC0) · auta: Kenney (CC0) · rendering after Slop New York (MIT, Mr.doob)';
+document.getElementById( 'credit' ).textContent = data.attribution + ' · fasády podle fotek © Mapillary (CC BY-SA) · lidé: Quaternius (CC0) · vozidla (CC BY): Han66st, K. Siitonen, FPSunreal, creativecipher, Polygonal_64, norlinmartin; Kenney (CC0) · rendering after Slop New York (MIT, Mr.doob)';
 
 // ---------------------------------------------------------------------------
 
@@ -888,6 +905,7 @@ renderer.setAnimationLoop( () => {
 	const dt = Math.min( timer.getDelta(), 0.1 );
 	life.update( dt );
 	trams.update( dt );
+	boats.update( dt );
 
 	if ( holub ) {
 
@@ -928,6 +946,6 @@ renderer.setAnimationLoop( () => {
 } );
 
 document.getElementById( 'loading' ).remove();
-window.__debug = { camera, isBlocked, groundHeight, walker, life, trams, holub };
+window.__debug = { camera, isBlocked, groundHeight, walker, life, trams, boats, holub, waterLevel: data.waterLevel };
 window.__THREE = THREE;
 window.__ready = true;

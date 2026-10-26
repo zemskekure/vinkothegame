@@ -3,7 +3,8 @@
 //     lines and pedestrian lanes from tools/places.mjs (to the end and back), sit at the café / pub / bar tables,
 //     on the bar stools and on benches, and a few stand about in pairs. Walkers near the camera are skinned and
 //     animated; further away, and everyone seated or standing, they are instanced static poses.
-//   - Cars: Kenney's Car Kit (CC0, kenney.nl; public/models/cars).
+//   - Cars: a late-90s Prague street mix (src/vehicles.js, public/models/vehicles): Škoda Octavias and Favorits, a
+//     Trabant now and then, and low-poly sedans, hatchbacks, SUVs, vans, taxis and a police car (Kenney, CC0).
 //   - Cars stand at the kerbs where there is room to park (instanced, one batch per model), and a few drive the
 //     streets in their lanes (right-hand traffic), slowing behind the car ahead, re-entering at the start of a lane
 //     when they reach its end.
@@ -13,9 +14,14 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { BODIES, loadWardrobe, useWardrobe, prepareBody, preparePosed, makeSkinned, makeBatch, shapedHeight, shapeWeights } from './people.js';
 import { rulesFrom, gameSeed, personSeed, generatePerson, lookOf } from './persona.js';
 import { SETTINGS } from './settings.js';
+import { vehicleModel } from './vehicles.js';
 
-const CARS = { sedan: 5, 'hatchback-sports': 3, suv: 3, van: 2, taxi: 1, delivery: 1, 'sedan-sports': 2, 'suv-luxury': 2 }; // model: weight
-const CAR_LENGTH = 4.1;
+// model: [ weight, real length in metres ]
+const CARS = {
+	'car-octavia': [ 4, 4.51 ], 'car-favorit': [ 4, 3.82 ], 'car-trabant': [ 1, 3.56 ], 'kenney-sedan': [ 2, 4.5 ],
+	'kenney-hatchback-sports': [ 1, 4.1 ], 'kenney-suv': [ 2, 4.6 ], 'kenney-van': [ 1, 4.9 ], 'kenney-delivery': [ 1, 5.4 ],
+	'kenney-taxi': [ 2, 4.6 ], 'kenney-police': [ 0.5, 4.6 ]
+};
 
 const rnd = ( () => {
 
@@ -60,39 +66,13 @@ function sample( path, s, out ) {
 
 }
 
-// One model's meshes merged into a single geometry (node transforms applied), scaled and standing on y = 0.
-function mergedModel( gltf, length ) {
-
-	const geos = [];
-	let material = null;
-	gltf.scene.updateMatrixWorld( true );
-	gltf.scene.traverse( o => {
-
-		if ( ! o.isMesh ) return;
-		const g = o.geometry.clone().applyMatrix4( o.matrixWorld );
-		for ( const name of Object.keys( g.attributes ) ) if ( ! [ 'position', 'normal', 'uv' ].includes( name ) ) g.deleteAttribute( name );
-		geos.push( g.index ? g.toNonIndexed() : g );
-		material = material || o.material;
-
-	} );
-
-	const geometry = mergeGeometries( geos );
-	geometry.computeBoundingBox();
-	const b = geometry.boundingBox;
-	const s = length / ( b.max.z - b.min.z );
-	geometry.translate( - ( b.min.x + b.max.x ) / 2, - b.min.y, - ( b.min.z + b.max.z ) / 2 ).scale( s, s, s );
-	const m = new THREE.MeshStandardNodeMaterial( { map: material.map, roughness: 0.6, metalness: 0.1 } );
-	return { geometry, material: m };
-
-}
-
 // ---------------------------------------------------------------------------
 
 export async function addLife( scene, life, { seats = [], benches = [], groundHeight, loadModel, camera, cars = true } ) {
 
 	if ( ! life ) return { update() {} };
 
-	const carModels = cars ? await Promise.all( Object.keys( CARS ).map( n => loadModel( `models/cars/${n}.glb`, 'models/cars/' ) ) ) : [];
+	const carModels = cars ? await Promise.all( Object.entries( CARS ).map( ( [ n, [ , length ] ] ) => vehicleModel( loadModel, n, length ) ) ) : [];
 
 	// --- people (src/people.js): the wardrobe and the bodies, loaded once
 	const wardrobe = await loadWardrobe();
@@ -313,7 +293,7 @@ export async function addLife( scene, life, { seats = [], benches = [], groundHe
 	// --- cars: one instanced batch per model; parked ones placed once, the moving ones after them in each batch
 	const drives = life.drives.map( makePath ).filter( p => p.length > 25 );
 	const carTypes = Object.keys( CARS );
-	const weights = carTypes.map( n => CARS[ n ] ), wsum = weights.reduce( ( a, b ) => a + b, 0 );
+	const weights = carTypes.map( n => CARS[ n ][ 0 ] ), wsum = weights.reduce( ( a, b ) => a + b, 0 );
 	const pickCar = () => {
 
 		let r = rnd() * wsum;
@@ -332,9 +312,8 @@ export async function addLife( scene, life, { seats = [], benches = [], groundHe
 
 	}
 
-	const batches = carModels.map( ( gltf, type ) => {
+	const batches = carModels.map( ( { geometry, material }, type ) => {
 
-		const { geometry, material } = mergedModel( gltf, CAR_LENGTH );
 		const count = parked.filter( c => c.type === type ).length + movers.filter( c => c.type === type ).length;
 		const mesh = new THREE.InstancedMesh( geometry, material, Math.max( 1, count ) );
 		mesh.count = count;
