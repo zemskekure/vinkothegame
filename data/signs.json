@@ -586,7 +586,7 @@
 		"height": 3.2,
 		"kind": "board",
 		"text": "ČESKÁ SPOŘITELNA",
-		"width": 3.0,
+		"width": 3,
 		"bg": "#1f5bd6",
 		"ink": "#ffffff",
 		"font": "sans",
@@ -1120,5 +1120,32 @@
 		"font": "serif",
 		"street": "x-3_z0",
 		"what": "dark shop board over the shop at the north end of the front (the marks put it right at the front's start)"
+	},
+	{
+		"front": "21643075_4",
+		"fromLeft": 0.8,
+		"height": 3.4,
+		"kind": "board",
+		"text": "CAESAR CRYSTAL",
+		"width": 2.4,
+		"bg": "#2a2826",
+		"ink": "#efe9da",
+		"font": "sans",
+		"street": "x-1_z-2",
+		"what": "shop name board over the ground-floor shopfront, seen at a distance from the west end of Karlova (2024)"
+	},
+	{
+		"front": "21643024_11",
+		"fromLeft": 0.4,
+		"height": 4.9,
+		"kind": "hanging",
+		"text": "RITCHIE'S",
+		"sub": "HOSTEL HOTEL",
+		"width": 0.8,
+		"bg": "#2b4d9b",
+		"ink": "#ffffff",
+		"font": "sans",
+		"street": "x-1_z-2",
+		"what": "blue projecting hostel sign on a bracket at first-floor level beside the giant trdelník, above TRDLO's east part (2019)"
 	}
 ]

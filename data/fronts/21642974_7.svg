@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 460 510">
+  <path d="M148 510V220A147 147 0 0 1 442 220V510Z" fill="#cbc3b0"/>
+  <path d="M148 286H170M148 352H170M148 418H170M420 286H442M420 352H442M420 418H442" stroke="#aaa18c" stroke-width="2"/>
+  <path d="M177.5 177.3L156.9 169.7M214.7 124.3L200.5 107.4M262.7 99.3L257 78M327.3 99.3L333 78M375.3 124.3L389.5 107.4M412.5 177.3L433.1 169.7" stroke="#aaa18c" stroke-width="2"/>
+  <rect x="148" y="472" width="22" height="38" fill="#b5ad98"/>
+  <rect x="420" y="472" width="22" height="38" fill="#b5ad98"/>
+  <path d="M170 510V220A125 125 0 0 1 420 220V510Z" fill="#553826"/>
+  <path d="M170 510V220A125 125 0 0 1 420 220V510" fill="none" stroke="#3a2618" stroke-width="5"/>
+  <path d="M295 220L415.7 187.6M295 220L403.3 157.5M295 220L383.4 131.6M295 220L357.5 111.7M295 220L327.4 99.3M295 220L295 95M295 220L262.6 99.3M295 220L232.5 111.7M295 220L206.6 131.6M295 220L186.7 157.5M295 220L174.3 187.6" stroke="#3e2718" stroke-width="3"/>
+  <path d="M170 220H420" stroke="#3e2718" stroke-width="7"/>
+  <path d="M195 226V510M220 226V510M245 226V510M270 226V510M320 226V510M345 226V510M370 226V510M395 226V510" stroke="#432b1c" stroke-width="3"/>
+  <path d="M176 300H289M301 300H414M176 420H289M301 420H414" stroke="#3e2718" stroke-width="4"/>
+  <path d="M295 95V510" stroke="#2f1d12" stroke-width="5"/>
+  <circle cx="282" cy="360" r="5" fill="#2a2a2a"/>
+  <circle cx="308" cy="360" r="5" fill="#2a2a2a"/>
+  <polygon points="281,66 309,66 304,100 286,100" fill="#d6cfbd" stroke="#aaa18c" stroke-width="2"/>
+  <rect x="138" y="210" width="36" height="16" fill="#d6cfbd" stroke="#aaa18c" stroke-width="2"/>
+  <rect x="416" y="210" width="36" height="16" fill="#d6cfbd" stroke="#aaa18c" stroke-width="2"/>
+  <rect x="88" y="226" width="42" height="28" fill="#b3271f"/>
+  <rect x="91" y="229" width="36" height="22" fill="none" stroke="#f2e9e4" stroke-width="1.5"/>
+  <text x="109" y="246" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-weight="bold" font-size="16" fill="#ffffff">159</text>
+</svg>

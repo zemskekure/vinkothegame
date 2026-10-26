@@ -1,4 +1,394 @@
 {
+	"21642974": {
+		"note": "Seminářská 8 / Husova 25 (plate 159): long cream-yellow three-storey house with grey stone window surrounds, string course and lesenes. South front (7): stone-arched carriage gate with dark wooden leaves, a plank sunburst in the arch, keystone and imposts, red plate 159 beside it (drawn over the plain wall, no painted background). Seminářská front (8): plain ground floor; a wall lantern on a bracket by the gate. (Street View 2024)",
+		"colour": "#e2d7af",
+		"trim": "#c9bfa6",
+		"floors": 3,
+		"rustic": "none",
+		"grilles": false,
+		"graffiti": false,
+		"style": "default",
+		"edges": {
+			"7": {
+				"ground": [
+					"blank"
+				],
+				"shopfront": "21642974_7.svg",
+				"shopfrontHeight": 5.1
+			},
+			"8": {
+				"ground": [
+					"blank",
+					"blank"
+				]
+			}
+		},
+		"signs": false
+	},
+	"21643008": {
+		"note": "Karlova 30 (č.p. 163; RÚIAN address point 163/30), the near-left house in 21643491_14.jpg: pinkish-beige plaster with cream shell-topped window pediments; four round-arched ground-floor openings with dark frames (a RESTAURANT and a BISTRO board, an oval emblem and hanging signs in 2019, not drawn) and a wall lantern. RÚIAN gives 1 storey for its 14.2 m eave; 4 storeys match the storey heights seen. (Street View 2019)",
+		"colour": "#e4c9b9",
+		"trim": "#f0e6d8",
+		"floors": 4,
+		"ground": "shops",
+		"rustic": "none",
+		"grilles": false,
+		"graffiti": false,
+		"style": "default",
+		"edges": {
+			"6": {
+				"ground": [
+					{
+						"kind": "shop",
+						"frame": "dark",
+						"size": "narrow",
+						"arch": true
+					},
+					{
+						"kind": "shop",
+						"frame": "dark",
+						"size": "narrow",
+						"arch": true
+					},
+					{
+						"kind": "shop",
+						"frame": "dark",
+						"size": "narrow",
+						"arch": true
+					},
+					{
+						"kind": "shop",
+						"frame": "dark",
+						"size": "narrow",
+						"arch": true
+					}
+				]
+			}
+		}
+	},
+	"21643016": {
+		"note": "Karlova 28 (č.p. 164, U Bílé botky in OSM), between DAMU and č.p. 163: narrow apricot-orange house with white window surrounds, a ground floor and three upper storeys under a gable; seen at a distance east of DAMU in 21643041_3.jpg and as the narrow salmon house in 21643491_14.jpg. Ground floor not readable. (Street View 2019)",
+		"colour": "#dea27b",
+		"trim": "#f2ece0",
+		"floors": 4,
+		"rustic": "none",
+		"style": "default"
+	},
+	"21643024": {
+		"note": "Karlova 11/13 (č.p. 165): cream-beige four-storey houses. TRDLO is on the east front (11, Karlova 13): RÚIAN address points put 165/13 there and 165/11 on the west front (0), and OSM's trdlo shop sits on 165/13. Dark-wood portal with cream TRDLO lettering, an oval TRDLO cartouche, open counter, TRADIČNÍ TRDLO post and display (drawn on its west 6 m), a giant trdelník and the blue RITCHIE'S sign above. West front (0) not seen closely. (Street View 2019)",
+		"colour": "#e4d8bb",
+		"trim": "#efe7d3",
+		"floors": 4,
+		"ground": "shops",
+		"rustic": "none",
+		"grilles": false,
+		"graffiti": false,
+		"style": "default",
+		"edges": {
+			"11": {
+				"ground": [
+					{
+						"kind": "blank",
+						"size": "wide"
+					},
+					{
+						"kind": "blank"
+					},
+					{
+						"kind": "shop",
+						"frame": "dark",
+						"size": "narrow"
+					}
+				],
+				"shopfront": "21643024_11.svg"
+			}
+		},
+		"signs": false
+	},
+	"21643041": {
+		"note": "Karlova 7 (č.p. 168), east of The Golden Eagle: white house with a modern glazed oriel on the upper floors and a wall lantern over the ground floor; only distant oblique views, not described further. (Street View 2019)"
+	},
+	"21643067": {
+		"note": "Karlova 5 (č.p. 170; RÚIAN address point 170/5, OSM Golden Eagle), next east of U Zlaté studně's wing: salmon-pink house with white window surrounds and a stucco pediment. Its ground floor is THE GOLDEN EAGLE: a dark carved-wood portal under a dentilled cornice, gold serif letters on the fascia, Bohemian Garnet in gold script on the glazed band, lit displays of dolls and eggs (drawn; the door position is assumed). (Street View 2019)",
+		"colour": "#d9a596",
+		"trim": "#efe5d5",
+		"floors": 4,
+		"ground": "shops",
+		"rustic": "none",
+		"grilles": false,
+		"graffiti": false,
+		"style": "default",
+		"edges": {
+			"7": {
+				"ground": [
+					{
+						"kind": "shop",
+						"frame": "wood"
+					},
+					{
+						"kind": "door",
+						"frame": "wood",
+						"glazed": true
+					},
+					{
+						"kind": "shop",
+						"frame": "wood"
+					}
+				],
+				"shopfront": "21643067_7.svg"
+			}
+		},
+		"signs": false
+	},
+	"21643075": {
+		"note": "Karlova (č.p. 174), east of the Bageterie Boulevard house: cream house seen only at a distance, with a dark shopfront and a CAESAR CRYSTAL board (sign added); colours and floors not judged. (Street View 2024)",
+		"signs": false
+	},
+	"21643083": {
+		"note": "Karlova 3, U Zlaté studně (Hotel Aurus): white house. Corner face (13): baroque stucco saints, volute gable, AURUS board and an arched shop with a blue COCKTAILS TO GO panel (drawn, 2024). Karlova wing (12-10): window boxes, a big round arch in rusticated stone voussoirs with a black panel over a glazed shop (drawn on 11, its 2019 lettering left out), a diamond sign and a small arched glazed door (2019). The Seminářská end (5) is in no photo. (Street View 2024, 2019)",
+		"colour": "#ece6d8",
+		"trim": "#f7f4ec",
+		"floors": 4,
+		"ground": "shops",
+		"rustic": "none",
+		"grilles": false,
+		"graffiti": false,
+		"style": "default",
+		"edges": {
+			"10": {
+				"ground": [
+					{
+						"kind": "door",
+						"frame": "wood",
+						"arch": true,
+						"glazed": true
+					}
+				]
+			},
+			"11": {
+				"ground": [
+					{
+						"kind": "shop",
+						"frame": "dark",
+						"arch": true
+					}
+				],
+				"shopfront": "21643083_11.svg"
+			},
+			"13": {
+				"colour": "#f2efe8",
+				"rustic": "ornate",
+				"ground": [
+					{
+						"kind": "shop",
+						"frame": "dark",
+						"arch": true
+					}
+				],
+				"shopfront": "21643083_13.svg"
+			}
+		},
+		"signs": false
+	},
+	"21643105": {
+		"note": "Seminářská 6 (plate 177), Hotel At the Black Star: Renaissance house with grey sgraffito ashlar, a sgraffito star rosette, lunette frieze, dormer and ochre stone window surrounds; two lanterns over the ground floor. Sage-green ground floor (drawn): RESTAURANT board over the north door, round plate, plate 177, then HOTEL AT THE BLACK STAR in dark serif over the hotel door, RESTAURANT and an arrow pointing north, and a wooden window. (Street View 2024)",
+		"colour": "#bfb7a5",
+		"trim": "#d6c79f",
+		"floors": 3,
+		"ground": "restaurant",
+		"rustic": "none",
+		"grilles": false,
+		"graffiti": false,
+		"style": "default",
+		"edges": {
+			"4": {
+				"ground": [
+					{
+						"kind": "door",
+						"frame": "wood",
+						"glazed": true
+					},
+					{
+						"kind": "door",
+						"frame": "wood"
+					},
+					{
+						"kind": "window",
+						"frame": "wood"
+					}
+				],
+				"shopfront": "21643105_4.svg"
+			}
+		},
+		"signs": false
+	},
+	"21643113": {
+		"note": "Karlova 22 (č.p. 178), between the Starbucks corner house and CAESAR CRYSTAL: cream six-storey house with heavy figural stucco, oriels and two iron-railed second-floor balconies. Dark-wood ground floor: two Bageterie Boulevard windows under mustard awnings with black name boards, two glazed doors, and at the west end PYLONES in orange on a dark red-edged board (read in 21643121_11.jpg; OSM has Pylones there) over a gift-shop window (drawn). (Street View 2024)",
+		"colour": "#ece3c8",
+		"trim": "#f6f1e2",
+		"floors": 6,
+		"ground": "shops",
+		"rustic": "ornate",
+		"grilles": false,
+		"graffiti": false,
+		"style": "default",
+		"edges": {
+			"0": {
+				"ground": [
+					{
+						"kind": "shop",
+						"frame": "wood",
+						"size": "wide"
+					},
+					{
+						"kind": "door",
+						"frame": "wood",
+						"glazed": true
+					},
+					{
+						"kind": "shop",
+						"frame": "wood",
+						"size": "wide"
+					},
+					{
+						"kind": "door",
+						"frame": "wood",
+						"glazed": true
+					},
+					{
+						"kind": "shop",
+						"frame": "wood"
+					}
+				],
+				"balconies": [
+					{
+						"floor": 2,
+						"from": 0.27,
+						"to": 0.45,
+						"depth": 0.8
+					},
+					{
+						"floor": 2,
+						"from": 0.55,
+						"to": 0.77,
+						"depth": 0.8
+					}
+				],
+				"shopfront": "21643113_0.svg"
+			}
+		},
+		"signs": false
+	},
+	"21643121": {
+		"note": "Karlova 20 / Liliová 20 (č.p. 180): big white neo-baroque corner house with a turret and spire over the corner bays, banded rustication on the ground floor, round-arched first-floor windows behind long iron balconies, rich white stucco. Karlova: two shops, a stone portal with an arched door, Starbucks Coffee in the west bays (drawn). Liliová: seven honey-wood pub windows with etched round emblems, wall lantern and tags at the corner (drawn). (Street View 2024)",
+		"colour": "#ebe9e3",
+		"trim": "#f6f5f0",
+		"floors": 5,
+		"ground": "shops",
+		"rustic": "banded",
+		"grilles": false,
+		"graffiti": false,
+		"style": "default",
+		"edges": {
+			"7": {
+				"ground": [
+					{
+						"kind": "shop",
+						"frame": "wood"
+					},
+					{
+						"kind": "shop",
+						"frame": "wood"
+					},
+					{
+						"kind": "shop",
+						"frame": "wood"
+					},
+					{
+						"kind": "shop",
+						"frame": "wood",
+						"size": "narrow"
+					},
+					{
+						"kind": "shop",
+						"frame": "wood"
+					},
+					{
+						"kind": "shop",
+						"frame": "wood"
+					},
+					{
+						"kind": "shop",
+						"frame": "wood"
+					}
+				],
+				"balconies": [
+					{
+						"floor": 1,
+						"from": 0.27,
+						"to": 0.78,
+						"depth": 1
+					}
+				],
+				"shopfront": "21643121_7.svg",
+				"shopfrontHeight": 5
+			},
+			"10": {
+				"ground": [
+					{
+						"kind": "shop",
+						"frame": "dark"
+					},
+					{
+						"kind": "shop",
+						"frame": "dark"
+					}
+				]
+			},
+			"11": {
+				"ground": [
+					{
+						"kind": "shop",
+						"frame": "dark"
+					},
+					{
+						"kind": "shop",
+						"frame": "dark"
+					},
+					{
+						"kind": "door",
+						"frame": "wood",
+						"arch": true
+					},
+					{
+						"kind": "shop",
+						"frame": "green"
+					},
+					{
+						"kind": "shop",
+						"frame": "green"
+					}
+				],
+				"balconies": [
+					{
+						"floor": 1,
+						"from": 0.2,
+						"to": 0.82,
+						"depth": 1
+					},
+					{
+						"floor": 2,
+						"from": 0.42,
+						"to": 0.58,
+						"depth": 0.7
+					}
+				],
+				"shopfront": "21643121_11.svg",
+				"shopfrontHeight": 5
+			}
+		},
+		"signs": false
+	},
 	"21643253": {
 		"note": "Smetanovo nábřeží by Karlův most: pale cream house with a great arched gateway over the street",
 		"colour": "#ece4d2",
@@ -311,6 +701,21 @@
 						"bars": true
 					}
 				]
+			}
+		}
+	},
+	"21643491": {
+		"note": "Karlova 26 (č.p. 223), DAMU / Divadlo DISK: long cream-white neo-renaissance front with heavy window pediments and pilasters, black theatre banners at first-floor level and arched openings in a grey rusticated ground floor; seen only obliquely (pairs 05, 06, 08, 16). Its Karlova edges get the cream-white colour and ornate stucco; storeys are left to RÚIAN because the same building holds the different Řetězová houses. (Street View 2019)",
+		"edges": {
+			"12": {
+				"colour": "#ebe5d8",
+				"trim": "#f6f2e9",
+				"rustic": "ornate"
+			},
+			"14": {
+				"colour": "#ebe5d8",
+				"trim": "#f6f2e9",
+				"rustic": "ornate"
 			}
 		}
 	},
@@ -4330,6 +4735,61 @@
 		"edges": {
 			"15": {
 				"lanterns": true
+			}
+		},
+		"signs": false
+	},
+	"21650179": {
+		"note": "Liliová, č.p. 1069, next south of Hotel Liliová: light beige six-storey house with white segmental and triangular window pediments and a cornice over the ground floor. Its north half is a dark-brown carved wooden shop portal under a heavy dentil cornice: narrow side light, display window, panelled glazed door (drawn); the south half of the ground floor was not in view. (Street View 2024)",
+		"colour": "#e8dcc1",
+		"trim": "#f4efe4",
+		"floors": 6,
+		"ground": "shops",
+		"rustic": "none",
+		"grilles": false,
+		"graffiti": false,
+		"style": "default",
+		"edges": {
+			"7": {
+				"shopfront": "21650179_7.svg"
+			}
+		},
+		"signs": false
+	},
+	"21650187": {
+		"note": "Liliová 18, Hotel Liliová: buttery-yellow seven-storey house with white window surrounds and cornices. The whole ground floor is a dark-green panelled wooden portal: green door, two display windows, glazed double door up two steps; gold serif HOTEL LILIOVÁ on the fascia, black ASIAN FUSION board over the south door, blue round plate by the north door (drawn). Identified by its address 1070/18; rhythm and colours checked against pairs 17-18. (Street View 2024)",
+		"colour": "#e4d3a2",
+		"trim": "#f1ead8",
+		"floors": 7,
+		"ground": "restaurant",
+		"rustic": "none",
+		"grilles": false,
+		"graffiti": false,
+		"style": "default",
+		"edges": {
+			"6": {
+				"ground": [
+					{
+						"kind": "door",
+						"frame": "green"
+					},
+					{
+						"kind": "shop",
+						"frame": "green",
+						"size": "wide"
+					},
+					{
+						"kind": "shop",
+						"frame": "green",
+						"size": "wide"
+					},
+					{
+						"kind": "door",
+						"frame": "green",
+						"glazed": true
+					}
+				],
+				"shopfront": "21650187_6.svg"
 			}
 		},
 		"signs": false

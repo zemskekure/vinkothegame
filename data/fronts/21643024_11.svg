@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 375">
+  <rect y="22" width="600" height="353" fill="#3b2619"/>
+  <rect y="14" width="606" height="14" fill="#2b1b11"/>
+  <rect y="28" width="602" height="5" fill="#6e4b31"/>
+  <path d="M8 33h10v7h-10zM28 33h10v7h-10zM48 33h10v7h-10zM68 33h10v7h-10zM88 33h10v7h-10zM108 33h10v7h-10zM128 33h10v7h-10zM148 33h10v7h-10zM168 33h10v7h-10zM188 33h10v7h-10zM208 33h10v7h-10zM228 33h10v7h-10zM248 33h10v7h-10zM268 33h10v7h-10zM288 33h10v7h-10zM308 33h10v7h-10zM328 33h10v7h-10zM348 33h10v7h-10zM368 33h10v7h-10zM388 33h10v7h-10zM408 33h10v7h-10zM428 33h10v7h-10zM448 33h10v7h-10zM468 33h10v7h-10zM488 33h10v7h-10zM508 33h10v7h-10zM528 33h10v7h-10zM548 33h10v7h-10zM568 33h10v7h-10zM588 33h10v7h-10z" fill="#5a3c27"/>
+  <text x="300" y="85" text-anchor="middle" font-family="Georgia, Times New Roman, serif" font-weight="bold" font-size="42" letter-spacing="6" fill="#ead9b2">TRDLO</text>
+  <path d="M122 68H198M402 68H478" stroke="#ead9b2" stroke-width="3"/>
+  <polygon points="98,68 110,61 122,68 110,75" fill="#ead9b2"/>
+  <polygon points="478,68 490,61 502,68 490,75" fill="#ead9b2"/>
+  <rect y="98" width="600" height="6" fill="#6e4b31"/>
+  <rect x="12" y="112" width="120" height="250" fill="#3b2619" stroke="#6e4b31" stroke-width="4"/>
+  <ellipse cx="72" cy="190" rx="46" ry="30" fill="#2b1b11" stroke="#c9a462" stroke-width="3"/>
+  <text x="72" y="197" text-anchor="middle" font-family="Georgia, Times New Roman, serif" font-size="17" letter-spacing="2" fill="#c9a462">TRDLO</text>
+  <rect x="28" y="262" width="88" height="84" fill="none" stroke="#6e4b31" stroke-width="3"/>
+  <polygon points="72,284 88,304 72,324 56,304" fill="none" stroke="#c9a462" stroke-width="2"/>
+  <rect x="146" y="112" width="234" height="263" fill="#2a1c14"/>
+  <rect x="154" y="120" width="218" height="118" fill="#8a6440"/>
+  <path d="M154 140H372" stroke="#5a3a24" stroke-width="4"/>
+  <ellipse cx="182" cy="176" rx="11" ry="24" fill="#c4823e" stroke="#7a4a22" stroke-width="2"/>
+  <ellipse cx="216" cy="176" rx="11" ry="24" fill="#c4823e" stroke="#7a4a22" stroke-width="2"/>
+  <ellipse cx="250" cy="176" rx="11" ry="24" fill="#c4823e" stroke="#7a4a22" stroke-width="2"/>
+  <ellipse cx="284" cy="176" rx="11" ry="24" fill="#c4823e" stroke="#7a4a22" stroke-width="2"/>
+  <ellipse cx="318" cy="176" rx="11" ry="24" fill="#c4823e" stroke="#7a4a22" stroke-width="2"/>
+  <ellipse cx="352" cy="176" rx="11" ry="24" fill="#c4823e" stroke="#7a4a22" stroke-width="2"/>
+  <rect x="146" y="238" width="234" height="14" fill="#a07850"/>
+  <rect x="154" y="252" width="218" height="112" fill="#3b2619" stroke="#6e4b31" stroke-width="3"/>
+  <path d="M263 252V364" stroke="#6e4b31" stroke-width="3"/>
+  <rect x="392" y="116" width="34" height="246" fill="#2b1b11" stroke="#c9a462" stroke-width="2"/>
+  <text x="0" y="0" transform="translate(415 239) rotate(-90)" text-anchor="middle" font-family="Georgia, Times New Roman, serif" font-size="15" letter-spacing="2" fill="#ead9b2">TRADIČNÍ TRDLO</text>
+  <rect x="438" y="112" width="152" height="263" fill="#2b1b11"/>
+  <rect x="446" y="120" width="136" height="198" fill="#5e4a36"/>
+  <path d="M446 186H582M446 252H582" stroke="#a88a5a" stroke-width="3"/>
+  <path d="M458 184h18v-14h-18zM486 184h22v-18h-22zM518 184h16v-12h-16zM544 184h24v-16h-24zM462 250h24v-16h-24zM496 250h16v-20h-16zM522 250h22v-14h-22zM552 250h18v-18h-18z" fill="#d9b77e"/>
+  <polygon points="462,314 512,124 536,124 486,314" fill="#8a7a66" opacity="0.18"/>
+  <rect x="446" y="326" width="136" height="40" fill="#3b2619" stroke="#6e4b31" stroke-width="3"/>
+  <rect y="369" width="600" height="6" fill="#22160f"/>
+</svg>

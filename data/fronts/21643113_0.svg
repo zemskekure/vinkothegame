@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1560 398">
+  <rect width="1560" height="398" fill="#ece3c8"/>
+  <rect x="25" y="34" width="1510" height="364" fill="#33241b"/>
+  <rect x="15" y="26" width="1530" height="12" fill="#241911"/>
+  <rect x="15" y="38" width="1530" height="5" fill="#6a4d38"/>
+  <path d="M40 112H124V380H40ZM1500 112H1522V380H1500Z" fill="none" stroke="#5a4232" stroke-width="3"/>
+  <rect x="210" y="54" width="300" height="40" fill="#1b1a19" stroke="#6a4d38" stroke-width="2"/>
+  <text x="360" y="80" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-weight="bold" font-size="17" letter-spacing="1" fill="#f3f1ea">BAGETERIE BOULEVARD</text>
+  <rect x="150" y="162" width="420" height="196" fill="#2c2622"/>
+  <rect x="160" y="172" width="400" height="176" fill="#574535"/>
+  <rect x="160" y="268" width="400" height="80" fill="#6c5541"/>
+  <polygon points="180,346 232,176 262,176 210,346" fill="#a8957c" opacity="0.18"/>
+  <path d="M360 162V358" stroke="#33241b" stroke-width="8"/>
+  <polygon points="160,100 560,100 578,146 142,146" fill="#dfb23a"/>
+  <rect x="142" y="146" width="436" height="12" fill="#c29a2c"/>
+  <rect x="150" y="358" width="420" height="34" fill="#261a13" stroke="#5a4232" stroke-width="2"/>
+  <rect x="622" y="104" width="92" height="294" fill="#261a13"/>
+  <rect x="632" y="116" width="72" height="156" fill="#4a3d33"/>
+  <rect x="632" y="284" width="72" height="100" fill="none" stroke="#5a4232" stroke-width="3"/>
+  <circle cx="700" cy="278" r="4" fill="#c9a86a"/>
+  <rect x="750" y="54" width="300" height="40" fill="#1b1a19" stroke="#6a4d38" stroke-width="2"/>
+  <text x="900" y="80" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-weight="bold" font-size="17" letter-spacing="1" fill="#f3f1ea">BAGETERIE BOULEVARD</text>
+  <rect x="740" y="162" width="320" height="196" fill="#2c2622"/>
+  <rect x="750" y="172" width="300" height="176" fill="#574535"/>
+  <rect x="750" y="268" width="300" height="80" fill="#6c5541"/>
+  <polygon points="770,346 822,176 852,176 800,346" fill="#a8957c" opacity="0.18"/>
+  <path d="M900 162V358" stroke="#33241b" stroke-width="8"/>
+  <polygon points="745,100 1055,100 1072,146 728,146" fill="#dfb23a"/>
+  <rect x="728" y="146" width="344" height="12" fill="#c29a2c"/>
+  <rect x="740" y="358" width="320" height="34" fill="#261a13" stroke="#5a4232" stroke-width="2"/>
+  <rect x="1078" y="104" width="90" height="294" fill="#261a13"/>
+  <rect x="1088" y="116" width="70" height="156" fill="#4a3d33"/>
+  <rect x="1088" y="284" width="70" height="100" fill="none" stroke="#5a4232" stroke-width="3"/>
+  <circle cx="1152" cy="278" r="4" fill="#c9a86a"/>
+  <rect x="1210" y="54" width="270" height="40" fill="#231713" stroke="#b5332b" stroke-width="3"/>
+  <text x="1345" y="82" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-weight="bold" font-size="24" letter-spacing="4" fill="#e2683c">PYLONES</text>
+  <rect x="1200" y="104" width="290" height="254" fill="#2c2622"/>
+  <rect x="1210" y="114" width="270" height="234" fill="#5e4b3a"/>
+  <path d="M1210 192H1480M1210 272H1480" stroke="#8a6e52" stroke-width="4"/>
+  <path d="M1222 168h20v22h-20zM1274 166h22v24h-22zM1362 168h20v22h-20zM1414 166h22v24h-22zM1236 250h18v20h-18zM1300 246h20v24h-20zM1376 250h18v20h-18zM1438 248h20v22h-20z" fill="#d8433a"/>
+  <path d="M1250 172h16v18h-16zM1388 172h18v18h-18zM1270 252h18v18h-18zM1410 250h18v20h-18z" fill="#f0c23a"/>
+  <path d="M1300 170h16v20h-16zM1442 170h18v20h-18zM1214 252h18v18h-18zM1354 248h16v22h-16z" fill="#3a8fd0"/>
+  <path d="M1320 172h16v18h-16zM1458 254h16v16h-16z" fill="#5cb85c"/>
+  <polygon points="1230,346 1290,118 1318,118 1258,346" fill="#a8957c" opacity="0.16"/>
+  <path d="M1345 104V358" stroke="#33241b" stroke-width="8"/>
+  <rect x="1200" y="358" width="290" height="34" fill="#261a13" stroke="#5a4232" stroke-width="2"/>
+  <rect x="25" y="392" width="1510" height="6" fill="#1e1612"/>
+</svg>
