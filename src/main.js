@@ -5,6 +5,7 @@ import { createFacadeMaterial, PLASTER } from './shading/facade.js';
 import { createRoofMaterial, createGroundMaterial, createWaterMaterial } from './shading/surfaces.js';
 import { Walker } from './walker.js';
 import { addFurniture } from './furniture.js';
+import { addSky } from './sky.js';
 import { streetFronts, addGraffiti } from './graffiti.js';
 import { addSigns } from './signs.js';
 import { addDecor, addEmbankment } from './decor.js';
@@ -131,6 +132,9 @@ const envScene = new THREE.Scene();
 envScene.add( sky.clone() );
 scene.environment = pmrem.fromScene( envScene ).texture;
 scene.environmentIntensity = 0.18;
+// What one sees of the sky: the owner's painted panoramas (src/sky.js); the physical sky above only lights the scene.
+const panorama = addSky( scene, { weather: params.get( 'weather' ) || SETTINGS.look?.weather || '' } );
+sky.visible = false;
 
 scene.fog = new THREE.Fog( 0xc9d6e2, 350, 1600 );
 
@@ -1197,6 +1201,7 @@ renderer.setAnimationLoop( () => {
 
 	const focus = holub ? holub.pos : walking ? walker.pos : orbit.target;
 	aimShadows( focus.x, focus.z, !! holub || walking );
+	panorama.update( camera, day ? day.hour : 15 );
 	stillShadows( dt );
 	// None of the city's squares is drawn past the fog's far end, where it is all fog anyway (the plain ground
 	// beyond the area still is, so the horizon stays where it was).
@@ -1248,7 +1253,7 @@ renderer.setAnimationLoop( () => {
 
 }
 
-window.__debug = { setFps: f => FPS = f, graffiti, renderer, scene, batched, camera, isBlocked, groundHeight, walker, life, trams, boats, holub, waterLevel: data.waterLevel };
+window.__debug = { setFps: f => FPS = f, graffiti, day, renderer, scene, batched, camera, isBlocked, groundHeight, walker, life, trams, boats, holub, waterLevel: data.waterLevel };
 window.__THREE = THREE;
 window.__ready = true;
 // The courier's first message, on the pager.

@@ -5,6 +5,7 @@ textures. Python 3 with Pillow, numpy and scipy; each script reads the owner's f
     python3 tools/textures/boats.py ~/Documents/ChatGPT/PRAGA/textures public/models/vehicles
     python3 tools/textures/furniture.py ~/Documents/ChatGPT/PRAGA/textures public/textures src/furniture-atlas.json
     python3 tools/textures/trees.py ~/Documents/ChatGPT/PRAGA/textures public/textures
+    python3 tools/textures/sky.py ~/Documents/ChatGPT/PRAGA/textures public/textures/sky
     python3 tools/textures/graffiti.py ~/Documents/ChatGPT/PRAGA/textures public/textures   # whatever is in textures/graffiti/
 
 `common.py` holds the shared steps (finding the object on its plain backdrop, cropping, bleeding colours into the
