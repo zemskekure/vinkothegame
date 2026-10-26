@@ -369,11 +369,14 @@ export async function addLife( scene, life, { seats = [], benches = [], groundHe
 
 	}
 
+	// One batch per type. The moving cars take its first places; after them, each frame, the parked ones (some two
+	// thousand along the kerbs) that are in view and nearer than the haze.
+	const parkedOf = carModels.map( () => [] );
 	const batches = carModels.map( ( { geometry, material }, type ) => {
 
 		const count = parked.filter( c => c.type === type ).length + movers.filter( c => c.type === type ).length;
 		const mesh = new THREE.InstancedMesh( geometry, material, Math.max( 1, count ) );
-		mesh.count = count;
+		mesh.count = 0;
 		mesh.castShadow = mesh.receiveShadow = true;
 		mesh.frustumCulled = false;
 		scene.add( mesh );
@@ -390,8 +393,8 @@ export async function addLife( scene, life, { seats = [], benches = [], groundHe
 
 	for ( const c of parked ) {
 
-		const b = batches[ c.type ];
-		placeCar( b, b.next ++, c.p[ 0 ], c.p[ 1 ], c.p[ 2 ], c.p[ 3 ] );
+		q.setFromEuler( e.set( 0, c.p[ 3 ], 0, 'YXZ' ) );
+		parkedOf[ c.type ].push( { x: c.p[ 0 ], y: c.p[ 1 ], z: c.p[ 2 ], matrix: m4.compose( v.set( c.p[ 0 ], c.p[ 1 ], c.p[ 2 ] ), q, one ).toArray() } );
 
 	}
 
@@ -502,7 +505,23 @@ export async function addLife( scene, life, { seats = [], benches = [], groundHe
 
 		}
 
-		for ( const b of batches ) b.mesh.instanceMatrix.needsUpdate = true;
+		batches.forEach( ( b, type ) => {
+
+			let i = b.next;
+			for ( const c of parkedOf[ type ] ) {
+
+				if ( Math.abs( c.x - camera.position.x ) > farOff || Math.abs( c.z - camera.position.z ) > farOff ) continue;
+				if ( Math.hypot( c.x - camera.position.x, c.z - camera.position.z ) > farOff || ! frustum.intersectsSphere( sphere.set( sphere.center.set( c.x, c.y + 0.8, c.z ), 2.6 ) ) ) continue;
+				b.mesh.instanceMatrix.array.set( c.matrix, i * 16 );
+				i ++;
+
+			}
+
+			b.mesh.count = i;
+			b.mesh.visible = i > 0;
+			b.mesh.instanceMatrix.needsUpdate = true;
+
+		} );
 		friends.update( dt );
 		perlova?.update( dt );
 
