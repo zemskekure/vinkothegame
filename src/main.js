@@ -24,6 +24,8 @@ import { startStory } from './holub/story.js';
 import { ps1Look } from './holub/ps1.js';
 import { startDay } from './holub/sky.js';
 import { SETTINGS } from './settings.js';
+import { batchStatic, splitByTile } from './batch.js';
+import { unpackWalls, unpackRoofs, unpackTerrain, unpackPavement, unpackSurfaces } from './unpack.js';
 
 async function load( name, type = 'arrayBuffer', dir = 'data/' ) {
 
@@ -37,17 +39,18 @@ async function load( name, type = 'arrayBuffer', dir = 'data/' ) {
 
 }
 
-const [ data, wallsBuf, wallIdxBuf, roofsBuf, roofIdxBuf, terrainBuf, surfaceBuf, surface2Buf, pavementBuf, pavementIdxBuf, footprintBuf, embankmentBuf ] = await Promise.all( [
+// The city's buffers are packed (tools/pack.mjs, src/unpack.js): about a fifth of the raw floats, and less again
+// over the wire once the server gzips them.
+// (let: each download is let go once unpacked, below.)
+let [ data, wallsBuf, wallTableBuf, roofsBuf, roofTableBuf, terrainBuf, surfacesBuf, pavementBuf, footprintBuf, embankmentBuf ] = await Promise.all( [
 	load( 'scene.json', 'json' ),
 	load( 'walls.bin' ),
-	load( 'walls-index.bin' ),
+	load( 'walls-table.bin' ),
 	load( 'roofs.bin' ),
-	load( 'roofs-index.bin' ),
+	load( 'roofs-table.bin' ),
 	load( 'terrain.bin' ),
-	load( 'surface.bin' ),
-	load( 'surface2.bin' ),
+	load( 'surfaces.bin' ),
 	load( 'pavement.bin' ),
-	load( 'pavement-index.bin' ),
 	load( 'footprints.bin' ),
 	load( 'embankment.bin' )
 ] );
@@ -59,11 +62,14 @@ const params = new URLSearchParams( location.search );
 const ADMIN = params.has( 'admin' );
 const HOLUB = window.GAME === 'holub' || params.has( 'holub' ) || ADMIN;
 if ( HOLUB ) SUN.copy( HOLUB_SUN );
+// The whole game is shown as a late-90s console picture (src/holub/ps1.js: a low internal resolution, cut colours,
+// dither, grain), on foot, on the scooter, from above and as the pigeon; ?hd shows the plain full-resolution picture.
+const PS1 = ! params.has( 'hd' );
 
 // ---------------------------------------------------------------------------
 // Renderer, sky, light
 
-const renderer = new THREE.WebGPURenderer( { antialias: ! HOLUB, forceWebGL: params.has( 'webgl' ) } );
+const renderer = new THREE.WebGPURenderer( { antialias: ! HOLUB && ! PS1, forceWebGL: params.has( 'webgl' ) } );
 renderer.setPixelRatio( Math.min( window.devicePixelRatio, 2 ) * ( HOLUB ? PIXEL_SCALE : 1 ) );
 renderer.setSize( window.innerWidth, window.innerHeight );
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -102,14 +108,13 @@ const centre = new THREE.Vector3( ( bounds.minX + bounds.maxX ) / 2, 0, ( bounds
 const FB = data.firstBounds || bounds;
 const firstCentre = new THREE.Vector3( ( FB.minX + FB.maxX ) / 2, 0, ( FB.minZ + FB.maxZ ) / 2 );
 
-// The sun's shadows cover a square the size of the first area (as sharp as they were before the area grew),
-// around the first area while one is in it, else around where one is (aimShadows below).
+// The sun's shadows cover a square around where one is (aimShadows below): 400 m across on foot and as the pigeon,
+// 900 m from above. Like the short draw distance, the shadows end in the haze.
 const shadowCentre = firstCentre.clone();
 const sun = new THREE.DirectionalLight( 0xffe6c4, 3.0 );
 sun.castShadow = true;
 sun.shadow.mapSize.set( 2048, 2048 );
-const half = Math.max( FB.maxX - FB.minX, FB.maxZ - FB.minZ ) * 0.62;
-Object.assign( sun.shadow.camera, { left: - half, right: half, top: half, bottom: - half, near: 10, far: 1600 } );
+Object.assign( sun.shadow.camera, { left: - 450, right: 450, top: 450, bottom: - 450, near: 10, far: 1600 } );
 sun.shadow.bias = - 0.0003;
 sun.shadow.normalBias = 0.3;
 sun.position.copy( sunDir ).multiplyScalar( 700 ).add( shadowCentre );
@@ -122,62 +127,53 @@ if ( HOLUB ) holubLook( { renderer, scene, sky, sun, hemi, camera } );
 // Terrain and street surfaces
 
 const T = data.terrain;
-const heights = new Float32Array( terrainBuf );
-// The first area on the 1 m grid, as it always was; the rest of the area (Malá Strana, Petřín, the strip north of
-// Karlova) on every second grid point (terrainGeoWide below). Where the two meet, the fine edge's in-between points
-// sit on the coarse edge's straight line, so there are no cracks.
-const fc0 = Math.round( ( FB.minX - bounds.minX ) / T.cell ), fr0 = Math.round( ( FB.minZ - bounds.minZ ) / T.cell );
-const fw = Math.round( ( FB.maxX - FB.minX ) / T.cell ) + 1, fh = Math.round( ( FB.maxZ - FB.minZ ) / T.cell ) + 1;
-const fine = new Float32Array( fw * fh );
-for ( let r = 0; r < fh; r ++ ) for ( let c = 0; c < fw; c ++ ) fine[ r * fw + c ] = heights[ ( r + fr0 ) * T.width + c + fc0 ];
+// The ground is drawn from a mesh of the 1 m grid (tools/rtin.mjs at build time): big triangles where the ground is
+// flat, small ones where it bends, every grid point along the retaining walls. The grid's heights (for walking,
+// the people, the trams) are read off the same triangles.
+const terrainGeo = new THREE.BufferGeometry();
+const terrainMesh = unpackTerrain( terrainBuf, data.packed[ 'terrain.bin' ], T );
+const heights = terrainMesh.heights;
+terrainBuf = null;
+const vertexAt = new Map(); // grid point → corner
 {
 
-	const seam = ( r, c, dr, dc ) => {
+	const { grid } = terrainMesh, pos = new Float32Array( grid.length * 3 );
+	for ( let v = 0; v < grid.length; v ++ ) {
 
-		if ( ( r + fr0 ) % 2 || ( c + fc0 ) % 2 ) fine[ r * fw + c ] = ( fine[ ( r - dr ) * fw + c - dc ] + fine[ ( r + dr ) * fw + c + dc ] ) / 2;
-
-	};
-	for ( let c = 1; c < fw - 1; c ++ ) {
-
-		if ( fr0 > 0 ) seam( 0, c, 0, 1 );
-		if ( fr0 + fh < T.height ) seam( fh - 1, c, 0, 1 );
-
-	}
-
-	for ( let r = 1; r < fh - 1; r ++ ) {
-
-		if ( fc0 > 0 ) seam( r, 0, 1, 0 );
-		if ( fc0 + fw < T.width ) seam( r, fw - 1, 1, 0 );
+		const g = grid[ v ], c = g % T.width, r = ( g - c ) / T.width;
+		pos[ v * 3 ] = bounds.minX + c * T.cell;
+		pos[ v * 3 + 1 ] = terrainMesh.y[ v ];
+		pos[ v * 3 + 2 ] = bounds.minZ + r * T.cell;
+		vertexAt.set( g, v );
 
 	}
+
+	terrainGeo.setAttribute( 'position', new THREE.BufferAttribute( pos, 3 ) );
 
 }
 
-const terrainGeo = new THREE.PlaneGeometry( ( fw - 1 ) * T.cell, ( fh - 1 ) * T.cell, fw - 1, fh - 1 );
-terrainGeo.rotateX( - Math.PI / 2 );
-terrainGeo.translate( firstCentre.x, 0, firstCentre.z );
 const tp = terrainGeo.attributes.position;
-for ( let i = 0; i < tp.count; i ++ ) tp.setY( i, fine[ i ] );
 // Retaining walls (tools/quay.mjs: the náplavka's wall under Smetanovo nábřeží, Čapadlo's lane): the 1 m grid would
 // ramp across a wall's foot. Grid points within 1.5 m of the wall line move onto it (the high ones from behind, the
 // low ones from in front), and the triangles still spanning from the top to the foot are dropped: the ground meets
 // the wall face in a straight line on both sides.
 {
 
-	const gx0 = tp.getX( 0 ), gz0 = tp.getZ( 0 ), mark = new Uint8Array( tp.count ), mids = new Float32Array( tp.count );
+	const mark = new Uint8Array( tp.count ), mids = new Float32Array( tp.count );
 	for ( const [ x0, z0, x1, z1, nx, nz, top, low ] of data.cliffs || [] ) {
 
 		const dx = x1 - x0, dz = z1 - z0, l2 = dx * dx + dz * dz, mid = ( top + low ) / 2;
 		if ( ! l2 ) continue;
-		const c0 = Math.max( 0, Math.floor( ( Math.min( x0, x1 ) - 1.6 - gx0 ) / T.cell ) ), c1 = Math.min( fw - 1, Math.ceil( ( Math.max( x0, x1 ) + 1.6 - gx0 ) / T.cell ) );
-		const r0 = Math.max( 0, Math.floor( ( Math.min( z0, z1 ) - 1.6 - gz0 ) / T.cell ) ), r1 = Math.min( fh - 1, Math.ceil( ( Math.max( z0, z1 ) + 1.6 - gz0 ) / T.cell ) );
+		const c0 = Math.max( 0, Math.floor( ( Math.min( x0, x1 ) - 1.6 - bounds.minX ) / T.cell ) ), c1 = Math.min( T.width - 1, Math.ceil( ( Math.max( x0, x1 ) + 1.6 - bounds.minX ) / T.cell ) );
+		const r0 = Math.max( 0, Math.floor( ( Math.min( z0, z1 ) - 1.6 - bounds.minZ ) / T.cell ) ), r1 = Math.min( T.height - 1, Math.ceil( ( Math.max( z0, z1 ) + 1.6 - bounds.minZ ) / T.cell ) );
 		for ( let r = r0; r <= r1; r ++ ) for ( let c = c0; c <= c1; c ++ ) {
 
-			const i = r * fw + c, x = gx0 + c * T.cell, z = gz0 + r * T.cell;
-			if ( mark[ i ] ) continue;
+			const i = vertexAt.get( r * T.width + c );
+			if ( i === undefined || mark[ i ] ) continue;
+			const x = bounds.minX + c * T.cell, z = bounds.minZ + r * T.cell;
 			const t = ( ( x - x0 ) * dx + ( z - z0 ) * dz ) / l2;
 			if ( t < - 0.01 || t > 1.01 ) continue;
-			const d = ( x - x0 ) * nx + ( z - z0 ) * nz, y = fine[ i ];
+			const d = ( x - x0 ) * nx + ( z - z0 ) * nz, y = tp.getY( i );
 			if ( Math.abs( d ) >= 1.5 ) continue;
 			const to = y > mid ? - 0.02 : 0.02;
 			tp.setXYZ( i, x - nx * ( d - to ), y, z - nz * ( d - to ) );
@@ -188,14 +184,14 @@ for ( let i = 0; i < tp.count; i ++ ) tp.setY( i, fine[ i ] );
 
 	}
 
-	const index = terrainGeo.index.array, kept = [];
+	const index = terrainMesh.index, kept = [];
 	for ( let k = 0; k < index.length; k += 3 ) {
 
 		const v = [ index[ k ], index[ k + 1 ], index[ k + 2 ] ], m = v.find( i => mark[ i ] );
 		if ( m !== undefined ) {
 
 			const mid = mids[ m ];
-			if ( v.some( i => fine[ i ] > mid ) && v.some( i => fine[ i ] < mid ) ) continue;
+			if ( v.some( i => tp.getY( i ) > mid ) && v.some( i => tp.getY( i ) < mid ) ) continue;
 
 		}
 
@@ -203,44 +199,25 @@ for ( let i = 0; i < tp.count; i ++ ) tp.setY( i, fine[ i ] );
 
 	}
 
-	if ( kept.length < index.length ) terrainGeo.setIndex( kept );
+	terrainGeo.setIndex( new THREE.BufferAttribute( kept.length < index.length ? new Uint32Array( kept ) : index, 1 ) );
 
 }
 
 terrainGeo.computeVertexNormals();
 
-// The rest of the area on a 2 m grid, the first area's cells left out.
-const terrainGeoWide = new THREE.BufferGeometry();
-{
-
-	const cw = ( T.width - 1 ) / 2 + 1 | 0, ch = ( T.height - 1 ) / 2 + 1 | 0, pos = new Float32Array( cw * ch * 3 ), index = [];
-	for ( let r = 0; r < ch; r ++ ) for ( let c = 0; c < cw; c ++ ) pos.set( [ bounds.minX + c * 2 * T.cell, heights[ r * 2 * T.width + c * 2 ], bounds.minZ + r * 2 * T.cell ], ( r * cw + c ) * 3 );
-	for ( let r = 0; r + 1 < ch; r ++ ) for ( let c = 0; c + 1 < cw; c ++ ) {
-
-		if ( c * 2 >= fc0 && c * 2 + 2 <= fc0 + fw - 1 && r * 2 >= fr0 && r * 2 + 2 <= fr0 + fh - 1 ) continue;
-		const a = r * cw + c, b = a + cw;
-		index.push( a, b, a + 1, b, b + 1, a + 1 );
-
-	}
-
-	terrainGeoWide.setAttribute( 'position', new THREE.BufferAttribute( pos, 3 ) );
-	terrainGeoWide.setIndex( index );
-	terrainGeoWide.computeVertexNormals();
-
-}
-
 const S = data.surface;
 const surfaceTexture = buf => {
 
-	const tex = new THREE.DataTexture( new Uint8Array( buf ), S.width, S.height, THREE.RGBAFormat );
+	const tex = new THREE.DataTexture( buf, S.width, S.height, THREE.RGBAFormat );
 	tex.magFilter = tex.minFilter = THREE.LinearFilter;
 	tex.needsUpdate = true;
 	return tex;
 
 };
 
-const surface2 = new Uint8Array( surface2Buf );
-const surfaceTex = surfaceTexture( surfaceBuf ), surface2Tex = surfaceTexture( surface2Buf );
+const [ surfaceBytes, surface2 ] = unpackSurfaces( surfacesBuf, S.width, S.height );
+surfacesBuf = null;
+const surfaceTex = surfaceTexture( surfaceBytes ), surface2Tex = surfaceTexture( surface2 );
 // The aerial photo's ground detail: 25 cm over the first area, 50 cm over the whole area.
 const loadDetail = async name => {
 
@@ -253,13 +230,9 @@ const loadDetail = async name => {
 const groundDetail = await loadDetail( 'ground-detail.jpg' );
 const groundDetailWide = data.firstBounds ? await loadDetail( 'ground-detail-wide.jpg' ) : null;
 const groundMaterial = createGroundMaterial( surfaceTex, surface2Tex, bounds, groundDetail, FB, groundDetailWide );
-const surfaceBytes = new Uint8Array( surfaceBuf );
 const terrain = new THREE.Mesh( terrainGeo, groundMaterial );
 terrain.receiveShadow = true;
 scene.add( terrain );
-const terrainWide = new THREE.Mesh( terrainGeoWide, groundMaterial );
-terrainWide.receiveShadow = true;
-scene.add( terrainWide );
 
 // Decks over a street below (tools/terraces.mjs): Národní over Divadelní, the piazzetta's edge over the covered
 // pavement. Slabs of their own, drawn with the street's surface; the street below is in the terrain.
@@ -291,8 +264,15 @@ scene.add( terrainWide );
 
 // Raised pavements with their kerbs (double-sided: the kerb faces are only wound one way).
 const pavementGeo = new THREE.BufferGeometry();
-pavementGeo.setAttribute( 'position', new THREE.BufferAttribute( new Float32Array( pavementBuf ), 3 ) );
-pavementGeo.setIndex( new THREE.BufferAttribute( new Uint32Array( pavementIdxBuf ), 1 ) );
+{
+
+	const { positions, index } = unpackPavement( pavementBuf, data.packed[ 'pavement.bin' ] );
+	pavementBuf = null;
+	pavementGeo.setAttribute( 'position', new THREE.BufferAttribute( positions, 3 ) );
+	pavementGeo.setIndex( new THREE.BufferAttribute( index, 1 ) );
+
+}
+
 pavementGeo.computeVertexNormals();
 const pavementMaterial = createGroundMaterial( surfaceTex, surface2Tex, bounds, groundDetail, FB, groundDetailWide );
 pavementMaterial.side = THREE.DoubleSide;
@@ -320,9 +300,29 @@ const zones = data.places?.zones || [];
 // An underpass zone (`under`: Čapadlo under Smetanovo nábřeží) is the ground only for someone below its ceiling
 // (y: the asker's height; null: anyone else, who stays on the street above). Decks: see `deck` / `over` below.
 let walkerLevel = () => null;
+// The zones by 8 m square (each listed in every square its rectangle can reach), in their order in the list, so a
+// lookup tries the few nearby ones only, first match first as before.
+const ZONE_CELL = 8, zoneGrid = new Map();
+zones.forEach( zn => {
+
+	const r = Math.hypot( zn.hu, zn.hn );
+	for ( let i = Math.floor( ( zn.x - r ) / ZONE_CELL ); i <= Math.floor( ( zn.x + r ) / ZONE_CELL ); i ++ ) {
+
+		for ( let j = Math.floor( ( zn.z - r ) / ZONE_CELL ); j <= Math.floor( ( zn.z + r ) / ZONE_CELL ); j ++ ) {
+
+			const key = i * 100000 + j;
+			if ( ! zoneGrid.has( key ) ) zoneGrid.set( key, [] );
+			zoneGrid.get( key ).push( zn );
+
+		}
+
+	}
+
+} );
+const NO_ZONES = [];
 function zoneAt( x, z, y = walkerLevel() ) {
 
-	for ( const zn of zones ) {
+	for ( const zn of zoneGrid.get( Math.floor( x / ZONE_CELL ) * 100000 + Math.floor( z / ZONE_CELL ) ) || NO_ZONES ) {
 
 		if ( zn.under && ( y === null || y === undefined || y > zn.ceil ) ) continue;
 		const dx = x - zn.x, dz = z - zn.z;
@@ -456,50 +456,64 @@ scene.add( water );
 // Buildings
 
 // Roofs: flat-shaded so every hip and gable face reads crisply.
-const rs = data.roofStride;
-const roofIndexed = new THREE.BufferGeometry();
-const rib = new THREE.InterleavedBuffer( new Float32Array( roofsBuf ), rs );
-roofIndexed.setAttribute( 'position', new THREE.InterleavedBufferAttribute( rib, 3, 0 ) );
-roofIndexed.setAttribute( 'roofKind', new THREE.InterleavedBufferAttribute( rib, 1, 3 ) );
-roofIndexed.setAttribute( 'seed', new THREE.InterleavedBufferAttribute( rib, 1, 4 ) );
-roofIndexed.setAttribute( 'roofColor', new THREE.InterleavedBufferAttribute( rib, 3, 5 ) );
-roofIndexed.setIndex( new THREE.BufferAttribute( new Uint32Array( roofIdxBuf ), 1 ) );
-const roofGeo = roofIndexed.toNonIndexed();
-roofGeo.computeVertexNormals();
-const roofs = new THREE.Mesh( roofGeo, createRoofMaterial() );
+const roofs = new THREE.Mesh( ( () => {
+
+	const rs = data.roofStride;
+	const roofIndexed = new THREE.BufferGeometry();
+	const roofData = unpackRoofs( roofsBuf, roofTableBuf, data.packed[ 'roofs.bin' ], rs );
+	roofsBuf = roofTableBuf = null;
+	const rib = new THREE.InterleavedBuffer( roofData.roofs, rs );
+	roofIndexed.setAttribute( 'position', new THREE.InterleavedBufferAttribute( rib, 3, 0 ) );
+	roofIndexed.setAttribute( 'roofKind', new THREE.InterleavedBufferAttribute( rib, 1, 3 ) );
+	roofIndexed.setAttribute( 'seed', new THREE.InterleavedBufferAttribute( rib, 1, 4 ) );
+	roofIndexed.setAttribute( 'roofColor', new THREE.InterleavedBufferAttribute( rib, 3, 5 ) );
+	roofIndexed.setIndex( new THREE.BufferAttribute( roofData.index, 1 ) );
+	const roofGeo = roofIndexed.toNonIndexed();
+	roofGeo.computeVertexNormals();
+	return roofGeo;
+
+} )(), createRoofMaterial() );
 roofs.castShadow = roofs.receiveShadow = true;
 scene.add( roofs );
 
-const walls = new Float32Array( wallsBuf );
-const ws = data.wallStride;
-const wallGeo = new THREE.BufferGeometry();
-const wib = new THREE.InterleavedBuffer( walls, ws );
-// Packed into vec4s: WebGPU allows at most 16 values passed from vertex to fragment shader.
-[ [ 'position', 3, 0 ], [ 'wallA', 4, 3 ], [ 'wallB', 4, 7 ], [ 'wallC', 4, 13 ], [ 'trimColour', 3, 17 ], [ 'house', 4, 20 ] ].forEach( ( [ name, size, offset ] ) => {
+// The walls (built in a function of their own, so their arrays can go once they are on the GPU).
+const wallGeo = ( () => {
 
-	wallGeo.setAttribute( name, new THREE.InterleavedBufferAttribute( wib, size, offset ) );
+	const ws = data.wallStride;
+	const wallData = unpackWalls( wallsBuf, wallTableBuf, data.packed[ 'walls.bin' ], ws );
+	wallsBuf = wallTableBuf = null;
+	const walls = wallData.walls;
+	const wallGeo = new THREE.BufferGeometry();
+	const wib = new THREE.InterleavedBuffer( walls, ws );
+	// Packed into vec4s: WebGPU allows at most 16 values passed from vertex to fragment shader.
+	[ [ 'position', 3, 0 ], [ 'wallA', 4, 3 ], [ 'wallB', 4, 7 ], [ 'wallC', 4, 13 ], [ 'trimColour', 3, 17 ], [ 'house', 4, 20 ] ].forEach( ( [ name, size, offset ] ) => {
 
-} );
+		wallGeo.setAttribute( name, new THREE.InterleavedBufferAttribute( wib, size, offset ) );
 
-// Landmark facades (style 1 Národní divadlo sandstone, 2 Máj white panels, 3 Betlémská kaple white render).
-const LANDMARK_COLOURS = { 1: 0xb59a74, 2: 0xe6e6e2, 3: 0xf1ede5 };
-const plaster = new Float32Array( walls.length / ws * 3 );
-const c = new THREE.Color();
-for ( let i = 0, n = walls.length / ws; i < n; i ++ ) {
+	} );
 
-	// Measured colour from street photos when there is one, else a typical Prague plaster.
-	const r = walls[ i * ws + 10 ];
-	const landmark = LANDMARK_COLOURS[ walls[ i * ws + 16 ] ];
-	if ( landmark ) c.setHex( landmark );
-	else if ( r >= 0 ) c.setRGB( r, walls[ i * ws + 11 ], walls[ i * ws + 12 ], THREE.SRGBColorSpace );
-	else c.setHex( PLASTER[ Math.floor( walls[ i * ws + 8 ] * PLASTER.length ) ] );
-	plaster.set( [ c.r, c.g, c.b ], i * 3 );
+	// Landmark facades (style 1 Národní divadlo sandstone, 2 Máj white panels, 3 Betlémská kaple white render).
+	const LANDMARK_COLOURS = { 1: 0xb59a74, 2: 0xe6e6e2, 3: 0xf1ede5 };
+	const plaster = new Float32Array( walls.length / ws * 3 );
+	const c = new THREE.Color();
+	for ( let i = 0, n = walls.length / ws; i < n; i ++ ) {
 
-}
+		// Measured colour from street photos when there is one, else a typical Prague plaster.
+		const r = walls[ i * ws + 10 ];
+		const landmark = LANDMARK_COLOURS[ walls[ i * ws + 16 ] ];
+		if ( landmark ) c.setHex( landmark );
+		else if ( r >= 0 ) c.setRGB( r, walls[ i * ws + 11 ], walls[ i * ws + 12 ], THREE.SRGBColorSpace );
+		else c.setHex( PLASTER[ Math.floor( walls[ i * ws + 8 ] * PLASTER.length ) ] );
+		plaster.set( [ c.r, c.g, c.b ], i * 3 );
 
-wallGeo.setAttribute( 'plaster', new THREE.BufferAttribute( plaster, 3 ) );
-wallGeo.setIndex( new THREE.BufferAttribute( new Uint32Array( wallIdxBuf ), 1 ) );
-wallGeo.computeVertexNormals();
+	}
+
+	wallGeo.setAttribute( 'plaster', new THREE.BufferAttribute( plaster, 3 ) );
+	wallGeo.setIndex( new THREE.BufferAttribute( wallData.index, 1 ) );
+	wallGeo.computeVertexNormals();
+	return wallGeo;
+
+} )();
 // Described ground floors (tools/build-scene.mjs): one row per street front, one texel per 0.25 m of the front
 // holding the opening there: kind + 10 × frame colour, its left and right edge (m) and flags. Half floats: those
 // are filterable under WebGPU too (32-bit floats are not), and keep the edges to about 3 cm.
@@ -557,16 +571,66 @@ if ( params.has( 'signs' ) ) addSigns( scene, data.signs || [], renderer );
 addDecor( scene, data.decor );
 await addShopfronts( scene, data.decor?.shopfronts );
 addEmbankment( scene, embankmentBuf, data.embankment );
+embankmentBuf = null;
 
 // Signature places (rotunda, pub, café, champagne bar, museum gate, stairs) and street life (people, cars).
 const { seats } = addPlaces( scene, places, data.furniture, data.waterLevel );
 // Local icons: big lettering, sculptures, domed corner towers (data/icons.json).
 addIcons( scene, ICONS, groundHeight, data.buildings );
-// Models: Quaternius' people and Kenney's Car Kit (CC0); textures resolve next to them. The people are
+// The still city in few draw calls (src/batch.js): the hand-made pieces merged per material and 150 m square, the
+// big meshes cut into 200 m squares that are skipped when out of view.
+const batched = batchStatic( scene );
+const tiles = [ terrain, pavement, wallMesh, roofs ].map( mesh => splitByTile( mesh ) );
+const roofTiles = tiles[ 3 ];
+for ( const mesh of [ terrain, pavement, wallMesh, roofs ] ) mesh.geometry = new THREE.BufferGeometry();
+// Once on the GPU, the big meshes' arrays are dropped from memory: an empty array of the same kind stays, for the
+// buffer layout the renderer reads when it builds a pipeline.
+{
+
+	const heavy = new Set();
+	for ( const g of tiles.map( t => t.userData.geometry ) ) {
+
+		for ( const a of Object.values( g.attributes ) ) heavy.add( a.isInterleavedBufferAttribute ? a.data : a );
+		if ( g.index ) heavy.add( g.index );
+
+	}
+
+	const drop = setInterval( () => {
+
+		for ( const b of heavy ) {
+
+			const d = renderer.backend.get( b );
+			if ( ! d.buffer && ! d.bufferGPU ) continue;
+			b.array = new b.array.constructor( 0 );
+			heavy.delete( b );
+
+		}
+
+		if ( ! heavy.size ) clearInterval( drop );
+
+	}, 2000 );
+
+}
+const stillRoots = new Set( scene.children );
+// Everything still, with where it is (a sphere around it), to leave out what lies past the haze (the loop below).
+const beyondFog = [];
+scene.updateMatrixWorld( true );
+scene.traverse( o => {
+
+	if ( ! o.isMesh ) return;
+	if ( o.isInstancedMesh && ! o.boundingSphere ) o.computeBoundingSphere();
+	if ( ! o.isInstancedMesh && ! o.geometry.boundingSphere ) o.geometry.computeBoundingSphere();
+	const sphere = ( o.isInstancedMesh ? o.boundingSphere : o.geometry.boundingSphere ).clone().applyMatrix4( o.matrixWorld );
+	if ( sphere.radius < 2000 ) beyondFog.push( { o, sphere } );
+
+} );
+// Models: Quaternius' people (CC0) and the vehicles (public/models/vehicles/CREDITS.md); textures resolve next to them. The people are
 // meshopt-compressed.
 const gltfLoader = new GLTFLoader().setMeshoptDecoder( MeshoptDecoder );
 const loadModel = async ( path, dir ) => gltfLoader.parseAsync( await load( path, 'arrayBuffer', '' ), dir );
-const life = await addLife( scene, places?.life, { seats, benches: data.furniture.bench, groundHeight, loadModel, camera, cars: params.has( 'cars' ) } ); // cars hidden for now (?cars shows them)
+// The people, the trams and the boats come after the city (see the end of this file): one can walk while their
+// models download. Until then they are empty stand-ins.
+const life = { update() {}, agents: [], walks: [] };
 
 // ---------------------------------------------------------------------------
 // Controls: orbit (overview) and walking at street level
@@ -663,8 +727,7 @@ walkerHeight = () => walker.placed ? walker.y + 0.5 : Infinity;
 walkerLevel = () => walker.placed ? walker.y : null;
 
 // Trams and their overhead line (poles kept out of houses).
-const trams = await addTrams( scene, places?.life?.trams, groundHeight, ( x, z ) => cameraBlocked( x, z ) || onLegie( places?.legie, x, z ) );
-const boats = await addBoats( scene, { loadModel, groundHeight, waterLevel: data.waterLevel } );
+let trams = { update() {} }, boats = { update() {} };
 
 const hud = {
 	mode: document.getElementById( 'mode' ),
@@ -700,7 +763,7 @@ if ( places?.bandstand ) placeMarkers.push( { x: places.bandstand.x, z: places.b
 
 const isTouch = matchMedia( '(pointer: coarse)' ).matches || navigator.maxTouchPoints > 0 && ! matchMedia( '(pointer: fine)' ).matches;
 const minimap = createMinimap( {
-	bounds, surface: new Uint8Array( surfaceBuf ), surface2, S, waterLevel: data.waterLevel, markers: placeMarkers, touch: isTouch,
+	bounds, surface: surfaceBytes, surface2, S, waterLevel: data.waterLevel, markers: placeMarkers, touch: isTouch,
 	terrainHeight,
 	isHouse: ( x, z ) => {
 
@@ -723,7 +786,18 @@ function startAt() {
 
 let walking = false;
 const touch = matchMedia( '(pointer: coarse)' ).matches || navigator.maxTouchPoints > 0 && ! matchMedia( '(pointer: fine)' ).matches;
+// The haze: in the console picture, on foot it closes in as in the pigeon game (from 90 m, thick at 1 km; game
+// settings `look.fog` makes it denser), a short draw distance as the consoles had; from above it stays far.
+const FOG = { walk: [ 90, 1000 ], above: [ 350, 1600 ] };
 function setMode( walk ) {
+
+	if ( PS1 && ! HOLUB ) {
+
+		const k = Math.max( 0.05, SETTINGS.look.fog ?? 1 ), [ near, far ] = FOG[ walk ? 'walk' : 'above' ];
+		scene.fog.near = near / k;
+		scene.fog.far = far / k;
+
+	}
 
 	const wasWalking = walking;
 	walking = walk;
@@ -767,7 +841,7 @@ window.addEventListener( 'keydown', e => {
 // The pigeon (?holub) instead of the walker: by default on Betlémské náměstí by the terrace, facing the chapel
 // (game settings, `pigeon.start`: x, z, heading).
 const holubStart = SETTINGS.pigeon.start;
-const holub = HOLUB ? startHolub( { scene, camera, dom: renderer.domElement, roofGeo, bounds, groundHeight, waterLevel: data.waterLevel, places, furniture: data.furniture, life, start: holubStart, indoors: ( x, z ) => { const zn = zoneAt( x, z ); return !! zn && zn.y !== undefined && zn.ceil === undefined; } } ) : null;
+const holub = HOLUB ? startHolub( { scene, camera, dom: renderer.domElement, roofGeo: roofTiles.userData.geometry, bounds, groundHeight, waterLevel: data.waterLevel, places, furniture: data.furniture, life, start: holubStart, indoors: ( x, z ) => { const zn = zoneAt( x, z ); return !! zn && zn.y !== undefined && zn.ceil === undefined; } } ) : null;
 // The pigeon's first day (egg, tutorial) and the clock that moves the sun and the light.
 const story = holub ? startStory( { scene, camera, holub, start: holubStart } ) : null;
 const day = holub ? startDay( { renderer, scene, sky, sun, hemi, centre: shadowCentre, hour: SETTINGS.day.startHour, minutes: SETTINGS.day.minutes, tune: SETTINGS.look } ) : null;
@@ -870,37 +944,84 @@ const timer = new THREE.Timer();
 let labelTimer = 0;
 
 // The pigeon game is shown as a late-90s console picture (src/holub/ps1.js); ?hd turns that off.
-const ps1 = HOLUB && ! params.has( 'hd' ) ? ps1Look( { renderer, scene, camera } ) : null;
-if ( ps1 ) renderer.setPixelRatio( 1 );
+const ps1 = PS1 ? ps1Look( { renderer, scene, camera } ) : null;
+if ( ps1 ) {
+
+	renderer.setPixelRatio( 1 );
+	renderer.domElement.style.imageRendering = 'pixelated';
+	// On foot the light is the walk's own late afternoon, tuned by the same art-direction knobs as the pigeon's day
+	// (game settings, `look`: exposure, sun strength; the fog's density in setMode above).
+	if ( ! HOLUB ) {
+
+		const look = SETTINGS.look;
+		renderer.toneMappingExposure *= look.exposure ?? 1;
+		sun.intensity *= look.sun ?? 1;
+		if ( /^#[0-9a-f]{6}$/i.test( look.fogColour || '' ) ) scene.fog.color.set( look.fogColour );
+
+	}
+
+}
 
 // The admin page: the settings and the map from above beside the running game.
 if ( ADMIN ) ( await import( './admin.js' ) ).startAdmin( { bounds, map: minimap.map, life, ps1, day, holub } );
 
-// Battery: at most 60 frames a second (30 in the pigeon game's low-resolution picture), however fast the screen
-// refreshes, and the sun's shadows redrawn every third frame, not every frame. ?fps=N sets the cap.
-const FPS = Number( params.get( 'fps' ) ) || ( ps1 ? 30 : 60 );
-// The shadowed square (see the sun above) follows one around outside the first area, in 100 m steps.
-function aimShadows( x, z ) {
+// Battery: at most 60 frames a second (30 in the pigeon game), however fast the screen refreshes. ?fps=N sets the cap.
+let FPS = Number( params.get( 'fps' ) ) || ( HOLUB ? 30 : 60 );
+// The shadowed square (see the sun above) follows one around in 50 m steps.
+function aimShadows( x, z, close ) {
 
-	const inFirst = x > FB.minX && x < FB.maxX && z > FB.minZ && z < FB.maxZ;
-	const cx = inFirst ? firstCentre.x : Math.round( x / 100 ) * 100, cz = inFirst ? firstCentre.z : Math.round( z / 100 ) * 100;
+	const half = close ? 200 : 450, cam = sun.shadow.camera;
+	if ( cam.right !== half ) {
+
+		Object.assign( cam, { left: - half, right: half, top: half, bottom: - half } );
+		cam.updateProjectionMatrix();
+		sun.shadow.needsUpdate = true;
+
+	}
+
+	const cx = Math.round( x / 50 ) * 50, cz = Math.round( z / 50 ) * 50;
 	if ( cx === shadowCentre.x && cz === shadowCentre.z ) return;
 	const dir = sun.position.clone().sub( shadowCentre );
 	shadowCentre.set( cx, 0, cz );
 	sun.target.position.copy( shadowCentre );
 	sun.position.copy( shadowCentre ).add( dir );
-	renderer.shadowMap.needsUpdate = true;
+	sun.shadow.needsUpdate = true;
 
 }
 
-renderer.shadowMap.autoUpdate = false;
+// The sun's shadows fall from the houses, roofs, trees and the rest of the still city only: the shadow map is drawn
+// when the shadowed square moves or the sun has moved (the pigeon's day), not every frame. Whatever moves (people,
+// trams, boats, the walker, the pigeon) casts none.
+sun.shadow.autoUpdate = false;
+sun.shadow.needsUpdate = true;
+const shadowSun = sun.position.clone().sub( sun.target.position ).normalize(), sunNow = new THREE.Vector3();
+let shadowAge = 0;
+function stillShadows( dt ) {
+
+	shadowAge += dt;
+	sunNow.copy( sun.position ).sub( sun.target.position ).normalize();
+	if ( shadowAge > 1 && sunNow.angleTo( shadowSun ) > 0.008 ) {
+
+		shadowSun.copy( sunNow );
+		sun.shadow.needsUpdate = true;
+
+	}
+
+	if ( ! sun.shadow.needsUpdate ) return;
+	shadowAge = 0;
+	// What was added after the still city (src/batch.js below) moves, or may: it casts no shadow.
+	for ( const o of scene.children ) if ( ! stillRoots.has( o ) ) o.traverse( m => m.castShadow = false );
+
+}
+
 let lastFrame = 0, frameNo = 0;
 renderer.setAnimationLoop( () => {
 
 	const now = performance.now();
 	if ( now - lastFrame < 1000 / FPS - 2 ) return;
 	lastFrame = now;
-	if ( frameNo ++ % 3 === 0 ) renderer.shadowMap.needsUpdate = true;
+	window.__frameLog?.push( now );
+	frameNo ++;
 	timer.update();
 	const dt = Math.min( timer.getDelta(), 0.1 );
 	life.update( dt );
@@ -940,12 +1061,32 @@ renderer.setAnimationLoop( () => {
 	}
 
 	const focus = holub ? holub.pos : walking ? walker.pos : orbit.target;
-	aimShadows( focus.x, focus.z );
+	aimShadows( focus.x, focus.z, !! holub || walking );
+	stillShadows( dt );
+	// None of the city's squares is drawn past the fog's far end, where it is all fog anyway (the plain ground
+	// beyond the area still is, so the horizon stays where it was).
+	for ( const { o, sphere } of beyondFog ) o.visible = camera.position.distanceTo( sphere.center ) - sphere.radius < scene.fog.far;
+
 	if ( ps1 ) ps1.render(); else renderer.render( scene, camera );
+	// Measuring (tools/perf/): draw calls, triangles and the frame's own time on the main thread.
+	if ( window.__frameLog ) {
+
+		window.__frameInfo = [ renderer.info.render.drawCalls, renderer.info.render.triangles ];
+		window.__frameCost?.push( performance.now() - now );
+
+	}
 
 } );
 
 document.getElementById( 'loading' ).remove();
-window.__debug = { camera, isBlocked, groundHeight, walker, life, trams, boats, holub, waterLevel: data.waterLevel };
+window.__debug = { setFps: f => FPS = f, renderer, scene, batched, camera, isBlocked, groundHeight, walker, life, trams, boats, holub, waterLevel: data.waterLevel };
 window.__THREE = THREE;
 window.__ready = true;
+window.__complete = false;
+
+// Street life: the people (cars hidden for now, ?cars shows them), the trams and the boats, loaded once the city is up.
+load( 'life.json', 'json' ).then( streetLife => Promise.all( [
+	addLife( scene, streetLife, { seats, benches: data.furniture.bench, groundHeight, loadModel, camera, cars: params.has( 'cars' ) } ).then( l => Object.assign( life, l ) ),
+	addTrams( scene, streetLife?.trams, groundHeight, ( x, z ) => cameraBlocked( x, z ) || onLegie( places?.legie, x, z ) ).then( t => trams = window.__debug.trams = t ),
+	addBoats( scene, { loadModel, groundHeight, waterLevel: data.waterLevel } ).then( b => boats = window.__debug.boats = b )
+] ) ).then( () => window.__complete = true );

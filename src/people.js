@@ -25,11 +25,11 @@ import { snapVertex, BODY_LEVELS, ART } from './holub/ps1.js';
 export const SLOT = { keep: 0, top: 1, bottom: 2, hair: 3, skin: 4, face: 5, chest: 6 };
 const LOOKS = [ 'lookTop', 'lookBottom', 'lookHair', 'lookSkin', 'lookFace' ];
 const BLOCK_HEADS = ! new URLSearchParams( location.search ).has( 'modelheads' ); // ?modelheads keeps the modelled heads
-// In the pigeon game (?holub) the people are drawn like the rest of its late-90s picture: faceted (one normal per
-// triangle), their vertices snapped to the console's coarse screen grid (src/holub/ps1.js), and their colours cut
-// to a few levels a channel. The walking view keeps them smooth. How faceted, how many levels and the head's shape
-// are the art direction (game settings, `art`; tuned in the studio, ?studio).
-const PS1 = window.GAME === 'holub' || /[?&](holub|admin|studio)(=|&|$)/.test( location.search );
+// The people are drawn like the rest of the game's late-90s picture: faceted (one normal per triangle), their
+// vertices snapped to the console's coarse screen grid (src/holub/ps1.js), and their colours cut to a few levels a
+// channel; ?hd (the plain picture) keeps them smooth, except in the pigeon game and the studio. How faceted, how
+// many levels and the head's shape are the art direction (game settings, `art`; tuned in the studio, ?studio).
+const PS1 = window.GAME === 'holub' || /[?&](holub|admin|studio)(=|&|$)/.test( location.search ) || ! /[?&]hd(=|&|$)/.test( location.search );
 const HEAD = { facets: ART.headFacets ?? 6, scale: ART.headScale ?? 1 };
 let FLAT = ART.flat !== false;
 

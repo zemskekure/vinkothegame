@@ -41,7 +41,8 @@ try {
 
 	const page = await browser.newPage( { viewport: { width: 800, height: 800 } } );
 	const first = selected[ 0 ] || { x: ( box.x0 + box.x1 ) / 2, z: ( box.z0 + box.z1 ) / 2, yaw: 0 };
-	baseURL.search = new URLSearchParams( { webgl: '', at: `${first.x},${first.z},${first.yaw}` } ).toString();
+	// ?hd: the plain picture (the game's console look would blur the proof).
+	baseURL.search = new URLSearchParams( { webgl: '', hd: '', at: `${first.x},${first.z},${first.yaw}` } ).toString();
 	await page.goto( baseURL.toString(), { timeout: 120000 } );
 	await page.waitForFunction( () => window.__ready && window.__debug?.isBlocked, null, { timeout: 240000 } );
 	await page.addStyleTag( { content: 'body > *:not(canvas) { display: none !important; }' } );

@@ -1,5 +1,5 @@
 // Renders the running dev server in headless Chromium and saves screenshots.
-// Usage: node tools/screenshot.mjs <url> <out.png> [more url/out pairs…]
+// Usage: node tools/screenshot.mjs <url> <out.png> [more url/out pairs…] (PS1=1: the game's own console look)
 import { existsSync } from 'node:fs';
 import { chromium } from 'playwright';
 
@@ -16,7 +16,10 @@ page.on( 'pageerror', e => console.log( '[pageerror]', e.message ) );
 
 for ( let i = 0; i < args.length; i += 2 ) {
 
-	await page.goto( args[ i ] );
+	// The plain picture (?hd) for checking the model: the game's console look is low-resolution on purpose.
+	const url = new URL( args[ i ] );
+	if ( ! url.searchParams.has( 'hd' ) && ! process.env.PS1 ) url.searchParams.set( 'hd', '' );
+	await page.goto( url.toString().replace( /=(&|$)/g, '$1' ) );
 	await page.waitForFunction( () => window.__ready, null, { timeout: 240000 } );
 	await page.waitForTimeout( 4000 );
 	await page.screenshot( { path: args[ i + 1 ], timeout: 180000 } );

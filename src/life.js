@@ -4,7 +4,7 @@
 //     on the bar stools and on benches, and a few stand about in pairs. Walkers near the camera are skinned and
 //     animated; further away, and everyone seated or standing, they are instanced static poses.
 //   - Cars: a late-90s Prague street mix (src/vehicles.js, public/models/vehicles): Škoda Octavias and Favorits, a
-//     Trabant now and then, and low-poly sedans, hatchbacks, SUVs, vans, taxis and a police car (Kenney, CC0).
+//     Trabant now and then.
 //   - Cars stand at the kerbs where there is room to park (instanced, one batch per model), and a few drive the
 //     streets in their lanes (right-hand traffic), slowing behind the car ahead, re-entering at the start of a lane
 //     when they reach its end.
@@ -236,13 +236,43 @@ export async function addLife( scene, life, { seats = [], benches = [], groundHe
 
 	};
 
-	const statics = [ ...sitters.map( ( b, k ) => [ b.sitting.geometry, seated[ k ] ] ), ...[ ...posedAt.values() ].map( p => [ p.geometry, p.list ] ) ];
-	for ( const [ geometry, list ] of statics ) {
+	// Only the people in view and nearer than the haze are drawn: each frame they take the batch's first places
+	// (`show`), their look and shape written again only where a place changes hands.
+	const show = ( mesh, i, a ) => {
+
+		if ( mesh.slotAgent[ i ] === a ) return;
+		mesh.slotAgent[ i ] = a;
+		mesh.setLook( i, a.look );
+		mesh.setShape( i, a.spec.shape );
+
+	};
+	// How many a batch draws. A batch built for more than one reads its people's shapes from a texture, which its
+	// shader keeps only while it draws two or more (three's morph node): one is drawn with an empty second place.
+	const ZERO = new THREE.Matrix4().makeScale( 0, 0, 0 );
+	const drawCount = ( mesh, n ) => {
+
+		mesh.visible = n > 0;
+		if ( mesh.instanceMatrix.count > 1 && n === 1 ) mesh.setMatrixAt( 1, ZERO );
+		mesh.count = mesh.instanceMatrix.count > 1 ? Math.max( 2, n ) : n;
+		mesh.instanceMatrix.needsUpdate = true;
+
+	};
+	const statics = [];
+	for ( const [ geometry, list ] of [ ...sitters.map( ( b, k ) => [ b.sitting.geometry, seated[ k ] ] ), ...[ ...posedAt.values() ].map( p => [ p.geometry, p.list ] ) ] ) {
 
 		if ( ! list.length ) continue;
 		const mesh = makeBatch( geometry, list.length );
-		list.forEach( ( a, i ) => setAt( mesh, i, a, a.y + a.oy ) );
+		mesh.slotAgent = [];
+		list.forEach( ( a, i ) => {
+
+			setAt( mesh, i, a, a.y + a.oy );
+			mesh.slotAgent[ i ] = a;
+			mesh.getMatrixAt( i, m4 );
+			a.matrix = m4.toArray();
+
+		} );
 		scene.add( mesh );
+		statics.push( { mesh, list } );
 
 	}
 
@@ -253,10 +283,12 @@ export async function addLife( scene, life, { seats = [], benches = [], groundHe
 		const list = agents.filter( a => a.walk && a.body === k );
 		list.forEach( ( a, i ) => a.slot = i );
 		const mesh = makeBatch( b.walking, list.length );
+		mesh.slotAgent = [];
 		list.forEach( ( a, i ) => {
 
 			mesh.setLook( i, a.look );
 			mesh.setShape( i, a.spec.shape );
+			mesh.slotAgent[ i ] = a;
 
 		} );
 		scene.add( mesh );
@@ -350,6 +382,10 @@ export async function addLife( scene, life, { seats = [], benches = [], groundHe
 	function update( dt ) {
 
 		time += dt;
+		// Beyond the haze (at most 400 m) nobody is drawn, nor are the walkers' feet put on the ground there.
+		const farOff = Math.min( 400, scene.fog?.far ?? 400 );
+		frustum.setFromProjectionMatrix( pv.multiplyMatrices( camera.projectionMatrix, camera.matrixWorldInverse ) );
+		const inView = ( x, y, z ) => frustum.intersectsSphere( sphere.set( sphere.center.set( x, y + 0.9, z ), 1.2 ) );
 		for ( const a of walkers ) {
 
 			a.s += a.dir * a.speed * dt;
@@ -358,19 +394,19 @@ export async function addLife( scene, life, { seats = [], benches = [], groundHe
 			sample( a.path, a.s, at );
 			a.x = at.x - at.dz * a.side * a.dir;
 			a.z = at.z + at.dx * a.side * a.dir;
-			a.y = groundHeight( a.x, a.z );
-			a.yaw = Math.atan2( at.dx * a.dir, at.dz * a.dir );
 			a.d = Math.hypot( a.x - camera.position.x, a.z - camera.position.z );
+			if ( a.d < farOff ) a.y = groundHeight( a.x, a.z );
+			a.seen = a.d < farOff && inView( a.x, a.y, a.z );
+			a.yaw = Math.atan2( at.dx * a.dir, at.dz * a.dir );
 
 		}
 
 		// The nearest walkers in view are skinned and animated (at most MAX_NEAR), the rest instanced.
-		frustum.setFromProjectionMatrix( pv.multiplyMatrices( camera.projectionMatrix, camera.matrixWorldInverse ) );
-		const close = walkers.filter( a => a.d < NEAR && frustum.intersectsSphere( sphere.set( sphere.center.set( a.x, a.y + 0.9, a.z ), 1.2 ) ) ).sort( ( p, r ) => p.d - r.d ).slice( 0, MAX_NEAR );
+		const close = walkers.filter( a => a.d < NEAR && a.seen ).sort( ( p, r ) => p.d - r.d ).slice( 0, MAX_NEAR );
 		const live = new Set( close );
+		const used = far.map( () => 0 );
 		for ( const a of walkers ) {
 
-			const mesh = far[ a.body ];
 			if ( live.has( a ) ) {
 
 				const { object, mixer } = near( a );
@@ -378,19 +414,36 @@ export async function addLife( scene, life, { seats = [], benches = [], groundHe
 				object.position.set( a.x, a.y, a.z );
 				object.rotation.y = a.yaw;
 				mixer.update( dt );
-				mesh.setMatrixAt( a.slot, m4.makeScale( 0, 0, 0 ) );
-
-			} else {
-
-				if ( a.skinned?.object.parent ) crowd.remove( a.skinned.object );
-				q.setFromAxisAngle( v.set( 0, 1, 0 ), a.yaw );
-				mesh.setMatrixAt( a.slot, m4.compose( v.set( a.x, a.y, a.z ), q, sv.fromArray( a.scale ) ) );
+				continue;
 
 			}
 
+			if ( a.skinned?.object.parent ) crowd.remove( a.skinned.object );
+			if ( ! a.seen ) continue;
+			const mesh = far[ a.body ], i = used[ a.body ] ++;
+			show( mesh, i, a );
+			q.setFromAxisAngle( v.set( 0, 1, 0 ), a.yaw );
+			mesh.setMatrixAt( i, m4.compose( v.set( a.x, a.y, a.z ), q, sv.fromArray( a.scale ) ) );
+
 		}
 
-		for ( const m of far ) m.instanceMatrix.needsUpdate = true;
+		far.forEach( ( m, k ) => drawCount( m, used[ k ] ) );
+
+		for ( const { mesh, list } of statics ) {
+
+			let i = 0;
+			for ( const a of list ) {
+
+				if ( Math.hypot( a.x - camera.position.x, a.z - camera.position.z ) > farOff || ! inView( a.x, a.y, a.z ) ) continue;
+				show( mesh, i, a );
+				mesh.instanceMatrix.array.set( a.matrix, i * 16 );
+				i ++;
+
+			}
+
+			drawCount( mesh, i );
+
+		}
 
 		for ( const m of movers ) {
 

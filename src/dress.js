@@ -301,6 +301,7 @@ function addClock( scene, s ) {
 			const hand = new THREE.Mesh( new THREE.BoxGeometry( wd, len, 0.01 ).translate( 0, len / 2 - 0.03, 0 ), M.black );
 			hand.position.set( 0, top, side * 0.135 );
 			hand.userData.side = side;
+			hand.userData.dynamic = true; // turned by the clock below: kept out of the static batches (src/batch.js)
 			hands.push( hand );
 			g.add( hand );
 

@@ -12,7 +12,6 @@ removed). Changes made; the originals are by:
 | car-trabant.glb | PSX/Retro EastGerman Trabant (Civilian & Police) | creativecipher | CC BY 4.0 | https://sketchfab.com/3d-models/psxretro-eastgerman-trabant-civilian-police-90efd37137bd409b9a139af44ece8661 |
 | boat-swan.glb | Swan Boat | Polygonal_64 | CC BY 4.0 | https://sketchfab.com/3d-models/swan-boat-4005d64c3f7b44878802aca82b7e2678 |
 | boat-steamer.glb | S/S Norrtelje (lowpoly!) | norlinmartin | CC BY 4.0 | https://sketchfab.com/3d-models/ss-norrtelje-lowpoly-001af7535b894162995cef3f90568ead |
-| kenney-*.glb | Car Kit | Kenney (kenney.nl) | CC0 | https://kenney.nl/assets/car-kit |
 | boat-row*.glb | Watercraft Kit | Kenney (kenney.nl) | CC0 | https://kenney.nl/assets/watercraft-kit |
 
 CC BY 4.0: https://creativecommons.org/licenses/by/4.0/
