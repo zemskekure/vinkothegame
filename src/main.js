@@ -24,6 +24,7 @@ import { startStory } from './holub/story.js';
 import { ps1Look } from './holub/ps1.js';
 import { startDay } from './holub/sky.js';
 import { SETTINGS } from './settings.js';
+import { batchStatic, splitByTile } from './batch.js';
 
 async function load( name, type = 'arrayBuffer', dir = 'data/' ) {
 
@@ -59,11 +60,14 @@ const params = new URLSearchParams( location.search );
 const ADMIN = params.has( 'admin' );
 const HOLUB = window.GAME === 'holub' || params.has( 'holub' ) || ADMIN;
 if ( HOLUB ) SUN.copy( HOLUB_SUN );
+// The whole game is shown as a late-90s console picture (src/holub/ps1.js: a low internal resolution, cut colours,
+// dither, grain), on foot, on the scooter, from above and as the pigeon; ?hd shows the plain full-resolution picture.
+const PS1 = ! params.has( 'hd' );
 
 // ---------------------------------------------------------------------------
 // Renderer, sky, light
 
-const renderer = new THREE.WebGPURenderer( { antialias: ! HOLUB, forceWebGL: params.has( 'webgl' ) } );
+const renderer = new THREE.WebGPURenderer( { antialias: ! HOLUB && ! PS1, forceWebGL: params.has( 'webgl' ) } );
 renderer.setPixelRatio( Math.min( window.devicePixelRatio, 2 ) * ( HOLUB ? PIXEL_SCALE : 1 ) );
 renderer.setSize( window.innerWidth, window.innerHeight );
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -102,14 +106,13 @@ const centre = new THREE.Vector3( ( bounds.minX + bounds.maxX ) / 2, 0, ( bounds
 const FB = data.firstBounds || bounds;
 const firstCentre = new THREE.Vector3( ( FB.minX + FB.maxX ) / 2, 0, ( FB.minZ + FB.maxZ ) / 2 );
 
-// The sun's shadows cover a square the size of the first area (as sharp as they were before the area grew),
-// around the first area while one is in it, else around where one is (aimShadows below).
+// The sun's shadows cover a square around where one is (aimShadows below): 400 m across on foot and as the pigeon,
+// 900 m from above. Like the short draw distance, the shadows end in the haze.
 const shadowCentre = firstCentre.clone();
 const sun = new THREE.DirectionalLight( 0xffe6c4, 3.0 );
 sun.castShadow = true;
 sun.shadow.mapSize.set( 2048, 2048 );
-const half = Math.max( FB.maxX - FB.minX, FB.maxZ - FB.minZ ) * 0.62;
-Object.assign( sun.shadow.camera, { left: - half, right: half, top: half, bottom: - half, near: 10, far: 1600 } );
+Object.assign( sun.shadow.camera, { left: - 450, right: 450, top: 450, bottom: - 450, near: 10, far: 1600 } );
 sun.shadow.bias = - 0.0003;
 sun.shadow.normalBias = 0.3;
 sun.position.copy( sunDir ).multiplyScalar( 700 ).add( shadowCentre );
@@ -562,6 +565,12 @@ addEmbankment( scene, embankmentBuf, data.embankment );
 const { seats } = addPlaces( scene, places, data.furniture, data.waterLevel );
 // Local icons: big lettering, sculptures, domed corner towers (data/icons.json).
 addIcons( scene, ICONS, groundHeight, data.buildings );
+// The still city in few draw calls (src/batch.js): the hand-made pieces merged per material and 150 m square, the
+// big meshes cut into 200 m squares that are skipped when out of view.
+const batched = batchStatic( scene );
+for ( const mesh of [ terrain, terrainWide, pavement, wallMesh ] ) splitByTile( mesh );
+const roofTiles = splitByTile( roofs );
+const stillRoots = new Set( scene.children );
 // Models: Quaternius' people and Kenney's Car Kit (CC0); textures resolve next to them. The people are
 // meshopt-compressed.
 const gltfLoader = new GLTFLoader().setMeshoptDecoder( MeshoptDecoder );
@@ -767,7 +776,7 @@ window.addEventListener( 'keydown', e => {
 // The pigeon (?holub) instead of the walker: by default on Betlémské náměstí by the terrace, facing the chapel
 // (game settings, `pigeon.start`: x, z, heading).
 const holubStart = SETTINGS.pigeon.start;
-const holub = HOLUB ? startHolub( { scene, camera, dom: renderer.domElement, roofGeo, bounds, groundHeight, waterLevel: data.waterLevel, places, furniture: data.furniture, life, start: holubStart, indoors: ( x, z ) => { const zn = zoneAt( x, z ); return !! zn && zn.y !== undefined && zn.ceil === undefined; } } ) : null;
+const holub = HOLUB ? startHolub( { scene, camera, dom: renderer.domElement, roofGeo: roofTiles.userData.geometry, bounds, groundHeight, waterLevel: data.waterLevel, places, furniture: data.furniture, life, start: holubStart, indoors: ( x, z ) => { const zn = zoneAt( x, z ); return !! zn && zn.y !== undefined && zn.ceil === undefined; } } ) : null;
 // The pigeon's first day (egg, tutorial) and the clock that moves the sun and the light.
 const story = holub ? startStory( { scene, camera, holub, start: holubStart } ) : null;
 const day = holub ? startDay( { renderer, scene, sky, sun, hemi, centre: shadowCentre, hour: SETTINGS.day.startHour, minutes: SETTINGS.day.minutes, tune: SETTINGS.look } ) : null;
@@ -870,37 +879,87 @@ const timer = new THREE.Timer();
 let labelTimer = 0;
 
 // The pigeon game is shown as a late-90s console picture (src/holub/ps1.js); ?hd turns that off.
-const ps1 = HOLUB && ! params.has( 'hd' ) ? ps1Look( { renderer, scene, camera } ) : null;
-if ( ps1 ) renderer.setPixelRatio( 1 );
+const ps1 = PS1 ? ps1Look( { renderer, scene, camera } ) : null;
+if ( ps1 ) {
+
+	renderer.setPixelRatio( 1 );
+	renderer.domElement.style.imageRendering = 'pixelated';
+	// On foot the light is the walk's own late afternoon, tuned by the same art-direction knobs as the pigeon's day
+	// (game settings, `look`: exposure, sun strength, fog density).
+	if ( ! HOLUB ) {
+
+		const look = SETTINGS.look;
+		renderer.toneMappingExposure *= look.exposure ?? 1;
+		sun.intensity *= look.sun ?? 1;
+		const k = Math.max( 0.05, look.fog ?? 1 );
+		scene.fog.near /= k;
+		scene.fog.far /= k;
+		if ( /^#[0-9a-f]{6}$/i.test( look.fogColour || '' ) ) scene.fog.color.set( look.fogColour );
+
+	}
+
+}
 
 // The admin page: the settings and the map from above beside the running game.
 if ( ADMIN ) ( await import( './admin.js' ) ).startAdmin( { bounds, map: minimap.map, life, ps1, day, holub } );
 
-// Battery: at most 60 frames a second (30 in the pigeon game's low-resolution picture), however fast the screen
-// refreshes, and the sun's shadows redrawn every third frame, not every frame. ?fps=N sets the cap.
-const FPS = Number( params.get( 'fps' ) ) || ( ps1 ? 30 : 60 );
-// The shadowed square (see the sun above) follows one around outside the first area, in 100 m steps.
-function aimShadows( x, z ) {
+// Battery: at most 60 frames a second (30 in the pigeon game), however fast the screen refreshes. ?fps=N sets the cap.
+const FPS = Number( params.get( 'fps' ) ) || ( HOLUB ? 30 : 60 );
+// The shadowed square (see the sun above) follows one around in 50 m steps.
+function aimShadows( x, z, close ) {
 
-	const inFirst = x > FB.minX && x < FB.maxX && z > FB.minZ && z < FB.maxZ;
-	const cx = inFirst ? firstCentre.x : Math.round( x / 100 ) * 100, cz = inFirst ? firstCentre.z : Math.round( z / 100 ) * 100;
+	const half = close ? 200 : 450, cam = sun.shadow.camera;
+	if ( cam.right !== half ) {
+
+		Object.assign( cam, { left: - half, right: half, top: half, bottom: - half } );
+		cam.updateProjectionMatrix();
+		sun.shadow.needsUpdate = true;
+
+	}
+
+	const cx = Math.round( x / 50 ) * 50, cz = Math.round( z / 50 ) * 50;
 	if ( cx === shadowCentre.x && cz === shadowCentre.z ) return;
 	const dir = sun.position.clone().sub( shadowCentre );
 	shadowCentre.set( cx, 0, cz );
 	sun.target.position.copy( shadowCentre );
 	sun.position.copy( shadowCentre ).add( dir );
-	renderer.shadowMap.needsUpdate = true;
+	sun.shadow.needsUpdate = true;
 
 }
 
-renderer.shadowMap.autoUpdate = false;
+// The sun's shadows fall from the houses, roofs, trees and the rest of the still city only: the shadow map is drawn
+// when the shadowed square moves or the sun has moved (the pigeon's day), not every frame. Whatever moves (people,
+// trams, boats, the walker, the pigeon) casts none.
+sun.shadow.autoUpdate = false;
+sun.shadow.needsUpdate = true;
+const shadowSun = sun.position.clone().sub( sun.target.position ).normalize(), sunNow = new THREE.Vector3();
+let shadowAge = 0;
+function stillShadows( dt ) {
+
+	shadowAge += dt;
+	sunNow.copy( sun.position ).sub( sun.target.position ).normalize();
+	if ( shadowAge > 1 && sunNow.angleTo( shadowSun ) > 0.008 ) {
+
+		shadowSun.copy( sunNow );
+		sun.shadow.needsUpdate = true;
+
+	}
+
+	if ( ! sun.shadow.needsUpdate ) return;
+	shadowAge = 0;
+	// What was added after the still city (src/batch.js below) moves, or may: it casts no shadow.
+	for ( const o of scene.children ) if ( ! stillRoots.has( o ) ) o.traverse( m => m.castShadow = false );
+
+}
+
 let lastFrame = 0, frameNo = 0;
 renderer.setAnimationLoop( () => {
 
 	const now = performance.now();
 	if ( now - lastFrame < 1000 / FPS - 2 ) return;
 	lastFrame = now;
-	if ( frameNo ++ % 3 === 0 ) renderer.shadowMap.needsUpdate = true;
+	window.__frameLog?.push( now );
+	frameNo ++;
 	timer.update();
 	const dt = Math.min( timer.getDelta(), 0.1 );
 	life.update( dt );
@@ -940,12 +999,23 @@ renderer.setAnimationLoop( () => {
 	}
 
 	const focus = holub ? holub.pos : walking ? walker.pos : orbit.target;
-	aimShadows( focus.x, focus.z );
+	aimShadows( focus.x, focus.z, !! holub || walking );
+	stillShadows( dt );
+	// Nothing is drawn past the fog's far end, where it is all fog anyway.
+	const far = Math.min( 20000, Math.max( 300, scene.fog.far * 1.02 ) );
+	if ( camera.far !== far ) {
+
+		camera.far = far;
+		camera.updateProjectionMatrix();
+
+	}
+
 	if ( ps1 ) ps1.render(); else renderer.render( scene, camera );
+	if ( window.__frameLog ) window.__frameInfo = [ renderer.info.render.drawCalls, renderer.info.render.triangles ];
 
 } );
 
 document.getElementById( 'loading' ).remove();
-window.__debug = { camera, isBlocked, groundHeight, walker, life, trams, boats, holub, waterLevel: data.waterLevel };
+window.__debug = { renderer, scene, batched, camera, isBlocked, groundHeight, walker, life, trams, boats, holub, waterLevel: data.waterLevel };
 window.__THREE = THREE;
 window.__ready = true;

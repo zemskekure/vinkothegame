@@ -1,0 +1,159 @@
+// Load and frame-time measurements of a served build in real Chrome (WebGPU), for docs/performance.md.
+//
+//   node tools/perf/measure.mjs <base url> <label> [load|views|all] [shots dir]
+//
+// load: a cold load with the network throttled to the Cloudflare tunnel's ~1.5 MB/s (bytes over the wire, time to
+// window.__ready, JS heap), then a repeat visit in the same browser. views: frame times (from the game's own
+// rendered frames, the cap lifted with ?fps=240), draw calls and triangles in the busy views, plus a screenshot.
+
+import { launch } from './browser.mjs';
+
+const [ base, label, what = 'all', shots ] = process.argv.slice( 2 );
+
+const VIEWS = {
+	start: '',
+	narodni: 'at=-250,329,-1.571',
+	betlem: 'at=-20,70,1.571',
+	malastrana: 'overview&view=-650,260,250,-1100,0,-250',
+	overview: 'overview',
+	holub: 'holub',
+	river: 'holub&fly=-420,250,0'
+};
+
+let shared;
+const browserOnce = async () => shared ||= await launch();
+
+function watch( page, log ) {
+
+	page.on( 'pageerror', e => log.push( 'PAGEERROR ' + e.message.slice( 0, 200 ) ) );
+	page.on( 'console', m => ( m.type() === 'error' || /pipeline|Pipeline/.test( m.text() ) ) && log.push( m.type() + ' ' + m.text().slice( 0, 200 ) ) );
+
+}
+
+async function loadTest() {
+
+	const browser = await browserOnce();
+	const ctx = await browser.newContext( { viewport: { width: 1280, height: 800 } } );
+	const page = await ctx.newPage();
+	const cdp = await ctx.newCDPSession( page );
+	await cdp.send( 'Network.enable' );
+	if ( ! process.env.FAST ) await cdp.send( 'Network.emulateNetworkConditions', { offline: false, latency: 40, downloadThroughput: 1.5e6, uploadThroughput: 0.5e6 } );
+	const out = {};
+	for ( const visit of [ 'cold', 'repeat' ] ) {
+
+		let bytes = 0, requests = 0;
+		const big = [];
+		const urls = new Map(), perUrl = new Map();
+		const onResp = e => urls.set( e.requestId, e.response.url.replace( base, '' ) );
+		cdp.on( 'Network.responseReceived', onResp );
+		const onDone = e => {
+
+			bytes += e.encodedDataLength;
+			perUrl.set( urls.get( e.requestId ), e.encodedDataLength );
+			requests ++;
+
+		};
+		cdp.on( 'Network.loadingFinished', onDone );
+		const log = [];
+		watch( page, log );
+		const t0 = Date.now();
+		await page.goto( base, { timeout: 600000, waitUntil: 'domcontentloaded' } );
+		const ok = await page.waitForFunction( () => window.__ready, null, { timeout: 600000, polling: 100 } ).then( () => true, () => false );
+		const ready = ( Date.now() - t0 ) / 1000;
+		const bytesAtReady = bytes;
+		await page.waitForTimeout( visit === 'cold' ? 15000 : 3000 );
+		const heap = await page.evaluate( () => performance.memory ? Math.round( performance.memory.usedJSHeapSize / 1e6 ) : null );
+		cdp.off( 'Network.loadingFinished', onDone );
+		cdp.off( 'Network.responseReceived', onResp );
+		console.log( [ ...perUrl ].sort( ( a, b ) => b[ 1 ] - a[ 1 ] ).slice( 0, 25 ).map( ( [ u, b ] ) => `  ${( b / 1e6 ).toFixed( 2 )} MB ${u}` ).join( '\n' ) );
+		out[ visit ] = { ok, ready: + ready.toFixed( 1 ), mbAtReady: + ( bytesAtReady / 1e6 ).toFixed( 2 ), mbTotal: + ( bytes / 1e6 ).toFixed( 2 ), requests, heap, errors: log.slice( 0, 5 ) };
+		console.log( label, visit, JSON.stringify( out[ visit ] ) );
+
+	}
+
+	await ctx.close();
+	return out;
+
+}
+
+async function viewTest( name ) {
+
+	const browser = await browserOnce();
+	const ctx = await browser.newContext( { viewport: { width: 1440, height: 900 } } );
+	const page = await ctx.newPage();
+	const log = [];
+	watch( page, log );
+	await page.addInitScript( () => {
+
+		window.__frameLog = [];
+
+	} );
+	const q = VIEWS[ name ];
+	const fly = /fly=([-\d.,]+)/.exec( q );
+	const url = base + '?fps=240' + ( q ? '&' + q.replace( /&?fly=[-\d.,]+/, '' ) : '' );
+	await page.goto( url, { timeout: 600000, waitUntil: 'domcontentloaded' } );
+	await page.waitForFunction( () => window.__ready, null, { timeout: 600000 } );
+	if ( fly ) {
+
+		const [ x, z, heading ] = fly[ 1 ].split( ',' ).map( Number );
+		await page.evaluate( ( [ x, z, heading ] ) => {
+
+			const h = window.__debug.holub;
+			h.place( x, z, heading );
+			h.keys.add( 'Space' );
+			setTimeout( () => h.keys.add( 'KeyW' ), 600 );
+			setInterval( () => {
+
+				h.keys.delete( 'Space' );
+				setTimeout( () => h.keys.add( 'Space' ), 300 );
+
+			}, 2500 );
+
+		}, [ x, z, heading ] );
+
+	}
+
+	await page.waitForTimeout( 7000 );
+	const r = await page.evaluate( () => new Promise( res => {
+
+		const info = window.__debug.renderer.info;
+		window.__frameLog.length = 0;
+		let calls = 0, tris = 0, n = 0;
+		const sample = setInterval( () => {
+
+			calls += window.__frameInfo[ 0 ];
+			tris += window.__frameInfo[ 1 ];
+			n ++;
+
+		}, 250 );
+		setTimeout( () => {
+
+			clearInterval( sample );
+			const ts = window.__frameLog;
+			const d = ts.slice( 1 ).map( ( t, i ) => t - ts[ i ] ).sort( ( a, b ) => a - b );
+			const avg = d.reduce( ( a, b ) => a + b, 0 ) / d.length;
+			res( { frames: d.length, avg: + avg.toFixed( 1 ), p50: + d[ d.length >> 1 ].toFixed( 1 ), p95: + d[ Math.floor( d.length * 0.95 ) ].toFixed( 1 ), max: + d[ d.length - 1 ].toFixed( 1 ), calls: Math.round( calls / n ), ktris: Math.round( tris / n / 1000 ), heap: performance.memory ? Math.round( performance.memory.usedJSHeapSize / 1e6 ) : null } );
+
+		}, 8000 );
+
+	} ) );
+	r.errors = log.slice( 0, 5 );
+	console.log( label, name, JSON.stringify( r ) );
+	if ( shots ) await page.screenshot( { path: `${shots}/${label}-${name}.png` } );
+	await ctx.close();
+	return r;
+
+}
+
+const results = { label };
+if ( what === 'load' || what === 'all' ) results.load = await loadTest();
+if ( what !== 'load' ) {
+
+	results.views = {};
+	const names = what === 'all' || what === 'views' ? Object.keys( VIEWS ) : what.split( ',' );
+	for ( const name of names ) results.views[ name ] = await viewTest( name );
+
+}
+
+console.log( JSON.stringify( results ) );
+await shared?.close();

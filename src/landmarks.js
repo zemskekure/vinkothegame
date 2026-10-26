@@ -317,6 +317,7 @@ function addViselec( scene, V ) {
 	}
 
 	k.build( man );
+	man.userData.dynamic = true; // swings (ANIMATE): kept out of the static batches (src/batch.js)
 	man.position.set( V.x, poleY, V.z );
 	man.rotation.y = Math.atan2( ux, uz ) + Math.PI / 2;
 	scene.add( man );
@@ -370,6 +371,7 @@ function addKafka( scene, K ) {
 	const g = new THREE.Group();
 	g.position.set( K.x, K.y, K.z );
 	g.rotation.y = Math.PI; // the face looks north, towards Národní
+	g.userData.dynamic = true; // its layers turn (ANIMATE): kept out of the static batches (src/batch.js)
 	scene.add( g );
 	new Kit().add( plain( 0x2a2c2e, { roughness: 0.4 } ), cyl( 2.6, 2.8, 0.4, 0, - 0.1, 0, 24 ) ).build( g );
 	const N = 42, H = 10.6, lh = H / N;
