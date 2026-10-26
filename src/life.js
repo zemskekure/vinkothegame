@@ -3,8 +3,9 @@
 //     lines and pedestrian lanes from tools/places.mjs (to the end and back), sit at the café / pub / bar tables,
 //     on the bar stools and on benches, and a few stand about in pairs. Walkers near the camera are skinned and
 //     animated; further away, and everyone seated or standing, they are instanced static poses.
-//   - Cars: a late-90s Prague street mix (src/vehicles.js, public/models/vehicles): Škoda Octavias and Favorits, a
-//     Trabant now and then.
+//   - Cars: a late-90s Prague street mix: Škoda Octavias, Favorits and Fabias, yellow taxis, white vans, a police
+//     estate, a Trabant now and then and the red open tourer that drives tourists round the Old Town, all made from
+//     the owner's pictures (src/cars.js).
 //   - Cars stand at the kerbs where there is room to park (instanced, one batch per model), and a few drive the
 //     streets in their lanes (right-hand traffic), slowing behind the car ahead, re-entering at the start of a lane
 //     when they reach its end.
@@ -15,10 +16,24 @@ import { BODIES, loadWardrobe, useWardrobe, prepareBody, preparePosed, makeSkinn
 import { rulesFrom, gameSeed, personSeed, generatePerson, lookOf } from './persona.js';
 import { SETTINGS } from './settings.js';
 import { vehicleModel } from './vehicles.js';
+import { carFleet } from './cars.js';
 
-// model: [ weight, real length in metres ]
-// Only the Czech cars (the owner's choice): the generic kit cars looked like toys beside them.
-const CARS = { 'car-octavia': [ 5, 4.51 ], 'car-favorit': [ 4, 3.82 ], 'car-trabant': [ 2, 3.56 ] };
+// How often each car turns up. Every one is made from the owner's pictures (src/cars.js); `model`: a downloaded model
+// ( file, real length in metres ) to draw instead. Only Czech street cars (the owner's choice): the generic kit cars
+// looked like toys beside them.
+// All are drawn from the pictures by default (one atlas, one look); `?cars=models` brings back the downloaded models
+// of the Octavia, Favorit and Trabant.
+const MODELS = new URLSearchParams( location.search ).get( 'cars' ) === 'models';
+const CARS = {
+	octavia: { weight: 5, model: MODELS && [ 'car-octavia', 4.51 ] },
+	favorit: { weight: 4, model: MODELS && [ 'car-favorit', 3.82 ] },
+	fabia: { weight: 4 },
+	trabant: { weight: 1.5, model: MODELS && [ 'car-trabant', 3.56 ] },
+	taxi: { weight: 1.5 },
+	van: { weight: 1.5 },
+	police: { weight: 0.6 },
+	oldtimer: { weight: 0.4 }
+};
 
 const rnd = ( () => {
 
@@ -69,7 +84,12 @@ export async function addLife( scene, life, { seats = [], benches = [], groundHe
 
 	if ( ! life ) return { update() {} };
 
-	const carModels = cars ? await Promise.all( Object.entries( CARS ).map( ( [ n, [ , length ] ] ) => vehicleModel( loadModel, n, length ) ) ) : [];
+	const carModels = cars ? await ( async () => {
+
+		const boxes = await carFleet();
+		return Promise.all( Object.entries( CARS ).map( ( [ name, c ] ) => c.model ? vehicleModel( loadModel, ...c.model ) : boxes[ name ] ) );
+
+	} )() : [];
 
 	// --- people (src/people.js): the wardrobe and the bodies, loaded once
 	const wardrobe = await loadWardrobe();
@@ -322,7 +342,7 @@ export async function addLife( scene, life, { seats = [], benches = [], groundHe
 	// --- cars: one instanced batch per model; parked ones placed once, the moving ones after them in each batch
 	const drives = life.drives.map( makePath ).filter( p => p.length > 25 );
 	const carTypes = Object.keys( CARS );
-	const weights = carTypes.map( n => CARS[ n ][ 0 ] ), wsum = weights.reduce( ( a, b ) => a + b, 0 );
+	const weights = carTypes.map( n => CARS[ n ].weight ), wsum = weights.reduce( ( a, b ) => a + b, 0 );
 	const pickCar = () => {
 
 		let r = rnd() * wsum;
@@ -486,6 +506,6 @@ export async function addLife( scene, life, { seats = [], benches = [], groundHe
 	}
 
 	update( 0 );
-	return { update, placeWalkers, walks, agents, bodies, seed, people: agents.length, cars: parked.length + movers.length };
+	return { update, placeWalkers, walks, agents, bodies, seed, people: agents.length, cars: parked.length + movers.length, carMeshes: Object.fromEntries( carTypes.map( ( n, k ) => [ n, batches[ k ]?.mesh ] ) ) };
 
 }
