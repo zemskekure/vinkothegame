@@ -1082,6 +1082,9 @@ renderer.setAnimationLoop( () => {
 
 } );
 
+// Easter eggs (src/eastereggs.js): the black SUV across the garage gate on Náprstkova.
+( await import( './eastereggs.js' ) ).addEasterEggs( scene, groundHeight );
+
 // Every material's GPU pipeline prepared before play, all round the city, so a sign, an awning or a tram that first
 // comes into view doesn't stall a frame while its shader is built (the hitch when turning the camera).
 {
