@@ -68,6 +68,14 @@ const PEOPLE = [
 	[ 'people.benchShare', 'Obsazené lavičky', 0, 1, 0.05 ],
 	[ 'people.standing', 'Stojící skupinky', 0, 100, 1 ]
 ];
+// The pigeon's flight (src/holub/game.js, FLIGHT): applied at once to the bird in the air.
+const FLIGHT_ROWS = [
+	[ 'pigeon.speed', 'Rychlost letu (m/s)', 4, 20, 0.5, 'cestovní rychlost; holub ve městě letí asi 10–12 m/s' ],
+	[ 'pigeon.turn', 'Zatáčení (rad/s)', 0.3, 3, 0.05, 'jak rychle se nejvýš otáčí' ],
+	[ 'pigeon.bank', 'Náklon v zatáčce (°)', 0, 60, 1, 'jak moc se nakloní do zatáčky' ],
+	[ 'pigeon.camDistance', 'Kamera: vzdálenost (m)', 1, 10, 0.1, 'jak daleko za holubem v letu' ],
+	[ 'pigeon.camLag', 'Kamera: zpoždění (s)', 0.05, 2, 0.05, 'jak pomalu se kamera stáčí za holubem' ]
+];
 const DAY = [
 	[ 'day.startHour', 'Denní doba (h)', 0, 23.9, 0.1, 'kdy hra začíná; posunutím se hned přenastaví i hodiny' ],
 	[ 'day.minutes', 'Délka dne (min)', 0, 120, 1, '0 = čas stojí' ]
@@ -158,6 +166,7 @@ export function startAdmin( { bounds, map, life, ps1, day, holub } ) {
 				<button data-fly>Přesunout holuba</button>
 			</div>
 		</section>
+		<section data-tab="pigeon" hidden><h2>Let</h2><div data-flight></div></section>
 		<footer>
 			<div class="buttons">
 				<button class="primary" data-save>Uložit</button>
@@ -302,6 +311,12 @@ export function startAdmin( { bounds, map, life, ps1, day, holub } ) {
 
 		if ( path === 'day.startHour' && day ) day.hour = settings.day.startHour;
 		applyDay();
+
+	} );
+
+	addRows( $( '[data-flight]' ), FLIGHT_ROWS, ( path, v ) => {
+
+		if ( holub ) holub.tune[ path.split( '.' )[ 1 ] ] = v;
 
 	} );
 
@@ -628,6 +643,7 @@ export function startAdmin( { bounds, map, life, ps1, day, holub } ) {
 		selected = - 1;
 		applyLook();
 		applyDay();
+		if ( holub ) for ( const [ path ] of FLIGHT_ROWS ) holub.tune[ path.split( '.' )[ 1 ] ] = get( settings, path );
 		if ( day ) day.hour = settings.day.startHour;
 		respawn();
 		showAll();
