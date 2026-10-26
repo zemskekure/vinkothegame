@@ -79,16 +79,16 @@ export const MODELS = {
 
 };
 
-// One batch per 150 m square of the city, so the squares out of view (or lost in the haze, src/main.js) are skipped.
-const TILE = 150;
-function instance( scene, type, parts, entries, matrixOf ) {
+// The trees come in one batch per 300 m square of the city, so the squares out of view (or lost in the haze,
+// src/main.js) are skipped; the small things, few triangles each, in one batch a kind.
+function instance( scene, type, parts, entries, matrixOf, tile = Infinity ) {
 
 	const count = entries.length / 5;
 	if ( ! count ) return;
 	const tiles = new Map();
 	for ( let i = 0; i < count; i ++ ) {
 
-		const key = `${Math.floor( entries[ i * 5 ] / TILE )},${Math.floor( entries[ i * 5 + 2 ] / TILE )}`;
+		const key = tile === Infinity ? 0 : `${Math.floor( entries[ i * 5 ] / tile )},${Math.floor( entries[ i * 5 + 2 ] / tile )}`;
 		if ( ! tiles.has( key ) ) tiles.set( key, [] );
 		tiles.get( key ).push( entries.slice( i * 5, i * 5 + 5 ) );
 
@@ -161,9 +161,9 @@ export function addFurniture( scene, furniture ) {
 	const crownH = 0.75; // crown blobs are squashed spheres
 	// (20-sided blobs: chunky, as the console games drew their trees.)
 	instance( scene, 'tree', [ [ new THREE.IcosahedronGeometry( 1, 0 ), leaves ] ], blobs,
-		( [ x, y, z, rot, r ], m ) => m.compose( p.set( x, y, z ), q.setFromAxisAngle( up, rot ), s.set( r, r * crownH, r ) ) );
+		( [ x, y, z, rot, r ], m ) => m.compose( p.set( x, y, z ), q.setFromAxisAngle( up, rot ), s.set( r, r * crownH, r ) ), 300 );
 	instance( scene, 'trunk', [ [ cyl( 0.14, 0.24, 1, 0, 7 ), bark ] ], trees,
-		( [ x, y, z, , h ], m ) => m.compose( p.set( x, y, z ), q.identity(), s.set( 1, h * 0.62, 1 ) ) );
+		( [ x, y, z, , h ], m ) => m.compose( p.set( x, y, z ), q.identity(), s.set( 1, h * 0.62, 1 ) ), 300 );
 
 	// Zebra crossings are painted from the aerial photo (ground detail in src/shading/surfaces.js).
 

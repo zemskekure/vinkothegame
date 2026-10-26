@@ -9,6 +9,7 @@ const browser = await launch();
 const page = await browser.newPage( { viewport: { width: 1440, height: 900 } } );
 await page.goto( url, { timeout: 600000 } );
 await page.waitForFunction( () => window.__ready, null, { timeout: 600000 } );
+await page.waitForFunction( () => window.__complete !== false, null, { timeout: 600000 } );
 if ( process.env.FLY ) await page.evaluate( fly => {
 
 	const [ x, z, heading ] = fly.split( ',' ).map( Number ), h = window.__debug.holub;

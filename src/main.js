@@ -565,8 +565,19 @@ addIcons( scene, ICONS, groundHeight, data.buildings );
 const batched = batchStatic( scene );
 const tiles = [ terrain, pavement, wallMesh, roofs ].map( mesh => splitByTile( mesh ) );
 const roofTiles = tiles[ 3 ];
-const beyondFog = [ ...batched.list, ...tiles.flatMap( g => g.children ), ...scene.children.filter( o => o.isInstancedMesh && o.userData.tile ) ];
 const stillRoots = new Set( scene.children );
+// Everything still, with where it is (a sphere around it), to leave out what lies past the haze (the loop below).
+const beyondFog = [];
+scene.updateMatrixWorld( true );
+scene.traverse( o => {
+
+	if ( ! o.isMesh ) return;
+	if ( o.isInstancedMesh && ! o.boundingSphere ) o.computeBoundingSphere();
+	if ( ! o.isInstancedMesh && ! o.geometry.boundingSphere ) o.geometry.computeBoundingSphere();
+	const sphere = ( o.isInstancedMesh ? o.boundingSphere : o.geometry.boundingSphere ).clone().applyMatrix4( o.matrixWorld );
+	if ( sphere.radius < 2000 ) beyondFog.push( { o, sphere } );
+
+} );
 // Models: Quaternius' people (CC0) and the vehicles (public/models/vehicles/CREDITS.md); textures resolve next to them. The people are
 // meshopt-compressed.
 const gltfLoader = new GLTFLoader().setMeshoptDecoder( MeshoptDecoder );
@@ -729,7 +740,18 @@ function startAt() {
 
 let walking = false;
 const touch = matchMedia( '(pointer: coarse)' ).matches || navigator.maxTouchPoints > 0 && ! matchMedia( '(pointer: fine)' ).matches;
+// The haze: in the console picture, on foot it closes in as in the pigeon game (from 90 m, thick at 1 km; game
+// settings `look.fog` makes it denser), a short draw distance as the consoles had; from above it stays far.
+const FOG = { walk: [ 90, 1000 ], above: [ 350, 1600 ] };
 function setMode( walk ) {
+
+	if ( PS1 && ! HOLUB ) {
+
+		const k = Math.max( 0.05, SETTINGS.look.fog ?? 1 ), [ near, far ] = FOG[ walk ? 'walk' : 'above' ];
+		scene.fog.near = near / k;
+		scene.fog.far = far / k;
+
+	}
 
 	const wasWalking = walking;
 	walking = walk;
@@ -882,15 +904,12 @@ if ( ps1 ) {
 	renderer.setPixelRatio( 1 );
 	renderer.domElement.style.imageRendering = 'pixelated';
 	// On foot the light is the walk's own late afternoon, tuned by the same art-direction knobs as the pigeon's day
-	// (game settings, `look`: exposure, sun strength, fog density).
+	// (game settings, `look`: exposure, sun strength; the fog's density in setMode above).
 	if ( ! HOLUB ) {
 
 		const look = SETTINGS.look;
 		renderer.toneMappingExposure *= look.exposure ?? 1;
 		sun.intensity *= look.sun ?? 1;
-		const k = Math.max( 0.05, look.fog ?? 1 );
-		scene.fog.near /= k;
-		scene.fog.far /= k;
 		if ( /^#[0-9a-f]{6}$/i.test( look.fogColour || '' ) ) scene.fog.color.set( look.fogColour );
 
 	}
@@ -1000,12 +1019,7 @@ renderer.setAnimationLoop( () => {
 	stillShadows( dt );
 	// None of the city's squares is drawn past the fog's far end, where it is all fog anyway (the plain ground
 	// beyond the area still is, so the horizon stays where it was).
-	for ( const m of beyondFog ) {
-
-		const b = m.isInstancedMesh ? m.boundingSphere : m.geometry.boundingSphere;
-		m.visible = camera.position.distanceTo( b.center ) - b.radius < scene.fog.far;
-
-	}
+	for ( const { o, sphere } of beyondFog ) o.visible = camera.position.distanceTo( sphere.center ) - sphere.radius < scene.fog.far;
 
 	if ( ps1 ) ps1.render(); else renderer.render( scene, camera );
 	// Measuring (tools/perf/): draw calls, triangles and the frame's own time on the main thread.
