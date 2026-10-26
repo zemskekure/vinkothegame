@@ -107,33 +107,159 @@ graffiti (one per 150 m square), the sky dome and the atlases' materials. Downlo
 boats 0.16, graffiti 0.15, trees 0.08, sky 0.08, furniture 0.04), −0.98 MB of car and boat models no longer fetched:
 0.35 MB less in all. No `Render pipeline creation failed`.
 
+## Streaming by square (branch `map/prague1`, October 2026)
+
+Prague 1 is 3.8 × 2.35 km (9 km², 1.8 × the Old Town extension). Loaded whole as before it would have been
+~25 MB to download and ~600 MB of heap before play; now the city comes by square.
+
+**Build time.** `tools/build-scene.mjs` writes the whole scene to `data/scene/` (gitignored: the same packed files
+as before, plus which house each wall quad and roof corner belongs to) and then runs `tools/tiles.mjs`, which cuts
+it into 256 m squares from the area's north-west corner (15 × 10 = 150): `public/data/tiles/<i>_<j>.bin`, one file
+a square with all its layers ('VT01', a JSON header, 4-byte aligned sections):
+
+| section | what | gzipped, all 150 |
+|---|---|---|
+| terrain | the ground's corners on the square's 1 m grid (257²), heights in cm, triangles (drawn first, then the ones left out at retaining walls, which only fill the walking heights), normals (2 × int8, worked out on the whole mesh, so no seams), the corners moved onto the walls | 2.6 MB |
+| pavement | corners (mm from the square's corner), triangles, normals (3 × int8, whole mesh) | 5.7 MB |
+| walls + wallTable | the houses whose middle is in the square, as `walls.bin` was, with a table of their own | 2.8 MB |
+| roofs + roofTable | the same for the roofs | 2.0 MB |
+| surfaces | the two street maps over the square, 1 m, 8 channels as the change from the texel to the left | 3.6 MB |
+| detail | the aerial ground detail over the square, 1 m, a grey JPEG | 1.4 MB |
+| footprints | the house mask, 0.5 m, a bit a cell | 0.4 MB |
+| embankment | the river wall's stones (mm) | 0.2 MB |
+| header | street furniture and trees (each tree with its number in the whole city, which turns its crown), garden and retaining walls, the river railing's pillars, posts and rails | 0.5 MB |
+
+A square is 130 KB gzipped on average (largest 285 KB, Na Příkopě); 19.5 MB in all. The ground and pavement meshes
+are triangulated so that no triangle crosses a square's edge (`tools/rtin.mjs` `maxSize`), so the squares meet
+without cracks. Global, in `public/data/`: `scene.json`, the index (bounds, the list of squares, the hand-made
+places, zones, barriers, retaining-wall lines, streets, signs, decor, ground-floor rows: 0.5 MB gzipped),
+`map.png` (the minimap and big map, 1 px a metre, paletted, drawn at build time with the bridges: 0.4 MB),
+`heights.bin` (the ground every 8 m, Int16 cm: 0.2 MB), `ground-detail.jpg` (the first area at 50 cm, 0.47 MB),
+`life.json` (2.2 MB, after play begins).
+
+**Run time** (`src/stream.js`, `src/tile-worker.js`, `src/main.js`):
+
+- The index, the map and the coarse heights first; then the squares within **600 m** of where one starts, nearest
+  first, four downloads at a time (`priority: 'high'` within 400 m, `'low'` beyond); play begins once they are in.
+  The ring is 600 m, not the 1 km first planned: on foot the haze is thick from 1 km, and the 1 km ring round
+  Betlémské náměstí alone is 62 squares, 10 MB, ~7 s at 1.5 MB/s before anything else. The rest within **1.5 km**
+  of where one is (and of where one will be in 4 s, by the current speed) streams in during the first seconds of
+  play; squares beyond **1.75 km** are let go (meshes and their GPU buffers disposed, the walking data dropped).
+- Two workers fetch and unpack (the meshes' arrays, normals, plaster colours, the street fronts for the graffiti,
+  the walking heights grid, the grey detail decoded through an OffscreenCanvas) and hand the arrays over. The main
+  thread puts one square in a frame: its ground, pavements, houses and roofs as four meshes sharing the city's four
+  materials, and its street maps and detail copied (`copyTextureToTexture`) into three city-wide GPU textures
+  (3806 × 2352, 81 MB of GPU memory, nothing of them in the heap); 2–4 ms. Its furniture (one mesh per material),
+  garden walls, graffiti (one mesh), river railing and the trams' overhead line follow as chores, 3 ms a frame.
+  A square's buffers and pipelines are prepared in the background (`compileAsync` of its group), so its first
+  sight costs nothing, and its arrays go once on the GPU (WebGPU; under WebGL 2 they stay).
+- Walking, the ground's height, the kerbs, the scooter's roughness and the house mask are answered from the squares
+  that are in. Where a square isn't: the walker is blocked at its edge (`isBlocked`) and holds still if standing on
+  it (`groundHeight( …, strict )` is NaN, the walker keeps its height); trams, cars and people take the coarse 8 m
+  grid. The big map's teleport and coming down from the view from above wait for the target's squares
+  (`stream.whenLoaded`, which pulls them first; a second or two), then place one. The pigeon's roof grid (0.5 m)
+  is worked out in a worker for the squares within 350 m and dropped beyond 600 m. The overhead line is planned
+  once for the whole network and built per square, with the square's ground and houses.
+- Each square is shown only within the haze (its distance to the camera); the shadows are redrawn for squares
+  coming in near at most every 2 s (the pigeon's shadowed square moves in 100 m steps).
+- The hand-made places (Karlův most, the landmarks, the Old Town's, the theatre, the signs…) stay whole: built at
+  start, batched per 150 m, shown within the haze as before. They have hundreds of shaders of their own, so they
+  compile in rings round the start: before play those within 250 m, then 600 m, 1.2 km and the rest in the
+  background; a piece whose ring isn't done is hidden rather than stalling a frame. Under `?hd` (the model's
+  screenshots, `tools/screenshot.mjs`, `square-proof.mjs`, the grid app) play waits for every square within 1.5 km
+  and every shader.
+
+**Before / after** (same MacBook, same day, busy with other work: load average 5–9, so absolute times are slow; the
+server throttled to one 1.5 MB/s pipe with 40 ms latency, `RATE=1.5e6 node tools/perf/serve.mjs`, which also slows
+the workers' downloads; heap after a forced GC, `usedJSHeapSize` before it in brackets):
+
+| | before: Old Town extension, 5 km², loaded whole | after: Prague 1, 9 km², by square |
+|---|---|---|
+| ready from Betlémské náměstí (cold) | 22.6 s, 13.5 MB | 16.7 s, 8.4 MB (26 squares) |
+| ready at Hradčanské náměstí (cold) | — | 10.2 s, 7.3 MB |
+| ready at Hlavní nádraží (cold) | — | 10.4 s, 7.6 MB |
+| repeat visit (ETag), Betlémské náměstí | 14.8 s | 12.9 s (5.7–6.1 s at the other two) |
+| downloaded by the time people and trams are in | 19.3 MB | 20–27 MB (the squares within 1.5 km keep coming) |
+| JS heap after GC, once all is in | 337 MB (464) | 229–268 MB (445–544) |
+
+Betlémské náměstí is the slow start because its 250 m ring holds most of the hand-made places' shaders (the
+compile is about half of those 16.7 s on this machine; the download of the 8.4 MB about 6 s).
+
+Frame times (`?fps=1000`, unthrottled server, 1440 × 900):
+
+| view | before avg / p95 ms, draw calls, triangles | after avg / p95 ms, draw calls, triangles |
+|---|---|---|
+| start (Betlémské náměstí, west end) | 4.5 / 8.0, 415, 1.94 M | 5.4 / 6.9, 522, 1.17 M |
+| Národní, trams | 5.4 / 7.6, 602, 2.09 M | 5.8 / 7.0, 679, 1.28 M |
+| Betlémské náměstí, looking west | 6.4 / 9.3, 833, 2.26 M | 7.0 / 8.1, 990, 1.55 M |
+| overview | 7.6 / 20.9, 998, 2.48 M | 8.9 / 10.0, 1440, 2.41 M |
+| pigeon on the nest | 6.4 / 8.5, 609, 1.96 M | 5.5 / 6.1, 565, 1.17 M |
+| pigeon over the river | 5.0 / 6.8, 340, 1.77 M | 4.8 / 5.3, 381, 0.93 M |
+| Karlův most | 3.6 / 5.5, 288, 1.92 M | 4.2 / 5.2, 445, 1.07 M |
+| Hradčanské náměstí (new) | — | 5.3 / 7.8, 599, 1.33 M |
+| Václavské náměstí (new) | — | 2.8 / 3.8, 277, 0.75 M |
+| Na Příkopě (new) | — | 4.2 / 4.9, 446, 1.01 M |
+| the Castle from above (new) | — | 3.4 / 4.1, 294, 0.95 M |
+
+No `Render pipeline creation failed` in any view, WebGPU or `?webgl`. Triangles fall (only the squares within the
+haze are drawn, the furniture merged); draw calls rise by a quarter where many squares are in view (each square
+has its own ground, pavement, walls, roofs, furniture by material, graffiti, overhead line).
+
+A fast pigeon flight across the whole map (`tools/perf/flight.mjs`, Strahov to the east edge at ~42 m/s, four
+times the pigeon's cruise, 95 s): 99 squares came in, put in 2.4 ms on average (10.5 at most); frames avg 6.1 ms, p95 11.5, p99 19.8; 0.9 % over
+20 ms, 13 over 50 ms: the shadow redraws and the first shadow pass of hand-made pieces, not the squares.
+
+Per km² of city now: ~2.2 MB of squares gzipped (fetched when one comes within 1.5 km), ~0.45 MB of JS heap per
+square while it is in (the 1 m walking heights 264 KB, kerb and roughness bytes 128 KB, house mask 32 KB), ~9 MB of
+GPU memory for the city-wide textures. The heap no longer grows with the map: what is in is what lies within
+1.75 km, at most ~110 squares however big the city.
+
+What's rough:
+
+- The squares in the ring between 600 m and 1 km come in during the first seconds of play; on a slow line one can
+  see houses appear in the haze at the far end of a long street in that time.
+- The hand-made places still load and build whole (0.5 MB of index, ~1.5 s of building, hundreds of shaders): they
+  are fixed cost, not per km², but they are the biggest share of the time to play now. Moving them into the squares
+  (their pieces are positioned already) and giving their materials shared shaders (colours as attributes) would
+  cut both.
+- The pigeon's shadow redraws when its 400 m shadowed square moves: 50–80 ms frames every few seconds at speed
+  (13 frames over 50 ms in the 95 s fast flight), and the first time a hand-made piece is drawn into the shadow map
+  its shadow shader is built. Cascades or a baked shadow would fix it.
+- The pavement index is the biggest single part of a square (2.4 MB of the 5.7); an index codec (meshopt's) would
+  roughly halve it.
+- GPU memory for the city-wide textures grows with the map (81 MB for 9 km²); a larger map would want them as a
+  ring of textures wrapping round the player (the copies already go by square).
+- Under WebGL 2 the squares keep their arrays in the heap (dropping them lost the buffers there).
+- Git: each rebuild touches only the squares whose content changed (the build is deterministic), so a tile
+  review on the grid app adds a few squares' worth (~100 KB–1 MB) to the history rather than the whole 120 MB.
+  If it gets heavy anyway: stop committing `public/data/` and build it on deploy (the grid app's server can run
+  `tools/build-scene.mjs` on the mini, 6 min), or keep it in git LFS.
+
 ## Files the game fetches at startup
 
-Before `__ready`: `data/scene.json`, `data/walls.bin`, `data/walls-table.bin`, `data/roofs.bin`,
-`data/roofs-table.bin`, `data/terrain.bin`, `data/surfaces.bin`, `data/pavement.bin`, `data/footprints.bin`,
-`data/embankment.bin`, `data/ground-detail.jpg`, `data/ground-detail-wide.jpg`, the drawn fronts (bundled assets),
-`models/vehicles/scooter.glb` (the walker's ride, in the background). Also before: `textures/graffiti-atlas.json` + `.png`, `textures/furniture-atlas.png`, `textures/tree-atlas.png`,
-`textures/sky/*.jpg`. After: `data/life.json`, the people (`models/people/…`), `models/vehicles/tram-atlas.json` +
-`.png`, `car-atlas.json` + `.png`, `boat-atlas.json` + `.png`.
+Before `__ready`: `data/scene.json`, `data/heights.bin`, `data/map.png`, `data/ground-detail.jpg`, the squares
+within 600 m (`data/tiles/<i>_<j>.bin`, by the workers), the drawn fronts (bundled assets), the player's model,
+`models/vehicles/scooter.glb`; `textures/graffiti-atlas.json` + `.png`, `textures/furniture-atlas.png`,
+`textures/tree-atlas.png`, `textures/sky/*.jpg`. After: the rest of the squares within 1.5 km, `data/life.json`, the
+people (`models/people/…`), `models/vehicles/tram-atlas.json` + `.png`, `car-atlas.json` + `.png`,
+`boat-atlas.json` + `.png`.
 
 ## Scaling with the area
 
-Nothing assumes the current bounds: the RTIN grid is the next 2^k + 1 above the area (up to 4096 m a side at 1 m
-before it doubles; the build needs about 3 × 4 × n² bytes for it), the 200 m squares, fog culling and the zone grid
-follow whatever is there. Rough cost per km² of city at today's density (first area and the rest averaged):
-
-- download ~2.6 MB gzipped until playable (pavements ~0.5, street maps 0.4, walls ~0.4, roofs 0.25, terrain 0.25,
-  ground detail 0.3), plus ~0.15 MB of `life.json`;
-- JS heap ~30 MB (street maps 8 B/m², height grid 4 B/m², the pigeon's roof grid 16 B/m², footprints) on top of a
-  ~150 MB base;
-- GPU memory ~25 MB of vertex buffers; per frame, only what is within the fog (1 km on foot) is drawn, so frame cost
-  grows with the density within a kilometre, not with the area.
+The squares, the stream's radii, fog culling and the zone grid follow whatever is there; `tools/area.mjs` `TILE`
+sets the square's size. The build's RTIN grid is the next 2^k + 1 above the area (4097 for Prague 1; the next
+step, 8193, would need ~0.8 GB more for it). What still grows with the map: `scene.json` (the hand-made places,
+zones, barriers, streets: 0.5 MB gzipped for Prague 1), `map.png` and `heights.bin` (0.6 MB), `life.json` (2.2 MB,
+the people's lines, lanes, parked cars and tram routes over the whole area), and the city-wide GPU textures.
 
 ## Measuring
 
 ```sh
 npm run build
 node tools/perf/serve.mjs dist 4182 &                       # gzip + ETag, as the grid app's server
+RATE=1.5e6 node tools/perf/serve.mjs dist 4183 &            # the same through one 1.5 MB/s pipe (workers too)
+SERVER_RATE=1 node tools/perf/measure.mjs http://localhost:4183/ label load   # load from Betlémské náměstí
+AT=-1503,-742,-1.9 SERVER_RATE=1 node tools/perf/measure.mjs http://localhost:4183/ label load   # from elsewhere
 node tools/perf/measure.mjs http://localhost:4182/ label all <shots dir>   # load (1.5 MB/s) + every view
 node tools/perf/measure.mjs http://localhost:4182/ label narodni,holub     # some views
 node tools/perf/shots.mjs http://localhost:4182/ <prefix> name=query …     # screenshots
@@ -141,7 +267,11 @@ node tools/perf/lab.mjs <url> experiments.json              # switch things off 
 node tools/perf/profile.mjs <url> 5                         # CPU profile, self time (FLY=x,z,heading flies)
 node tools/perf/heap.mjs <url> 10                           # heap after GC, live memory by allocating function
 node tools/perf/inventory.mjs <url>                         # meshes and triangles by origin
+node tools/perf/flight.mjs <url> out.json 95 30 -1950 -300 1.571   # the pigeon across the map at 30 m/s cruise
 ```
+
+The bare URL stops at the start screen: the load test starts with `?at` (Betlémské náměstí, or `AT=x,z,yaw`).
+`?ready=…&load=…` (metres) try other rings; `window.__debug.stream.stats()` tells what is in.
 
 All run Google Chrome headless with WebGPU (`tools/perf/browser.mjs`). Headless animation frames don't tick at a
 display's rate, so measure with the cap lifted (`?fps=1000`); `window.__debug.setFps( n )` changes the cap live.
@@ -159,9 +289,6 @@ max-age=31536000, immutable` for `assets/*` (Vite gives them content names when 
   heads, and the Run and Wave clips it never plays; rewriting them without those (gltf-transform: prune, re-encode
   with meshopt) and dropping vertices to a PS1 budget (~1 k triangles) would roughly halve it and the people's vertex
   cost (still the biggest share of the triangles in busy views).
-- Stream the city by square: today the whole area loads before play; per-square files nearest first would make the
-  start square playable in ~3 s and keep the download per visit proportional to where one goes.
 - Shadow redraws as the pigeon (the remaining 40 ms frames): split the map into cascades, or redraw it over several
   frames, or bake the city's shadows into the ground once a game hour.
-- `renderer.compileAsync()` before `__ready`, so first sights of new materials don't hitch.
 - Textured one-off meshes (signs, plates, boards: ~350 draw calls on Betlémské náměstí) into a few atlases.
