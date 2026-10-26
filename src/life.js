@@ -165,8 +165,9 @@ export async function addLife( scene, life, { seats = [], benches = [], groundHe
 	for ( let i = 0; i < walkerCount; i ++ ) {
 
 		const [ path, s ] = along(), spec = person(), body = BODIES.findIndex( b => b.file === spec.body );
-		const sc = spec.height / shapedHeight( bodies[ body ], spec.shape );
-		agents.push( { walk: true, path, s, dir: rnd() < 0.5 ? 1 : - 1, speed: 1.0 + rnd() * 0.45, side: ( rnd() - 0.5 ) * 0.5, x: 0, y: 0, z: 0, yaw: 0, phase: rnd(), body, spec, height: spec.height, scale: [ sc * spec.width, sc, sc * spec.width ], look: lookOf( spec, wardrobe ) } );
+		// Far away a walker has no shape of their own, only their height and a width that stands for their build.
+		const sc = spec.height / shapedHeight( bodies[ body ], spec.shape ), w = sc * spec.width * ( 1 + 0.12 * spec.shape.fat + 0.06 * spec.shape.belly );
+		agents.push( { walk: true, path, s, dir: rnd() < 0.5 ? 1 : - 1, speed: 1.0 + rnd() * 0.45, side: ( rnd() - 0.5 ) * 0.5, x: 0, y: 0, z: 0, yaw: 0, phase: rnd(), body, spec, height: spec.height, scale: [ w, sc, w ], look: lookOf( spec, wardrobe ) } );
 
 	}
 

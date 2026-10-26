@@ -7,13 +7,15 @@
 // Every body becomes one geometry (all its parts and materials merged). Its modelled head is replaced by a box on
 // the head bone, PS1 style, whose front carries a face texture. Each vertex has the modelled colour, box-projected
 // UVs (one texture tile per 0.5 m) and a `slot`: 0 kept as modelled (eyes, shoes, ties), 1 top, 2 bottom, 3 hair
-// (the head box's sides, back and top), 4 skin, 5 face (the box's front).
+// (the head box's sides, back and top), 4 skin, 5 face (the box's front), 6 the top's chest (one picture across it,
+// where a garment front shows).
 //
 // A person ("look") is, per slot 1…5, [ r, g, b, mode ]: mode 0 keeps the modelled colour, 1 paints r g b, 2 + t
 // paints tile t of the wardrobe atlas tinted by r g b. Skinned people near the camera carry their look in a
 // per-person vertex attribute; instanced ones per instance. The wardrobe (public/models/people/manifest.json, low-
-// resolution images by kind: faces, heads, clothes, skin) is packed into one nearest-filtered atlas; without any
-// face photos a drawn pixel face stands in.
+// resolution images by kind: faces, heads, clothes, skin, fronts) is packed into one nearest-filtered atlas; without
+// any face photos a drawn pixel face stands in. Bodies also have shapes (see "Body shapes" below). Who wears what
+// and how they are built is decided in src/persona.js.
 
 import * as THREE from 'three/webgpu';
 import { attribute, select, texture, uv, vec2, float, pow } from 'three/tsl';
@@ -954,9 +956,9 @@ function findBone( root, name ) {
 
 }
 
-// Positions of a skinned mesh in its current pose, as a static geometry (normals from the faces), with the shape
-// knobs' displacements carried into the pose as morph targets.
-function bake( mesh ) {
+// Positions of a skinned mesh in its current pose, as a static geometry (normals from the faces); with `shaped`, the
+// shape knobs' displacements carried into the pose as morph targets.
+function bake( mesh, shaped = true ) {
 
 	const src = mesh.geometry, count = src.attributes.position.count, rest = src.attributes.position.array;
 	const v = new THREE.Vector3();
@@ -974,6 +976,7 @@ function bake( mesh ) {
 	for ( const name of [ 'uv', 'color', 'slot' ] ) g.setAttribute( name, src.attributes[ name ] );
 	g.setIndex( src.index );
 	g.computeVertexNormals();
+	if ( ! shaped ) return g;
 	const deltas = src.userData.shapes.deltas.slice( 0, INSTANCED_SHAPE ).map( d => {
 
 		const moved = new Float32Array( rest );
@@ -1019,10 +1022,10 @@ export function prepareBody( gltf, spec ) {
 
 	const pace = 2 * ( z1 - z0 ) / walk.duration;
 
-	// Mid-stride, for the instanced walkers further away.
+	// Mid-stride, for the instanced walkers further away (over 60 m: no shape but their width and height).
 	mixer.setTime( walk.duration * 0.3 );
 	root.updateMatrixWorld( true );
-	const walking = bake( mesh );
+	const walking = bake( mesh, false );
 	act.stop();
 
 	// Sitting, for terrace and café chairs: the hips (joint) and the lowest point of the seat of the trousers.
@@ -1121,13 +1124,16 @@ export function makeBatch( geometry, count ) {
 	mesh.frustumCulled = false;
 	mesh.setLook = ( i, look ) => LOOKS.forEach( ( name, k ) => g.attributes[ name ].array.set( look[ k ], i * 4 ) );
 	// The shape knobs this pose has as morph targets, per instance.
+	// (A batch of one reads the weights from the mesh, a bigger one from its morph texture; three's morph node
+	// expects the mesh's own weights only in the first case.)
 	const dummy = { morphTargetInfluences: [] };
+	if ( g.morphAttributes.position && mesh.count <= 1 ) mesh.morphTargetInfluences = g.morphAttributes.position.map( () => 0 );
 	mesh.setShape = ( i, shape ) => {
 
 		if ( ! g.morphAttributes.position ) return;
 		dummy.morphTargetInfluences = shapeWeights( shape ).slice( 0, g.morphAttributes.position.length );
 		mesh.setMorphAt( i, dummy );
-		if ( i === 0 ) mesh.morphTargetInfluences.splice( 0, Infinity, ...dummy.morphTargetInfluences );
+		if ( i === 0 && mesh.morphTargetInfluences ) mesh.morphTargetInfluences.splice( 0, Infinity, ...dummy.morphTargetInfluences );
 		mesh.morphTexture.needsUpdate = true;
 
 	};
