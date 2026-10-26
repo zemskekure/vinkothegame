@@ -733,3 +733,6 @@ export function addKarluv( scene, K0, waterLevel = 0 ) {
 	kit.build( scene );
 
 }
+
+// Shared with the Old Town's towers (src/oldtown.js).
+export { K as KARLUV_MATERIALS, figure, towerCrown, towerBody, pointedPath, window2, inFrame };

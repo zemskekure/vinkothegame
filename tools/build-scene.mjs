@@ -22,6 +22,7 @@ import { lonLatToSJTSK, lonLatToSJTSKBeyond, toCadastre } from './geo.mjs';
 import { TOWER_CODES as KARLUV_TOWERS, GATE_WAY as KARLUV_GATE, underKarluv } from './karluv.mjs';
 import { PETRIN_TOWER } from './petrin.mjs';
 import { ROOF_CAP, DOME_TOWERS } from './domes.mjs';
+import { OLDTOWN_HAND } from './oldtown.mjs';
 import { findOpenings, openingBox, clipToBox } from './openings.mjs';
 import { buildQuay } from './quay.mjs';
 import { buildTerraces } from './terraces.mjs';
@@ -1147,8 +1148,8 @@ const SACRED = /kostel|kaple|Svat|Nejsvětější|Betlémská|klášter|Klementi
 
 // Modelled by hand at runtime (src/places.js): kept for collisions, no generic walls or roof.
 // Rotunda sv. Kříže Menšího; the bridge towers of Karlův most (tools/karluv.mjs, src/karluv.js); the Petřín lookout
-// tower (tools/petrin.mjs, src/petrin.js); St Nicholas's belfry (tools/domes.mjs, src/domes.js).
-const HAND_MODELLED = new Set( [ 40354954, ...Object.values( KARLUV_TOWERS ), PETRIN_TOWER, ...DOME_TOWERS ] );
+// tower (tools/petrin.mjs, src/petrin.js); St Nicholas's belfry (tools/domes.mjs, src/domes.js); Prašná brána (tools/oldtown.mjs, src/oldtown.js).
+const HAND_MODELLED = new Set( [ 40354954, ...Object.values( KARLUV_TOWERS ), PETRIN_TOWER, ...DOME_TOWERS, ...OLDTOWN_HAND ] );
 const inKarluvArches = underKarluv( JSON.parse( await readFile( new URL( 'bridges.json', RAW ) ) ) );
 
 for ( const b of buildings ) {

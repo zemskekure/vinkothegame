@@ -1157,6 +1157,7 @@ renderer.setAnimationLoop( () => {
 	life.update( dt );
 	trams.update( dt );
 	boats.update( dt );
+	for ( const f of ANIMATE ) f( dt ); // the turning Kafka head, the orloj's apostles…
 
 	if ( holub ) {
 
