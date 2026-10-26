@@ -27,6 +27,7 @@ import { collectVenues } from './venues.mjs';
 import { collectKarluv } from './karluv.mjs';
 import { collectPetrin } from './petrin.mjs';
 import { collectDomes } from './domes.mjs';
+import { collectOldTown } from './oldtown.mjs';
 
 export function collectPlaces( ctx ) {
 
@@ -1013,6 +1014,8 @@ export function collectPlaces( ctx ) {
 	places.petrin = collectPetrin( ctx, { L } );
 	// --- Domes and towers out of the roofs: St Nicholas and its belfry, St Francis, the Astronomical Tower (tools/domes.mjs).
 	places.domes = collectDomes( ctx, { L } );
+	// --- Týn, the Old Town Hall with the orloj, Prašná brána, Obecní dům, Staroměstské náměstí (tools/oldtown.mjs).
+	places.oldtown = collectOldTown( ctx, { places, zone, L } );
 
 	// --- bridges (OSM bridge=yes ways, clipped to the area): a deck strip per way segment at the height of the land
 	// at its ends, walkable; piers down to the river under the road decks every 25 m (src/bridges.js).
