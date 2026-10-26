@@ -122,7 +122,8 @@ export function startAdmin( { bounds, map, life, ps1, day, holub } ) {
 	const style = document.createElement( 'style' );
 	style.textContent = STYLE;
 	document.head.appendChild( style );
-	for ( const id of [ 'hud' ] ) document.getElementById( id )?.style.setProperty( 'display', 'none' );
+	// The game's HUD (src/hud.js) gives way to the panel: no key hints, tally or touch buttons here.
+	style.textContent += '#hud-keys, #hud-tally, #hud-touch { display: none !important; }';
 
 	const panel = document.createElement( 'div' );
 	panel.id = 'admin';

@@ -5,6 +5,8 @@ if ( new URLSearchParams( location.search ).has( 'studio' ) ) await import( './s
 else {
 
 	await ( await import( './start.js' ) ).startScreen();
+	// The loading bar at once, while the game's code itself still loads.
+	( await import( './loading.js' ) ).show();
 	await import( './main.js' );
 
 }

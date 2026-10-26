@@ -17,20 +17,20 @@ const KNOB = { min: - 1, max: 1.5, step: 0.1 }, HEIGHT = { min: 1.45, max: 2.05,
 
 const STYLE = `
 	#creator { position: fixed; inset: 0; z-index: 60; display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, 440px); gap: 0; color: #f4ecd2;
-		font: 15px/1.25 'Arial Black', 'Arial Bold', Gadget, sans-serif; user-select: none; -webkit-user-select: none; }
+		font: 16px/1.25 'Pixelify Sans', system-ui, sans-serif; user-select: none; -webkit-user-select: none; }
 	#creator .stage { position: relative; display: grid; place-items: center; min-height: 0; }
 	#creator .stage canvas { height: min(84vh, 720px); width: auto; aspect-ratio: 2 / 3; image-rendering: pixelated; touch-action: none; cursor: grab; }
-	#creator .stage .tag { position: absolute; left: 16px; top: 14px; font-size: clamp(22px, 4vw, 40px); font-style: italic; letter-spacing: 0.04em; color: #ffd34a; text-shadow: 3px 3px 0 #000; }
-	#creator .stage .tag small { display: block; font-size: 13px; letter-spacing: 0.08em; color: #f4ecd2; font-style: normal; text-shadow: 2px 2px 0 #000; }
+	#creator .stage .tag { position: absolute; left: 16px; top: 14px; font-size: 32px; letter-spacing: 0.04em; color: #ffd34a; text-shadow: 3px 3px 0 #000; }
+	#creator .stage .tag small { display: block; font-size: 16px; letter-spacing: 0.04em; color: #f4ecd2; text-shadow: 2px 2px 0 #000; }
 	#creator .side { display: flex; flex-direction: column; min-height: 0; background: rgba(8, 10, 16, 0.78); border-left: 3px solid #000; }
 	#creator .rows { flex: 1; overflow-y: auto; padding: 10px 12px; scrollbar-width: thin; }
-	#creator h3 { margin: 12px 4px 4px; font-size: 12px; letter-spacing: 0.12em; color: #8fb0cf; text-transform: uppercase; }
+	#creator h3 { margin: 12px 4px 4px; font-size: 16px; font-weight: 400; letter-spacing: 0.08em; color: #8fb0cf; text-transform: uppercase; }
 	#creator .row { display: grid; grid-template-columns: 104px 34px 1fr 34px; align-items: center; gap: 4px; padding: 3px 4px; border: 2px solid transparent; }
 	#creator .row.on { border-color: #ffd34a; background: rgba(255, 211, 74, 0.08); }
-	#creator .row .lab { font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; opacity: 0.85; }
-	#creator .row button { height: 34px; border: 2px solid #000; background: #2d3d5c; color: #ffd34a; font: inherit; font-size: 13px; cursor: pointer; box-shadow: inset -2px -2px 0 rgba(0,0,0,0.35), inset 2px 2px 0 rgba(255,255,255,0.15); padding: 0; }
+	#creator .row .lab { font-size: 16px; text-transform: uppercase; opacity: 0.85; }
+	#creator .row button { height: 34px; border: 2px solid #000; background: #2d3d5c; color: #ffd34a; font: inherit; font-size: 16px; cursor: pointer; box-shadow: inset -2px -2px 0 rgba(0,0,0,0.35), inset 2px 2px 0 rgba(255,255,255,0.15); padding: 0; }
 	#creator .row button:active { box-shadow: inset 2px 2px 0 rgba(0,0,0,0.35); }
-	#creator .val { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 34px; font-size: 13px; text-align: center; overflow: hidden; white-space: nowrap; }
+	#creator .val { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 34px; font-size: 16px; text-align: center; overflow: hidden; white-space: nowrap; }
 	#creator .val img { width: 30px; height: 30px; image-rendering: pixelated; border: 2px solid #000; object-fit: cover; }
 	#creator .val .sw { width: 30px; height: 22px; border: 2px solid #000; }
 	#creator .bar { display: flex; gap: 2px; }
@@ -38,10 +38,10 @@ const STYLE = `
 	#creator .bar i.f { background: #ffd34a; }
 	#creator .bar i.z { background: #8fb0cf; }
 	#creator .actions { display: grid; grid-template-columns: 1fr 1fr 1.4fr; gap: 8px; padding: 10px 12px 14px; border-top: 3px solid #000; }
-	#creator .actions button { height: 48px; border: 3px solid #000; background: #2d3d5c; color: #f4ecd2; font: inherit; font-size: 16px; font-style: italic; cursor: pointer; text-shadow: 2px 2px 0 #000; box-shadow: inset -3px -3px 0 rgba(0,0,0,0.35), inset 3px 3px 0 rgba(255,255,255,0.15); }
-	#creator .actions button.play { background: #c4562f; color: #ffd34a; font-size: 20px; }
-	#creator .keys { padding: 0 12px 10px; font: 11px/1.3 system-ui, sans-serif; opacity: 0.6; }
-	#creator .busy { position: absolute; bottom: 14px; left: 0; right: 0; text-align: center; font-size: 13px; opacity: 0; transition: opacity 0.2s; text-shadow: 2px 2px 0 #000; }
+	#creator .actions button { height: 48px; border: 3px solid #000; background: #2d3d5c; color: #f4ecd2; font: inherit; font-size: 16px; cursor: pointer; text-shadow: 2px 2px 0 #000; box-shadow: inset -3px -3px 0 rgba(0,0,0,0.35), inset 3px 3px 0 rgba(255,255,255,0.15); }
+	#creator .actions button.play { background: #c4562f; color: #ffd34a; font-size: 24px; }
+	#creator .keys { padding: 0 12px 10px; font: 16px/1.3 'Pixelify Sans', system-ui, sans-serif; opacity: 0.6; }
+	#creator .busy { position: absolute; bottom: 14px; left: 0; right: 0; text-align: center; font-size: 16px; opacity: 0; transition: opacity 0.2s; text-shadow: 2px 2px 0 #000; }
 	#creator .busy.on { opacity: 0.9; }
 	@media (max-width: 760px) {
 		#creator { grid-template-columns: 1fr; grid-template-rows: 38vh minmax(0, 1fr); }

@@ -47,8 +47,8 @@ const _m = new THREE.Matrix4(), _r = new THREE.Matrix4(), _leg = new THREE.Matri
 const rx = a => _r.makeRotationX( a );
 
 // Fills `out` (one Matrix4 per part, model space) for a pose:
-//   { walk: phase (rad) or null, stride: 0…1, sit: bool, ride: bool (on the scooter), breath: phase }
-export function pose( out, { phase = 0, stride = 0, sit = false, ride = false, t = 0 } ) {
+//   { walk: phase (rad) or null, stride: 0…1, sit: bool, ride: bool (on the scooter), breath: phase, air: 0…1 (a jump) }
+export function pose( out, { phase = 0, stride = 0, sit = false, ride = false, t = 0, air = 0 } ) {
 
 	let hip = [ 0, 0 ], knee = [ 0, 0 ], shoulder = [ 0, 0 ], elbow = [ 0.15, 0.15 ];
 	let pelvisY = HIP_Y, lean = 0;
@@ -91,6 +91,15 @@ export function pose( out, { phase = 0, stride = 0, sit = false, ride = false, t
 
 		pelvisY = HIP_Y + 0.004 * Math.sin( t * 1.7 );
 		shoulder = [ 0.03, 0.03 ];
+
+	}
+
+	// In a jump: the knees pulled up, the arms out.
+	if ( air && ! ride && ! sit ) {
+
+		hip = hip.map( ( h, i ) => h + air * ( i ? 0.6 : 0.95 ) );
+		knee = knee.map( ( k, i ) => k + air * ( i ? 0.9 : 1.35 ) );
+		shoulder = shoulder.map( s => s + air * 0.45 );
 
 	}
 
