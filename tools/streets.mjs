@@ -10,6 +10,7 @@
 import { readFile } from 'node:fs/promises';
 import { lonLatToSJTSK, lonLatToSJTSKBeyond } from './geo.mjs';
 import { buildKerbs } from './kerbs.mjs';
+import { rtin, rtinSize } from './rtin.mjs';
 
 // Artworks mapped as statues that are none: "Za pravdu" on Betlémská kaple is a shadow inscription, eight stone
 // ledges on the chapel front (src/landmarks.js).
@@ -246,9 +247,10 @@ export async function loadStreets( { AREA, FIRST_AREA, buildingDist, inBuilding,
  * (Fk = 0, found by interpolating the field along cell edges), with a vertical kerb face along that line.
  * heightAt( X, Y ) returns the street-level ground height in the scene frame.
  */
-export function buildPavementMesh( streets, { AREA, toLocal, heightAt, inBuilding, cut, STEP = 0.5, skip } ) {
+export function buildPavementMesh( streets, { AREA, toLocal, heightAt, inBuilding, hidden, cut, STEP = 0.5, skip } ) {
 
 	const OFFSET = 0.03; // above the terrain mesh, so the two never fight
+	const KERB_FOOT = - 0.2;
 	const W = Math.round( ( AREA.xmax - AREA.xmin ) / STEP ), H = Math.round( ( AREA.ymax - AREA.ymin ) / STEP );
 	const field = new Float32Array( ( W + 1 ) * ( H + 1 ) );
 	for ( let j = 0; j <= H; j ++ ) for ( let i = 0; i <= W; i ++ ) {
@@ -278,13 +280,23 @@ export function buildPavementMesh( streets, { AREA, toLocal, heightAt, inBuildin
 
 	};
 
-	let kerbLength = 0;
+	// Which cells are drawn how: 0 not at all, 1 whole cells on the pavement side (meshed together below, big
+	// triangles where the pavement is flat), 2 cells the kerb crosses (cut into their pavement and road parts here).
+	const kinds = new Uint8Array( W * H );
 	for ( let j = 0; j < H; j ++ ) {
 
 		for ( let i = 0; i < W; i ++ ) {
 
 			const corners = [ [ i, j ], [ i + 1, j ], [ i + 1, j + 1 ], [ i, j + 1 ] ];
 			const f = corners.map( ( [ a, b ] ) => field[ b * ( W + 1 ) + a ] );
+			// Inside a house (no arcade or passage there): out of sight, the pavement's big triangles may run under it.
+			if ( hidden && corners.every( ( [ a, b ] ) => hidden( AREA.xmin + a * STEP, AREA.ymax - b * STEP ) ) ) {
+
+				kinds[ j * W + i ] = 3;
+				continue;
+
+			}
+
 			if ( Math.max( ...f ) <= 0 || Math.min( ...f ) >= streets.RAMP_END ) continue;
 			if ( Math.max( ...f ) >= 100 && Math.min( ...f ) <= 0 ) continue; // the end of a pavement band: no kerb
 			const cx = AREA.xmin + ( i + 0.5 ) * STEP, cy = AREA.ymax - ( j + 0.5 ) * STEP;
@@ -292,55 +304,158 @@ export function buildPavementMesh( streets, { AREA, toLocal, heightAt, inBuildin
 			if ( inBuilding( cx, cy ) && corners.every( ( [ a, b ] ) => inBuilding( AREA.xmin + a * STEP, AREA.ymax - b * STEP ) ) ) continue;
 			// Over the edge of a wall (Smetanovo nábřeží's railing): the cell is left to the terrain.
 			if ( cut && corners.some( ( [ a, b ] ) => cut( AREA.xmin + a * STEP, AREA.ymax - b * STEP ) ) ) continue;
+			kinds[ j * W + i ] = Math.min( ...f ) > 0 ? 1 : 2;
 
+		}
+
+	}
+
+	const gridId = ( [ a, b ] ) => `g${a},${b}`;
+	const gridVertex = ( a, b ) => vertex( AREA.xmin + a * STEP, AREA.ymax - b * STEP, streets.raise( field[ b * ( W + 1 ) + a ] ), gridId( [ a, b ] ) );
+
+	// The whole cells: one irregular triangulation (tools/rtin.mjs), within 4 cm of the pavement's surface.
+	const n = rtinSize( Math.max( W, H ) + 1 );
+	const surface = rtin( {
+		n,
+		// Out of sight, a point stands at the height of a pavement there, so the triangles over it stay level.
+		heightAt: ( a, b, unseen ) => a <= W && b <= H ? heightAt( AREA.xmin + a * STEP, AREA.ymax - b * STEP ) + ( unseen ? streets.KERB_HEIGHT : streets.raise( field[ b * ( W + 1 ) + a ] ) ) : 0,
+		tolerance: () => 0.04,
+		cellKind: ( i, j ) => i < W && j < H ? kinds[ j * W + i ] : 0
+	} );
+	for ( let t = 0; t < surface.triangles.length; t += 3 ) {
+
+		const ids = [ 0, 1, 2 ].map( k => gridVertex( surface.triangles[ t + k ] % n, Math.floor( surface.triangles[ t + k ] / n ) ) );
+		// Facing up (+y) in the scene frame.
+		const [ p, q, r ] = ids.map( id => [ positions[ id * 3 ], positions[ id * 3 + 2 ] ] );
+		const up = ( q[ 1 ] - p[ 1 ] ) * ( r[ 0 ] - p[ 0 ] ) - ( q[ 0 ] - p[ 0 ] ) * ( r[ 1 ] - p[ 1 ] );
+		if ( up > 0 ) index.push( ids[ 0 ], ids[ 1 ], ids[ 2 ] );
+		else index.push( ids[ 0 ], ids[ 2 ], ids[ 1 ] );
+
+	}
+
+	let kerbLength = 0;
+	const kerbSegments = [];
+	for ( let j = 0; j < H; j ++ ) {
+
+		for ( let i = 0; i < W; i ++ ) {
+
+			if ( kinds[ j * W + i ] !== 2 ) continue;
+			const corners = [ [ i, j ], [ i + 1, j ], [ i + 1, j + 1 ], [ i, j + 1 ] ];
+			const f = corners.map( ( [ a, b ] ) => field[ b * ( W + 1 ) + a ] );
 			const P = corners.map( ( [ a, b ] ) => [ AREA.xmin + a * STEP, AREA.ymax - b * STEP ] );
-			const gridId = ( [ a, b ] ) => `g${a},${b}`;
 
-			if ( Math.min( ...f ) > 0 ) {
-
-				// Whole cell on the pavement side: shared grid vertices.
-				face( corners.map( ( c, k ) => vertex( P[ k ][ 0 ], P[ k ][ 1 ], streets.raise( f[ k ] ), gridId( c ) ) ) );
-				continue;
-
-			}
-
-			// The kerb crosses this cell: clip the square into its pavement part and its road part.
-			const top = [], bottom = [], kerb = [];
+			// The kerb crosses this cell: clip the square to its pavement part (the road part is the terrain's).
+			const top = [], kerb = [];
 			for ( let k = 0; k < 4; k ++ ) {
 
 				const k2 = ( k + 1 ) % 4;
 				const [ x0, y0 ] = P[ k ], [ x1, y1 ] = P[ k2 ];
-				if ( f[ k ] > 0 ) top.push( vertex( x0, y0, streets.raise( f[ k ] ), gridId( corners[ k ] ) ) );
-				else bottom.push( vertex( x0, y0, 0, `r${corners[ k ]}` ) );
+				if ( f[ k ] > 0 ) top.push( gridVertex( ...corners[ k ] ) );
 				if ( ( f[ k ] > 0 ) !== ( f[ k2 ] > 0 ) ) {
 
 					const t = f[ k ] / ( f[ k ] - f[ k2 ] );
 					const X = x0 + ( x1 - x0 ) * t, Y = y0 + ( y1 - y0 ) * t;
 					const edgeKey = [ corners[ k ], corners[ k2 ] ].map( String ).sort().join( '|' );
-					const hi = vertex( X, Y, streets.KERB_HEIGHT, `kt${edgeKey}` );
-					const lo = vertex( X, Y, 0, `kb${edgeKey}` );
-					top.push( hi );
-					bottom.push( lo );
-					kerb.push( [ X, Y, f[ k ] > 0 ] );
+					top.push( vertex( X, Y, streets.KERB_HEIGHT, `kt${edgeKey}` ) );
+					kerb.push( [ X, Y, edgeKey ] );
 
 				}
 
 			}
 
 			if ( top.length >= 3 ) face( top );
-			if ( bottom.length >= 3 ) face( bottom );
 
-			// Vertical kerb face between the crossing points (pairs, in order around the cell), with its own
-			// vertices so its normals don't bend the pavement's. The mesh is drawn double-sided.
-			for ( let k = 0; k + 1 < kerb.length; k += 2 ) {
+			// The kerb line through this cell, between its crossing points (pairs, in order around the cell).
+			for ( let k = 0; k + 1 < kerb.length; k += 2 ) kerbSegments.push( [ kerb[ k ], kerb[ k + 1 ] ] );
 
-				const [ xa, ya ] = kerb[ k ], [ xb, yb ] = kerb[ k + 1 ];
-				const a0 = vertex( xa, ya, 0 ), a1 = vertex( xa, ya, streets.KERB_HEIGHT );
-				const b0 = vertex( xb, yb, 0 ), b1 = vertex( xb, yb, streets.KERB_HEIGHT );
-				index.push( a0, a1, b1, a0, b1, b0 );
-				kerbLength += Math.hypot( xb - xa, yb - ya );
+		}
+
+	}
+
+	// Vertical kerb faces along the kerb lines, the lines chained from cell to cell and straightened where they run
+	// within 4 cm of straight (a face every metre made most of the mesh). The faces have vertices of their own (so
+	// their normals don't bend the pavement's); their foot goes down into the road, so the terrain mesh (within a few
+	// cm of the ground) meets them. The mesh is drawn double-sided.
+	const ends = new Map();
+	kerbSegments.forEach( ( seg, i ) => {
+
+		for ( const end of seg ) {
+
+			if ( ! ends.has( end[ 2 ] ) ) ends.set( end[ 2 ], [] );
+			ends.get( end[ 2 ] ).push( i );
+
+		}
+
+	} );
+	const done = new Uint8Array( kerbSegments.length );
+	const chain = ( start, from ) => {
+
+		const line = [ from ];
+		let i = start, at = from;
+		while ( i !== undefined && ! done[ i ] ) {
+
+			done[ i ] = 1;
+			const [ p, q ] = kerbSegments[ i ], next = p[ 2 ] === at[ 2 ] ? q : p;
+			line.push( next );
+			at = next;
+			i = ( ends.get( at[ 2 ] ) || [] ).find( j => ! done[ j ] );
+
+		}
+
+		return line;
+
+	};
+	const lines = [];
+	for ( const [ , list ] of ends ) if ( list.length === 1 && ! done[ list[ 0 ] ] ) {
+
+		const [ p, q ] = kerbSegments[ list[ 0 ] ];
+		lines.push( chain( list[ 0 ], ends.get( p[ 2 ] ).length === 1 ? p : q ) );
+
+	}
+
+	kerbSegments.forEach( ( seg, i ) => {
+
+		if ( ! done[ i ] ) lines.push( chain( i, seg[ 0 ] ) );
+
+	} );
+	const top = ( [ X, Y ] ) => heightAt( X, Y ) + streets.KERB_HEIGHT;
+	const simplify = ( pts, i0, i1, keep ) => {
+
+		const [ ax, ay ] = pts[ i0 ], [ bx, by ] = pts[ i1 ], ah = top( pts[ i0 ] ), bh = top( pts[ i1 ] );
+		const len = Math.hypot( bx - ax, by - ay ) || 1e-9;
+		let worst = - 1, at = - 1;
+		for ( let i = i0 + 1; i < i1; i ++ ) {
+
+			const [ x, y ] = pts[ i ], t = Math.max( 0, Math.min( 1, ( ( x - ax ) * ( bx - ax ) + ( y - ay ) * ( by - ay ) ) / ( len * len ) ) );
+			const d = Math.max( Math.hypot( x - ax - t * ( bx - ax ), y - ay - t * ( by - ay ) ), Math.abs( top( pts[ i ] ) - ( ah + t * ( bh - ah ) ) ) );
+			if ( d > worst ) {
+
+				worst = d;
+				at = i;
 
 			}
+
+		}
+
+		if ( worst > 0.04 || i1 - i0 > 24 ) {
+
+			simplify( pts, i0, at > 0 ? at : ( i0 + i1 ) >> 1, keep );
+			simplify( pts, at > 0 ? at : ( i0 + i1 ) >> 1, i1, keep );
+
+		} else keep.push( i1 );
+
+	};
+	for ( const line of lines ) {
+
+		const keep = [ 0 ];
+		if ( line.length > 1 ) simplify( line, 0, line.length - 1, keep );
+		for ( let k = 1; k < keep.length; k ++ ) {
+
+			const [ xa, ya, ka ] = line[ keep[ k - 1 ] ], [ xb, yb, kb ] = line[ keep[ k ] ];
+			const a0 = vertex( xa, ya, KERB_FOOT, `fb${ka}` ), a1 = vertex( xa, ya, streets.KERB_HEIGHT, `ft${ka}` );
+			const b0 = vertex( xb, yb, KERB_FOOT, `fb${kb}` ), b1 = vertex( xb, yb, streets.KERB_HEIGHT, `ft${kb}` );
+			index.push( a0, a1, b1, a0, b1, b0 );
+			kerbLength += Math.hypot( xb - xa, yb - ya );
 
 		}
 

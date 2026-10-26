@@ -3,16 +3,22 @@
 
 import * as THREE from 'three/webgpu';
 
-const urls = import.meta.glob( '../data/fronts-rendered/*.png', { query: '?url', import: 'default', eager: true } );
+const urls = import.meta.glob( '../data/fronts-rendered/*.webp', { query: '?url', import: 'default', eager: true } );
 
 export async function addShopfronts( scene, fronts ) {
 
 	const loader = new THREE.TextureLoader();
-	for ( const f of fronts || [] ) {
+	// All the drawings at once, not one after another.
+	const textures = await Promise.all( ( fronts || [] ).map( f => {
 
-		const url = urls[ `../data/fronts-rendered/${f.file.replace( /\.svg$/, '.png' )}` ];
+		const url = urls[ `../data/fronts-rendered/${f.file.replace( /\.svg$/, '.webp' )}` ];
 		if ( ! url ) throw new Error( `Missing drawn front ${f.file}` );
-		const texture = await loader.loadAsync( url );
+		return loader.loadAsync( url );
+
+	} ) );
+	for ( const [ k, f ] of ( fronts || [] ).entries() ) {
+
+		const texture = textures[ k ];
 		texture.colorSpace = THREE.SRGBColorSpace;
 		texture.anisotropy = 8;
 		const material = new THREE.MeshStandardNodeMaterial( { map: texture, transparent: true, alphaTest: 0.08, roughness: 0.8, side: THREE.DoubleSide } );

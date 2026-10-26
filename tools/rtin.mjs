@@ -6,7 +6,8 @@
 // The grid is n × n points with n = 2^k + 1 (pad a smaller grid). heightAt( i, j ) gives the height of a point,
 // tolerance( i, j ) how far (m) the mesh may stray from it there; force( i, j ) true keeps a point whatever the
 // error (wall feet, the edges of holes). cellKind( i, j ) of the cell with corners (i, j)–(i + 1, j + 1): 0 a hole
-// (nothing drawn), 1 drawn by the mesh, 2 drawn by the caller (its triangles are left out, its corners kept).
+// (nothing drawn), 1 drawn by the mesh, 2 drawn by the caller (its triangles are left out, its corners kept), 3 out
+// of sight (inside a house): big triangles may run over it, and its own points don't count.
 
 export function rtin( { n, heightAt, tolerance = () => 0.05, force = () => false, cellKind = () => 1 } ) {
 
@@ -22,7 +23,7 @@ export function rtin( { n, heightAt, tolerance = () => 0.05, force = () => false
 		for ( let i = 0; i < size; i ++ ) {
 
 			const k = kinds[ j * size + i ] = cellKind( i, j );
-			row += k ? 1 : 0;
+			row += k === 1 || k === 2 ? 1 : 0;
 			sat[ ( j + 1 ) * ( size + 1 ) + i + 1 ] = sat[ j * ( size + 1 ) + i + 1 ] + row;
 
 		}
@@ -34,13 +35,14 @@ export function rtin( { n, heightAt, tolerance = () => 0.05, force = () => false
 
 	// Errors, as multiples of the tolerance, per point; points that must stay are infinitely wrong. The points of
 	// cells drawn by the caller and the points where a hole meets drawn ground stay too.
-	const heights = new Float32Array( n * n ), errors = new Float32Array( n * n );
+	const heights = new Float32Array( n * n ), errors = new Float32Array( n * n ), hidden = new Uint8Array( n * n );
 	for ( let j = 0; j < n; j ++ ) for ( let i = 0; i < n; i ++ ) {
 
 		const around = [ kindAt( i - 1, j - 1 ), kindAt( i, j - 1 ), kindAt( i - 1, j ), kindAt( i, j ) ];
 		if ( around.every( k => k === 0 ) ) continue;
-		heights[ j * n + i ] = heightAt( i, j );
-		if ( around.some( k => k !== 1 ) || force( i, j ) ) errors[ j * n + i ] = Infinity;
+		heights[ j * n + i ] = heightAt( i, j, around.every( k => k === 0 || k === 3 ) );
+		if ( around.includes( 2 ) || around.includes( 0 ) && around.some( k => k !== 0 ) || force( i, j ) ) errors[ j * n + i ] = Infinity;
+		if ( around.every( k => k === 0 || k === 3 ) ) hidden[ j * n + i ] = 1;
 
 	}
 
@@ -56,7 +58,7 @@ export function rtin( { n, heightAt, tolerance = () => 0.05, force = () => false
 		pass( cx, cy, ax, ay, mx, my );
 		pass( bx, by, cx, cy, mx, my );
 		const m = my * n + mx;
-		let e = Math.abs( ( heights[ ay * n + ax ] + heights[ by * n + bx ] ) / 2 - heights[ m ] ) / tol[ m ];
+		let e = hidden[ m ] ? 0 : Math.abs( ( heights[ ay * n + ax ] + heights[ by * n + bx ] ) / 2 - heights[ m ] ) / tol[ m ];
 		const l = ( cx + ax ) / 2, lz = ( cy + ay ) / 2, r = ( bx + cx ) / 2, rz = ( by + cy ) / 2;
 		if ( ! ( l % 1 || lz % 1 ) ) e = Math.max( e, errors[ lz * n + l ] );
 		if ( ! ( r % 1 || rz % 1 ) ) e = Math.max( e, errors[ rz * n + r ] );

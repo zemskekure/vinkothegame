@@ -107,6 +107,7 @@ export function batchStatic( root, { tile = 150, maxVertices = 200000 } = {} ) {
 
 	visit( root );
 	let meshes = 0, batches = 0;
+	const made = [];
 	for ( const list of groups.values() ) {
 
 		const plain = plainKey( list[ 0 ].material );
@@ -153,6 +154,7 @@ export function batchStatic( root, { tile = 150, maxVertices = 200000 } = {} ) {
 		mesh.renderOrder = first.renderOrder;
 		mesh.matrixAutoUpdate = false;
 		root.add( mesh );
+		made.push( mesh );
 		for ( const o of list ) o.removeFromParent();
 		for ( const g of geometries ) g.dispose();
 		meshes += list.length;
@@ -160,7 +162,7 @@ export function batchStatic( root, { tile = 150, maxVertices = 200000 } = {} ) {
 
 	}
 
-	return { meshes, batches };
+	return { meshes, batches, list: made };
 
 }
 

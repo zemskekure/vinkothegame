@@ -22,17 +22,23 @@ import { lonLatToSJTSK, lonLatToSJTSKBeyond, toCadastre } from './geo.mjs';
 import { findOpenings, openingBox, clipToBox } from './openings.mjs';
 import { buildQuay } from './quay.mjs';
 import { buildTerraces } from './terraces.mjs';
+import { packColumns } from './pack.mjs';
+import { rtin, rtinSize } from './rtin.mjs';
 
 const RAW = new URL( '../data/raw/', import.meta.url );
 const OUT = new URL( '../public/data/', import.meta.url );
 
 const BASE_HEIGHT = 184;
 const ROOF_GRID = 1.0; // spacing of interior roof samples (m)
-const EDGE_STEP = 1.5; // max wall / roof-edge segment length (m)
+// The roof meshes are coarser, as a late-90s game would have built them: every second sample each way (the heights
+// are still measured from all of them) and a point every few metres along the eaves (m). The walls keep their finer
+// steps (the facade shader fits window bays to them).
+const ROOF_MESH = 2, ROOF_EDGE_STEP = 4.0;
+const EDGE_STEP = 1.5; // max wall segment length (m)
 // Outside the first area (Malá Strana, Kampa, Petřín, the strip north of Karlova), modelled from the data alone,
 // houses get half as many roof samples each way and wall segments twice as long: the area is three times the size,
 // and these meshes are most of what the game downloads and draws.
-const ROOF_GRID_WIDE = 2.0, EDGE_STEP_WIDE = 3.0;
+const ROOF_GRID_WIDE = 2.0, ROOF_EDGE_STEP_WIDE = 6.0, EDGE_STEP_WIDE = 3.0;
 const EDGE_INSET = 0.7; // roof edge heights are sampled this far inside the footprint
 
 // ---------------------------------------------------------------------------
@@ -1241,23 +1247,30 @@ for ( const b of buildings ) {
 	const push = ( X, Y, H ) => roofData.push( ...toLocal( X, Y, H ), kind, seed, rr, rg, rb );
 	let tris;
 
-	const boundary = edges.flat();
-	const points = flat ? boundary : [ ...boundary, ...interior ];
+	// The roof's own outline: the footprint's corners and points every few metres between them (the eaves are level,
+	// so the walls' finer steps meet it without gaps); the twin gables need every step of theirs.
+	const roofEdges = landmark?.twinGables ? edges : rings.map( ring => densify( ring, wide ? ROOF_EDGE_STEP_WIDE : ROOF_EDGE_STEP ).map( ( [ X, Y ] ) => ( { X, Y } ) ) );
+	const boundary = roofEdges.flat();
+	const meshGrid = grid * ROOF_MESH, on = v => Math.abs( v / meshGrid - Math.round( v / meshGrid ) ) < 1e-6;
+	const coarse = interior.filter( p => on( p.X ) && on( p.Y ) && p.d > meshGrid * 0.45 );
+	// A house too narrow for the coarse grid keeps all its samples (else its roof would come out flat).
+	const meshPoints = coarse.length * ROOF_MESH * ROOF_MESH >= interior.length * 0.5 ? coarse : interior;
+	const points = flat ? boundary : [ ...boundary, ...meshPoints ];
 	try {
 
 		let n = 0;
 		const mk = () => p => Object.assign( new poly2tri.Point( p.X, p.Y ), { idx: n ++ } );
-		const ctx = new poly2tri.SweepContext( edges[ 0 ].map( mk() ) );
-		for ( let h = 1; h < edges.length; h ++ ) ctx.addHole( edges[ h ].map( mk() ) );
-		if ( ! flat ) ctx.addPoints( interior.map( mk() ) );
+		const ctx = new poly2tri.SweepContext( roofEdges[ 0 ].map( mk() ) );
+		for ( let h = 1; h < roofEdges.length; h ++ ) ctx.addHole( roofEdges[ h ].map( mk() ) );
+		if ( ! flat ) ctx.addPoints( meshPoints.map( mk() ) );
 		ctx.triangulate();
 		tris = ctx.getTriangles().map( t => t.getPoints().map( p => p.idx ) );
 
 	} catch ( e ) {
 
 		fallbacks ++;
-		const contour = edges[ 0 ].map( p => new Vector2( p.X, p.Y ) );
-		const holes = edges.slice( 1 ).map( h => h.map( p => new Vector2( p.X, p.Y ) ) );
+		const contour = roofEdges[ 0 ].map( p => new Vector2( p.X, p.Y ) );
+		const holes = roofEdges.slice( 1 ).map( h => h.map( p => new Vector2( p.X, p.Y ) ) );
 		tris = ShapeUtils.triangulateShape( contour, holes );
 		points.length = boundary.length;
 
@@ -1853,20 +1866,30 @@ function groundDetail( img, A ) {
 {
 
 	await mkdir( OUT, { recursive: true } );
-	const first = groundDetail( firstPhoto, FIRST_AREA );
-	await writeFile( new URL( 'ground-detail.jpg', OUT ), jpeg.encode( { data: first.detail, width: first.W, height: first.H }, 88 ).data );
-	const { detail, W, H } = groundDetail( photo, AREA );
-	const hw = W >> 1, hh = H >> 1, wide = Buffer.alloc( hw * hh * 4 );
-	for ( let y = 0; y < hh; y ++ ) for ( let x = 0; x < hw; x ++ ) {
+	// Averaged down (k × k texels into one) for the game: 50 cm over the first area, 1 m over the whole area.
+	const shrink = ( { detail, W, H }, k ) => {
 
-		const i = ( 2 * y * W + 2 * x ) * 4;
-		const v = ( detail[ i ] + detail[ i + 4 ] + detail[ i + W * 4 ] + detail[ i + W * 4 + 4 ] + 2 ) >> 2;
-		wide[ ( y * hw + x ) * 4 ] = wide[ ( y * hw + x ) * 4 + 1 ] = wide[ ( y * hw + x ) * 4 + 2 ] = v;
-		wide[ ( y * hw + x ) * 4 + 3 ] = 255;
+		const w = Math.floor( W / k ), h = Math.floor( H / k ), out = Buffer.alloc( w * h * 4 );
+		for ( let y = 0; y < h; y ++ ) for ( let x = 0; x < w; x ++ ) {
 
-	}
+			let sum = 0;
+			for ( let dy = 0; dy < k; dy ++ ) for ( let dx = 0; dx < k; dx ++ ) sum += detail[ ( ( y * k + dy ) * W + x * k + dx ) * 4 ];
+			const v = Math.round( sum / ( k * k ) );
+			out[ ( y * w + x ) * 4 ] = out[ ( y * w + x ) * 4 + 1 ] = out[ ( y * w + x ) * 4 + 2 ] = v;
+			out[ ( y * w + x ) * 4 + 3 ] = 255;
 
-	await writeFile( new URL( 'ground-detail-wide.jpg', OUT ), jpeg.encode( { data: wide, width: hw, height: hh }, 85 ).data );
+		}
+
+		return { data: out, width: w, height: h };
+
+	};
+	const first = shrink( groundDetail( firstPhoto, FIRST_AREA ), 2 );
+	await writeFile( new URL( 'ground-detail.jpg', OUT ), jpeg.encode( first, 75 ).data );
+	const wide = shrink( groundDetail( photo, AREA ), 4 );
+	await writeFile( new URL( 'ground-detail-wide.jpg', OUT ), jpeg.encode( wide, 75 ).data );
+	const [ hw, hh ] = [ wide.width, wide.height ];
+	first.W = first.width;
+	first.H = first.height;
 	console.log( `ground detail: ${first.W}x${first.H} over the first area, ${hw}x${hh} over all` );
 
 }
@@ -1877,19 +1900,16 @@ function groundDetail( img, A ) {
 
 const inKeptBuilding = ( X, Y ) => keptIds.has( buildingAt( X, Y ) );
 // Over Divadelní the street is a deck above the terrain grid (tools/terraces.mjs); along the river the quay walls clamp it.
-// A 0.5 m grid over the first area, 1 m over the rest (the outer one's cells inside the first area left out).
 const pavementOptions = { toLocal, heightAt: ( X, Y ) => terraces.deckAt( X, Y ) ?? ( quay ? quay.clamp( X, Y, terrainAt( X, Y ) ) : terrainAt( X, Y ) ), inBuilding: ( X, Y ) => inKeptBuilding( X, Y ) || !! quay?.beyond( X, Y ) || !! terraces.trenchStreet( X, Y ), cut: quay?.beyond };
-const pavement = ( ( a, b ) => {
+// On a 1 m grid (as the street surface maps), the flat stretches meshed coarser (tools/rtin.mjs).
+// Inside a house, away from its arcades and passages, the pavement mesh may run under the walls unseen.
+const underHouse = ( X, Y ) => inKeptBuilding( X, Y ) && ! openingBoxes.some( ( { box } ) => {
 
-	const index = new Uint32Array( a.index.length + b.index.length );
-	index.set( a.index );
-	for ( let i = 0; i < b.index.length; i ++ ) index[ a.index.length + i ] = b.index[ i ] + a.positions.length / 3;
-	const positions = new Float32Array( a.positions.length + b.positions.length );
-	positions.set( a.positions );
-	positions.set( b.positions, a.positions.length );
-	return { positions, index, kerbLength: a.kerbLength + b.kerbLength };
+	const u = ( X - box.X ) * box.ux + ( Y - box.Y ) * box.uy, v = - ( X - box.X ) * box.uy + ( Y - box.Y ) * box.ux;
+	return Math.abs( u ) < ( box.hu ?? 0 ) + 2 && Math.abs( v ) < ( box.hn ?? 0 ) + 2;
 
-} )( buildPavementMesh( streetData, { ...pavementOptions, AREA: FIRST_AREA } ), buildPavementMesh( streetData, { ...pavementOptions, AREA, STEP: 1, skip: inFirstArea } ) );
+} );
+const pavement = buildPavementMesh( streetData, { ...pavementOptions, hidden: underHouse, AREA, STEP: 1 } );
 console.log( `pavements: ${pavement.positions.length / 3} vertices, ${( pavement.kerbLength / 1000 ).toFixed( 1 )} km of kerb` );
 
 const furniture = collectFurniture( streetData, {
@@ -1968,16 +1988,155 @@ const [ ax0, , az1 ] = toLocal( AREA.xmin, AREA.ymin, 0 );
 const [ ax1, , az0 ] = toLocal( AREA.xmax, AREA.ymax, 0 );
 
 
-await writeFile( new URL( 'walls.bin', OUT ), new Float32Array( wallData ) );
-await writeFile( new URL( 'walls-index.bin', OUT ), new Uint32Array( wallIdx ) );
-await writeFile( new URL( 'roofs.bin', OUT ), new Float32Array( roofData ) );
-await writeFile( new URL( 'roofs-index.bin', OUT ), new Uint32Array( roofIdx ) );
-await writeFile( new URL( 'terrain.bin', OUT ), terrain );
-await writeFile( new URL( 'surface.bin', OUT ), surface );
-await writeFile( new URL( 'surface2.bin', OUT ), surface2 );
+// The game downloads all of this over a slow line: the buffers are packed (tools/pack.mjs; src/main.js unpacks
+// them), coordinates in whole millimetres walked in order, attributes that are the same for a whole wall or roof in
+// tables of their own.
+const packed = {};
+const writePacked = async ( name, columns, deltas ) => {
+
+	const p = packColumns( columns, deltas );
+	await writeFile( new URL( name, OUT ), p.buffer );
+	packed[ name ] = { lengths: p.lengths, deltas: p.deltas, bytes: p.bytes };
+
+};
+const mm = v => Math.round( v * 1000 );
+
+// Walls: four corners a quad (bottom left and right, top right and left), each with its u along the front, and the
+// quad's wall: the 20 values that are the same for its whole stretch of wall, in walls-table.bin.
+{
+
+	const S = WALL_STRIDE, quads = wallData.length / S / 4, table = new Map(), rows = [];
+	const cols = Array.from( { length: 12 }, () => new Int32Array( quads ) );
+	for ( let q = 0; q < quads; q ++ ) {
+
+		const at = ( k, f ) => wallData[ ( q * 4 + k ) * S + f ];
+		const key = wallData.slice( q * 4 * S + 4, q * 4 * S + S ).join( ',' );
+		if ( ! table.has( key ) ) {
+
+			table.set( key, rows.length );
+			rows.push( wallData.slice( q * 4 * S + 4, q * 4 * S + S ) );
+
+		}
+
+		// Wound one way or the other (frontIsCCW above).
+		const flip = wallIdx[ q * 6 + 1 ] === q * 4 + 1 ? 0 : 1;
+		[ table.get( key ), flip, mm( at( 0, 0 ) ), mm( at( 0, 2 ) ), mm( at( 1, 0 ) - at( 0, 0 ) ), mm( at( 1, 2 ) - at( 0, 2 ) ), mm( at( 0, 1 ) ), mm( at( 1, 1 ) - at( 0, 1 ) ),
+			mm( at( 3, 1 ) - at( 0, 1 ) ), mm( at( 2, 1 ) - at( 3, 1 ) ), mm( at( 0, 3 ) ), mm( at( 1, 3 ) - at( 0, 3 ) ) ].forEach( ( v, k ) => cols[ k ][ q ] = v );
+
+	}
+
+	await writePacked( 'walls.bin', cols, [ 1, 0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 0 ] );
+	await writeFile( new URL( 'walls-table.bin', OUT ), new Float32Array( rows.flat() ) );
+	console.log( `walls: ${quads} quads, ${rows.length} stretches of wall` );
+
+}
+
+// Roofs: the corners (x, y, z) and their roof (kind, seed, colour: roofs-table.bin), the triangles by corner.
+{
+
+	const S = ROOF_STRIDE, n = roofData.length / S, table = new Map(), rows = [];
+	const xs = new Int32Array( n ), ys = new Int32Array( n ), zs = new Int32Array( n ), ids = new Int32Array( n );
+	for ( let i = 0; i < n; i ++ ) {
+
+		const key = roofData.slice( i * S + 3, i * S + S ).join( ',' );
+		if ( ! table.has( key ) ) {
+
+			table.set( key, rows.length );
+			rows.push( roofData.slice( i * S + 3, i * S + S ) );
+
+		}
+
+		xs[ i ] = mm( roofData[ i * S ] );
+		ys[ i ] = mm( roofData[ i * S + 1 ] );
+		zs[ i ] = mm( roofData[ i * S + 2 ] );
+		ids[ i ] = table.get( key );
+
+	}
+
+	await writePacked( 'roofs.bin', [ xs, ys, zs, ids, Int32Array.from( roofIdx ) ], [ 1, 1, 1, 1, 1 ] );
+	await writeFile( new URL( 'roofs-table.bin', OUT ), new Float32Array( rows.flat() ) );
+
+}
+
+// Terrain: a mesh of the 1 m grid (tools/rtin.mjs), within 5 cm of the grid over the first area and 10 cm beyond,
+// at full detail along the retaining walls (the client snaps the ground to them, src/main.js): its corners as grid
+// points with their heights in centimetres, and its triangles. The client fills the 1 m grid back in from it, so
+// the ground one walks on is the ground one sees.
+const cliffs = ( quay?.lines || [] ).flatMap( line => line.slice( 1 ).map( ( b, i ) => [ line[ i ], b ] ) ).filter( ( [ a, b ] ) => a.wall && b.wall && ! ( a.portal && b.portal ) && Math.hypot( b.X - a.X, b.Y - a.Y ) < 2 ).map( ( [ a, b ] ) => {
+
+	const [ x0, , z0 ] = toLocal( a.X, a.Y, 0 ), [ x1, , z1 ] = toLocal( b.X, b.Y, 0 );
+	return [ x0, z0, x1, z1, a.nx, - a.ny, Math.min( a.top, b.top ), Math.max( a.quay, b.quay ) ].map( v => + v.toFixed( 3 ) );
+
+} );
+const terrainMin = terrain.reduce( ( m, v ) => Math.min( m, v ), Infinity );
+{
+
+	const near = new Uint8Array( tw * th );
+	for ( const [ x0, z0, x1, z1 ] of cliffs ) {
+
+		for ( let x = Math.min( x0, x1 ) - 2; x <= Math.max( x0, x1 ) + 2; x ++ ) for ( let z = Math.min( z0, z1 ) - 2; z <= Math.max( z0, z1 ) + 2; z ++ ) {
+
+			const c = Math.round( ( x - ax0 ) / TERRAIN_CELL ), r = Math.round( ( z - az0 ) / TERRAIN_CELL );
+			if ( c >= 0 && r >= 0 && c < tw && r < th ) near[ r * tw + c ] = 1;
+
+		}
+
+	}
+
+	const n = rtinSize( Math.max( tw, th ) );
+	const mesh = rtin( {
+		n,
+		heightAt: ( c, r ) => terrain[ Math.min( r, th - 1 ) * tw + Math.min( c, tw - 1 ) ],
+		tolerance: ( c, r ) => inFirstArea( AREA.xmin + c * TERRAIN_CELL, AREA.ymax - r * TERRAIN_CELL ) ? 0.05 : 0.1,
+		force: ( c, r ) => c < tw && r < th && near[ r * tw + c ] === 1,
+		cellKind: ( c, r ) => c < tw - 1 && r < th - 1 ? 1 : 0
+	} );
+	// Corners numbered by first use; as grid points (row × width + column); triangles facing up.
+	const number = new Map(), index = new Int32Array( mesh.triangles.length );
+	for ( let k = 0; k < mesh.triangles.length; k ++ ) {
+
+		const g = mesh.triangles[ k ], id = ( g / n | 0 ) * tw + g % n;
+		if ( ! number.has( id ) ) number.set( id, number.size );
+		index[ k ] = number.get( id );
+
+	}
+
+	const grid = [ ...number.keys() ];
+	for ( let k = 0; k < index.length; k += 3 ) {
+
+		const p = [ 0, 1, 2 ].map( j => [ grid[ index[ k + j ] ] % tw, grid[ index[ k + j ] ] / tw | 0 ] );
+		// Scene frame: +x east (columns), +z south (rows); facing up means clockwise on the grid as drawn.
+		const up = ( p[ 1 ][ 1 ] - p[ 0 ][ 1 ] ) * ( p[ 2 ][ 0 ] - p[ 0 ][ 0 ] ) - ( p[ 1 ][ 0 ] - p[ 0 ][ 0 ] ) * ( p[ 2 ][ 1 ] - p[ 0 ][ 1 ] );
+		if ( up < 0 ) [ index[ k + 1 ], index[ k + 2 ] ] = [ index[ k + 2 ], index[ k + 1 ] ];
+
+	}
+
+	await writePacked( 'terrain.bin', [ Int32Array.from( grid ), Int32Array.from( grid, g => Math.round( ( terrain[ g ] - terrainMin ) * 100 ) ), index ], [ 1, 1, 1 ] );
+	console.log( `terrain mesh: ${grid.length} corners, ${index.length / 3} triangles (was ${2 * ( tw - 1 ) * ( th - 1 )} on the grid)` );
+
+}
+
+// Street surface maps: each channel on its own, as the change from the texel to its left (wrapping).
+{
+
+	const out = new Uint8Array( sw * sh * 8 );
+	[ surface, surface2 ].forEach( ( map, m ) => {
+
+		for ( let c = 0; c < 4; c ++ ) for ( let r = 0; r < sh; r ++ ) for ( let x = 0; x < sw; x ++ ) {
+
+			const i = ( r * sw + x ) * 4 + c, left = x ? map[ i - 4 ] : r ? map[ i - sw * 4 ] : 0;
+			out[ ( m * 4 + c ) * sw * sh + r * sw + x ] = ( map[ i ] - left ) & 255;
+
+		}
+
+	} );
+	await writeFile( new URL( 'surfaces.bin', OUT ), out );
+
+}
+
 await writeFile( new URL( 'embankment.bin', OUT ), new Float32Array( embankment.stone ) );
-await writeFile( new URL( 'pavement.bin', OUT ), pavement.positions );
-await writeFile( new URL( 'pavement-index.bin', OUT ), pavement.index );
+await writePacked( 'pavement.bin', [ Int32Array.from( pavement.positions.filter( ( v, i ) => i % 3 === 0 ), mm ), Int32Array.from( pavement.positions.filter( ( v, i ) => i % 3 === 1 ), mm ),
+	Int32Array.from( pavement.positions.filter( ( v, i ) => i % 3 === 2 ), mm ), Int32Array.from( pavement.index ) ], [ 1, 1, 1, 1 ] );
 await writeFile( new URL( 'street-facades.json', RAW ), JSON.stringify( streetFacades ) );
 
 // Footprint mask on the DSM grid (1 bit per cell, row 0 = north) for walking collisions.
@@ -2004,7 +2163,8 @@ await writeFile( new URL( 'scene.json', OUT ), JSON.stringify( {
 	// The first area, modelled in detail (tools/area.mjs): the finer ground detail and terrain mesh (src/main.js).
 	firstBounds: ( ( [ x0, , z1 ], [ x1, , z0 ] ) => ( { minX: x0, maxX: x1, minZ: z0, maxZ: z1 } ) )( toLocal( FIRST_AREA.xmin, FIRST_AREA.ymin, 0 ), toLocal( FIRST_AREA.xmax, FIRST_AREA.ymax, 0 ) ),
 	waterLevel,
-	terrain: { width: tw, height: th, cell: TERRAIN_CELL },
+	terrain: { width: tw, height: th, cell: TERRAIN_CELL, min: terrainMin, scale: 0.01 },
+	packed,
 	surface: { width: sw, height: sh, cell: SURF_CELL },
 	footprints: { width: dsm.width, height: dsm.height, cell: dsm.cell },
 	wallStride: WALL_STRIDE,
@@ -2017,12 +2177,7 @@ await writeFile( new URL( 'scene.json', OUT ), JSON.stringify( {
 	decor,
 	embankment: { posts: embankment.posts, rails: embankment.rails },
 	// Wall lines the terrain mesh is snapped to (src/main.js): x0, z0, x1, z1, the low side's direction, top, foot.
-	cliffs: ( quay?.lines || [] ).flatMap( line => line.slice( 1 ).map( ( b, i ) => [ line[ i ], b ] ) ).filter( ( [ a, b ] ) => a.wall && b.wall && ! ( a.portal && b.portal ) && Math.hypot( b.X - a.X, b.Y - a.Y ) < 2 ).map( ( [ a, b ] ) => {
-
-		const [ x0, , z0 ] = toLocal( a.X, a.Y, 0 ), [ x1, , z1 ] = toLocal( b.X, b.Y, 0 );
-		return [ x0, z0, x1, z1, a.nx, - a.ny, Math.min( a.top, b.top ), Math.max( a.quay, b.quay ) ].map( v => + v.toFixed( 3 ) );
-
-	} ),
+	cliffs,
 	places,
 	streets
 } ) );

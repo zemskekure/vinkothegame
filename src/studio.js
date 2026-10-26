@@ -168,7 +168,7 @@ scene.add( houseFront() );
 // src/fronts.js shows it in the city: a picture just ahead of the ground floor.
 {
 
-	const urls = import.meta.glob( '../data/fronts-rendered/21644039_7.png', { query: '?url', import: 'default', eager: true } );
+	const urls = import.meta.glob( '../data/fronts-rendered/21644039_7.webp', { query: '?url', import: 'default', eager: true } );
 	const url = Object.values( urls )[ 0 ];
 	if ( url ) {
 
