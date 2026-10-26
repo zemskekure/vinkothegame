@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1060 420">
+  <rect width="880" height="420" fill="#c9d4a7"/>
+  <path d="M260 54H880M260 108H880M260 162H880M260 216H880M260 270H880M260 324H880M260 378H880" stroke="#a9b685" stroke-width="8"/>
+  <path d="M340 54V108M420 108V162M340 162V216M420 216V270M340 270V324M420 324V378" stroke="#a9b685" stroke-width="6"/>
+  <rect width="880" height="16" fill="#e9ecdc"/>
+  <rect width="270" height="420" fill="#f0ebdf"/>
+  <rect width="270" height="16" fill="#e2dccd"/>
+  <rect y="34" width="270" height="72" fill="#5a2f22"/>
+  <rect y="34" width="270" height="72" fill="none" stroke="#7a4a33" stroke-width="5"/>
+  <text x="4" y="86" font-family="Brush Script MT, Apple Chancery, cursive" font-size="50" fill="#e0c07e">George</text>
+  <text x="226" y="64" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" fill="#e0c07e">★★★</text>
+  <text x="226" y="94" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" letter-spacing="2" fill="#e0c07e">HOUSE</text>
+  <rect y="120" width="132" height="300" fill="#f4f1ea"/>
+  <rect y="140" width="110" height="280" fill="#5a3322"/>
+  <path d="M0 160Q60 150 110 210H0Z" fill="#3a3530"/>
+  <rect x="14" y="226" width="80" height="90" fill="#4a4743"/>
+  <rect x="24" y="240" width="50" height="42" fill="#efece4"/>
+  <rect x="14" y="330" width="80" height="72" fill="none" stroke="#3e2216" stroke-width="5"/>
+  <rect x="150" y="130" width="96" height="276" fill="#6b3a26" stroke="#4e2a1b" stroke-width="5"/>
+  <g fill="none" stroke="#4e2a1b" stroke-width="4">
+    <rect x="164" y="146" width="68" height="110"/>
+    <rect x="164" y="270" width="68" height="120"/>
+  </g>
+  <rect x="480" y="90" width="390" height="316" fill="#f6f4ee" stroke="#dcd8cc" stroke-width="6"/>
+  <g fill="#e9ebea">
+    <rect x="504" y="112" width="74" height="276"/>
+    <rect x="590" y="112" width="74" height="276"/>
+    <rect x="688" y="112" width="74" height="276"/>
+    <rect x="774" y="112" width="74" height="276"/>
+  </g>
+  <g fill="#3f454a">
+    <rect x="504" y="112" width="74" height="70"/>
+    <rect x="590" y="112" width="74" height="70"/>
+    <rect x="688" y="112" width="74" height="70"/>
+    <rect x="774" y="112" width="74" height="70"/>
+  </g>
+  <path d="M504 186H848M541 112V388M627 112V388M725 112V388M811 112V388" stroke="#f6f4ee" stroke-width="5"/>
+  <rect x="470" y="400" width="410" height="12" fill="#dcd8cc"/>
+  <rect x="880" width="180" height="420" fill="#ecdcae"/>
+  <path d="M880 54H1060M880 108H1060M880 162H1060M880 216H1060M880 270H1060M880 324H1060M880 378H1060" stroke="#d8c48f" stroke-width="7"/>
+  <rect x="880" width="10" height="420" fill="#c9bf9e"/>
+  <rect y="406" width="1060" height="14" fill="#a39b94"/>
+</svg>

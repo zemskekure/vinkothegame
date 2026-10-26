@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 460">
+  <path d="M0 0H500V460H400V250Q200 150 0 250Z" fill="#efebe3" fill-rule="evenodd"/>
+  <rect width="500" height="18" fill="#a95f43"/>
+  <path d="M0 18Q12 30 24 18Q36 30 48 18Q60 30 72 18Q84 30 96 18Q108 30 120 18Q132 30 144 18Q156 30 168 18Q180 30 192 18Q204 30 216 18Q228 30 240 18Q252 30 264 18Q276 30 288 18Q300 30 312 18Q324 30 336 18Q348 30 360 18Q372 30 384 18Q396 30 408 18Q420 30 432 18Q444 30 456 18Q468 30 480 18Q492 30 500 22" fill="#a95f43"/>
+  <path d="M0 250Q200 150 400 250" fill="none" stroke="#c9b48c" stroke-width="30"/>
+  <path d="M0 250Q200 150 400 250" fill="none" stroke="#b39d74" stroke-width="3"/>
+  <path d="M400 236V460" stroke="#c9b48c" stroke-width="30"/>
+  <path d="M386 236V460" stroke="#b39d74" stroke-width="3"/>
+  <text x="200" y="118" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="74" fill="#4d4c4a">U Kunštátů</text>
+  <text x="200" y="152" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="24" letter-spacing="10" fill="#4d4c4a">coffee  wine  gallery</text>
+  <rect x="14" y="172" width="40" height="32" fill="#2c4d8e" stroke="#f2f0ea" stroke-width="3"/>
+  <text x="34" y="196" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#ffffff">3</text>
+  <rect x="432" y="150" width="46" height="34" fill="#c23a2c" stroke="#f2f0ea" stroke-width="3"/>
+  <text x="455" y="176" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#ffffff">222</text>
+  <rect x="408" y="446" width="92" height="14" fill="#a39b94"/>
+</svg>
