@@ -41,15 +41,15 @@ function addTower( kit, T ) {
 		for ( let k = 0; k < 8; k ++ ) {
 
 			const a0 = corner( k, y0 ), a1 = corner( k, y1 ), b0 = corner( k + 1, y0 ), b1 = corner( k + 1, y1 );
-			kit.add( P.steel, wire( a0, a1, y0 < 18 ? 0.22 : 0.15 ) );
-			kit.add( P.steel, wire( a1, b1, 0.07 ), wire( a0, b1, 0.045 ), wire( b0, a1, 0.045 ) );
+			kit.add( P.steel, wire( a0, a1, y0 < 18 ? 0.3 : 0.22 ) );
+			kit.add( P.steel, wire( a1, b1, 0.11 ), wire( a0, b1, 0.075 ), wire( b0, a1, 0.075 ) );
 
 		}
 
 	}
 
 	// The stair core.
-	kit.add( P.dark, cyl( 0.7, 0.7, H, T.x, T.y, T.z, 8 ) );
+	kit.add( P.dark, cyl( 0.5, 0.5, H, T.x, T.y, T.z, 8 ) );
 	for ( let y = 2; y < H; y += 2.2 ) kit.add( P.dark, beam( [ T.x, T.y + y, T.z ], [ T.x + Math.sin( y ) * 1.6, T.y + y + 0.4, T.z + Math.cos( y ) * 1.6 ], 0.5, 0.06 ) );
 
 	// The ticket hall between the feet: octagonal, a cornice, a low roof.

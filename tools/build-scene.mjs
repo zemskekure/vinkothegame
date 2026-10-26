@@ -21,6 +21,7 @@ import { collectPlaces } from './places.mjs';
 import { lonLatToSJTSK, lonLatToSJTSKBeyond, toCadastre } from './geo.mjs';
 import { TOWER_CODES as KARLUV_TOWERS, GATE_WAY as KARLUV_GATE, underKarluv } from './karluv.mjs';
 import { PETRIN_TOWER } from './petrin.mjs';
+import { ROOF_CAP, DOME_TOWERS } from './domes.mjs';
 import { findOpenings, openingBox, clipToBox } from './openings.mjs';
 import { buildQuay } from './quay.mjs';
 import { buildTerraces } from './terraces.mjs';
@@ -1121,8 +1122,8 @@ const SACRED = /kostel|kaple|Svat|Nejsvětější|Betlémská|klášter|Klementi
 
 // Modelled by hand at runtime (src/places.js): kept for collisions, no generic walls or roof.
 // Rotunda sv. Kříže Menšího; the bridge towers of Karlův most (tools/karluv.mjs, src/karluv.js); the Petřín lookout
-// tower (tools/petrin.mjs, src/petrin.js).
-const HAND_MODELLED = new Set( [ 40354954, ...Object.values( KARLUV_TOWERS ), PETRIN_TOWER ] );
+// tower (tools/petrin.mjs, src/petrin.js); St Nicholas's belfry (tools/domes.mjs, src/domes.js).
+const HAND_MODELLED = new Set( [ 40354954, ...Object.values( KARLUV_TOWERS ), PETRIN_TOWER, ...DOME_TOWERS ] );
 const inKarluvArches = underKarluv( JSON.parse( await readFile( new URL( 'bridges.json', RAW ) ) ) );
 
 for ( const b of buildings ) {
@@ -1187,7 +1188,8 @@ for ( const b of buildings ) {
 	const rise = Math.max( 0, ridgeAbs - ground - eave );
 	const flat = rise < 1.3 || landmark?.roof === ROOF_KIND.flat || HOUSES[ b.code ]?.roof === 'flat';
 	const maxDepth = interior.reduce( ( m, p ) => Math.max( m, p.d ), 0 );
-	const roofRise = flat ? 0 : Math.min( rise, maxDepth * ROOF_SLOPE, 22 );
+	// Churches whose domes rise out of the roof (tools/domes.mjs) keep their roofs low.
+	const roofRise = flat ? 0 : Math.min( rise, maxDepth * ROOF_SLOPE, ROOF_CAP[ b.code ] ?? 22 );
 
 	const house = HOUSES[ b.code ];
 	const floors = house?.floors ?? ( b.floors > 0 ? b.floors : Math.max( 1, Math.round( eave / 3.4 ) ) );
@@ -1952,7 +1954,7 @@ const furniture = collectFurniture( streetData, {
 furniture.statue.push( ...landmarkStatues );
 
 const projectRaw = await lonLatToSJTSK();
-const places = collectPlaces( { FIRST_AREA, project: await lonLatToSJTSKBeyond( FIRST_AREA, AREA ), projectCadastre: ( lon, lat ) => toCadastre( projectRaw( lon, lat ) ), quay, terraces, openings, buildings, streetFacades, toLocal, terrainAt, buildingAt, keptIds, dsm, idGrid, AREA, ORIGIN, streetData, furniture, riverAt, buildingInfo, zabagedBridges: JSON.parse( await readFile( new URL( 'bridges.json', RAW ) ) ), terrainGrid: { terrain, tw, th, cell: TERRAIN_CELL }, inPark: ( X, Y ) => parks.some( rings => pointInRings( rings, X, Y ) ), tramPaths: JSON.parse( await readFile( new URL( 'tram.json', RAW ) ) ).flatMap( f => f.geometry?.paths || [] ) } );
+const places = collectPlaces( { FIRST_AREA, project: await lonLatToSJTSKBeyond( FIRST_AREA, AREA ), projectCadastre: ( lon, lat ) => toCadastre( projectRaw( lon, lat ) ), photoAt, quay, terraces, openings, buildings, streetFacades, toLocal, terrainAt, buildingAt, keptIds, dsm, idGrid, AREA, ORIGIN, streetData, furniture, riverAt, buildingInfo, zabagedBridges: JSON.parse( await readFile( new URL( 'bridges.json', RAW ) ) ), terrainGrid: { terrain, tw, th, cell: TERRAIN_CELL }, inPark: ( X, Y ) => parks.some( rings => pointInRings( rings, X, Y ) ), tramPaths: JSON.parse( await readFile( new URL( 'tram.json', RAW ) ) ).flatMap( f => f.geometry?.paths || [] ) } );
 places.chapel = twinGableFronts[ 0 ] ? { ...twinGableFronts[ 0 ], spire: [ - 36.5, 42.8 ] } : null; // spire: from the aerial photo
 // Awnings on fronts away from the street network (on squares), placed by places.mjs.
 decor.awnings.push( ...places.awnings );

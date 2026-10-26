@@ -12,6 +12,7 @@ import { addBridges, addLegie } from './bridges.js';
 import { addLandmarks } from './landmarks.js';
 import { addKarluv } from './karluv.js';
 import { addPetrin } from './petrin.js';
+import { addDomes } from './domes.js';
 import { addDress, SEATS as dressSeats } from './dress.js';
 import { addFlights } from './flights.js';
 import { addVenues } from './venues.js';
@@ -288,6 +289,7 @@ export function addPlaces( scene, places, furniture = {}, waterLevel = 0 ) {
 	addLegie( scene, places.legie, waterLevel );
 	addKarluv( scene, places.karluv, waterLevel );
 	addPetrin( scene, places.petrin );
+	addDomes( scene, places.domes );
 	addLandmarks( scene, places, waterLevel );
 	addDress( scene, places );
 	seats.push( ...dressSeats );
