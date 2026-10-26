@@ -459,7 +459,7 @@
 		"signs": false
 	},
 	"21643750": {
-		"note": "Betlémské náměstí 2 / Liliová 2 (no. 251): historicist block in cream-beige (not pinkish), balustraded window sills, banded rusticated ground floor with round arches, dark red window frames, white awnings, Pilsner Urquell plaque at the corner (Street View 2024). Tile pass confirms; edge 0 has two round-arched dark-red framed openings (marked 21643750_0).",
+		"note": "Betlémské náměstí 2 / Liliová 2 and 4 in one RÚIAN building. Corner front 11: cream historicist block, banded ground floor, round-arched door in a dark red frame, menu boards, green Pilsner Urquell sign. Liliová front 1 is Liliová 4: plain pale grey, three storeys, two tall orange-brown multi-pane glazed openings with curtains behind wrought-iron vine grilles, a double wall lamp between. Pass 2 redrew front 1 over a full grey wall (Street View 2024).",
 		"signs": false,
 		"colour": "#e3d2ac",
 		"trim": "#eee2c6",
@@ -484,8 +484,40 @@
 					}
 				]
 			},
+			"1": {
+				"colour": "#cccad0",
+				"trim": "#e4dfd2",
+				"rustic": "none",
+				"ground": [
+					{
+						"kind": "shop",
+						"frame": "wood",
+						"glazed": true,
+						"bars": true
+					},
+					{
+						"kind": "shop",
+						"frame": "wood",
+						"glazed": true,
+						"bars": true,
+						"size": "wide"
+					}
+				],
+				"shopfront": "21643750_1.svg",
+				"shopfrontHeight": 4.5
+			},
 			"11": {
-				"awning": "#f1efe8"
+				"awning": "#f1efe8",
+				"ground": [
+					{
+						"kind": "door",
+						"frame": "red",
+						"arch": true,
+						"glazed": true
+					}
+				],
+				"shopfront": "21643750_11.svg",
+				"shopfrontHeight": 4.5
 			}
 		},
 		"grilles": false,
@@ -523,18 +555,69 @@
 		"rustic": "none"
 	},
 	"21643806": {
-		"note": "Betlémské náměstí 9 / Konviktská 19: Hotel Betlem Club, four storeys plus dormered red roof; greenish-white upper floors with window hoods, pale green banded ground floor with lattice iron grilles, arched doors, wall lanterns and three flags; 'HOTEL' lettering on the upper floor. The short corner edge 7 has one lattice-grilled window in the pale green rusticated base (Street View 2024-09, marked 21643806_7)",
+		"note": "Hotel Betlem Club: white upper floors, pale mint-green banded ground floor, red tiled roof with dormers. Ground floor plus two storeys, not three (corrected from 4). Square front: serif HOTEL on the band over the first floor, three flags, lanterns, three round-arched dark doors in light surrounds. Konviktská front: diamond-lattice grilled windows and a dark door. Pass 2 drew both green bases over the white procedural ones (Street View 2025-09; owner photos 2023-11, 2025-03).",
 		"signs": false,
 		"colour": "#eef0e8",
 		"trim": "#f8f8f2",
-		"floors": 4,
+		"floors": 3,
 		"ground": "windows",
 		"rustic": "banded",
 		"grilles": true,
 		"graffiti": false,
 		"edges": {
+			"1": {
+				"lanterns": true,
+				"ground": [
+					{
+						"kind": "door",
+						"frame": "dark",
+						"arch": true,
+						"glazed": true
+					},
+					{
+						"kind": "door",
+						"frame": "dark",
+						"arch": true,
+						"glazed": true
+					},
+					{
+						"kind": "door",
+						"frame": "dark",
+						"arch": true,
+						"glazed": true
+					}
+				],
+				"shopfront": "21643806_1.svg"
+			},
 			"2": {
-				"lanterns": true
+				"lanterns": true,
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "green",
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "green",
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "green",
+						"bars": true
+					},
+					{
+						"kind": "door",
+						"frame": "dark"
+					},
+					{
+						"kind": "window",
+						"frame": "green",
+						"bars": true
+					}
+				],
+				"shopfront": "21643806_2.svg"
 			},
 			"7": {
 				"ground": [
@@ -548,29 +631,133 @@
 		}
 	},
 	"21643814": {
-		"note": "Betlémské náměstí 10: white four-storey house with dormers, Oliva Nera's terrace in the square in front (Street View 2023–25)",
+		"note": "Betlémské náměstí 10 (Oliva Nera): white baroque house, apricot panels, grey mascaron hoods, gilt Madonna, relief niche, gable with oculus; ground plus two storeys. Pass 2: ground floor is white plaster with apricot strips, not dark stone. East of the portal: window, menu board, glazed wood door, upright RISTORANTE ITALIANO; west: the same lettering, window, menu board, window; cream valances (Street View 2023-09; owner photos 2023-11, 2025-03).",
 		"signs": false,
-		"colour": "#f1eee6",
-		"trim": "#faf8f2",
-		"floors": 4,
+		"colour": "#f3f0ea",
+		"trim": "#e8b47c",
+		"floors": 3,
 		"ground": "restaurant",
-		"rustic": "none"
+		"rustic": "ornate",
+		"graffiti": false,
+		"edges": {
+			"6": {
+				"ground": [
+					"blank",
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					"blank",
+					{
+						"kind": "window",
+						"frame": "white"
+					}
+				],
+				"shopfront": "21643814_6.svg"
+			},
+			"10": {
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					"blank",
+					{
+						"kind": "door",
+						"frame": "wood",
+						"glazed": true
+					},
+					"blank"
+				],
+				"shopfront": "21643814_10.svg"
+			}
+		}
 	},
 	"21643822": {
-		"note": "Betlémské náměstí: pale green house with a café terrace under white awnings",
+		"note": "Betlémské náměstí 11 (Alriso): pale sage house, ground plus two storeys and dormers (corrected from 4), cream surrounds, ivy over the ground-floor cornice, retracted awning box, dark-framed windows with curtains and red flowers, dark doors behind white umbrellas, arched planked door and glazed door under a white 'gib' logo; Betlémská: arched gate, sunburst doors. Front 2's east ~4 m is Oliva Nera's west bay (Street View 2023-09, 2024-05; owner photo 2025-03).",
 		"signs": false,
-		"colour": "#c6d2bf",
-		"trim": "#e3e8dc",
+		"colour": "#cdd5b6",
+		"trim": "#e6dcb8",
 		"ground": "restaurant",
 		"rustic": "none",
 		"edges": {
 			"0": {
-				"awning": "#f1efe8"
+				"awning": "#f1efe8",
+				"ground": [
+					{
+						"kind": "door",
+						"frame": "wood",
+						"glazed": true
+					},
+					{
+						"kind": "window",
+						"frame": "dark"
+					}
+				]
 			},
 			"1": {
-				"awning": "#f1efe8"
+				"awning": "#f1efe8",
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "dark"
+					},
+					{
+						"kind": "door",
+						"frame": "wood",
+						"arch": true
+					},
+					{
+						"kind": "door",
+						"frame": "dark",
+						"glazed": true
+					},
+					{
+						"kind": "window",
+						"frame": "dark"
+					}
+				],
+				"shopfront": "21643822_1.svg"
+			},
+			"2": {
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "window",
+						"frame": "dark"
+					},
+					{
+						"kind": "window",
+						"frame": "dark"
+					},
+					{
+						"kind": "door",
+						"frame": "dark",
+						"glazed": true,
+						"size": "wide"
+					}
+				],
+				"shopfront": "21643822_2.svg"
+			},
+			"9": {
+				"lanterns": true,
+				"ground": [
+					"blank",
+					{
+						"kind": "gate",
+						"frame": "wood",
+						"arch": true,
+						"size": "wide"
+					}
+				],
+				"shopfront": "21643822_9.svg"
 			}
-		}
+		},
+		"floors": 3,
+		"graffiti": false
 	},
 	"21643831": {
 		"note": "Betlémská 14 (no. 260, plate 260/14 visible): cream neo-baroque house with rich stucco window crowns, round-arched ground-floor windows in dark red frames and a dark arched gate at the west end. Corrected: the pale green gable house with the big wooden gate (plate 11) is its eastern neighbour, the marks start this front just west of that gate (marked 21643831_0, 21643849_0, Street View 2024).",
@@ -3770,69 +3957,94 @@
 		}
 	},
 	"21644586": {
-		"note": "Na Perštýně 18 face: khaki-cream plaster scored as ashlar, string course at about 4.8 m, blue serif \"U ŠEDIVÝCH\" painted in a thin blue frame, iron wall lantern, black door and display window with a glazed transom (puppet shop). Pass 2: drawing made transparent so the lettering and ashlar sit on the wall instead of a pale patch; duplicate sign removed. Betlémské náměstí face not seen (owner photos 2025-05-14).",
-		"colour": "#ecd9a4",
-		"trim": "#f4ead0",
+		"note": "Betlémské náměstí 7 / Na Perštýně 17: plain cream-yellow house; dark brown wooden restaurant front: continuous fascia (ŠVEJK RESTAURANT, Švejk badge, Pilsner board from tools/dress.mjs), wood-framed shop windows with transoms, glazed doors, arched menu cases, arched glazed door and hanging Pilsner sign at the Na Perštýně corner. Pass 2 drew the wooden front; bay spacing is schematic, only 2019 imagery (Street View 2019).",
+		"colour": "#e8d8aa",
+		"trim": "#f0e4c4",
 		"ground": "restaurant",
 		"rustic": "none",
 		"signs": false,
+		"graffiti": false,
 		"edges": {
-			"7": {
-				"colour": "#d9d0a3",
-				"trim": "#e2dab2",
-				"rustic": "banded",
-				"lanterns": true,
+			"3": {
 				"ground": [
-					"blank",
 					{
 						"kind": "door",
-						"frame": "dark",
+						"frame": "wood",
+						"arch": true,
 						"glazed": true
 					},
 					{
 						"kind": "shop",
-						"frame": "dark"
-					}
-				],
-				"shopfront": "21644586_7.svg",
-				"shopfrontHeight": 4.8
-			}
-		}
-	},
-	"21644594": {
-		"note": "U Zeleného stromu: cream-yellow 4-storey house, plain window surrounds; ground floor a dark-brown wooden restaurant front under one long fascia \"U ZELENÉHO STROMU\" in gilt capitals with a round emblem at its end. Pass 2: rustic set to none (no grey stone base in the photo), drawing widened to the whole front, duplicate board removed; the fascia also runs along Husova (Street View 2019).",
-		"colour": "#e9d6a2",
-		"trim": "#f2e6c4",
-		"ground": "restaurant",
-		"rustic": "none",
-		"signs": false,
-		"floors": 4,
-		"edges": {
-			"1": {
-				"ground": [
-					{
-						"kind": "shop",
-						"frame": "wood"
-					},
-					{
-						"kind": "door",
-						"frame": "wood"
-					},
-					{
-						"kind": "shop",
-						"frame": "wood"
+						"frame": "wood",
+						"glazed": true
 					},
 					{
 						"kind": "door",
 						"frame": "wood",
-						"arch": true
+						"glazed": true
 					},
 					{
-						"kind": "window",
-						"frame": "wood"
+						"kind": "shop",
+						"frame": "wood",
+						"glazed": true
+					},
+					{
+						"kind": "door",
+						"frame": "wood",
+						"glazed": true
+					},
+					{
+						"kind": "shop",
+						"frame": "wood",
+						"glazed": true
+					},
+					{
+						"kind": "door",
+						"frame": "wood",
+						"glazed": true
+					},
+					{
+						"kind": "shop",
+						"frame": "wood",
+						"glazed": true
 					}
 				],
-				"shopfront": "21644594_1.svg"
+				"shopfront": "21644586_3.svg"
+			}
+		}
+	},
+	"21644594": {
+		"note": "Betlémské náměstí 6, U Zeleného stromu: pinkish-beige neo-gothic front, ogee hoods, small stepped gables. Ground floor is beige ashlar like the walls, not grey stone: arched glazed door under ŠVEJK RESTAURANT at 0–2 m, menu cases, open round-arched gateway at ~4.7–7.3 m into a cobbled passage under the 'U zeleného stromu' panel, plates, bracket, memorial plaque, a wood shop window. Pass 2 drew 0–10.5 m (Street View 2025-09; owner photo 2023-05).",
+		"colour": "#e8dcc6",
+		"trim": "#f1e8d8",
+		"ground": "gate",
+		"rustic": "ornate",
+		"signs": false,
+		"floors": 3,
+		"graffiti": false,
+		"edges": {
+			"3": {
+				"ground": [
+					{
+						"kind": "door",
+						"frame": "wood",
+						"arch": true,
+						"glazed": true
+					},
+					"blank",
+					{
+						"kind": "gate",
+						"arch": true,
+						"size": "wide"
+					},
+					"blank",
+					{
+						"kind": "shop",
+						"frame": "wood",
+						"glazed": true
+					}
+				],
+				"shopfront": "21644594_3.svg"
 			}
 		}
 	},
@@ -4612,15 +4824,78 @@
 		}
 	},
 	"21649626": {
-		"note": "Betlémské náměstí: long cream four-storey front, Galerie U Betlémské kaple, dark wooden shopfronts (Street View 2025)",
-		"colour": "#ece6d7",
-		"trim": "#f5f1e8",
+		"note": "Betlémské náměstí 8 (no. 1004): long pale cream four-storey front, smooth banded ground floor. Tall dark-brown wood windows under each bay, a glazed door, the panelled double door (1004/8) with upright burgundy 'G GALERIE' on the pier beside it, two wood shop windows, a deep white-revealed opening at the Konviktská end. Burgundy GALERIE U BETLÉMSKÉ KAPLE with red G logo; grey ČESKÁ GALERIE MODERNÍHO UMĚNÍ in 2025. Pass 2 drew it (Street View 2025-09; owner photo 2023-05).",
+		"colour": "#e7e2d4",
+		"trim": "#d9c6a0",
 		"ground": "shops",
 		"rustic": "banded",
-		"signs": false
+		"signs": false,
+		"floors": 4,
+		"graffiti": false,
+		"edges": {
+			"27": {
+				"lanterns": true,
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "wood"
+					},
+					{
+						"kind": "window",
+						"frame": "wood"
+					},
+					{
+						"kind": "window",
+						"frame": "wood"
+					},
+					{
+						"kind": "window",
+						"frame": "wood"
+					},
+					{
+						"kind": "window",
+						"frame": "wood"
+					},
+					{
+						"kind": "window",
+						"frame": "wood"
+					},
+					{
+						"kind": "door",
+						"frame": "wood",
+						"glazed": true,
+						"size": "narrow"
+					},
+					{
+						"kind": "window",
+						"frame": "wood"
+					},
+					{
+						"kind": "door",
+						"frame": "wood"
+					},
+					{
+						"kind": "shop",
+						"frame": "wood",
+						"glazed": true
+					},
+					{
+						"kind": "shop",
+						"frame": "wood",
+						"glazed": true
+					},
+					{
+						"kind": "shop",
+						"frame": "white",
+						"glazed": true
+					}
+				],
+				"shopfront": "21649626_27.svg"
+			}
+		}
 	},
 	"21649634": {
-		"note": "Konviktská 30 (Průchodní side): ochre-yellow house over a pale smooth ground floor with deep white reveals, a black chalkboard sign, a sculpted horse head mounted on the wall near the corner, a glazed door and a big shop window; wall lantern and an empty hanging-sign bracket; no gallery sign visible on this front (Street View 2024-09, marked 21649634_8)",
+		"note": "Konviktská 30 (front 10): ochre-yellow upper floors over a smooth banded pale stone ground floor (not ochre). Wall lantern at the left, an empty sign bracket, two tall glazed openings in deep pale reveals. Pass 2 drew the pale base (Street View 2025-09).",
 		"colour": "#dcc887",
 		"trim": "#e3dac0",
 		"ground": "windows",
@@ -4648,7 +4923,21 @@
 				]
 			},
 			"10": {
-				"lanterns": true
+				"lanterns": true,
+				"ground": [
+					"blank",
+					{
+						"kind": "shop",
+						"frame": "white",
+						"glazed": true
+					},
+					{
+						"kind": "shop",
+						"frame": "white",
+						"glazed": true
+					}
+				],
+				"shopfront": "21649634_10.svg"
 			}
 		},
 		"signs": false

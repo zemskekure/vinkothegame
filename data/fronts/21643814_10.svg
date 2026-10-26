@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 420" width="500" height="420">
+  <rect width="500" height="420" fill="#f4f1ea"/>
+  <rect y="398" width="500" height="22" fill="#cdb898"/>
+  <rect x="0" y="80" width="14" height="318" fill="#e8b47c"/>
+  <rect x="160" y="80" width="10" height="318" fill="#e8b47c"/>
+  <rect x="262" y="80" width="12" height="318" fill="#e8b47c"/>
+  <rect x="412" y="80" width="12" height="318" fill="#e8b47c"/>
+  <rect x="0" y="18" width="500" height="26" fill="#e3dccb"/>
+  <rect x="0" y="44" width="500" height="34" fill="#efe9da"/>
+  <path d="M0 78H500" stroke="#c9bd9f" stroke-width="4"/>
+  <text x="140" y="68" font-family="Georgia, serif" font-size="20" fill="#3e3429" text-anchor="middle">Oliva Nera</text>
+  <text x="350" y="67" font-family="Georgia, serif" font-size="15" font-weight="700" letter-spacing="2" fill="#3e3429" text-anchor="middle">RISTORANTE ITALIANO</text>
+  <g>
+    <rect x="28" y="118" width="122" height="216" fill="#fbfaf6"/>
+    <rect x="38" y="128" width="102" height="196" fill="#46525a"/>
+    <path d="M89 128V324M38 186H140" stroke="#fbfaf6" stroke-width="7"/>
+    <path d="M38 128L80 186M89 186L130 270" stroke="#8796a0" stroke-width="6" opacity="0.5"/>
+    <rect x="22" y="334" width="134" height="10" fill="#e3dccb"/>
+    <path d="M40 330q10 -22 22 -6q10 -24 24 -4q12 -20 22 2q12 -18 24 4" fill="#5d7f38"/>
+  </g>
+  <g>
+    <rect x="180" y="168" width="72" height="122" fill="#5b3b24"/>
+    <rect x="186" y="174" width="60" height="110" fill="#1f2121"/>
+    <path d="M194 192h40M194 208h32M194 224h38M194 240h26M194 256h36" stroke="#dcd8cc" stroke-width="3"/>
+    <rect x="212" y="290" width="8" height="40" fill="#5b3b24"/>
+  </g>
+  <g>
+    <rect x="282" y="112" width="122" height="308" fill="#a8622e"/>
+    <rect x="294" y="124" width="98" height="52" fill="#3d4447"/>
+    <path d="M343 124V176" stroke="#a8622e" stroke-width="5"/>
+    <rect x="294" y="186" width="44" height="134" fill="#3d4447"/>
+    <rect x="348" y="186" width="44" height="134" fill="#3d4447"/>
+    <rect x="294" y="330" width="44" height="80" fill="#93542a"/>
+    <rect x="348" y="330" width="44" height="80" fill="#93542a"/>
+    <path d="M294 186L330 250M348 186L384 250" stroke="#7f8b8f" stroke-width="5" opacity="0.5"/>
+  </g>
+  <g font-family="Georgia, serif" font-size="19" fill="#3b3a36" text-anchor="middle">
+    <text x="444" y="124">R</text><text x="444" y="148">I</text><text x="444" y="172">S</text><text x="444" y="196">T</text><text x="444" y="220">O</text><text x="444" y="244">R</text><text x="444" y="268">A</text><text x="444" y="292">N</text><text x="444" y="316">T</text><text x="444" y="340">E</text>
+    <text x="474" y="148">I</text><text x="474" y="172">T</text><text x="474" y="196">A</text><text x="474" y="220">L</text><text x="474" y="244">I</text><text x="474" y="268">A</text><text x="474" y="292">N</text><text x="474" y="316">O</text>
+  </g>
+</svg>

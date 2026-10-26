@@ -112,18 +112,6 @@
 		"what": "dark slate fascia over the arched café windows, CAFÉ repeated along it"
 	},
 	{
-		"front": "21643806_2",
-		"fromLeft": 0.55,
-		"height": 8,
-		"kind": "letters",
-		"text": "HOTEL",
-		"width": 2.5,
-		"ink": "#6b6a5e",
-		"font": "serif",
-		"street": "konviktska",
-		"what": "hotel lettering on the facade between second- and third-floor windows"
-	},
-	{
 		"front": "21643865_19",
 		"fromLeft": 0.09,
 		"height": 4.3,
@@ -1187,5 +1175,66 @@
 		"font": "serif",
 		"street": "x-3_z1",
 		"what": "two-line restaurant name in dark serif capitals painted on the plaster east of the restaurant door, over the terrace"
+	},
+	{
+		"front": "21643750_11",
+		"fromLeft": 0.55,
+		"height": 3.6,
+		"kind": "hanging",
+		"text": "Pilsner Urquell",
+		"width": 0.75,
+		"bg": "#2c6a44",
+		"ink": "#f2e6c2",
+		"font": "script",
+		"street": "x-1_z0",
+		"what": "round bottle-green Pilsner Urquell sign with the red seal, on a bracket over the arched door"
+	},
+	{
+		"front": "21643806_1",
+		"fromLeft": 0.5,
+		"height": 7.9,
+		"kind": "letters",
+		"text": "HOTEL",
+		"width": 2.4,
+		"ink": "#4a3a2c",
+		"font": "serif",
+		"street": "x-1_z0",
+		"what": "dark brown serif HOTEL letters on the band over the first-floor windows of the square front"
+	},
+	{
+		"front": "21643822_1",
+		"fromLeft": 0.46,
+		"height": 3,
+		"kind": "letters",
+		"text": "gib",
+		"width": 0.5,
+		"ink": "#f4f2ec",
+		"font": "sans",
+		"street": "x-1_z0",
+		"what": "small white lowercase logo over the glazed door, just right of the arched planked door"
+	},
+	{
+		"front": "21644594_3",
+		"fromLeft": 0.05,
+		"height": 3.6,
+		"kind": "letters",
+		"text": "ŠVEJK RESTAURANT",
+		"width": 2.4,
+		"ink": "#3a3530",
+		"font": "serif",
+		"street": "x-1_z0",
+		"what": "dark serif letters on the band over the restaurant's arched glazed door at the west end"
+	},
+	{
+		"front": "21649626_27",
+		"fromLeft": 0.9,
+		"height": 3.6,
+		"kind": "letters",
+		"text": "ČESKÁ GALERIE MODERNÍHO UMĚNÍ",
+		"width": 6,
+		"ink": "#6a6964",
+		"font": "serif",
+		"street": "x-1_z0",
+		"what": "grey capitals along the ground-floor band at the Konviktská end (2025; absent in the 2023 owner photo)"
 	}
 ]
