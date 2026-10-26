@@ -1122,6 +1122,7 @@ window.__studio = {
 	},
 	people,
 	shuffle: () => regenerate( true ),
+	rebuild: i => rebuilding = rebuilding.then( () => buildPerson( i ) ),
 	view( x, y, z, tx, ty, tz ) {
 
 		camera.position.set( x, y, z );
