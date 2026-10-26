@@ -55,8 +55,14 @@ commit, injected by `vite.config.js`) shows in a corner and in the pause menu. T
 - Old Town around Betlémské náměstí to Národní, Spálená and Žofín, now also **Kampa, Malá Strana and Petřín** (first
   layer: terrain, streets, plain houses, trees). Detail per 100 m tile comes from the model's street-photo pipeline.
 - The big map (Tab, or click the minimap) teleports you anywhere.
-- Known gaps in the new area: Karlův most has no statues or towers, the Petřín lookout tower is a block, the funicular
-  has no track, houses have default fronts.
+- Landmarks modelled by hand from the data (`tools/karluv.mjs` → `src/karluv.js`, `tools/petrin.mjs` → `src/petrin.js`,
+  `tools/domes.mjs` → `src/domes.js`): **Karlův most** in stone (arches, piers with cutwaters, parapets, setts, the 30
+  statues and groups at their OSM places, Bruncvík, the gas lamps, ice-guards), the Old Town Bridge Tower (walk
+  through its passage), the Lesser Town bridge towers and the gate between them; the **Petřín** lookout tower (steel
+  lattice, galleries) and the funicular's track; St Nicholas's dome and belfry on Malá Strana, St Francis's dome on
+  Křižovnické náměstí, Klementinum's Astronomical Tower. Views: `?at=-470,-270,1.2` (on the bridge),
+  `?at=-400,-246,-1.94` (to the Old Town tower), `?overview&view=-560,30,-170,-470,10,-280` (the bridge from the river).
+- Known gaps in the new area: houses have default fronts; nobody walks on Karlův most yet; the funicular has no cars.
 
 ## 4. People (NPCs)
 

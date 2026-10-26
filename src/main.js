@@ -834,6 +834,14 @@ if ( places?.legie ) {
 
 }
 
+// Karlův most along its axis, paved, to the Old Town tower.
+if ( places?.karluv ) {
+
+	const k = places.karluv, n = Math.floor( k.sTower / k.step ) + 1;
+	mapBridges.push( [ { pts: k.pts.slice( 0, n ).map( p => [ p[ 0 ], p[ 1 ] ] ), w: k.half * 2, fill: 'pavement' } ] );
+
+}
+
 for ( const b of places?.bridges || [] ) mapBridges.push( [ { pts: [ [ b.x0, b.z0 ], [ b.x1, b.z1 ] ], w: b.w, fill: /footway|path|pedestrian|cycleway/.test( b.kind ) ? 'pavement' : 'road' } ] );
 
 const isTouch = matchMedia( '(pointer: coarse)' ).matches || navigator.maxTouchPoints > 0 && ! matchMedia( '(pointer: fine)' ).matches;

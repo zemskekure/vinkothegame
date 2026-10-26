@@ -17,7 +17,9 @@ const VIEWS = {
 	malastrana: 'overview&view=-650,260,250,-1100,0,-250',
 	overview: 'overview',
 	holub: 'holub',
-	river: 'holub&fly=-420,250,0'
+	river: 'holub&fly=-420,250,0',
+	karluv: 'at=-470,-270,1.2',
+	petrin: 'overview&view=-1560,190,-60,-1637,165,-88'
 };
 
 let shared;
