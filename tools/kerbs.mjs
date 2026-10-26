@@ -383,9 +383,10 @@ function measureChain( parts, photo, inBuilding ) {
 // double track's centre line).
 const TRAM_HALF = 5.6;
 
-export async function buildKerbs( { roads, AREA, inBuilding, tramPaths = [], islands = [] } ) {
+// AREA: the field's extent; the photo always covers the whole play area (photoArea).
+export async function buildKerbs( { roads, AREA, photoArea = AREA, inBuilding, tramPaths = [], islands = [] } ) {
 
-	const photo = await loadPhoto( AREA );
+	const photo = await loadPhoto( photoArea );
 	const kerbed = roads.filter( r => r.highway !== 'service' && r.highway !== 'pedestrian' && r.pts.length >= 2 );
 	const chains = chainRoads( kerbed ).map( parts => measureChain( parts, photo, inBuilding ) ).filter( c => c && c.kerbed.some( Boolean ) );
 

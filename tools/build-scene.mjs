@@ -15,10 +15,10 @@ import jpeg from 'jpeg-js';
 import { fromFile } from 'geotiff';
 import poly2tri from 'poly2tri';
 import { ShapeUtils, Vector2, Color, SRGBColorSpace } from 'three';
-import { AREA, ORIGIN } from './area.mjs';
+import { AREA, FIRST_AREA, ORIGIN } from './area.mjs';
 import { loadStreets, buildPavementMesh, collectFurniture } from './streets.mjs';
 import { collectPlaces } from './places.mjs';
-import { lonLatToSJTSK, toCadastre } from './geo.mjs';
+import { lonLatToSJTSK, lonLatToSJTSKBeyond, toCadastre } from './geo.mjs';
 import { findOpenings, openingBox, clipToBox } from './openings.mjs';
 import { buildQuay } from './quay.mjs';
 import { buildTerraces } from './terraces.mjs';
@@ -29,6 +29,10 @@ const OUT = new URL( '../public/data/', import.meta.url );
 const BASE_HEIGHT = 184;
 const ROOF_GRID = 1.0; // spacing of interior roof samples (m)
 const EDGE_STEP = 1.5; // max wall / roof-edge segment length (m)
+// Outside the first area (Malá Strana, Kampa, Petřín, the strip north of Karlova), modelled from the data alone,
+// houses get half as many roof samples each way and wall segments twice as long: the area is three times the size,
+// and these meshes are most of what the game downloads and draws.
+const ROOF_GRID_WIDE = 2.0, EDGE_STEP_WIDE = 3.0;
 const EDGE_INSET = 0.7; // roof edge heights are sampled this far inside the footprint
 
 // ---------------------------------------------------------------------------
@@ -295,7 +299,7 @@ for ( const b of buildings ) rasterize( b );
 // Voršilská: an OSM building outline less than a fifth covered by RÚIAN footprints is added.
 {
 
-	const project = await lonLatToSJTSK();
+	const project = await lonLatToSJTSKBeyond( FIRST_AREA, AREA ); // moved onto the cadastre beyond the first area
 	const osm = JSON.parse( await readFile( new URL( 'osm.json', RAW ) ) );
 	const nodes = new Map( osm.filter( e => e.type === 'node' ).map( n => [ n.id, n ] ) );
 	let added = 0;
@@ -542,15 +546,19 @@ function THREE_DEG( d ) {
 
 }
 
-// Aerial photo (ČÚZK Ortofoto): real roof colours, and a check that tree candidates are green.
-const photo = jpeg.decode( await readFile( new URL( 'ortho.jpg', RAW ) ), { useTArray: true } );
+// Aerial photo (ČÚZK Ortofoto): real roof colours, and a check that tree candidates are green. The first area has a
+// photo of its own, cut as before the area grew (tools/fetch-data.mjs), so what is read off it there stays the same.
+const photo = jpeg.decode( await readFile( new URL( 'ortho.jpg', RAW ) ), { useTArray: true, maxMemoryUsageInMB: 2048 } );
+const firstPhoto = jpeg.decode( await readFile( new URL( 'ortho-first.jpg', RAW ) ), { useTArray: true, maxMemoryUsageInMB: 2048 } );
+const inFirstArea = ( X, Y ) => X >= FIRST_AREA.xmin && X < FIRST_AREA.xmax && Y > FIRST_AREA.ymin && Y <= FIRST_AREA.ymax;
 function photoAt( X, Y ) {
 
-	const c = Math.floor( ( X - AREA.xmin ) / ( AREA.xmax - AREA.xmin ) * photo.width );
-	const r = Math.floor( ( AREA.ymax - Y ) / ( AREA.ymax - AREA.ymin ) * photo.height );
-	if ( c < 0 || r < 0 || c >= photo.width || r >= photo.height ) return null;
-	const i = ( r * photo.width + c ) * 4;
-	return [ photo.data[ i ], photo.data[ i + 1 ], photo.data[ i + 2 ] ];
+	const [ img, A ] = inFirstArea( X, Y ) ? [ firstPhoto, FIRST_AREA ] : [ photo, AREA ];
+	const c = Math.floor( ( X - A.xmin ) / ( A.xmax - A.xmin ) * img.width );
+	const r = Math.floor( ( A.ymax - Y ) / ( A.ymax - A.ymin ) * img.height );
+	if ( c < 0 || r < 0 || c >= img.width || r >= img.height ) return null;
+	const i = ( r * img.width + c ) * 4;
+	return [ img.data[ i ], img.data[ i + 1 ], img.data[ i + 2 ] ];
 
 }
 
@@ -1025,7 +1033,7 @@ const shopEdges = new Set();
 const pendingSigns = [];
 {
 
-	const project = await lonLatToSJTSK();
+	const project = await lonLatToSJTSKBeyond( FIRST_AREA, AREA );
 	const osm = JSON.parse( await readFile( new URL( 'osm.json', RAW ) ) );
 	for ( const n of osm ) {
 
@@ -1115,7 +1123,8 @@ for ( const b of buildings ) {
 	let ground = Infinity;
 	for ( const ring of rings ) for ( const [ X, Y ] of ring ) ground = Math.min( ground, terrainAt( X, Y ) + BASE_HEIGHT );
 
-	const edges = rings.map( ring => densify( ring, EDGE_STEP ).map( ( [ X, Y, edge, along, edgeLen ], i, arr ) => {
+	const wide = ! inFirstArea( ( b.bbox[ 0 ] + b.bbox[ 2 ] ) / 2, ( b.bbox[ 1 ] + b.bbox[ 3 ] ) / 2 );
+	const edges = rings.map( ring => densify( ring, wide ? EDGE_STEP_WIDE : EDGE_STEP ).map( ( [ X, Y, edge, along, edgeLen ], i, arr ) => {
 
 		const prev = arr[ ( i + arr.length - 1 ) % arr.length ], next = arr[ ( i + 1 ) % arr.length ];
 		let nx = - ( next[ 1 ] - prev[ 1 ] ), ny = next[ 0 ] - prev[ 0 ];
@@ -1127,7 +1136,7 @@ for ( const b of buildings ) {
 	const interior = [];
 	const [ x0, y0, x1, y1 ] = b.bbox;
 	const landmark = landmarkAt( ( x0 + x1 ) / 2, ( y0 + y1 ) / 2 );
-	const grid = landmark ? ROOF_GRID / 2 : ROOF_GRID; // landmark roofs get a finer mesh: crisper hips and ridges
+	const grid = landmark ? ROOF_GRID / 2 : wide ? ROOF_GRID_WIDE : ROOF_GRID; // landmark roofs get a finer mesh: crisper hips and ridges
 	for ( let X = Math.ceil( x0 / grid ) * grid; X < x1; X += grid ) {
 
 		for ( let Y = Math.ceil( y0 / grid ) * grid; Y < y1; Y += grid ) {
@@ -1731,7 +1740,7 @@ function polylineDistance( paths, range ) {
 }
 
 // Kerbs follow the house fronts; the free-standing rotunda is not one (the street runs round it at full width).
-const streetData = await loadStreets( { AREA, buildingDist, inBuilding: ( X, Y ) => {
+const streetData = await loadStreets( { AREA, FIRST_AREA, buildingDist, inBuilding: ( X, Y ) => {
 
 	const id = buildingAt( X, Y );
 	return keptIds.has( id ) && ! HAND_MODELLED.has( buildings[ id ]?.code );
@@ -1740,6 +1749,18 @@ const streetData = await loadStreets( { AREA, buildingDist, inBuilding: ( X, Y )
 const surface2 = new Uint8Array( sw * sh * 4 );
 const tramDist = polylineDistance( JSON.parse( await readFile( new URL( 'tram.json', RAW ) ) ).flatMap( f => f.geometry?.paths || [] ), 6 );
 const parks = JSON.parse( await readFile( new URL( 'greenery.json', RAW ) ) ).flatMap( f => f.geometry?.rings ? [ f.geometry.rings ] : [] );
+// Beyond the first area, ZABAGED's orchards and gardens, vineyards, grassland, scrub and woods are green too (Petřín,
+// the Strahov and Seminary gardens), with the footpaths through them and the funicular's track (OpenStreetMap, within
+// 1.2 m of the line) left clear, so the paths up the hill and the funicular's line show.
+const withBox = rings => {
+
+	const xs = rings.flat().map( p => p[ 0 ] ), ys = rings.flat().map( p => p[ 1 ] );
+	return { rings, box: [ Math.min( ...xs ), Math.min( ...ys ), Math.max( ...xs ), Math.max( ...ys ) ] };
+
+};
+const landcover = JSON.parse( await readFile( new URL( 'landcover.json', RAW ) ).catch( () => '[]' ) ).flatMap( f => f.geometry?.rings ? [ withBox( f.geometry.rings ) ] : [] );
+const inLandcover = ( X, Y ) => landcover.some( ( { rings, box } ) => X >= box[ 0 ] && X <= box[ 2 ] && Y >= box[ 1 ] && Y <= box[ 3 ] && pointInRings( rings, X, Y ) );
+const footpaths = polylineDistance( streetData.ways.filter( w => ( /^(footway|path|steps|track|pedestrian|bridleway|cycleway)$/.test( w.tags.highway ) || w.tags.railway === 'funicular' ) && ! w.tags.tunnel ).map( w => w.pts.map( p => [ p.X, p.Y ] ) ), 2 );
 
 for ( let r = 0; r < sh; r ++ ) {
 
@@ -1750,7 +1771,7 @@ for ( let r = 0; r < sh; r ++ ) {
 		const i = ( r * sw + c ) * 4;
 		const clamp = v => Math.max( 0, Math.min( 255, Math.round( v ) ) );
 		surface[ i ] = clamp( buildingDist( X, Y ) * 40 );
-		surface[ i + 1 ] = parks.some( rings => pointInRings( rings, X, Y ) ) ? 255 : 0;
+		surface[ i + 1 ] = parks.some( rings => pointInRings( rings, X, Y ) ) || ( ! inFirstArea( X, Y ) && footpaths[ r * sw + c ] > 1.2 && inLandcover( X, Y ) ) ? 255 : 0;
 		const st = streetData.at( X, Y );
 		surface[ i + 2 ] = clamp( 128 - st.F * 25 );
 		surface[ i + 3 ] = clamp( tramDist[ r * sw + c ] * 50 );
@@ -1781,12 +1802,14 @@ for ( let r = 0; r < sh; r ++ ) {
 // ---------------------------------------------------------------------------
 // Ground detail from the aerial photo (25 cm): luminance divided by its local average over ~2 m, which keeps
 // markings, mosaic patterns, kerb lines and wear but cancels the building shadows. 128 = neutral; neutral on
-// roofs (inside footprints) and in the river. Row 0 = north, same frame as the photo.
-{
+// roofs (inside footprints) and in the river. Row 0 = north, same frame as the photo. At full resolution over the
+// first area from its own photo (ground-detail.jpg), at half resolution over the whole area (ground-detail-wide.jpg):
+// the whole area at 25 cm would take four times the first area's GPU memory.
+function groundDetail( img, A ) {
 
-	const W = photo.width, H = photo.height, cell = ( AREA.xmax - AREA.xmin ) / W;
+	const W = img.width, H = img.height, cell = ( A.xmax - A.xmin ) / W;
 	const lum = new Float32Array( W * H );
-	for ( let i = 0; i < W * H; i ++ ) lum[ i ] = 0.3 * photo.data[ i * 4 ] + 0.59 * photo.data[ i * 4 + 1 ] + 0.11 * photo.data[ i * 4 + 2 ] + 4;
+	for ( let i = 0; i < W * H; i ++ ) lum[ i ] = 0.3 * img.data[ i * 4 ] + 0.59 * img.data[ i * 4 + 1 ] + 0.11 * img.data[ i * 4 + 2 ] + 4;
 
 	// Box average through an integral image.
 	const R = 4; // 9 × 9 px ≈ 2.25 m
@@ -1807,13 +1830,13 @@ for ( let r = 0; r < sh; r ++ ) {
 	for ( let y = 0; y < H; y ++ ) {
 
 		const y0 = Math.max( 0, y - R ), y1 = Math.min( H, y + R + 1 );
-		const Y = AREA.ymax - ( y + 0.5 ) * cell;
+		const Y = A.ymax - ( y + 0.5 ) * cell;
 		for ( let x = 0; x < W; x ++ ) {
 
 			const x0 = Math.max( 0, x - R ), x1 = Math.min( W, x + R + 1 );
 			const sum = integral[ y1 * ( W + 1 ) + x1 ] - integral[ y0 * ( W + 1 ) + x1 ] - integral[ y1 * ( W + 1 ) + x0 ] + integral[ y0 * ( W + 1 ) + x0 ];
 			const mean = sum / ( ( x1 - x0 ) * ( y1 - y0 ) );
-			const X = AREA.xmin + ( x + 0.5 ) * cell;
+			const X = A.xmin + ( x + 0.5 ) * cell;
 			const masked = keptIds.has( buildingAt( X, Y ) ) || riverAt( X, Y );
 			const v = masked ? 128 : Math.max( 0, Math.min( 255, Math.round( 128 + ( lum[ y * W + x ] / mean - 1 ) * 160 ) ) );
 			detail[ y * W * 4 + x * 4 ] = detail[ y * W * 4 + x * 4 + 1 ] = detail[ y * W * 4 + x * 4 + 2 ] = v;
@@ -1823,9 +1846,28 @@ for ( let r = 0; r < sh; r ++ ) {
 
 	}
 
+	return { detail, W, H };
+
+}
+
+{
+
 	await mkdir( OUT, { recursive: true } );
-	await writeFile( new URL( 'ground-detail.jpg', OUT ), jpeg.encode( { data: detail, width: W, height: H }, 88 ).data );
-	console.log( `ground detail: ${W}x${H}` );
+	const first = groundDetail( firstPhoto, FIRST_AREA );
+	await writeFile( new URL( 'ground-detail.jpg', OUT ), jpeg.encode( { data: first.detail, width: first.W, height: first.H }, 88 ).data );
+	const { detail, W, H } = groundDetail( photo, AREA );
+	const hw = W >> 1, hh = H >> 1, wide = Buffer.alloc( hw * hh * 4 );
+	for ( let y = 0; y < hh; y ++ ) for ( let x = 0; x < hw; x ++ ) {
+
+		const i = ( 2 * y * W + 2 * x ) * 4;
+		const v = ( detail[ i ] + detail[ i + 4 ] + detail[ i + W * 4 ] + detail[ i + W * 4 + 4 ] + 2 ) >> 2;
+		wide[ ( y * hw + x ) * 4 ] = wide[ ( y * hw + x ) * 4 + 1 ] = wide[ ( y * hw + x ) * 4 + 2 ] = v;
+		wide[ ( y * hw + x ) * 4 + 3 ] = 255;
+
+	}
+
+	await writeFile( new URL( 'ground-detail-wide.jpg', OUT ), jpeg.encode( { data: wide, width: hw, height: hh }, 85 ).data );
+	console.log( `ground detail: ${first.W}x${first.H} over the first area, ${hw}x${hh} over all` );
 
 }
 
@@ -1835,7 +1877,19 @@ for ( let r = 0; r < sh; r ++ ) {
 
 const inKeptBuilding = ( X, Y ) => keptIds.has( buildingAt( X, Y ) );
 // Over Divadelní the street is a deck above the terrain grid (tools/terraces.mjs); along the river the quay walls clamp it.
-const pavement = buildPavementMesh( streetData, { AREA, toLocal, heightAt: ( X, Y ) => terraces.deckAt( X, Y ) ?? ( quay ? quay.clamp( X, Y, terrainAt( X, Y ) ) : terrainAt( X, Y ) ), inBuilding: ( X, Y ) => inKeptBuilding( X, Y ) || !! quay?.beyond( X, Y ) || !! terraces.trenchStreet( X, Y ), cut: quay?.beyond } );
+// A 0.5 m grid over the first area, 1 m over the rest (the outer one's cells inside the first area left out).
+const pavementOptions = { toLocal, heightAt: ( X, Y ) => terraces.deckAt( X, Y ) ?? ( quay ? quay.clamp( X, Y, terrainAt( X, Y ) ) : terrainAt( X, Y ) ), inBuilding: ( X, Y ) => inKeptBuilding( X, Y ) || !! quay?.beyond( X, Y ) || !! terraces.trenchStreet( X, Y ), cut: quay?.beyond };
+const pavement = ( ( a, b ) => {
+
+	const index = new Uint32Array( a.index.length + b.index.length );
+	index.set( a.index );
+	for ( let i = 0; i < b.index.length; i ++ ) index[ a.index.length + i ] = b.index[ i ] + a.positions.length / 3;
+	const positions = new Float32Array( a.positions.length + b.positions.length );
+	positions.set( a.positions );
+	positions.set( b.positions, a.positions.length );
+	return { positions, index, kerbLength: a.kerbLength + b.kerbLength };
+
+} )( buildPavementMesh( streetData, { ...pavementOptions, AREA: FIRST_AREA } ), buildPavementMesh( streetData, { ...pavementOptions, AREA, STEP: 1, skip: inFirstArea } ) );
 console.log( `pavements: ${pavement.positions.length / 3} vertices, ${( pavement.kerbLength / 1000 ).toFixed( 1 )} km of kerb` );
 
 const furniture = collectFurniture( streetData, {
@@ -1861,7 +1915,7 @@ const furniture = collectFurniture( streetData, {
 }
 furniture.statue.push( ...landmarkStatues );
 
-const places = collectPlaces( { project: await lonLatToSJTSK(), quay, terraces, openings, buildings, streetFacades, toLocal, terrainAt, buildingAt, keptIds, dsm, idGrid, AREA, ORIGIN, streetData, furniture, riverAt, buildingInfo, zabagedBridges: JSON.parse( await readFile( new URL( 'bridges.json', RAW ) ) ), terrainGrid: { terrain, tw, th, cell: TERRAIN_CELL }, inPark: ( X, Y ) => parks.some( rings => pointInRings( rings, X, Y ) ), tramPaths: JSON.parse( await readFile( new URL( 'tram.json', RAW ) ) ).flatMap( f => f.geometry?.paths || [] ) } );
+const places = collectPlaces( { FIRST_AREA, project: await lonLatToSJTSKBeyond( FIRST_AREA, AREA ), quay, terraces, openings, buildings, streetFacades, toLocal, terrainAt, buildingAt, keptIds, dsm, idGrid, AREA, ORIGIN, streetData, furniture, riverAt, buildingInfo, zabagedBridges: JSON.parse( await readFile( new URL( 'bridges.json', RAW ) ) ), terrainGrid: { terrain, tw, th, cell: TERRAIN_CELL }, inPark: ( X, Y ) => parks.some( rings => pointInRings( rings, X, Y ) ), tramPaths: JSON.parse( await readFile( new URL( 'tram.json', RAW ) ) ).flatMap( f => f.geometry?.paths || [] ) } );
 places.chapel = twinGableFronts[ 0 ] ? { ...twinGableFronts[ 0 ], spire: [ - 36.5, 42.8 ] } : null; // spire: from the aerial photo
 // Awnings on fronts away from the street network (on squares), placed by places.mjs.
 decor.awnings.push( ...places.awnings );
@@ -1947,6 +2001,8 @@ await writeFile( new URL( 'scene.json', OUT ), JSON.stringify( {
 	attribution: 'Data © ČÚZK (RÚIAN, ZABAGED®, DMR 5G, DMP 1G) · © OpenStreetMap contributors (ODbL)',
 	baseHeight: BASE_HEIGHT,
 	bounds: { minX: ax0, maxX: ax1, minZ: az0, maxZ: az1 },
+	// The first area, modelled in detail (tools/area.mjs): the finer ground detail and terrain mesh (src/main.js).
+	firstBounds: ( ( [ x0, , z1 ], [ x1, , z0 ] ) => ( { minX: x0, maxX: x1, minZ: z0, maxZ: z1 } ) )( toLocal( FIRST_AREA.xmin, FIRST_AREA.ymin, 0 ), toLocal( FIRST_AREA.xmax, FIRST_AREA.ymax, 0 ) ),
 	waterLevel,
 	terrain: { width: tw, height: th, cell: TERRAIN_CELL },
 	surface: { width: sw, height: sh, cell: SURF_CELL },

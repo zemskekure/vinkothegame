@@ -84,7 +84,7 @@ export function createRoofMaterial() {
  * roads that have them; pedestrian streets and squares in their own surface; grass in parks; dressed-stone
  * embankment walls on steep ground. Also used for the raised pavement mesh.
  */
-export function createGroundMaterial( surfaceTex, surface2Tex, bounds, detailTex ) {
+export function createGroundMaterial( surfaceTex, surface2Tex, bounds, detailTex, detailBounds = bounds, wideTex = null ) {
 
 	const mat = new THREE.MeshStandardNodeMaterial( { roughness: 0.9 } );
 	const wx = positionWorld.x, wz = positionWorld.z;
@@ -185,7 +185,18 @@ export function createGroundMaterial( surfaceTex, surface2Tex, bounds, detailTex
 
 	// Real ground detail from the aerial photo (shadow-free, see tools/build-scene.mjs): markings, mosaic patterns,
 	// kerb lines, stains.
-	const detail = float( 1 ).add( texture( detailTex, suv ).r.mul( 255 ).sub( 128 ).div( 160 ) );
+	// detailTex covers detailBounds (the first area, 25 cm); wideTex, when given, the whole area at 50 cm.
+	const D = detailBounds;
+	const duv = vec2( wx.sub( D.minX ).div( D.maxX - D.minX ), wz.sub( D.minZ ).div( D.maxZ - D.minZ ) );
+	let detailValue = texture( detailTex, duv ).r;
+	if ( wideTex ) {
+
+		const inside = step( D.minX, wx ).mul( step( wx, D.maxX ) ).mul( step( D.minZ, wz ) ).mul( step( wz, D.maxZ ) );
+		detailValue = mix( texture( wideTex, suv ).r, detailValue, inside );
+
+	}
+
+	const detail = float( 1 ).add( detailValue.mul( 255 ).sub( 128 ).div( 160 ) );
 	const flat = float( 1 ).sub( steep );
 	// Subtle on purpose: stronger, it turns parked cars and glare into white blotches on the road.
 	col = col.mul( mix( float( 1 ), detail.clamp( 0.7, 1.3 ), mix( float( 0.5 ), float( 0.35 ), pavement ).mul( flat ) ) );
