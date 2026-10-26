@@ -41,7 +41,8 @@ async function load( name, type = 'arrayBuffer', dir = 'data/' ) {
 
 // The city's buffers are packed (tools/pack.mjs, src/unpack.js): about a fifth of the raw floats, and less again
 // over the wire once the server gzips them.
-const [ data, wallsBuf, wallTableBuf, roofsBuf, roofTableBuf, terrainBuf, surfacesBuf, pavementBuf, footprintBuf, embankmentBuf ] = await Promise.all( [
+// (let: each download is let go once unpacked, below.)
+let [ data, wallsBuf, wallTableBuf, roofsBuf, roofTableBuf, terrainBuf, surfacesBuf, pavementBuf, footprintBuf, embankmentBuf ] = await Promise.all( [
 	load( 'scene.json', 'json' ),
 	load( 'walls.bin' ),
 	load( 'walls-table.bin' ),
@@ -132,6 +133,7 @@ const T = data.terrain;
 const terrainGeo = new THREE.BufferGeometry();
 const terrainMesh = unpackTerrain( terrainBuf, data.packed[ 'terrain.bin' ], T );
 const heights = terrainMesh.heights;
+terrainBuf = null;
 const vertexAt = new Map(); // grid point → corner
 {
 
@@ -214,6 +216,7 @@ const surfaceTexture = buf => {
 };
 
 const [ surfaceBytes, surface2 ] = unpackSurfaces( surfacesBuf, S.width, S.height );
+surfacesBuf = null;
 const surfaceTex = surfaceTexture( surfaceBytes ), surface2Tex = surfaceTexture( surface2 );
 // The aerial photo's ground detail: 25 cm over the first area, 50 cm over the whole area.
 const loadDetail = async name => {
@@ -264,6 +267,7 @@ const pavementGeo = new THREE.BufferGeometry();
 {
 
 	const { positions, index } = unpackPavement( pavementBuf, data.packed[ 'pavement.bin' ] );
+	pavementBuf = null;
 	pavementGeo.setAttribute( 'position', new THREE.BufferAttribute( positions, 3 ) );
 	pavementGeo.setIndex( new THREE.BufferAttribute( index, 1 ) );
 
@@ -452,52 +456,64 @@ scene.add( water );
 // Buildings
 
 // Roofs: flat-shaded so every hip and gable face reads crisply.
-const rs = data.roofStride;
-const roofIndexed = new THREE.BufferGeometry();
-const roofData = unpackRoofs( roofsBuf, roofTableBuf, data.packed[ 'roofs.bin' ], rs );
-const rib = new THREE.InterleavedBuffer( roofData.roofs, rs );
-roofIndexed.setAttribute( 'position', new THREE.InterleavedBufferAttribute( rib, 3, 0 ) );
-roofIndexed.setAttribute( 'roofKind', new THREE.InterleavedBufferAttribute( rib, 1, 3 ) );
-roofIndexed.setAttribute( 'seed', new THREE.InterleavedBufferAttribute( rib, 1, 4 ) );
-roofIndexed.setAttribute( 'roofColor', new THREE.InterleavedBufferAttribute( rib, 3, 5 ) );
-roofIndexed.setIndex( new THREE.BufferAttribute( roofData.index, 1 ) );
-const roofGeo = roofIndexed.toNonIndexed();
-roofGeo.computeVertexNormals();
-const roofs = new THREE.Mesh( roofGeo, createRoofMaterial() );
+const roofs = new THREE.Mesh( ( () => {
+
+	const rs = data.roofStride;
+	const roofIndexed = new THREE.BufferGeometry();
+	const roofData = unpackRoofs( roofsBuf, roofTableBuf, data.packed[ 'roofs.bin' ], rs );
+	roofsBuf = roofTableBuf = null;
+	const rib = new THREE.InterleavedBuffer( roofData.roofs, rs );
+	roofIndexed.setAttribute( 'position', new THREE.InterleavedBufferAttribute( rib, 3, 0 ) );
+	roofIndexed.setAttribute( 'roofKind', new THREE.InterleavedBufferAttribute( rib, 1, 3 ) );
+	roofIndexed.setAttribute( 'seed', new THREE.InterleavedBufferAttribute( rib, 1, 4 ) );
+	roofIndexed.setAttribute( 'roofColor', new THREE.InterleavedBufferAttribute( rib, 3, 5 ) );
+	roofIndexed.setIndex( new THREE.BufferAttribute( roofData.index, 1 ) );
+	const roofGeo = roofIndexed.toNonIndexed();
+	roofGeo.computeVertexNormals();
+	return roofGeo;
+
+} )(), createRoofMaterial() );
 roofs.castShadow = roofs.receiveShadow = true;
 scene.add( roofs );
 
-const ws = data.wallStride;
-const wallData = unpackWalls( wallsBuf, wallTableBuf, data.packed[ 'walls.bin' ], ws );
-const walls = wallData.walls;
-const wallGeo = new THREE.BufferGeometry();
-const wib = new THREE.InterleavedBuffer( walls, ws );
-// Packed into vec4s: WebGPU allows at most 16 values passed from vertex to fragment shader.
-[ [ 'position', 3, 0 ], [ 'wallA', 4, 3 ], [ 'wallB', 4, 7 ], [ 'wallC', 4, 13 ], [ 'trimColour', 3, 17 ], [ 'house', 4, 20 ] ].forEach( ( [ name, size, offset ] ) => {
+// The walls (built in a function of their own, so their arrays can go once they are on the GPU).
+const wallGeo = ( () => {
 
-	wallGeo.setAttribute( name, new THREE.InterleavedBufferAttribute( wib, size, offset ) );
+	const ws = data.wallStride;
+	const wallData = unpackWalls( wallsBuf, wallTableBuf, data.packed[ 'walls.bin' ], ws );
+	wallsBuf = wallTableBuf = null;
+	const walls = wallData.walls;
+	const wallGeo = new THREE.BufferGeometry();
+	const wib = new THREE.InterleavedBuffer( walls, ws );
+	// Packed into vec4s: WebGPU allows at most 16 values passed from vertex to fragment shader.
+	[ [ 'position', 3, 0 ], [ 'wallA', 4, 3 ], [ 'wallB', 4, 7 ], [ 'wallC', 4, 13 ], [ 'trimColour', 3, 17 ], [ 'house', 4, 20 ] ].forEach( ( [ name, size, offset ] ) => {
 
-} );
+		wallGeo.setAttribute( name, new THREE.InterleavedBufferAttribute( wib, size, offset ) );
 
-// Landmark facades (style 1 Národní divadlo sandstone, 2 Máj white panels, 3 Betlémská kaple white render).
-const LANDMARK_COLOURS = { 1: 0xb59a74, 2: 0xe6e6e2, 3: 0xf1ede5 };
-const plaster = new Float32Array( walls.length / ws * 3 );
-const c = new THREE.Color();
-for ( let i = 0, n = walls.length / ws; i < n; i ++ ) {
+	} );
 
-	// Measured colour from street photos when there is one, else a typical Prague plaster.
-	const r = walls[ i * ws + 10 ];
-	const landmark = LANDMARK_COLOURS[ walls[ i * ws + 16 ] ];
-	if ( landmark ) c.setHex( landmark );
-	else if ( r >= 0 ) c.setRGB( r, walls[ i * ws + 11 ], walls[ i * ws + 12 ], THREE.SRGBColorSpace );
-	else c.setHex( PLASTER[ Math.floor( walls[ i * ws + 8 ] * PLASTER.length ) ] );
-	plaster.set( [ c.r, c.g, c.b ], i * 3 );
+	// Landmark facades (style 1 Národní divadlo sandstone, 2 Máj white panels, 3 Betlémská kaple white render).
+	const LANDMARK_COLOURS = { 1: 0xb59a74, 2: 0xe6e6e2, 3: 0xf1ede5 };
+	const plaster = new Float32Array( walls.length / ws * 3 );
+	const c = new THREE.Color();
+	for ( let i = 0, n = walls.length / ws; i < n; i ++ ) {
 
-}
+		// Measured colour from street photos when there is one, else a typical Prague plaster.
+		const r = walls[ i * ws + 10 ];
+		const landmark = LANDMARK_COLOURS[ walls[ i * ws + 16 ] ];
+		if ( landmark ) c.setHex( landmark );
+		else if ( r >= 0 ) c.setRGB( r, walls[ i * ws + 11 ], walls[ i * ws + 12 ], THREE.SRGBColorSpace );
+		else c.setHex( PLASTER[ Math.floor( walls[ i * ws + 8 ] * PLASTER.length ) ] );
+		plaster.set( [ c.r, c.g, c.b ], i * 3 );
 
-wallGeo.setAttribute( 'plaster', new THREE.BufferAttribute( plaster, 3 ) );
-wallGeo.setIndex( new THREE.BufferAttribute( wallData.index, 1 ) );
-wallGeo.computeVertexNormals();
+	}
+
+	wallGeo.setAttribute( 'plaster', new THREE.BufferAttribute( plaster, 3 ) );
+	wallGeo.setIndex( new THREE.BufferAttribute( wallData.index, 1 ) );
+	wallGeo.computeVertexNormals();
+	return wallGeo;
+
+} )();
 // Described ground floors (tools/build-scene.mjs): one row per street front, one texel per 0.25 m of the front
 // holding the opening there: kind + 10 × frame colour, its left and right edge (m) and flags. Half floats: those
 // are filterable under WebGPU too (32-bit floats are not), and keep the edges to about 3 cm.
@@ -555,6 +571,7 @@ if ( params.has( 'signs' ) ) addSigns( scene, data.signs || [], renderer );
 addDecor( scene, data.decor );
 await addShopfronts( scene, data.decor?.shopfronts );
 addEmbankment( scene, embankmentBuf, data.embankment );
+embankmentBuf = null;
 
 // Signature places (rotunda, pub, café, champagne bar, museum gate, stairs) and street life (people, cars).
 const { seats } = addPlaces( scene, places, data.furniture, data.waterLevel );
@@ -565,6 +582,35 @@ addIcons( scene, ICONS, groundHeight, data.buildings );
 const batched = batchStatic( scene );
 const tiles = [ terrain, pavement, wallMesh, roofs ].map( mesh => splitByTile( mesh ) );
 const roofTiles = tiles[ 3 ];
+for ( const mesh of [ terrain, pavement, wallMesh, roofs ] ) mesh.geometry = new THREE.BufferGeometry();
+// Once on the GPU, the big meshes' arrays are dropped from memory: an empty array of the same kind stays, for the
+// buffer layout the renderer reads when it builds a pipeline.
+{
+
+	const heavy = new Set();
+	for ( const g of tiles.map( t => t.userData.geometry ) ) {
+
+		for ( const a of Object.values( g.attributes ) ) heavy.add( a.isInterleavedBufferAttribute ? a.data : a );
+		if ( g.index ) heavy.add( g.index );
+
+	}
+
+	const drop = setInterval( () => {
+
+		for ( const b of heavy ) {
+
+			const d = renderer.backend.get( b );
+			if ( ! d.buffer && ! d.bufferGPU ) continue;
+			b.array = new b.array.constructor( 0 );
+			heavy.delete( b );
+
+		}
+
+		if ( ! heavy.size ) clearInterval( drop );
+
+	}, 2000 );
+
+}
 const stillRoots = new Set( scene.children );
 // Everything still, with where it is (a sphere around it), to leave out what lies past the haze (the loop below).
 const beyondFog = [];
