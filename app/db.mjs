@@ -28,6 +28,7 @@ export function openDB( file ) {
 	const db = new DatabaseSync( file );
 	db.exec( `
 		PRAGMA journal_mode = WAL;
+		PRAGMA busy_timeout = 15000;
 		CREATE TABLE IF NOT EXISTS cells (
 			id TEXT PRIMARY KEY,
 			status TEXT NOT NULL DEFAULT 'todo',

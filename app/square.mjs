@@ -306,7 +306,8 @@ export async function runSquare( { db, grid, data, live, env, id, budget = 40, s
 			onChild( child );
 			const log = createWriteStream( join( logs, `${id}.log` ), { flags: 'a' } );
 			let result = null, buf = '';
-			const timer = setInterval( () => saveUsage( db, id, cumulativeUsage ), 5000 );
+			// Several tile runs share the database; a busy moment skips one live count instead of ending the run.
+			const timer = setInterval( () => { try { saveUsage( db, id, cumulativeUsage ); } catch ( e ) { console.error( e.message ); } }, 5000 );
 			const killer = setTimeout( () => {
 
 				note( `Časový limit ${Math.round( timeout / 60e3 )} min, ukončuji.` );
