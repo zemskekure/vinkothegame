@@ -35,6 +35,15 @@ loading.show();
 
 async function load( name, type = 'arrayBuffer', dir = 'data/', track = false ) {
 
+	// Already downloaded (or downloading) behind the start screen (src/start.js).
+	const kept = dir === 'data/' ? await window.__preload?.[ name ] : null;
+	if ( kept ) {
+
+		delete window.__preload[ name ];
+		return new Response( kept )[ type ]();
+
+	}
+
 	if ( ! window.PACKED_DATA && track ) {
 
 		// One of the first files: read as it comes, for the loading bar.
@@ -242,7 +251,12 @@ const surfaceTex = surfaceTexture( surfaceBytes ), surface2Tex = surfaceTexture(
 // The aerial photo's ground detail: 25 cm over the first area, 50 cm over the whole area.
 const loadDetail = async name => {
 
-	const tex = await new THREE.TextureLoader().loadAsync( `data/${name}` );
+	// From the start screen's download if it has it (src/start.js), else from the server.
+	const kept = await window.__preload?.[ name ];
+	const url = kept ? URL.createObjectURL( kept ) : `data/${name}`;
+	if ( kept ) delete window.__preload[ name ];
+	const tex = await new THREE.TextureLoader().loadAsync( url );
+	if ( kept ) URL.revokeObjectURL( url );
 	tex.flipY = false; // row 0 = north, like the surface maps
 	tex.anisotropy = renderer.getMaxAnisotropy();
 	return tex;

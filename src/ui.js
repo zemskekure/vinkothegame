@@ -39,6 +39,7 @@ export const BASE_STYLE = `
 	#ui-credits dt { margin-top: 10px; font: 16px ${FONT}; color: #ffd34a; text-shadow: 2px 2px 0 #000; letter-spacing: 0.03em; }
 	#ui-credits dd { margin: 2px 0 0; }
 	#ui-credits a { color: #f4ecd2; }
+	.ui-sym { font-family: system-ui, sans-serif; } /* the pixel font has no © or ® */
 	#ui-credits button { margin-top: 14px; padding: 6px 14px; border: 3px solid #000; background: #c4562f; color: #ffd34a; font: 16px ${FONT}; text-shadow: 2px 2px 0 #000; cursor: pointer; }
 `;
 
@@ -142,8 +143,8 @@ export function choose( list, items, { onBack = null } = {} ) {
 
 // Who made what the game is made of. They must stay reachable from the game (the pause menu and the start screen).
 const CREDITS = [
-	[ 'Město', 'Data © ČÚZK (RÚIAN, ZABAGED®, DMR 5G, DMP 1G, ortofoto) · © přispěvatelé <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> (ODbL)' ],
-	[ 'Fasády', 'Podle fotek © <a href="https://www.mapillary.com" target="_blank" rel="noopener">Mapillary</a> a jejich autoři (CC BY-SA 4.0)' ],
+	[ 'Město', 'Data <span class="ui-sym">©</span> ČÚZK (RÚIAN, ZABAGED<span class="ui-sym">®</span>, DMR 5G, DMP 1G, ortofoto) · <span class="ui-sym">©</span> přispěvatelé <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> (ODbL)' ],
+	[ 'Fasády', 'Podle fotek <span class="ui-sym">©</span> <a href="https://www.mapillary.com" target="_blank" rel="noopener">Mapillary</a> a jejich autoři (CC BY-SA 4.0)' ],
 	[ 'Lidé', 'Postavy <a href="https://quaternius.com" target="_blank" rel="noopener">Quaternius</a> (CC0)' ],
 	[ 'Vozidla (CC BY 4.0, upravená)', 'Skútr: Han66st · Škoda Octavia: Kuutti Siitonen · Škoda Favorit: FPSunreal · Trabant: creativecipher · šlapadlo labuť: Polygonal_64 · parník: norlinmartin (vše Sketchfab, <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>)' ],
 	[ 'Loďky', '<a href="https://kenney.nl" target="_blank" rel="noopener">Kenney</a> Watercraft Kit (CC0)' ],

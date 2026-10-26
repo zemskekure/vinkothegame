@@ -94,22 +94,27 @@ async function laterFiles() {
 
 }
 
-// The city's data into the browser's cache while the player chooses: how far it got, 0…1.
+// The city's data while the player chooses: how far it got, 0…1. The bytes are kept for the game
+// (window.__preload: file name → a promise of its Blob, src/main.js `load`), so a download still running when the
+// game starts is not made twice.
 function preload() {
 
 	const state = { progress: 0 };
 	if ( window.PACKED_DATA ) return { progress: 1, later: 1 };
 	const parts = DATA.map( () => 0 );
 	const update = () => state.progress = parts.reduce( ( a, b ) => a + b, 0 ) / parts.length;
-	DATA.forEach( async ( name, i ) => {
+	const kept = window.__preload = {};
+	DATA.forEach( ( name, i ) => kept[ name ] = ( async () => {
 
+		const chunks = [];
 		try {
 
 			const r = await fetch( `data/${name}` );
 			if ( ! r.ok || ! r.body ) {
 
 				parts[ i ] = 1;
-				return update();
+				update();
+				return null;
 
 			}
 
@@ -119,6 +124,7 @@ function preload() {
 
 				const { done, value } = await reader.read();
 				if ( done ) break;
+				chunks.push( value );
 				got += value.length;
 				if ( total ) parts[ i ] = Math.min( 0.99, got / total );
 				fileProgress( name, parts[ i ] );
@@ -126,13 +132,21 @@ function preload() {
 
 			}
 
-		} catch { /* the game loads it itself */ }
+		} catch {
 
-		parts[ i ] = 1;
-		fileProgress( name, 1 );
-		update();
+			return null; // the game loads it itself
 
-	} );
+		} finally {
+
+			parts[ i ] = 1;
+			fileProgress( name, 1 );
+			update();
+
+		}
+
+		return new Blob( chunks );
+
+	} )() );
 
 	// Then the rest, quietly, four at a time; state.later: how far that got.
 	state.later = 0;
@@ -146,7 +160,8 @@ function preload() {
 		let next = 0, got = 0;
 		const worker = async () => {
 
-			while ( next < urls.length ) {
+			// Only while the start screen is up: once the game starts it fetches what it needs itself.
+			while ( next < urls.length && ! state.stop ) {
 
 				const url = urls[ next ++ ];
 				try {
@@ -226,6 +241,7 @@ export async function startScreen() {
 	}
 
 	clearInterval( loadTimer );
+	data.stop = true;
 	root.remove();
 	return choice;
 
