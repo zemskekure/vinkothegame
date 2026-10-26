@@ -4,7 +4,8 @@ The one place for what the game is, what's in it and what's next. Read it before
 date when something lands (move items between the status columns, add new ideas at the bottom of their section).
 The city it is played in, the Prague model, is a separate thing: see `docs/README.md` for the split.
 
-Last update: 2026-10-26 (pigeon flight; the owner's textures on cars, boats, furniture, trees, graffiti, sky).
+Last update: 2026-10-26 (pigeon flight; the owner's textures on cars, boats, furniture, trees, graffiti, sky; solid
+trams and cars, riding the tram, passengers at the stops; the Old Town extension).
 
 ## 1. Vision
 
@@ -26,6 +27,7 @@ Last update: 2026-10-26 (pigeon flight; the owner's textures on cars, boats, fur
 | **Holub (pigeon)** | Starts straight in the city on the pavement of Betlémské náměstí: walk, sit, peck crumbs, fly. Flight is calm and forgiving (`src/holub/game.js`, flight section): cruises at ~10 m/s and holds its height with no keys pressed; A/D turn (leaning into the turn, ~24°, the camera stays level), W flaps (faster, climbing gently), S slows down and sinks (near a roof, ledge or the pavement it flares and lands by itself), Space takes off with a hop / climbs, C or Shift glides down; it lifts itself over low edges ahead and turns along walls instead of hitting them; touching down too fast is a soft bounce. The mouse orbits the camera, which swings back behind after ~1 s. Tuning (speed, turn rate, bank, camera distance and lag): `pigeon` in `public/game-settings.json`, live on the admin page (?admin, tab Holub). Day and night (T skips time). The egg and the first day's tutorial (`src/holub/story.js`) only with `?vejce`. | playable (`?holub`) |
 | **Kurýr (food-delivery courier)** | A character made in the creator, on foot or on a delivery scooter (B): leans into turns, bumps over setts and tram rails, 40 km/h top. Later: deliveries from real restaurants to addresses, against the clock, for tips. | riding works; creator + start screen in progress (`feat/start`); deliveries planned |
 | **Jen se projet (free roam)** | On foot, no goal. Space jumps (a 0.7 m hop, legs tucked; not on the scooter). | works (default today) |
+| Tramvají (as a passenger) | On foot at a stop: when a tram stands with its doors open, "[E] nastoupit" (a tap on it on a touch screen); inside, through one's own eyes, W A S D walk the aisle, C sits down, the board top left shows the line and the next stop; "[E] vystoupit" at a stop puts one on the platform. Not from the scooter (B first). `src/ride.js`. | works |
 | Overview | The city from above (M). | works |
 
 Start screen: choose Holub / Kurýr / Jen se projet; deep links (`?at=…`, `?holub`, `?overview`, `?studio`) skip it.
@@ -105,7 +107,28 @@ console size and packed into small atlases by the scripts in `tools/textures/` (
 pictures land). One material per atlas, instanced or merged.
 
 - **Trams**: real Prague types as textured boxes from the owner's pictures: Tatra T3 (often in pairs), historic T3,
-  KT8D5, 14T, 15T, 52T; on the real tram lines, stops with names.
+  KT8D5, 14T, 15T, 52T; on the real tram lines, stops with names (OpenStreetMap's, `src/tram-stops.json` from
+  `tools/tram-stop-names.mjs`), each route with a line number by the edges it runs between (approximate, `LINES` in
+  `src/trams.js`). They stop ~12 s at each stop with the train's middle at OSM's stop.
+  - **Solid** (`src/solids.js`): every tram section and every car is an oriented box; each frame the ones within 45 m
+    of the player are gathered. The walker and the scooter slide along them like house walls (the scooter loses its
+    speed); a moving tram shoves one aside at 4 m/s, never a jump; the third-person camera keeps out of them; the
+    pigeon lands on their roofs and rides along, turning with the tram (and is shoved aside on the street). Moving
+    cars brake for the player standing in their lane; the trams don't.
+  - **Riding** (`src/ride.js`, `src/tram-interior.js`): the inside is built only for the tram one rides and thrown
+    away after: the T3 kind (T3, historic T3, KT8D5: floor 0.9 m up, cream walls, brown-red seats) and the low-floor
+    kind (15T, 14T, 52T: floor 0.35 m, grey), single seats in rows in the owner's seat fabric, yellow poles and rails,
+    light strips, an open window band (the outside picture is only seen from outside, so the city passes by), the
+    owner's aisle pictures (`tram_t3_interior`, `tram_15t_interior`) on the end walls so the saloon seems to go on
+    (`tram-interior.png`, `tram-fabric.png`, `tools/textures/tram-interior.py`). The ridden tram's sections drop their
+    faces at the joints, so one walks through. At the end of a line (no stop left before the city's edge) it waits
+    with its doors open until one gets off. The big map (Tab), the view from above (M) take one off.
+  - **Passengers** (`src/passengers.js`): within ~80 m of the player only: two to four people wait on each platform
+    round where the trams stop, facing the tracks; when a tram stops, one to three get off on the platform side and
+    walk away off the platform's end, and the waiting walk to the nearest door and get on (stepping up into a high
+    floor; into the tram one rides they stay, standing); new people walk in from the platform's ends later. In the
+    tram one rides up to seven sit and one or two stand. Skinned crowd people (`life.newPerson`), dropped beyond
+    110 m.
 - **Cars** (on by default, `?nocars` hides them; `src/cars.js`, `car-atlas.png` 512 px): eight Czech street cars,
   Škoda Octavia, Favorit, Fabia, Trabant, a yellow taxi, a white van, a police estate and the red open tourer that
   drives tourists round. Each is its side outline (traced from the side picture) pushed out across the car, the
@@ -168,7 +191,4 @@ pictures land). One material per atlas, instanced or merged.
 
 ## Queue (owner's requests not started yet)
 
-- Trams and cars solid (the walker, the scooter and the pigeon collide with them).
-- Ride the tram: board at a stop, sit or stand inside (T3 and 15T interiors from the owner's textures `tram_t3_interior`, `tram_15t_interior`, `tram_seat_fabric`), ride along the line with the city passing by, get off at a stop.
-- Passengers getting on and off at tram stops.
 - PS4 (DualShock 4) / gamepad support via the Gamepad API: left stick move/steer, right stick camera, ✕ jump/flap, □ scooter, ○ tram/land, R2/L2 run/throttle/brake, △ map, Options pause; PlayStation symbols in the HUD, rumble on landing/bumps. (Owner: later.)

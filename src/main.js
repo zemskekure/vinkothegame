@@ -18,6 +18,9 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { createMinimap } from './minimap.js';
 import { addTrams } from './trams.js';
+import { Solids } from './solids.js';
+import { startRide } from './ride.js';
+import { addPassengers } from './passengers.js';
 import { addBoats } from './boats.js';
 import { onLegie } from './bridges.js';
 import { SUN, ANIMATE } from './kit.js';
@@ -767,6 +770,9 @@ function cameraBlocked( x, z ) {
 }
 
 const walker = new Walker( camera, renderer.domElement, ( x, z ) => groundHeight( x, z, walker.placed ? walker.y : null ), isBlocked, scene, cameraBlocked, ceilingAt );
+// The trams and the cars are solid (src/solids.js): their boxes near the player, gathered every frame.
+const solids = new Solids();
+walker.solids = solids;
 walker.setScooter( loadModel );
 player?.dress( walker, { ride: window.GAME === 'courier' } ); // the courier (src/start.js) starts on the scooter
 // How rough the street is under the scooter: 0 asphalt, ½ paving stones, 1 granite setts (surface2: the carriageway's
@@ -787,6 +793,8 @@ walkerLevel = () => walker.placed ? walker.y : null;
 
 // Trams and their overhead line (poles kept out of houses).
 let trams = { update() {} }, boats = { update() {} };
+// Riding the trams (src/ride.js) and the people at the stops (src/passengers.js), once the trams and people are in.
+let ride = { update() {} }, passengers = { update() {} };
 
 // The HUD (src/hud.js): the street's name as an area title, key hints, the speedometer, the pause menu.
 const hud = getHud();
@@ -916,7 +924,7 @@ window.addEventListener( 'keydown', e => {
 // The pigeon (?holub) instead of the walker: by default on Betlémské náměstí by the terrace, facing the chapel
 // (game settings, `pigeon.start`: x, z, heading).
 const holubStart = SETTINGS.pigeon.start;
-const holub = HOLUB ? startHolub( { scene, camera, dom: renderer.domElement, roofGeo: roofTiles.userData.geometry, bounds, groundHeight, waterLevel: data.waterLevel, places, furniture: data.furniture, life, start: holubStart, indoors: ( x, z ) => { const zn = zoneAt( x, z ); return !! zn && zn.y !== undefined && zn.ceil === undefined; } } ) : null;
+const holub = HOLUB ? startHolub( { scene, camera, dom: renderer.domElement, roofGeo: roofTiles.userData.geometry, bounds, groundHeight, waterLevel: data.waterLevel, places, furniture: data.furniture, life, start: holubStart, solids, indoors: ( x, z ) => { const zn = zoneAt( x, z ); return !! zn && zn.y !== undefined && zn.ceil === undefined; } } ) : null;
 // The pigeon starts in the city, on the pavement, ready to go; the first day's story (the egg in a nest on a cornice,
 // a short tutorial: src/holub/story.js) only with ?vejce. The clock moves the sun and the light.
 const story = holub && params.has( 'vejce' ) ? startStory( { scene, camera, holub, start: holubStart } ) : null;
@@ -1168,6 +1176,9 @@ renderer.setAnimationLoop( () => {
 	life.update( dt );
 	trams.update( dt );
 	boats.update( dt );
+	passengers.update( dt );
+	const me = holub ? holub.pos : walking ? walker.pos : null;
+	if ( me ) solids.gather( me.x, me.z );
 
 	if ( holub ) {
 
@@ -1179,12 +1190,14 @@ renderer.setAnimationLoop( () => {
 	} else if ( walking ) {
 
 		walker.update( dt );
+		ride.update( true );
 		minimap.update( walker.pos.x, walker.pos.z, walker.yaw, walker.heading );
 		hud.speed( walker.riding ? Math.abs( walker.speed ) * 3.6 : null );
 
 	} else {
 
 		orbit.update();
+		ride.update( false );
 
 	}
 
@@ -1193,7 +1206,7 @@ renderer.setAnimationLoop( () => {
 	if ( labelTimer <= 0 && window.__ready ) {
 
 		labelTimer = 0.3;
-		const mode = holub ? 'pigeon' : ! walking ? 'above' : walker.riding ? 'ride' : 'walk';
+		const mode = holub ? 'pigeon' : ! walking ? 'above' : walker.aboard ? 'tram' : walker.riding ? 'ride' : 'walk';
 		if ( mode !== hudMode ) {
 
 			hud.mode( mode );
@@ -1202,7 +1215,6 @@ renderer.setAnimationLoop( () => {
 
 		}
 
-		const me = holub ? holub.pos : walking ? walker.pos : null;
 		if ( me ) hud.place( nearestStreet( me.x, me.z ), quarter( me.x ) );
 
 	}
@@ -1261,7 +1273,7 @@ renderer.setAnimationLoop( () => {
 
 }
 
-window.__debug = { setFps: f => FPS = f, graffiti, day, renderer, scene, batched, camera, isBlocked, groundHeight, walker, life, trams, boats, holub, waterLevel: data.waterLevel };
+window.__debug = { setFps: f => FPS = f, graffiti, day, renderer, scene, batched, camera, isBlocked, groundHeight, walker, life, trams, boats, holub, solids, waterLevel: data.waterLevel };
 window.__THREE = THREE;
 window.__ready = true;
 // The courier's first message, on the pager.
@@ -1270,7 +1282,27 @@ window.__complete = false;
 
 // Street life: the people (?nocars hides the cars), the trams and the boats, loaded once the city is up.
 load( 'life.json', 'json' ).then( streetLife => Promise.all( [
-	addLife( scene, streetLife, { seats, benches: data.furniture.bench, groundHeight, loadModel, camera, cars: ! params.has( 'nocars' ), dom: renderer.domElement, player: () => holub ? holub.pos : walking ? walker.pos : null, hour: () => day ? day.hour : null } ).then( l => Object.assign( life, l ) ),
-	addTrams( scene, streetLife?.trams, groundHeight, ( x, z ) => cameraBlocked( x, z ) || onLegie( places?.legie, x, z ) ).then( t => trams = window.__debug.trams = t ),
+	addLife( scene, streetLife, { seats, benches: data.furniture.bench, groundHeight, loadModel, camera, cars: ! params.has( 'nocars' ), dom: renderer.domElement, player: () => holub ? holub.pos : walking ? walker.pos : null, hour: () => day ? day.hour : null } ).then( l => {
+
+		Object.assign( life, l );
+		if ( l.boxes ) solids.add( l.boxes );
+
+	} ),
+	addTrams( scene, streetLife?.trams, groundHeight, ( x, z ) => cameraBlocked( x, z ) || onLegie( places?.legie, x, z ), { platforms: places?.stops || [] } ).then( t => {
+
+		trams = window.__debug.trams = t;
+		if ( t.boxes ) solids.add( t.boxes );
+
+	} ),
 	addBoats( scene, { loadModel, groundHeight, waterLevel: data.waterLevel } ).then( b => boats = window.__debug.boats = b )
-] ) ).then( () => renderer.compileAsync( scene, camera ).catch( () => {} ) ).then( () => window.__complete = true ); // the people's, trams' and boats' pipelines too
+] ) ).then( () => {
+
+	if ( trams.trams ) {
+
+		passengers = addPassengers( { scene, life, trams, platforms: places?.stops || [], groundHeight, player: () => holub ? holub.pos : walking ? walker.pos : null } );
+		if ( ! holub ) ride = window.__debug.ride = startRide( { trams, walker, hud, passengers, groundHeight: ( x, z ) => groundHeight( x, z ), isBlocked } );
+		window.__debug.passengers = passengers;
+
+	}
+
+} ).then( () => renderer.compileAsync( scene, camera ).catch( () => {} ) ).then( () => window.__complete = true ); // the people's, trams' and boats' pipelines too

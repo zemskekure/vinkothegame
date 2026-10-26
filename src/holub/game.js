@@ -144,7 +144,7 @@ function scatterFood( scene, spots, surfaceAt, rnd ) {
 
 // --- the game -----------------------------------------------------------------------------------------------------
 
-export function startHolub( { scene, camera, dom, roofGeo, bounds, groundHeight, waterLevel, places, furniture, life, start, indoors = () => false } ) {
+export function startHolub( { scene, camera, dom, roofGeo, bounds, groundHeight, waterLevel, places, furniture, life, start, indoors = () => false, solids = null } ) {
 
 	// What happens, for the story (src/holub/story.js): 'peck' (food name), 'takeoff', 'land' (height above the street),
 	// 'walk' (metres), 'drop', 'hit'.
@@ -160,8 +160,17 @@ export function startHolub( { scene, camera, dom, roofGeo, bounds, groundHeight,
 	let seed = 7;
 	const rnd = () => ( ( seed = ( seed * 16807 ) % 2147483647 ) / 2147483647 );
 	const roofAt = roofGrid( roofGeo, bounds );
-	// Inside a walk-in room (the pub, the večerka…) the floor; elsewhere the street or the roof over it.
-	const surfaceAt = ( x, z ) => indoors( x, z ) ? groundHeight( x, z ) : Math.max( groundHeight( x, z ), roofAt( x, z ) );
+	// Inside a walk-in room (the pub, the večerka…) the floor; elsewhere the street or the roof over it. A tram's or a
+	// car's roof (src/solids.js) counts too, for a bird at `y` no lower than a little under it: one that flies or
+	// walks into the side of a tram meets a wall, one on the street under a tram passing over stays on the street.
+	const cityAt = ( x, z ) => indoors( x, z ) ? groundHeight( x, z ) : Math.max( groundHeight( x, z ), roofAt( x, z ) );
+	const surfaceAt = ( x, z, y = Infinity ) => {
+
+		const s = cityAt( x, z ), t = solids ? solids.top( x, z ) : - Infinity;
+		return t > s && y >= t - 0.6 ? t : s;
+
+	};
+	const shove = [ 0, 0 ];
 	const overWater = ( x, z ) => surfaceAt( x, z ) < waterLevel + 0.3;
 
 	// Leftovers round the terrace tables, benches and bins (more where people sit).
@@ -507,6 +516,27 @@ export function startHolub( { scene, camera, dom, roofGeo, bounds, groundHeight,
 
 		let speed = 0;
 
+		if ( ( mode === 'walk' || mode === 'sit' ) && solids ) {
+
+			// On a tram's roof the bird rides along, turning with it; on the street a vehicle shoves it aside.
+			const ride = solids.carry( pos.x, pos.z, pos.y );
+			if ( ride ) {
+
+				pos.x = ride[ 0 ];
+				pos.z = ride[ 1 ];
+				heading += ride[ 2 ];
+				yaw += ride[ 2 ];
+
+			} else {
+
+				const [ dx, dz ] = solids.push( pos.x, pos.z, pos.y, 0.15, dt, shove );
+				pos.x += dx;
+				pos.z += dz;
+
+			}
+
+		}
+
 		if ( mode === 'walk' || mode === 'sit' ) {
 
 			if ( keys.has( 'Space' ) ) {
@@ -544,7 +574,7 @@ export function startHolub( { scene, camera, dom, roofGeo, bounds, groundHeight,
 
 			} else if ( mode === 'sit' && ( ix || iz ) ) mode = 'walk';
 
-			if ( mode === 'walk' || mode === 'sit' ) pos.y = surfaceAt( pos.x, pos.z );
+			if ( mode === 'walk' || mode === 'sit' ) pos.y = surfaceAt( pos.x, pos.z, pos.y );
 			idle = speed > 0 || pecking > 0 ? 0 : idle + dt;
 			if ( mode === 'walk' && idle > 9 ) mode = 'sit';
 

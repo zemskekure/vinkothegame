@@ -62,6 +62,12 @@ export class Walker {
 		this.hopV = 0;
 		this.jumpWanted = false;
 		this.lookTime = 0;
+		// The trams and cars near by (src/solids.js), set by the game: solid like the houses.
+		this.solids = null;
+		this.shove = [ 0, 0 ];
+		// Riding a tram (src/ride.js): { step( walker, dt ), off() }; the eyes' height over the floor.
+		this.aboard = null;
+		this.eye = 1.65;
 
 		dom.addEventListener( 'click', () => {
 
@@ -119,8 +125,8 @@ export class Walker {
 		window.addEventListener( 'keydown', e => {
 
 			this.keys.add( e.code );
-			if ( e.code === 'KeyV' && this.enabled ) this.setFirstPerson( ! this.firstPerson );
-			if ( e.code === 'KeyB' && this.enabled ) this.setRiding( ! this.riding );
+			if ( e.code === 'KeyV' && this.enabled && ! this.aboard ) this.setFirstPerson( ! this.firstPerson );
+			if ( e.code === 'KeyB' && this.enabled && ! this.aboard ) this.setRiding( ! this.riding );
 			if ( e.code === 'Space' && this.enabled ) {
 
 				e.preventDefault(); // not a click on whatever button has the focus
@@ -213,7 +219,7 @@ export class Walker {
 
 	jump() {
 
-		if ( this.enabled && ! this.riding && this.hop === 0 ) this.jumpWanted = true;
+		if ( this.enabled && ! this.riding && ! this.aboard && this.hop === 0 ) this.jumpWanted = true;
 
 	}
 
@@ -255,6 +261,8 @@ export class Walker {
 
 	teleport( x, z, yaw ) {
 
+		this.aboard?.off(); // off the tram first
+
 		// Nearest open spot to the requested one (spiral search on a 1 m grid).
 		search: for ( let r = 0; r < 60; r ++ ) {
 
@@ -293,12 +301,33 @@ export class Walker {
 
 		}
 
-		return false;
+		return !! this.solids?.hit( x, z, this.y, RADIUS );
+
+	}
+
+	// A tram or car that has moved into one shoves one aside (src/solids.js), never into a house; on the scooter a
+	// knock costs the speed.
+	shoved( dt ) {
+
+		if ( ! this.solids || ! dt ) return;
+		const [ dx, dz ] = this.solids.push( this.pos.x, this.pos.z, this.y, RADIUS, dt, this.shove );
+		if ( ! dx && ! dz ) return;
+		const p = this.pos;
+		for ( let k = 0; k < 5; k ++ ) if ( ! this.isBlocked( p.x + dx * ( 1 - k / 5 ), p.z + dz * ( 1 - k / 5 ) ) ) {
+
+			p.x += dx * ( 1 - k / 5 );
+			p.z += dz * ( 1 - k / 5 );
+			break;
+
+		}
+
+		if ( this.riding ) this.speed *= 0.5;
 
 	}
 
 	update( dt ) {
 
+		if ( this.aboard ) return this.aboard.step( this, dt );
 		if ( this.riding ) return this.ride( dt );
 		const safe = { x: this.pos.x, z: this.pos.z, y: this.y, heading: this.heading };
 		const k = this.keys;
@@ -370,6 +399,7 @@ export class Walker {
 		this.phase += dt * ( moving > WALK + 0.5 ? 9.5 : 6.2 ) * Math.min( 1, this.stride + 0.2 );
 		this.time += dt;
 
+		this.shoved( dt );
 		this.settle( dt, safe );
 
 	}
@@ -449,6 +479,7 @@ export class Walker {
 
 		this.stride += ( 0 - this.stride ) * Math.min( 1, dt * 8 );
 		this.time += dt;
+		this.shoved( dt );
 		this.settle( dt, safe );
 
 	}
@@ -508,9 +539,9 @@ export class Walker {
 		this.avatar.userData.setPose( { phase: this.phase, stride: this.stride, t: this.time, ride: this.riding, air } );
 
 		const cam = this.camera;
-		if ( this.firstPerson ) {
+		if ( this.firstPerson || this.aboard ) {
 
-			cam.position.set( p.x, p.y + 1.65 + this.hop, p.z );
+			cam.position.set( p.x, p.y + this.eye + this.hop, p.z );
 			cam.rotation.set( - this.pitch, this.yaw, 0, 'YXZ' );
 			return;
 
@@ -536,7 +567,7 @@ export class Walker {
 		for ( let s = 0.4; s <= want; s += 0.2 ) {
 
 			const x = tx + dx * s, y = ty + dy * s, z = tz + dz * s;
-			if ( this.cameraBlocked( x, z ) || y < this.groundHeight( x, z ) + 0.25 || y > this.ceilingAt( x, z ) - 0.15 ) {
+			if ( this.cameraBlocked( x, z ) || y < this.groundHeight( x, z ) + 0.25 || y > this.ceilingAt( x, z ) - 0.15 || this.solids?.inside( x, y, z ) ) {
 
 				allowed = Math.max( 0.6, s - 0.35 );
 				break;

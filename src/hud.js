@@ -3,6 +3,8 @@
 //   - The street's name comes in big and italic when you enter a new street, as an area title, and goes again.
 //   - The controls as key caps, for a few seconds at the start and on H (and in the pause menu, "Ovládání").
 //   - Messages for the courier come on a pager.
+//   - Near a tram at a stop, a key prompt ("[E] nastoupit") low in the middle; in the tram, the line and the next
+//     stop on a board like the trams' own (amber dots on black).
 //   - Esc (or the MENU button on a touch screen) opens the pause menu, which also holds the credits and the build.
 // One HUD a page: `getHud()`.
 
@@ -40,6 +42,16 @@ const STYLE = `
 	#hud-tally { position: fixed; right: 18px; top: 74px; z-index: 3; display: flex; gap: 14px; padding: 6px 12px; pointer-events: none; font: 16px/1.3 ${FONT}; text-shadow: 2px 2px 0 #000; }
 	#hud-tally b { color: #ffd34a; }
 	#hud-tally span small { font-size: 16px; opacity: 0.8; margin-right: 6px; }
+	#hud-prompt { position: fixed; left: 50%; bottom: 96px; transform: translateX(-50%); z-index: 3; display: none; gap: 14px; padding: 8px 14px; pointer-events: none;
+		font: 16px/1.6 ${FONT}; color: #f4ecd2; text-shadow: 2px 2px 0 #000; white-space: nowrap; }
+	#hud-prompt.on { display: flex; animation: hud-blink 1.2s steps(2, end) infinite; }
+	@keyframes hud-blink { 50% { color: #ffd34a; } }
+	#hud-tram { position: fixed; left: 16px; top: 76px; z-index: 3; display: none; align-items: stretch; pointer-events: none;
+		background: #0b0b0b; border: 3px solid #000; box-shadow: 0 0 0 2px #3a3f44, 5px 5px 0 rgba(0,0,0,0.45); max-width: calc(100vw - 32px); }
+	#hud-tram.on { display: flex; }
+	#hud-tram .line { padding: 4px 12px; background: #ffb52e; color: #0b0b0b; font: 700 32px/1.2 ${FONT}; display: grid; place-items: center; }
+	#hud-tram .text { padding: 4px 14px 6px; color: #ffb52e; font: 16px/1.5 ${FONT}; text-shadow: 0 0 6px rgba(255, 181, 46, 0.45); }
+	#hud-tram .text b { display: block; font: 700 24px/1.25 ${FONT}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 	#hud-touch { position: fixed; left: 10px; top: 10px; z-index: 4; display: flex; gap: 8px; }
 	#hud-touch button { padding: 7px 10px; border: 3px solid #000; background: rgba(20, 26, 40, 0.86); color: #f4ecd2; font: 16px ${FONT}; text-shadow: 2px 2px 0 #000;
 		box-shadow: inset -2px -2px 0 rgba(0,0,0,0.4), inset 2px 2px 0 rgba(255,255,255,0.12); }
@@ -76,6 +88,7 @@ const caps = list => list.map( ( [ keys, what ] ) => `<span>${keys.map( k => `<s
 
 export const KEYS = {
 	walk: [ [ [ 'W', 'A', 'S', 'D' ], 'chůze' ], [ [ 'Shift' ], 'běh' ], [ [ 'Mezerník' ], 'skok' ], [ [ 'B' ], 'skútr' ], [ [ 'V' ], 'z očí' ], [ [ 'Tab' ], 'mapa' ], [ [ 'M' ], 'shora' ], [ [ 'Esc' ], 'menu' ] ],
+	tram: [ [ [ 'W', 'A', 'S', 'D' ], 'ulička' ], [ [ 'C' ], 'sednout' ], [ [ 'E' ], 'vystoupit (na zastávce)' ], [ [ 'Myš' ], 'rozhlížení' ], [ [ 'Esc' ], 'menu' ] ],
 	ride: [ [ [ 'W' ], 'plyn' ], [ [ 'S' ], 'brzda' ], [ [ 'A', 'D' ], 'řízení' ], [ [ 'B' ], 'sesednout' ], [ [ 'Tab' ], 'mapa' ], [ [ 'Esc' ], 'menu' ] ],
 	pigeon: [ [ [ 'W', 'A', 'S', 'D' ], 'chůze a let' ], [ [ 'Mezerník' ], 'vzlétnout / výš' ], [ [ 'S' ], 'v letu: přistát' ], [ [ 'C' ], 'níž / sednout' ], [ [ 'E' ], 'zobnout' ], [ [ 'Q' ], 'bobek' ], [ [ 'Tab' ], 'mapa' ], [ [ 'Esc' ], 'menu' ] ],
 	above: [ [ [ 'Myš' ], 'otáčení' ], [ [ 'Kolečko' ], 'přiblížení' ], [ [ 'M' ], 'na ulici' ], [ [ 'Esc' ], 'menu' ] ]
@@ -83,6 +96,7 @@ export const KEYS = {
 const TOUCH_KEYS = {
 	walk: 'Joystick vlevo dole: chůze (až k okraji běh) · táhni prstem: kamera',
 	ride: 'Joystick: plyn, brzda a řízení · táhni prstem: kamera',
+	tram: 'Joystick: ulička · táhni prstem: rozhlížení',
 	pigeon: 'Joystick vlevo: chůze a let · táhni prstem: rozhlížení · tlačítka vpravo',
 	above: 'Táhni prstem: otáčení · dvěma prsty: přiblížení a posun'
 };
@@ -196,6 +210,35 @@ function makeHud() {
 
 	}
 
+	// --- the key prompt near a tram: [ [ keys, what ], … ] or null; on a touch screen a tap on it does it (`tap`)
+	const promptEl = add( 'hud-prompt', 'ui-panel' );
+	function prompt( list, tap = null ) {
+
+		promptEl.classList.toggle( 'on', !! list );
+		if ( list ) promptEl.innerHTML = caps( list );
+		promptEl.style.pointerEvents = list && tap ? 'auto' : 'none';
+		promptEl.onpointerdown = list && tap ? e => {
+
+			e.preventDefault();
+			tap();
+
+		} : null;
+
+	}
+
+	// --- in the tram: the line and the stops, or null to hide
+	const tramEl = add( 'hud-tram' );
+	let tramShown = '';
+	function tram( line, title, note = '' ) {
+
+		const key = line === null ? '' : `${line}|${title}|${note}`;
+		if ( key === tramShown ) return;
+		tramShown = key;
+		tramEl.classList.toggle( 'on', !! key );
+		if ( key ) tramEl.innerHTML = `${line ? `<div class="line">${line}</div>` : ''}<div class="text"><b>${title}</b>${note}</div>`;
+
+	}
+
 	// --- the pigeon's tally
 	let tallyEl = null;
 	function tally( items ) {
@@ -270,7 +313,7 @@ function makeHud() {
 
 	return {
 		touch,
-		place, replace, hints, hideHints, speed, pager, tally, pause, touchButtons,
+		place, replace, hints, hideHints, speed, pager, tally, pause, touchButtons, prompt, tram,
 		// What the pause menu offers besides going on, the controls and the credits: [ { id, label, run } ].
 		set menu( f ) {
 
