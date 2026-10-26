@@ -7,7 +7,7 @@
 // isn't (yet), the answer says so (null) and the caller holds still, or takes the coarse 8 m height grid of the
 // whole city (heightCoarse) for things far off.
 
-let READY = 1000; // m round the start that are in before play
+let READY = 600; // m round the start that are in before play (the haze is thick from 1 km: the rest comes in the first seconds of play)
 let LOAD = 1500; // m round where one is that are fetched
 let UNLOAD = 1750; // m beyond which a square is let go (a little over LOAD, so the edge doesn't flicker)
 const AHEAD = 4; // seconds of travel the queue looks ahead
@@ -43,6 +43,14 @@ export function createStream( { index, apply, release, frameBudget = 6, radii = 
 
 			const job = jobs.get( e.data.id );
 			jobs.delete( e.data.id );
+			if ( job.roof ) {
+
+				job.square.roofPending = false;
+				if ( job.square.state === 'live' && job.square.data?.roofPos ) job.square.roofGrid = e.data.grid;
+				return;
+
+			}
+
 			inFlight --;
 			if ( e.data.error ) {
 
@@ -87,7 +95,9 @@ export function createStream( { index, apply, release, frameBudget = 6, radii = 
 	function schedule() {
 
 		for ( const s of all.values() ) s.d = Math.min( ...points.map( ( [ x, z, r = 0 ] ) => Math.max( 0, rectDistance( s, x, z ) - r ) ) );
-		const wanted = [ ...all.values() ].filter( s => s.state === 'idle' && s.d < LOAD && ( s.failed || 0 ) < 3 ).sort( ( a, b ) => a.d - b.d );
+		// Before play only the ring round the start (the download is the wait); after, everything within LOAD.
+		const reach = readyResolve ? READY : LOAD;
+		const wanted = [ ...all.values() ].filter( s => s.state === 'idle' && s.d < reach && ( s.failed || 0 ) < 3 ).sort( ( a, b ) => a.d - b.d );
 		for ( const s of wanted ) {
 
 			if ( inFlight >= IN_FLIGHT ) break;
@@ -177,7 +187,15 @@ export function createStream( { index, apply, release, frameBudget = 6, radii = 
 		for ( const s of live.values() ) {
 
 			if ( s.d > UNLOAD ) drop( s );
-			else if ( s.roofGrid && s.d > 600 ) s.roofGrid = null;
+			else if ( s.roofGrid && rectDistance( s, x, z ) > 600 ) s.roofGrid = null;
+			else if ( ! s.roofGrid && ! s.roofPending && s.data.roofPos && rectDistance( s, x, z ) < 350 ) {
+
+				s.roofPending = true;
+				const id = ++ jobId;
+				jobs.set( id, { square: s, roof: true } );
+				workers[ nextWorker ++ % WORKERS ].postMessage( { id, roof: s.data.roofPos, x0: s.data.x0, z0: s.data.z0, size: TS } );
+
+			}
 
 		}
 
@@ -271,42 +289,15 @@ export function createStream( { index, apply, release, frameBudget = 6, radii = 
 
 	}
 
-	// The highest roof on a 0.5 m grid, for the pigeon: worked out for a square the first time it is asked about there,
-	// and forgotten once one is 600 m off.
+	// The highest roof on a 0.5 m grid, for the pigeon: worked out off the main thread for the squares within 350 m
+	// of where one is (update below), forgotten once one is 600 m off; -Infinity where it isn't ready (yet).
 	function roof( x, z ) {
 
 		const s = squareAt( x, z );
-		if ( ! s?.data.roofPos ) return - Infinity;
-		if ( ! s.roofGrid ) s.roofGrid = roofGrid( s.data.roofPos, s.data.x0, s.data.z0 );
+		if ( ! s?.roofGrid ) return - Infinity;
 		const c = Math.floor( ( x - s.data.x0 ) / 0.5 ), r = Math.floor( ( z - s.data.z0 ) / 0.5 ), N = TS * 2;
 		if ( c < 0 || r < 0 || c >= N || r >= N ) return - Infinity;
 		return s.roofGrid[ r * N + c ];
-
-	}
-
-	function roofGrid( p, x0, z0 ) {
-
-		const C = 0.5, N = TS * 2, grid = new Float32Array( N * N ).fill( - Infinity );
-		for ( let t = 0; t < p.length; t += 9 ) {
-
-			const ax = p[ t ], ay = p[ t + 1 ], az = p[ t + 2 ], bx = p[ t + 3 ], by = p[ t + 4 ], bz = p[ t + 5 ], cx = p[ t + 6 ], cy = p[ t + 7 ], cz = p[ t + 8 ];
-			const det = ( bz - cz ) * ( ax - cx ) + ( cx - bx ) * ( az - cz );
-			if ( Math.abs( det ) < 1e-9 ) continue;
-			const c0 = Math.max( 0, Math.floor( ( Math.min( ax, bx, cx ) - x0 ) / C ) ), c1 = Math.min( N - 1, Math.ceil( ( Math.max( ax, bx, cx ) - x0 ) / C ) );
-			const r0 = Math.max( 0, Math.floor( ( Math.min( az, bz, cz ) - z0 ) / C ) ), r1 = Math.min( N - 1, Math.ceil( ( Math.max( az, bz, cz ) - z0 ) / C ) );
-			for ( let r = r0; r <= r1; r ++ ) for ( let c = c0; c <= c1; c ++ ) {
-
-				const x = x0 + ( c + 0.5 ) * C, z = z0 + ( r + 0.5 ) * C;
-				const l0 = ( ( bz - cz ) * ( x - cx ) + ( cx - bx ) * ( z - cz ) ) / det, l1 = ( ( cz - az ) * ( x - cx ) + ( ax - cx ) * ( z - cz ) ) / det, l2 = 1 - l0 - l1;
-				if ( l0 < - 0.02 || l1 < - 0.02 || l2 < - 0.02 ) continue;
-				const y = l0 * ay + l1 * by + l2 * cy, i = r * N + c;
-				if ( y > grid[ i ] ) grid[ i ] = y;
-
-			}
-
-		}
-
-		return grid;
 
 	}
 

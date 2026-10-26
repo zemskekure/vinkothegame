@@ -479,8 +479,4 @@ export function createFacadeMaterial( cutouts = [], groundTex = null ) {
 }
 
 // Muted Prague facade palette: ochres, creams, salmon pinks, pale greens and greys.
-export const PLASTER = [
-	0xd9b56a, 0xe3cf9c, 0xd49a55, 0xc98a6c, 0xdcd3c2, 0xd4a28c, 0xbf8263,
-	0xaebd98, 0xe6c47a, 0xc4b8a2, 0xd8ac97, 0xb89d72, 0xdcbd92, 0x9fb1b6,
-	0xc99780, 0xdcc27e, 0xa9b78f, 0xcda97a, 0xb9c4a8, 0xe0b8a4
-];
+export { PLASTER } from '../walls-data.js';

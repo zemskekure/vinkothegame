@@ -1,12 +1,12 @@
 import * as THREE from 'three/webgpu';
 import { SkyMesh } from 'three/addons/objects/SkyMesh.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { createFacadeMaterial, PLASTER } from './shading/facade.js';
+import { createFacadeMaterial } from './shading/facade.js';
 import { createRoofMaterial, createGroundMaterial, createWaterMaterial } from './shading/surfaces.js';
 import { Walker } from './walker.js';
 import { addFurniture } from './furniture.js';
 import { addSky } from './sky.js';
-import { streetFronts, prepareGraffiti } from './graffiti.js';
+import { prepareGraffiti } from './graffiti.js';
 import { addSigns } from './signs.js';
 import { addDecor, addEmbankment } from './decor.js';
 import { addWalls } from './dress.js';
@@ -200,11 +200,32 @@ const firstFocus = ( () => {
 // ---------------------------------------------------------------------------
 // The squares: the ground, the pavements, the houses, the street furniture of each, and what walking asks of them
 
+// Work a square brings that can wait a frame or two (its furniture, garden walls, graffiti, overhead line): done a
+// few milliseconds a frame (the loop below), all at once before play.
+const chores = [];
+function runChores( budget = Infinity ) {
+
+	const t0 = performance.now();
+	do {
+
+		const chore = chores.shift();
+		if ( ! chore ) return;
+		chore();
+
+	} while ( performance.now() - t0 < budget );
+
+}
+
 const stream = createStream( { index: data, apply: square => putSquare( square ), release: square => dropSquare( square ), radii: { ready: Number( params.get( 'ready' ) ) || 0, load: Number( params.get( 'load' ) ) || 0 } } );
 stream.setCoarse( new Int16Array( coarseBuf ) );
 const firstSquares = stream.prime( ...firstFocus );
 // Before play, the squares are put in as they arrive (no frame to keep smooth yet).
-const pump = setInterval( () => stream.update( ...firstFocus, 0, 0, { everything: true } ), 25 );
+const pump = setInterval( () => {
+
+	stream.update( ...firstFocus, 0, 0, { everything: true } );
+	runChores();
+
+}, 25 );
 
 // The street maps and the aerial ground detail of the whole city, filled in square by square on the GPU (each
 // square's own small texture copied in, then let go): nothing of them stays in memory here.
@@ -279,9 +300,6 @@ groundFloorTexture.magFilter = groundFloorTexture.minFilter = THREE.NearestFilte
 groundFloorTexture.needsUpdate = true;
 const facadeMaterial = createFacadeMaterial( data.places?.cutouts || [], groundFloorTexture );
 
-// Landmark facades (style 1 Národní divadlo sandstone, 2 Máj white panels, 3 Betlémská kaple white render).
-const LANDMARK_COLOURS = { 1: 0xb59a74, 2: 0xe6e6e2, 3: 0xf1ede5 };
-const plasterColour = new THREE.Color();
 // Tags, stickers and posters on the ground floors (src/graffiti.js), square by square.
 const graffitiReady = prepareGraffiti( { streets: data.streets, groundFloors: groundRows } ).catch( e => console.warn( 'graffiti', e ) );
 let graffitiPlace = null;
@@ -303,6 +321,8 @@ const hold = geometry => {
 // pipeline. (Attributes a material never reads are never uploaded, and stay.)
 setInterval( () => {
 
+	// (Not under WebGL 2: there the squares' meshes lose their buffers when their arrays go. The fallback keeps them.)
+	if ( ! renderer.backend.isWebGPUBackend ) return heavy.clear();
 	for ( const b of heavy ) {
 
 		const d = renderer.backend.get( b );
@@ -327,10 +347,8 @@ function putSquare( square ) {
 		const m = new THREE.Mesh( geometry, material );
 		m.castShadow = shadows;
 		m.receiveShadow = true;
-		m.frustumCulled = true;
 		geometry.computeBoundingSphere();
 		group.add( m );
-		hold( geometry );
 		return m;
 
 	};
@@ -357,31 +375,19 @@ function putSquare( square ) {
 
 	}
 
+	let fronts = null;
 	if ( D.walls ) {
 
-		const ws = data.wallStride, walls = D.walls.walls, n = walls.length / ws;
-		const fronts = graffitiPlace ? streetFronts( walls, ws, D.walls.index ) : null;
 		const g = new THREE.BufferGeometry();
-		const wib = new THREE.InterleavedBuffer( walls, ws );
+		const wib = new THREE.InterleavedBuffer( D.walls.walls, data.wallStride );
 		// Packed into vec4s: WebGPU allows at most 16 values passed from vertex to fragment shader.
 		[ [ 'position', 3, 0 ], [ 'wallA', 4, 3 ], [ 'wallB', 4, 7 ], [ 'wallC', 4, 13 ], [ 'trimColour', 3, 17 ], [ 'house', 4, 20 ] ].forEach( ( [ name, size, offset ] ) => g.setAttribute( name, new THREE.InterleavedBufferAttribute( wib, size, offset ) ) );
-		// Measured colour from street photos when there is one, else a typical Prague plaster.
-		const plaster = new Float32Array( n * 3 );
-		for ( let i = 0; i < n; i ++ ) {
-
-			const r = walls[ i * ws + 10 ], landmark = LANDMARK_COLOURS[ walls[ i * ws + 16 ] ];
-			if ( landmark ) plasterColour.setHex( landmark );
-			else if ( r >= 0 ) plasterColour.setRGB( r, walls[ i * ws + 11 ], walls[ i * ws + 12 ], THREE.SRGBColorSpace );
-			else plasterColour.setHex( PLASTER[ Math.floor( walls[ i * ws + 8 ] * PLASTER.length ) ] );
-			plaster.set( [ plasterColour.r, plasterColour.g, plasterColour.b ], i * 3 );
-
-		}
-
-		g.setAttribute( 'plaster', new THREE.BufferAttribute( plaster, 3 ) );
+		// Measured colour from street photos when there is one, else a typical Prague plaster (src/walls-data.js).
+		g.setAttribute( 'plaster', new THREE.BufferAttribute( D.walls.plaster, 3 ) );
 		g.setAttribute( 'normal', new THREE.BufferAttribute( D.walls.normal, 3 ) );
 		g.setIndex( new THREE.BufferAttribute( D.walls.index, 1 ) );
 		mesh( g, facadeMaterial );
-		if ( fronts?.length ) graffitiPlace( group, fronts, groundHeight );
+		fronts = D.walls.fronts;
 		D.walls = null;
 
 	}
@@ -417,42 +423,61 @@ function putSquare( square ) {
 
 	}
 
-	const H = D.header;
-	if ( D.embankment ) addEmbankment( group, D.embankment, { pillars: H.posts?.pillars || [], thin: H.posts?.thin || [], rails: H.rails || [] } );
-	D.embankment = null;
-	if ( Object.keys( H.furniture ).length ) addFurniture( group, H.furniture );
-	if ( H.walls?.length ) addWalls( group, H.walls );
-	// The trams' overhead line over this square (src/trams.js), once the trams are in.
-	trams.catenary?.( group, D.x0, D.z0, data.tiles.size );
+	scene.add( group );
+	squareGroups.add( group );
+	stillRoots?.add( group );
+	square.group = group;
+	settle( group, group.children.slice() );
+
+	// The rest a frame or more later, each piece as a chore of its own (forgotten if the square has gone by then).
+	const H = D.header, emb = D.embankment;
 	D.header = { i: H.i, j: H.j };
+	D.embankment = null;
+	const later = build => chores.push( () => {
 
-	group.traverse( o => {
-
-		if ( ! o.isMesh ) return;
-		if ( o.isInstancedMesh && ! o.boundingSphere ) o.computeBoundingSphere();
-		if ( ! o.isInstancedMesh && o.geometry !== undefined ) hold( o.geometry );
+		if ( square.group !== group ) return;
+		const before = group.children.length;
+		build();
+		settle( group, group.children.slice( before ) );
 
 	} );
-	scene.add( group );
-	// Its pipelines (shared with the other squares') and its buffers on the GPU now, in the background, so its arrays
-	// can go even while it is out of sight, and its first sight costs nothing.
-	if ( window.__ready ) {
+	if ( emb || H.rails ) later( () => addEmbankment( group, emb, { pillars: H.posts?.pillars || [], thin: H.posts?.thin || [], rails: H.rails || [] } ) );
+	if ( Object.keys( H.furniture ).length ) later( () => addFurniture( group, H.furniture ) );
+	if ( H.walls?.length ) later( () => addWalls( group, H.walls ) );
+	if ( fronts?.length ) later( () => graffitiPlace?.( group, fronts, groundHeight ) );
+	// The trams' overhead line over this square (src/trams.js), once the trams are in.
+	later( () => trams.catenary?.( group, D.x0, D.z0, data.tiles.size ) );
+	window.__debug?.squareLog?.push( [ performance.now(), square.i, square.j, + ( performance.now() - t0 ).toFixed( 1 ), D.bytes ] );
 
-		const flipped = [];
-		group.traverse( o => o.frustumCulled && flipped.push( o ) );
+}
+
+// New meshes of a square: their arrays go once on the GPU, and (once playing) their buffers and pipelines are
+// prepared in the background, so their first sight costs nothing; a square near where one is redraws the shadows.
+function settle( group, meshes ) {
+
+	const flipped = [];
+	for ( const root of meshes ) root.traverse( o => {
+
+		if ( ! o.isMesh ) return;
+		hold( o.geometry );
+		if ( o.frustumCulled ) flipped.push( o );
+
+	} );
+	if ( window.__ready && flipped.length ) {
+
 		for ( const o of flipped ) o.frustumCulled = false;
+		const hidden = group.children.filter( o => ! meshes.includes( o ) && o.visible ), shown = group.visible;
+		for ( const o of hidden ) o.visible = false;
+		group.visible = true;
 		renderer.compileAsync( group, camera, scene ).catch( () => {} );
+		group.visible = shown;
+		for ( const o of hidden ) o.visible = true;
 		for ( const o of flipped ) o.frustumCulled = true;
 
 	}
 
-	squareGroups.add( group );
-	stillRoots?.add( group );
-	square.group = group;
-	// A square coming in near where one is: the still city's shadows are drawn again.
-	if ( Math.abs( D.x0 + 128 - shadowCentre.x ) < 700 && Math.abs( D.z0 + 128 - shadowCentre.z ) < 700 ) shadowsStale = true;
-	putSince = Math.max( putSince, performance.now() - t0 );
-	window.__debug?.squareLog?.push( [ performance.now(), square.i, square.j, + ( performance.now() - t0 ).toFixed( 1 ), D.bytes ] );
+	const { x0, z0 } = group.userData;
+	if ( Math.abs( x0 + 128 - shadowCentre.x ) < 700 && Math.abs( z0 + 128 - shadowCentre.z ) < 700 ) shadowsStale = true;
 
 }
 
@@ -1152,7 +1177,8 @@ function aimShadows( x, z, close ) {
 
 	}
 
-	const cx = Math.round( x / 50 ) * 50, cz = Math.round( z / 50 ) * 50;
+	// The pigeon flies fast: its square moves in 100 m steps (still 100 m inside the square's edge), half as many redraws.
+	const step = holub ? 100 : 50, cx = Math.round( x / step ) * step, cz = Math.round( z / step ) * step;
 	if ( cx === shadowCentre.x && cz === shadowCentre.z ) return;
 	const dir = sun.position.clone().sub( shadowCentre );
 	shadowCentre.set( cx, 0, cz );
@@ -1269,6 +1295,7 @@ renderer.setAnimationLoop( () => {
 	// off; drawn within the haze.
 	const speed = v => THREE.MathUtils.clamp( v / Math.max( dt, 1e-3 ), - 60, 60 );
 	stream.update( focus.x, focus.z, speed( focus.x - lastFocus.x ), speed( focus.z - lastFocus.z ) );
+	runChores( 3 );
 	lastFocus.copy( focus );
 	for ( const g of squareGroups ) {
 
@@ -1306,7 +1333,9 @@ function compileCity( near = null, onProgress = null ) {
 		o[ key ] = value;
 
 	};
-	const reach = scene.fog.far + 200;
+	// Before play the hand-made things within 500 m (each has a shader of its own: hundreds, seconds to compile); the
+	// rest right after, while the first seconds are played.
+	const reach = 500;
 	for ( const { o, sphere } of beyondFog ) set( o, 'visible', ! near || Math.hypot( sphere.center.x - near[ 0 ], sphere.center.z - near[ 1 ] ) - sphere.radius < reach );
 	for ( const g of squareGroups ) set( g, 'visible', true );
 	scene.traverseVisible( o => o.frustumCulled && set( o, 'frustumCulled', false ) );
@@ -1357,7 +1386,7 @@ const samples = new THREE.Group();
 
 }
 
-window.__debug = { setFps: f => FPS = f, stream, squareGroups, graffiti, day, renderer, scene, batched, camera, isBlocked, groundHeight, walker, life, trams, boats, holub, solids, waterLevel: data.waterLevel };
+window.__debug = { setFps: f => FPS = f, stream, squareGroups, squareLog: [], graffiti, day, renderer, scene, batched, camera, isBlocked, groundHeight, walker, life, trams, boats, holub, solids, waterLevel: data.waterLevel };
 window.__THREE = THREE;
 window.__ready = true;
 // The courier's first message, on the pager.
@@ -1377,13 +1406,14 @@ load( 'life.json', 'json' ).then( streetLife => Promise.all( [
 		trams = window.__debug.trams = t;
 		if ( t.boxes ) solids.add( t.boxes );
 		// The overhead line over the squares already in (the ones to come build theirs).
-		for ( const g of squareGroups ) {
+		for ( const g of squareGroups ) chores.push( () => {
 
+			if ( ! squareGroups.has( g ) ) return;
 			const before = g.children.length;
 			t.catenary?.( g, g.userData.x0, g.userData.z0, data.tiles.size );
-			for ( const m of g.children.slice( before ) ) hold( m.geometry );
+			settle( g, g.children.slice( before ) );
 
-		}
+		} );
 
 	} ),
 	addBoats( scene, { loadModel, groundHeight, waterLevel: data.waterLevel } ).then( b => boats = window.__debug.boats = b )

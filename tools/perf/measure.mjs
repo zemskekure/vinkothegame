@@ -23,7 +23,12 @@ const VIEWS = {
 	holub: 'holub',
 	river: 'holub&fly=-420,250,0',
 	karluv: 'at=-470,-270,1.2',
-	petrin: 'overview&view=-1560,190,-60,-1637,165,-88'
+	petrin: 'overview&view=-1560,190,-60,-1637,165,-88',
+	// Prague 1 beyond the Old Town (streamed squares far from the first area).
+	hradcany: 'at=-1503,-742,-1.9',
+	wenceslas: 'at=541.66,429.72,-2.35',
+	prikope: 'at=610,-52,-0.95',
+	castle: 'overview&view=-1018,305,-672,-1148,65,-842'
 };
 
 let shared;
@@ -43,7 +48,8 @@ async function loadTest() {
 	const page = await ctx.newPage();
 	const cdp = await ctx.newCDPSession( page );
 	await cdp.send( 'Network.enable' );
-	if ( ! process.env.FAST ) await cdp.send( 'Network.emulateNetworkConditions', { offline: false, latency: 40, downloadThroughput: 1.5e6, uploadThroughput: 0.5e6 } );
+	// Throttled here unless the server does it (tools/perf/serve.mjs RATE=…, which also slows the workers' downloads).
+	if ( ! process.env.FAST && ! process.env.SERVER_RATE ) await cdp.send( 'Network.emulateNetworkConditions', { offline: false, latency: 40, downloadThroughput: 1.5e6, uploadThroughput: 0.5e6 } );
 	const out = {};
 	for ( const visit of [ 'cold', 'repeat' ] ) {
 
@@ -62,20 +68,32 @@ async function loadTest() {
 		cdp.on( 'Network.loadingFinished', onDone );
 		const log = [];
 		watch( page, log );
+		const served = async () => {
+
+			const r = await fetch( `${base}__bytes` ).catch( () => null );
+			return r?.ok ? Number( await r.text() ) : NaN;
+
+		};
+		const served0 = await served();
 		const t0 = Date.now();
 		await page.goto( `${base}?${START}`, { timeout: 600000, waitUntil: 'domcontentloaded' } );
 		const ok = await page.waitForFunction( () => window.__ready, null, { timeout: 600000, polling: 100 } ).then( () => true, () => false );
 		const ready = ( Date.now() - t0 ) / 1000;
-		const bytesAtReady = bytes;
+		// What the server sent (workers' downloads too, which the page's network events don't see), else the page's.
+		const servedAtReady = await served() - served0;
+		const bytesAtReady = Number.isFinite( servedAtReady ) ? servedAtReady : bytes;
 		// Everything streamed in after the city (people, trams, boats): window.__complete.
 		await page.waitForFunction( () => window.__complete !== false, null, { timeout: 600000, polling: 100 } ).catch( () => {} );
 		const complete = ( Date.now() - t0 ) / 1000;
 		await page.waitForTimeout( visit === 'cold' ? 15000 : 3000 );
 		const heap = await page.evaluate( () => performance.memory ? Math.round( performance.memory.usedJSHeapSize / 1e6 ) : null );
+		await cdp.send( 'HeapProfiler.collectGarbage' ).catch( () => {} );
+		const heapGC = await page.evaluate( () => performance.memory ? Math.round( performance.memory.usedJSHeapSize / 1e6 ) : null );
 		cdp.off( 'Network.loadingFinished', onDone );
 		cdp.off( 'Network.responseReceived', onResp );
 		console.log( [ ...perUrl ].sort( ( a, b ) => b[ 1 ] - a[ 1 ] ).slice( 0, 25 ).map( ( [ u, b ] ) => `  ${( b / 1e6 ).toFixed( 2 )} MB ${u}` ).join( '\n' ) );
-		out[ visit ] = { ok, ready: + ready.toFixed( 1 ), complete: + complete.toFixed( 1 ), mbAtReady: + ( bytesAtReady / 1e6 ).toFixed( 2 ), mbTotal: + ( bytes / 1e6 ).toFixed( 2 ), requests, heap, errors: log.slice( 0, 5 ) };
+		const servedTotal = await served() - served0;
+		out[ visit ] = { ok, ready: + ready.toFixed( 1 ), complete: + complete.toFixed( 1 ), mbAtReady: + ( bytesAtReady / 1e6 ).toFixed( 2 ), mbTotal: + ( ( Number.isFinite( servedTotal ) ? servedTotal : bytes ) / 1e6 ).toFixed( 2 ), requests, heap, heapGC, errors: log.slice( 0, 5 ) };
 		console.log( label, visit, JSON.stringify( out[ visit ] ) );
 
 	}

@@ -2008,6 +2008,8 @@ function groundDetail( img, A ) {
 	}
 
 	await writeFile( new URL( 'ground-detail-wide.jpg', OUT ), jpeg.encode( wide, 75 ).data );
+	// The same, one byte a metre, for tools/tiles.mjs to cut into the streamed squares without a second JPEG pass.
+	await writeFile( new URL( 'ground-detail-wide.raw', OUT ), Uint8Array.from( { length: wide.width * wide.height }, ( _, i ) => wide.data[ i * 4 ] ) );
 	const [ hw, hh ] = [ wide.width, wide.height ];
 	first.W = first.width;
 	first.H = first.height;

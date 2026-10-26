@@ -4,6 +4,7 @@
 
 import { unpackColumns } from '../tools/pack.mjs';
 import { unpackWalls, unpackRoofs, unpackSurfaces } from './unpack.js';
+import { plasterColours, streetFronts } from './walls-data.js';
 
 // Area-weighted vertex normals over an index (three's computeVertexNormals); without an index, a face's own.
 function normals( pos, index ) {
@@ -150,8 +151,9 @@ async function load( { url, priority, C } ) {
 		// Normals from the positions alone (every quad has corners of its own).
 		const S = C.wallStride, pos = new Float32Array( walls.length / S * 3 );
 		for ( let v = 0; v < pos.length / 3; v ++ ) pos.set( walls.subarray( v * S, v * S + 3 ), v * 3 );
-		out.walls = { walls, index, normal: normals( pos, index ) };
-		transfer.push( walls.buffer, index.buffer, out.walls.normal.buffer );
+		// The plaster colours, and the street fronts' ground floors for the graffiti (src/graffiti.js).
+		out.walls = { walls, index, normal: normals( pos, index ), plaster: plasterColours( walls, S ), fronts: streetFronts( walls, S, index ) };
+		transfer.push( walls.buffer, index.buffer, out.walls.normal.buffer, out.walls.plaster.buffer );
 
 	}
 
@@ -227,7 +229,43 @@ async function load( { url, priority, C } ) {
 
 }
 
+// The highest roof on a 0.5 m grid over a square, for the pigeon (src/stream.js roof).
+function roofGrid( p, x0, z0, TS ) {
+
+	const C = 0.5, N = TS * 2, grid = new Float32Array( N * N ).fill( - Infinity );
+	for ( let t = 0; t < p.length; t += 9 ) {
+
+		const ax = p[ t ], ay = p[ t + 1 ], az = p[ t + 2 ], bx = p[ t + 3 ], by = p[ t + 4 ], bz = p[ t + 5 ], cx = p[ t + 6 ], cy = p[ t + 7 ], cz = p[ t + 8 ];
+		const det = ( bz - cz ) * ( ax - cx ) + ( cx - bx ) * ( az - cz );
+		if ( Math.abs( det ) < 1e-9 ) continue;
+		const c0 = Math.max( 0, Math.floor( ( Math.min( ax, bx, cx ) - x0 ) / C ) ), c1 = Math.min( N - 1, Math.ceil( ( Math.max( ax, bx, cx ) - x0 ) / C ) );
+		const r0 = Math.max( 0, Math.floor( ( Math.min( az, bz, cz ) - z0 ) / C ) ), r1 = Math.min( N - 1, Math.ceil( ( Math.max( az, bz, cz ) - z0 ) / C ) );
+		for ( let r = r0; r <= r1; r ++ ) for ( let c = c0; c <= c1; c ++ ) {
+
+			const x = x0 + ( c + 0.5 ) * C, z = z0 + ( r + 0.5 ) * C;
+			const l0 = ( ( bz - cz ) * ( x - cx ) + ( cx - bx ) * ( z - cz ) ) / det, l1 = ( ( cz - az ) * ( x - cx ) + ( ax - cx ) * ( z - cz ) ) / det, l2 = 1 - l0 - l1;
+			if ( l0 < - 0.02 || l1 < - 0.02 || l2 < - 0.02 ) continue;
+			const y = l0 * ay + l1 * by + l2 * cy, i = r * N + c;
+			if ( y > grid[ i ] ) grid[ i ] = y;
+
+		}
+
+	}
+
+	return grid;
+
+}
+
 self.onmessage = async e => {
+
+	if ( e.data.roof ) {
+
+		const grid = roofGrid( e.data.roof, e.data.x0, e.data.z0, e.data.size );
+		self.postMessage( { id: e.data.id, grid }, [ grid.buffer ] );
+		return;
+
+	}
+
 
 	const { id } = e.data;
 	try {
