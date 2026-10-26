@@ -224,19 +224,6 @@
 		"what": "restaurant name above the door"
 	},
 	{
-		"front": "21644349_11",
-		"fromLeft": 0.9,
-		"height": 3.6,
-		"kind": "letters",
-		"text": "RESTAURACE",
-		"sub": "STOLETÍ",
-		"width": 1.5,
-		"ink": "#6b5a44",
-		"font": "serif",
-		"street": "konviktska",
-		"what": "restaurant lettering on the wall above the arches near the lamp"
-	},
-	{
 		"front": "21644527_5",
 		"fromLeft": 0.55,
 		"height": 3.6,
@@ -579,21 +566,6 @@
 		"font": "sans",
 		"street": "na-perstyne",
 		"what": "Feratt board across the corner arched window (owner screenshots, Sept 2025)"
-	},
-	{
-		"front": "21644527_5",
-		"fromLeft": 0.78,
-		"height": 3.2,
-		"kind": "board",
-		"text": "ČESKÁ SPOŘITELNA",
-		"width": 3.0,
-		"bg": "#1f5bd6",
-		"ink": "#ffffff",
-		"font": "sans",
-		"street": "na-perstyne",
-		"what": "bank fascia by the blue ATM wall (owner screenshots, Sept 2025)",
-		"brand": "cs",
-		"logoHeight": 0.62
 	},
 	{
 		"front": "21651191_4",
@@ -1187,5 +1159,33 @@
 		"font": "serif",
 		"street": "x0_z0",
 		"what": "dark fascia with light capitals over dark shopfronts, seen from across the square"
+	},
+	{
+		"front": "21644527_5",
+		"fromLeft": 0.78,
+		"height": 3.2,
+		"kind": "board",
+		"text": "ČESKÁ SPOŘITELNA",
+		"width": 3,
+		"bg": "#1f5bd6",
+		"ink": "#ffffff",
+		"font": "sans",
+		"street": "na-perstyne",
+		"what": "bank fascia by the blue ATM wall (owner screenshots, Sept 2025)",
+		"brand": "cs",
+		"logoHeight": 0.62
+	},
+	{
+		"front": "21644349_11",
+		"fromLeft": 0.78,
+		"height": 3.2,
+		"kind": "letters",
+		"text": "RESTAURACE",
+		"sub": "STOLETÍ",
+		"width": 1.5,
+		"ink": "#3d3128",
+		"font": "serif",
+		"street": "x-3_z1",
+		"what": "two-line restaurant name in dark serif capitals painted on the plaster east of the restaurant door, over the terrace"
 	}
 ]
