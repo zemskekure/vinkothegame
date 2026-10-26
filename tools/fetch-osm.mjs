@@ -2,10 +2,11 @@
 // street layout, pavements, steps, trees, benches, lamps, bollards, shops… Run with NODE_USE_ENV_PROXY=1 behind a proxy.
 // The area is split into tiles to stay under the API's per-request node limit; elements are merged by id.
 
-import { writeFile, mkdir } from 'node:fs/promises';
+import { readFile, writeFile, mkdir } from 'node:fs/promises';
 
-const BBOX = { west: 14.4080, south: 50.0757, east: 14.4245, north: 50.0875 };
-const TILES = 3;
+// The play area (tools/area.mjs) with a margin, in WGS 84.
+const BBOX = { west: 14.3895, south: 50.0740, east: 14.4245, north: 50.0915 };
+const TILES = 5;
 
 const elements = new Map();
 const dx = ( BBOX.east - BBOX.west ) / TILES, dy = ( BBOX.north - BBOX.south ) / TILES;
@@ -34,6 +35,20 @@ for ( let i = 0; i < TILES; i ++ ) {
 
 }
 
+const OUT = new URL( '../data/raw/osm.json', import.meta.url );
 await mkdir( new URL( '../data/raw/', import.meta.url ), { recursive: true } );
-await writeFile( new URL( '../data/raw/osm.json', import.meta.url ), JSON.stringify( [ ...elements.values() ] ) );
+// In a fixed order, whatever the tiling: the build joins streets in file order (tools/kerbs.mjs), so a different
+// order measures some kerbs a little differently. Elements already in an earlier download keep their place in it
+// (a re-fetch, or a bigger area, leaves the modelled streets as they were); new ones follow, as nodes, ways and
+// relations, each by id.
+const RANK = { node: 0, way: 1, relation: 2 };
+const before = new Map();
+try {
+
+	JSON.parse( await readFile( OUT ) ).forEach( ( e, i ) => before.set( `${e.type}/${e.id}`, i ) );
+
+} catch { /* first download */ }
+
+const sorted = [ ...elements.entries() ].sort( ( [ ka, a ], [ kb, b ] ) => ( before.get( ka ) ?? Infinity ) - ( before.get( kb ) ?? Infinity ) || RANK[ a.type ] - RANK[ b.type ] || a.id - b.id ).map( ( [ , e ] ) => e );
+await writeFile( OUT, JSON.stringify( sorted ) );
 console.log( `osm: ${elements.size} elements` );

@@ -8,7 +8,7 @@
 // All positions are S-JTSK metres (EPSG:5514) until written out in the scene frame by the caller's toLocal().
 
 import { readFile } from 'node:fs/promises';
-import { lonLatToSJTSK } from './geo.mjs';
+import { lonLatToSJTSK, lonLatToSJTSKBeyond } from './geo.mjs';
 import { buildKerbs } from './kerbs.mjs';
 
 // Artworks mapped as statues that are none: "Za pravdu" on Betlémská kaple is a shadow inscription, eight stone
@@ -25,9 +25,12 @@ const CARRIAGEWAY = new Set( [ 'service', 'residential' ] );
 const SETT = /sett|cobblestone/;
 const surfaceValue = s => s === 'asphalt' || s === 'concrete' ? 1 : SETT.test( s || 'sett' ) ? 0 : 0.5; // 0.5 = paving stones
 
-export async function loadStreets( { AREA, buildingDist, inBuilding, tramPaths } ) {
+export async function loadStreets( { AREA, FIRST_AREA, buildingDist, inBuilding, tramPaths } ) {
 
-	const project = await lonLatToSJTSK();
+	// Beyond the first area, moved onto the cadastre (tools/geo.mjs). Each node keeps its plain projection too (raw),
+	// for the first area's kerbs, measured as they always were (below).
+	const project = FIRST_AREA ? await lonLatToSJTSKBeyond( FIRST_AREA, AREA ) : await lonLatToSJTSK();
+	const plain = await lonLatToSJTSK();
 	const osm = JSON.parse( await readFile( new URL( '../data/raw/osm.json', import.meta.url ) ) );
 
 	// Manual position fixes (data/corrections.json), e.g. a pin placed on a leaning top in the aerial photo.
@@ -35,15 +38,17 @@ export async function loadStreets( { AREA, buildingDist, inBuilding, tramPaths }
 	const nodes = new Map();
 	for ( const el of osm ) if ( el.type === 'node' ) {
 
-		let [ X, Y ] = project( el.lon, el.lat );
+		let [ X, Y ] = project( el.lon, el.lat ), [ X0, Y0 ] = plain( el.lon, el.lat );
 		const fix = corrections[ `node/${el.id}` ];
 		if ( fix?.offset ) {
 
 			X += fix.offset[ 0 ];
 			Y += fix.offset[ 1 ];
+			X0 += fix.offset[ 0 ];
+			Y0 += fix.offset[ 1 ];
 
 		}
-		nodes.set( el.id, { id: el.id, X, Y, tags: el.tags || {} } );
+		nodes.set( el.id, { id: el.id, X, Y, tags: el.tags || {}, raw: { id: el.id, X: X0, Y: Y0, tags: el.tags || {} } } );
 
 	}
 
@@ -71,10 +76,11 @@ export async function loadStreets( { AREA, buildingDist, inBuilding, tramPaths }
 		const kerbed = left || right;
 
 		// Keep at least a narrow pavement between the carriageway and the houses.
-		const half = w.pts.map( p => Math.max( 1.3, Math.min( width / 2, buildingDist( p.X, p.Y ) - ( kerbed ? 1.0 : 0.3 ) ) ) );
+		const halfAt = p => Math.max( 1.3, Math.min( width / 2, buildingDist( p.X, p.Y ) - ( kerbed ? 1.0 : 0.3 ) ) );
+		const half = w.pts.map( halfAt ), rawPts = w.pts.map( p => p.raw ), rawHalf = rawPts.map( halfAt );
 		const sidewalkTagged = Object.keys( t ).some( k => k.startsWith( 'sidewalk' ) );
 		const sidewalkWidthTag = parseFloat( t[ 'sidewalk:width' ] || t[ 'sidewalk:both:width' ] ) || 0;
-		roads.push( { pts: w.pts, half, kerbed, left, right, oneway: t.oneway === 'yes' ? 1 : t.oneway === '-1' ? - 1 : 0, sidewalkTagged, sidewalkWidthTag, asphalt: surfaceValue( t.surface ), name: t.name, highway: t.highway } );
+		roads.push( { pts: w.pts, half, rawPts, rawHalf, kerbed, left, right, oneway: t.oneway === 'yes' ? 1 : t.oneway === '-1' ? - 1 : 0, sidewalkTagged, sidewalkWidthTag, asphalt: surfaceValue( t.surface ), name: t.name, highway: t.highway } );
 
 	}
 
@@ -147,7 +153,7 @@ export async function loadStreets( { AREA, buildingDist, inBuilding, tramPaths }
 		if ( ! w.pts.some( p => inArea( p.X, p.Y ) ) ) continue;
 		const closed = w.nodes[ 0 ] === w.nodes[ w.nodes.length - 1 ];
 		platforms.push( {
-			id: w.id, name: t.name || '', pts: w.pts.map( p => [ p.X, p.Y ] ), closed, half: ( parseFloat( t.width ) || 2.6 ) / 2,
+			id: w.id, name: t.name || '', pts: w.pts.map( p => [ p.X, p.Y ] ), rawPts: w.pts.map( p => [ p.raw.X, p.raw.Y ] ), closed, half: ( parseFloat( t.width ) || 2.6 ) / 2,
 			// On the pavement (a stop at the kerb) or an island of its own in the street.
 			island: t.footway !== 'sidewalk' && t.highway !== 'footway',
 			shelter: t.shelter === 'yes', bench: t.bench === 'yes', bin: t.bin === 'yes', board: t.departures_board === 'yes' || t.passenger_information_display === 'yes'
@@ -155,7 +161,24 @@ export async function loadStreets( { AREA, buildingDist, inBuilding, tramPaths }
 
 	}
 
-	const kerbs = await buildKerbs( { roads, AREA, inBuilding, tramPaths, islands: platforms.filter( p => p.island ) } );
+	// The kerbs are measured along whole streets (house fronts, the photo, the street's width as a whole), so a
+	// street that now runs on out of the first area would measure a little differently inside it. The first area
+	// keeps the kerbs measured from the streets that reach it, as before the area grew west; the rest of the area
+	// takes them from all streets. Both sets of chains go to the street life, each kept to its own part.
+	const inFirst = ( X, Y, m = 0 ) => !! FIRST_AREA && X > FIRST_AREA.xmin - m && X < FIRST_AREA.xmax + m && Y > FIRST_AREA.ymin - m && Y < FIRST_AREA.ymax + m;
+	const allKerbs = await buildKerbs( { roads, AREA, inBuilding, tramPaths, islands: platforms.filter( p => p.island ) } );
+	let kerbs = allKerbs;
+	if ( FIRST_AREA ) {
+
+		const firstRoads = roads.filter( r => r.rawPts.some( p => inFirst( p.X, p.Y, 30 ) ) ).map( r => ( { ...r, pts: r.rawPts, half: r.rawHalf } ) );
+		const firstIslands = platforms.filter( p => p.island && p.rawPts.some( ( [ X, Y ] ) => inFirst( X, Y ) ) ).map( p => ( { ...p, pts: p.rawPts } ) );
+		const first = await buildKerbs( { roads: firstRoads, AREA: FIRST_AREA, photoArea: AREA, inBuilding, tramPaths, islands: firstIslands } );
+		kerbs = {
+			sdf: ( X, Y ) => inFirst( X, Y ) ? first.sdf( X, Y ) : allKerbs.sdf( X, Y ),
+			chains: [ ...first.chains.map( c => ( { ...c, keep: inFirst } ) ), ...allKerbs.chains.map( c => ( { ...c, keep: ( X, Y ) => ! inFirst( X, Y ) } ) ) ]
+		};
+
+	}
 	const unkerbed = r => r.highway === 'service' || r.highway === 'pedestrian';
 
 	// Field values at a point: Fk = signed distance to a kerb line (> 0 on the raised pavement, 100: none near),
@@ -219,13 +242,12 @@ export async function loadStreets( { AREA, buildingDist, inBuilding, tramPaths }
 }
 
 /**
- * Raised pavement mesh: a 0.5 m grid over the ground near kerbed roads, split exactly along the kerb line
+ * Raised pavement mesh: a 0.5 m grid (STEP) over the ground near kerbed roads, cells where skip( X, Y ) left out, split exactly along the kerb line
  * (Fk = 0, found by interpolating the field along cell edges), with a vertical kerb face along that line.
  * heightAt( X, Y ) returns the street-level ground height in the scene frame.
  */
-export function buildPavementMesh( streets, { AREA, toLocal, heightAt, inBuilding, cut } ) {
+export function buildPavementMesh( streets, { AREA, toLocal, heightAt, inBuilding, cut, STEP = 0.5, skip } ) {
 
-	const STEP = 0.5;
 	const OFFSET = 0.03; // above the terrain mesh, so the two never fight
 	const W = Math.round( ( AREA.xmax - AREA.xmin ) / STEP ), H = Math.round( ( AREA.ymax - AREA.ymin ) / STEP );
 	const field = new Float32Array( ( W + 1 ) * ( H + 1 ) );
@@ -266,6 +288,7 @@ export function buildPavementMesh( streets, { AREA, toLocal, heightAt, inBuildin
 			if ( Math.max( ...f ) <= 0 || Math.min( ...f ) >= streets.RAMP_END ) continue;
 			if ( Math.max( ...f ) >= 100 && Math.min( ...f ) <= 0 ) continue; // the end of a pavement band: no kerb
 			const cx = AREA.xmin + ( i + 0.5 ) * STEP, cy = AREA.ymax - ( j + 0.5 ) * STEP;
+			if ( skip?.( cx, cy ) ) continue; // meshed by another call
 			if ( inBuilding( cx, cy ) && corners.every( ( [ a, b ] ) => inBuilding( AREA.xmin + a * STEP, AREA.ymax - b * STEP ) ) ) continue;
 			// Over the edge of a wall (Smetanovo nábřeží's railing): the cell is left to the terrain.
 			if ( cut && corners.some( ( [ a, b ] ) => cut( AREA.xmin + a * STEP, AREA.ymax - b * STEP ) ) ) continue;

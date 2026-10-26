@@ -5,7 +5,7 @@
 
 import { mkdir, writeFile } from 'node:fs/promises';
 import jpeg from 'jpeg-js';
-import { AREA, HI_TILES } from './area.mjs';
+import { AREA, FIRST_AREA, HI_TILES, ORTHO_TILES } from './area.mjs';
 
 const OUT = new URL( '../data/raw/', import.meta.url );
 const AGS = 'https://ags.cuzk.cz/arcgis/rest/services';
@@ -38,12 +38,12 @@ async function get( url, params ) {
 
 }
 
-// Paged feature query (servers cap results per request).
-async function queryLayer( service, layer, name ) {
+// Paged feature query (servers cap results per request); several layers go into one file.
+async function queryLayer( service, layers, name ) {
 
 	const features = [];
 
-	for ( let offset = 0; ; ) {
+	for ( const layer of [ layers ].flat() ) for ( let offset = 0; ; ) {
 
 		const buf = await get( `${AGS}/${service}/MapServer/${layer}/query`, {
 			geometry: envelope,
@@ -92,14 +92,15 @@ async function exportRaster( service, name, cellSize ) {
 
 }
 
-// Orthophoto tiles (the service caps images at 4096 px): nx × ny tiles of the play area at `cellSize`, decoded.
-async function orthoTiles( cellSize, nx, ny ) {
+// Orthophoto tiles (the service caps images at 4096 px): nx × ny tiles of an area (the play area unless given) at
+// `cellSize`.
+async function orthoTiles( cellSize, nx, ny, area = AREA ) {
 
-	const tw = ( xmax - xmin ) / nx, th = ( ymax - ymin ) / ny;
+	const tw = ( area.xmax - area.xmin ) / nx, th = ( area.ymax - area.ymin ) / ny;
 	const tiles = [];
 	for ( let i = 0; i < nx; i ++ ) for ( let j = 0; j < ny; j ++ ) {
 
-		const bbox = [ xmin + i * tw, ymax - ( j + 1 ) * th, xmin + ( i + 1 ) * tw, ymax - j * th ];
+		const bbox = [ area.xmin + i * tw, area.ymax - ( j + 1 ) * th, area.xmin + ( i + 1 ) * tw, area.ymax - j * th ];
 		const buf = await get( `${AGS1}/ORTOFOTO/MapServer/export`, {
 			bbox: bbox.join( ',' ), bboxSR: 5514, imageSR: 5514,
 			size: `${Math.round( tw / cellSize )},${Math.round( th / cellSize )}`,
@@ -113,17 +114,19 @@ async function orthoTiles( cellSize, nx, ny ) {
 
 }
 
-// Overview orthophoto (25 cm), stitched into one image.
-async function exportOrtho( cellSize ) {
+// Overview orthophoto (25 cm), stitched into one image: ortho.jpg over the play area, and ortho-first.jpg over the
+// first area cut as it always was (1 × 2 tiles), so the colours read off it there (roofs, trees, the ground detail)
+// stay exactly what they were before the area grew.
+async function exportOrtho( cellSize, name, [ nx, ny ], area ) {
 
-	const tiles = await orthoTiles( cellSize, 1, 2 );
+	const tiles = await orthoTiles( cellSize, nx, ny, area );
 	const imgs = tiles.map( t => ( { ...t, img: jpeg.decode( t.buf, { useTArray: true, maxMemoryUsageInMB: 2048 } ) } ) );
-	const W = imgs[ 0 ].img.width, th = imgs[ 0 ].img.height, H = imgs.reduce( ( a, t ) => a + t.img.height, 0 );
+	const tw = imgs[ 0 ].img.width, th = imgs[ 0 ].img.height, W = tw * nx, H = th * ny;
 	const data = Buffer.alloc( W * H * 4 );
-	for ( const { j, img } of imgs ) data.set( img.data.subarray( 0, W * img.height * 4 ), j * th * W * 4 );
+	for ( const { i, j, img } of imgs ) for ( let y = 0; y < th; y ++ ) data.set( img.data.subarray( y * tw * 4, ( y + 1 ) * tw * 4 ), ( ( j * th + y ) * W + i * tw ) * 4 );
 	const buf = jpeg.encode( { data, width: W, height: H }, 92 ).data;
-	await writeFile( new URL( 'ortho.jpg', OUT ), buf );
-	console.log( `ortho: ${W}x${H} (${( buf.length / 1e6 ).toFixed( 1 )} MB)` );
+	await writeFile( new URL( `${name}.jpg`, OUT ), buf );
+	console.log( `${name}: ${W}x${H} (${( buf.length / 1e6 ).toFixed( 1 )} MB)` );
 
 }
 
@@ -149,9 +152,13 @@ await Promise.all( [
 	queryLayer( 'ZABAGED_POLOHOPIS', 71, 'tram' ),
 	queryLayer( 'ZABAGED_POLOHOPIS', 132, 'water' ),
 	queryLayer( 'ZABAGED_POLOHOPIS', 134, 'greenery' ),
+	// Orchards and gardens, vineyards, grassland, scrub and woods (Petřín, the Strahov gardens): greenery beyond the
+	// first area.
+	queryLayer( 'ZABAGED_POLOHOPIS', [ 135, 136, 139, 140, 142 ], 'landcover' ),
 	queryLayer( 'ZABAGED_POLOHOPIS', 73, 'bridges' ),
 	exportRaster( '3D/dmp', 'dsm', 0.5 ),
 	exportRaster( '3D/dmr5g', 'dtm', 1 ),
-	exportOrtho( 0.25 ),
+	exportOrtho( 0.25, 'ortho', ORTHO_TILES, AREA ),
+	exportOrtho( 0.25, 'ortho-first', [ 1, 2 ], FIRST_AREA ),
 	exportOrthoTiles( 0.125 )
 ] );

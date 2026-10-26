@@ -97,3 +97,25 @@ export async function lonLatToSJTSK() {
 // area. Adding this puts an OSM point where the cadastre has it.
 export const OSM_OFFSET = [ 6.18, 7.68 ];
 export const toCadastre = ( [ X, Y ] ) => [ X + OSM_OFFSET[ 0 ], Y + OSM_OFFSET[ 1 ] ];
+
+// The first area (tools/area.mjs) was built on OpenStreetMap as projected, with the correction above added only in
+// a few places (or measured locally). Beyond it, everything from OpenStreetMap gets the correction: none inside the
+// first area, the full offset from `ramp` metres outside it on (a gradual shift between, so streets that run out of
+// the first area stay unbroken), and only on the sides where the play area (`grown`) grew past it: beyond its other
+// edges nothing changes. The same offset holds there: measured again on 665 RÚIAN-imported outlines west of the
+// river and 170 north of the first area, (6.14, 7.79) and (6.21, 7.70) m.
+export async function lonLatToSJTSKBeyond( area, grown, ramp = 20 ) {
+
+	const project = await lonLatToSJTSK();
+	const past = ( d, open ) => open ? Math.max( d, 0 ) : 0;
+	return ( lon, lat ) => {
+
+		const [ X, Y ] = project( lon, lat );
+		const dx = Math.max( past( area.xmin - X, grown.xmin < area.xmin ), past( X - area.xmax, grown.xmax > area.xmax ) );
+		const dy = Math.max( past( area.ymin - Y, grown.ymin < area.ymin ), past( Y - area.ymax, grown.ymax > area.ymax ) );
+		const k = Math.min( 1, Math.hypot( dx, dy ) / ramp );
+		return [ X + OSM_OFFSET[ 0 ] * k, Y + OSM_OFFSET[ 1 ] * k ];
+
+	};
+
+}

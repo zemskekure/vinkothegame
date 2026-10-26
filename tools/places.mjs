@@ -20,6 +20,7 @@ const CAPADLO = { steps: 137806765, underpass: 1201427940, metal: 34056146 };
 import { dressSquare } from './dress.mjs';
 import { collectWalls } from './walls.mjs';
 import { collectTheatre } from './theatre.mjs';
+import { OSM_OFFSET } from './geo.mjs';
 
 export function collectPlaces( ctx ) {
 
@@ -349,7 +350,15 @@ export function collectPlaces( ctx ) {
 	// --- The chimney courtyard: flood the open ground around the chimney (0.5 m cells).
 	{
 
-		const ch = furniture.chimney;
+		// The brewery chimney in Náprstkova: of the chimneys mapped in the area, the one nearest Betlémské náměstí.
+		let ch = [];
+		for ( let i = 0; i < furniture.chimney.length; i += 5 ) {
+
+			const c = furniture.chimney.slice( i, i + 5 );
+			if ( ! ch.length || Math.hypot( c[ 0 ], c[ 2 ] ) < Math.hypot( ch[ 0 ], ch[ 2 ] ) ) ch = c;
+
+		}
+
 		if ( ch.length ) {
 
 			const [ X0, Y0 ] = S( ch[ 0 ], ch[ 2 ] );
@@ -868,9 +877,17 @@ export function collectPlaces( ctx ) {
 					return w.reduce( ( a, v ) => a + v, 0 ) / w.length;
 
 				} );
-				// Meet the street at the Národní end: blend over the first 12 m to the ground there.
+				// Meet the street at the Národní end: blend over the first 12 m to the ground there. The same at the Újezd
+				// end, where the bridge now reaches the land inside the area.
 				const y0 = groundY( ...st[ 0 ] );
 				ys = ys.map( ( y, i ) => i * 2 < 12 ? y0 + ( y - y0 ) * i * 2 / 12 : y );
+				const last = st.length - 1;
+				if ( ! riverAt( ...st[ last ] ) ) {
+
+					const y1 = groundY( ...st[ last ] );
+					ys = ys.map( ( y, i ) => ( last - i ) * 2 < 12 ? y1 + ( y - y1 ) * ( last - i ) * 2 / 12 : y );
+
+				}
 				const sAtX = x => {
 
 					let best = 0, bd = Infinity;
@@ -888,9 +905,11 @@ export function collectPlaces( ctx ) {
 					return best;
 
 				};
-				// Piers and poles by their x in the scene frame (aerial photo: the tollhouses' pier at x −437, cutwaters at −480, −525, −571).
-				const piers = [ - 437, - 480, - 525, - 571 ].map( sAtX ).filter( v => v > 4 && v < st.length * 2 - 4 );
-				const poles = [ - 437, - 458.5, - 480, - 502.5, - 525, - 548, - 571, - 594, - 617 ].map( sAtX ).filter( v => v > 4 && v < st.length * 2 - 2 );
+				// Piers and poles by their x in the scene frame (aerial photo: the tollhouses' pier at x −437, cutwaters at −480,
+				// −525, −571; over the arm between Střelecký ostrov and Malá Strana at −688 and −722; over the island the bridge
+				// stands on land).
+				const piers = [ - 437, - 480, - 525, - 571, - 688, - 722 ].map( sAtX ).filter( v => v > 4 && v < st.length * 2 - 4 );
+				const poles = [ - 437, - 458.5, - 480, - 502.5, - 525, - 548, - 571, - 594, - 617, - 640, - 664, - 688, - 705, - 722, - 745 ].map( sAtX ).filter( v => v > 4 && v < st.length * 2 - 2 );
 				const pts = st.map( ( [ X, Y ], i ) => [ ...L( X, Y ), + ys[ i ].toFixed( 2 ) ] );
 				places.legie = { pts, step: 2, half: 8.3, rail: 0.45, walk: 2.6, bay: { s0: 0, s1: sAtX( - 447 ), half: 11.5 }, piers, poles, tollhouses: [ { s: sAtX( - 442 ), o: - 9.6 }, { s: sAtX( - 442 ), o: 9.6 } ] };
 				legieAxis = st;
@@ -982,10 +1001,23 @@ export function collectPlaces( ctx ) {
 	};
 
 	const bridgeSegs = [];
-	for ( const w of streetData.ways ) {
+	const FA = ctx.FIRST_AREA;
+	const inFirst = ( X, Y ) => ! FA || ( X > FA.xmin && X < FA.xmax && Y > FA.ymin && Y < FA.ymax );
+	// The surface model's height (DMP 1G) in the scene frame.
+	const surfaceY = ( X, Y ) => {
 
-		const t = w.tags;
+		const fx = Math.min( Math.max( ( X - AREA.xmin ) / dsm.cell - 0.5, 0 ), dsm.width - 1.001 ), fy = Math.min( Math.max( ( AREA.ymax - Y ) / dsm.cell - 0.5, 0 ), dsm.height - 1.001 );
+		const x0 = Math.floor( fx ), y0 = Math.floor( fy ), tx = fx - x0, ty = fy - y0, i = y0 * dsm.width + x0, d = dsm.data;
+		return ( d[ i ] * ( 1 - tx ) + d[ i + 1 ] * tx ) * ( 1 - ty ) + ( d[ i + dsm.width ] * ( 1 - tx ) + d[ i + dsm.width + 1 ] * tx ) * ty + toLocal( 0, 0, 0 )[ 1 ];
+
+	};
+	for ( const way of streetData.ways ) {
+
+		const t = way.tags;
 		if ( ! t.bridge || t.bridge === 'no' || t.highway === 'steps' ) continue;
+		// A bridge reaching beyond the first area is moved onto the cadastre as a whole (tools/geo.mjs), not just its
+		// part beyond: the deck must lie on the bridge the surface model sees.
+		const w = way.pts.every( p => inFirst( p.raw.X, p.raw.Y ) ) ? way : { ...way, pts: way.pts.map( p => ( { X: p.raw.X + OSM_OFFSET[ 0 ], Y: p.raw.Y + OSM_OFFSET[ 1 ] } ) ) };
 		if ( legieAxis && w.pts.every( p => p.X < AREA.xmin || p.X > AREA.xmax || legieAxis.some( ( [ X, Y ] ) => Math.hypot( p.X - X, p.Y - Y ) < 24 ) ) ) continue; // Most Legií, above
 		const kind = t.railway === 'tram' ? 'tram' : t.highway;
 		if ( ! BRIDGE_W[ kind ] || w.pts.length < 2 ) continue;
@@ -1016,7 +1048,30 @@ export function collectPlaces( ctx ) {
 			if ( c && Math.hypot( c[ 1 ][ 0 ] - c[ 0 ][ 0 ], c[ 1 ][ 1 ] - c[ 0 ][ 1 ] ) > 0.3 ) {
 
 				const da = s + Math.hypot( c[ 0 ][ 0 ] - a.X, c[ 0 ][ 1 ] - a.Y ), db = s + Math.hypot( c[ 1 ][ 0 ] - a.X, c[ 1 ][ 1 ] - a.Y );
-				bridgeSegs.push( { A: c[ 0 ], B: c[ 1 ], w: width, kind, ya: heightAt( da ), yb: heightAt( db ) } );
+				if ( w === way ) bridgeSegs.push( { A: c[ 0 ], B: c[ 1 ], w: width, kind, ya: heightAt( da ), yb: heightAt( db ), way: w.id } );
+				else {
+
+					// Beyond the first area the deck follows the surface model, 10 m at a time, where it stays within reach
+					// of the line between the ends' land (Karlův most stands over Kampa, not on it; its towers don't
+					// count); elsewhere that line. A median of three takes out single dips (a gap in the model).
+					const n = Math.ceil( ( db - da ) / 10 ), at = k => [ c[ 0 ][ 0 ] + ( c[ 1 ][ 0 ] - c[ 0 ][ 0 ] ) * k / n, c[ 0 ][ 1 ] + ( c[ 1 ][ 1 ] - c[ 0 ][ 1 ] ) * k / n ];
+					const ux = ( c[ 1 ][ 0 ] - c[ 0 ][ 0 ] ) / ( db - da ), uy = ( c[ 1 ][ 1 ] - c[ 0 ][ 1 ] ) / ( db - da );
+					const raw = [];
+					for ( let k = 0; k <= n; k ++ ) {
+
+						const [ X, Y ] = at( k ), lin = heightAt( da + ( db - da ) * k / n ), hs = [];
+						for ( let o = - width * 0.35; o <= width * 0.35; o += 0.5 ) hs.push( surfaceY( X - uy * o, Y + ux * o ) );
+						hs.sort( ( p, q ) => p - q );
+						const v = hs[ hs.length >> 2 ];
+						raw.push( v > lin - 1.5 && v < lin + 14 ? v : lin );
+
+					}
+
+					const ys = raw.map( ( v, k ) => k === 0 || k === n ? v : [ raw[ k - 1 ], v, raw[ k + 1 ] ].sort( ( p, q ) => p - q )[ 1 ] );
+					const deckY = k => ys[ k ];
+					for ( let k = 0; k < n; k ++ ) bridgeSegs.push( { A: at( k ), B: at( k + 1 ), w: width, kind, ya: deckY( k ), yb: deckY( k + 1 ), way: w.id } );
+
+				}
 
 			}
 
@@ -1048,7 +1103,9 @@ export function collectPlaces( ctx ) {
 			const ends = [ [ 0, g.ya ], [ f.l, g.yb ] ];
 			for ( const h of bridgeSegs ) {
 
-				if ( used.has( h ) ) continue;
+				// Another way beside this one; the next segment of the same way (a bridge that bends, Karlův most) has a
+				// deck of its own, else the bend widens the deck.
+				if ( used.has( h ) || ( h.way === g.way && g.way !== undefined ) ) continue;
 				const fh = frameOf( h );
 				if ( Math.abs( fh.ux * f.ux + fh.uy * f.uy ) < Math.cos( 15 * Math.PI / 180 ) ) continue;
 				const [ pa, pb ] = [ local( h.A ), local( h.B ) ];
@@ -1211,6 +1268,8 @@ function streetLife( ctx, L ) {
 
 	for ( const chain of streetData.kerbs.chains ) {
 
+		// Chains measured for one part of the area only (tools/streets.mjs) leave the rest to the others.
+		const keep = chain.keep || ( () => true );
 		for ( const [ side, sign ] of [ [ 'left', 1 ], [ 'right', - 1 ] ] ) {
 
 			const line = offsetLine( chain, i => {
@@ -1225,7 +1284,7 @@ function streetLife( ctx, L ) {
 			let run = [];
 			for ( const p of line ) {
 
-				if ( ! p || blocked( p[ 0 ], p[ 1 ] ) || streetData.kerbs.sdf( p[ 0 ], p[ 1 ] ) < 0.4 ) { // off the carriageway
+				if ( ! p || blocked( p[ 0 ], p[ 1 ] ) || ! keep( p[ 0 ], p[ 1 ] ) || streetData.kerbs.sdf( p[ 0 ], p[ 1 ] ) < 0.4 ) { // off the carriageway
 
 					flush( walks, run );
 					run = [];
@@ -1250,7 +1309,8 @@ function streetLife( ctx, L ) {
 		const laneShift = ( parkRight ? 1.1 : 0 ) - ( parkLeft ? 1.1 : 0 );
 		for ( const [ dir, off ] of lanes ) {
 
-			const line = offsetLine( chain, i => centre( i ) + off + laneShift ).filter( Boolean ).map( ( [ X, Y ] ) => [ X, Y ] );
+			const line = offsetLine( chain, i => centre( i ) + off + laneShift ).filter( p => p && keep( p[ 0 ], p[ 1 ] ) ).map( ( [ X, Y ] ) => [ X, Y ] );
+			if ( line.length < 2 ) continue;
 			if ( dir < 0 ) line.reverse();
 			drives.push( line.flatMap( ( [ X, Y ] ) => L( X, Y ) ) );
 
@@ -1270,10 +1330,12 @@ function streetLife( ctx, L ) {
 				since = 0;
 				const p = line[ i ];
 				if ( ! p || blocked( p[ 0 ], p[ 1 ] ) || ctx.inPark( p[ 0 ], p[ 1 ] ) || rnd() > 0.5 ) continue;
+				const flip = rnd() < 0.5;
+				if ( ! keep( p[ 0 ], p[ 1 ] ) ) continue;
 				const [ x, z ] = L( p[ 0 ], p[ 1 ] );
 				const q = line[ i + 1 ] || p;
 				const rot = Math.atan2( q[ 0 ] - p[ 0 ], - ( q[ 1 ] - p[ 1 ] ) ); // model faces +z → along the street
-				parked.push( x, + terrainAt( p[ 0 ], p[ 1 ] ).toFixed( 2 ), z, + ( rot + ( rnd() < 0.5 ? Math.PI : 0 ) ).toFixed( 3 ) );
+				parked.push( x, + terrainAt( p[ 0 ], p[ 1 ] ).toFixed( 2 ), z, + ( rot + ( flip ? Math.PI : 0 ) ).toFixed( 3 ) );
 
 			}
 

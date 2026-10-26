@@ -1,10 +1,13 @@
 // Renders the running dev server in headless Chromium and saves screenshots.
 // Usage: node tools/screenshot.mjs <url> <out.png> [more url/out pairs…]
+import { existsSync } from 'node:fs';
 import { chromium } from 'playwright';
 
 const args = process.argv.slice( 2 );
+// The Linux container's browser where it exists, Playwright's own elsewhere (macOS).
+const LINUX_CHROME = '/opt/pw-browsers/chromium-1243/chrome-linux64/chrome';
 const browser = await chromium.launch( {
-	executablePath: '/opt/pw-browsers/chromium-1243/chrome-linux64/chrome',
+	executablePath: existsSync( LINUX_CHROME ) ? LINUX_CHROME : undefined,
 	args: [ '--enable-unsafe-webgpu', '--enable-unsafe-swiftshader', '--use-angle=swiftshader', '--ignore-gpu-blocklist' ]
 } );
 const page = await browser.newPage( { viewport: { width: 1280, height: 800 } } );
