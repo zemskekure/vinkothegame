@@ -4,7 +4,7 @@
 
 import * as THREE from 'three/webgpu';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { color, positionWorld, mix, float, vec2, floor, fract, abs, smoothstep } from 'three/tsl';
+import { color, positionWorld, mix, float, vec2, floor, fract, abs, smoothstep, step, attribute, texture, uv } from 'three/tsl';
 import { noise2D } from './shading/common.js';
 // The owner's pictures of a historic lamp post, a bin, a bollard and a bench (tools/textures/furniture.py).
 import ATLAS from './furniture-atlas.json';
@@ -66,9 +66,39 @@ const iron = new THREE.MeshStandardNodeMaterial( { color: 0x262b28, metalness: 0
 const stone = new THREE.MeshStandardNodeMaterial( { color: 0xa39a8a, roughness: 0.85 } );
 const bronze = new THREE.MeshStandardNodeMaterial( { color: 0x4f6a5a, metalness: 0.7, roughness: 0.5 } );
 const water = new THREE.MeshStandardNodeMaterial( { color: 0x29404a, roughness: 0.05, metalness: 0.1 } );
-const bark = new THREE.MeshStandardNodeMaterial( { color: 0x4a3b2c, roughness: 1 } );
+// Trees wear the owner's leaves and bark (public/textures/tree-atlas.png, tools/textures/trees.py): the top row holds
+// the leaves of the linden, the horse chestnut and the plane (kind 0, 1, 2) and linden bark, the bottom row plane
+// bark. Each tree's kind comes in with its instance.
+const treeAtlas = new THREE.TextureLoader().load( 'textures/tree-atlas.png' );
+treeAtlas.colorSpace = THREE.SRGBColorSpace;
+treeAtlas.magFilter = treeAtlas.minFilter = THREE.NearestFilter;
+treeAtlas.generateMipmaps = false;
+const treeKind = attribute( 'kind', 'float' );
+const bark = new THREE.MeshStandardNodeMaterial( { roughness: 1 } );
+{
+
+	const isPlane = step( 1.5, treeKind );
+	const t = vec2( fract( uv().x.mul( 2 ) ), fract( uv().y.mul( 3 ) ) );
+	bark.colorNode = texture( treeAtlas, mix( vec2( t.x.mul( 0.25 ).add( 0.75 ), t.y.mul( 0.5 ).add( 0.5 ) ), vec2( t.x.mul( 0.25 ), t.y.mul( 0.5 ) ), isPlane ) );
+
+}
 const leaves = new THREE.MeshStandardNodeMaterial( { roughness: 0.9, flatShading: true } );
-leaves.colorNode = mix( color( 0x3e5a24 ), color( 0x5f7d32 ), noise2D( positionWorld.xz.mul( 0.9 ) ) ).mul( mix( float( 0.8 ), float( 1.1 ), noise2D( positionWorld.xz.mul( 0.13 ).add( 7 ) ) ) );
+{
+
+	const t = fract( uv().mul( 1.5 ) );
+	leaves.colorNode = texture( treeAtlas, vec2( t.x.add( treeKind ).mul( 0.25 ), t.y.mul( 0.5 ).add( 0.5 ) ) ).mul( mix( float( 0.85 ), float( 1.1 ), noise2D( positionWorld.xz.mul( 0.13 ).add( 7 ) ) ) );
+
+}
+
+// A tree's kind from where it stands: planes along the river and on the islands, horse chestnuts in the parks and
+// gardens over there, lindens in the streets; dealt out by a hash of the position, so a tree keeps its kind.
+function kindOfTree( x, z ) {
+
+	const h = Math.abs( Math.sin( x * 12.9898 + z * 78.233 ) * 43758.5453 ) % 1;
+	const river = x < - 380;
+	return river ? ( h < 0.5 ? 2 : h < 0.8 ? 1 : 0 ) : ( h < 0.6 ? 0 : h < 0.85 ? 1 : 2 );
+
+}
 
 const cyl = ( r0, r1, h, y, seg = 12 ) => new THREE.CylinderGeometry( r0, r1, h, seg ).translate( 0, y + h / 2, 0 );
 const box = ( w, h, d, x, y, z ) => new THREE.BoxGeometry( w, h, d ).translate( x, y + h / 2, z );
@@ -129,20 +159,28 @@ export const MODELS = {
 
 // The trees come in one batch per 300 m square of the city, so the squares out of view (or lost in the haze,
 // src/main.js) are skipped; the small things, few triangles each, in one batch a kind.
-function instance( scene, type, parts, entries, matrixOf, tile = Infinity ) {
+// `kindOf( entry )`: a number per instance, passed to the material as the `kind` attribute (the trees' species).
+function instance( scene, type, parts, entries, matrixOf, tile = Infinity, { stride = 5, kindOf = null } = {} ) {
 
-	const count = entries.length / 5;
+	const count = entries.length / stride;
 	if ( ! count ) return;
 	const tiles = new Map();
 	for ( let i = 0; i < count; i ++ ) {
 
-		const key = tile === Infinity ? 0 : `${Math.floor( entries[ i * 5 ] / tile )},${Math.floor( entries[ i * 5 + 2 ] / tile )}`;
+		const key = tile === Infinity ? 0 : `${Math.floor( entries[ i * stride ] / tile )},${Math.floor( entries[ i * stride + 2 ] / tile )}`;
 		if ( ! tiles.has( key ) ) tiles.set( key, [] );
-		tiles.get( key ).push( entries.slice( i * 5, i * 5 + 5 ) );
+		tiles.get( key ).push( entries.slice( i * stride, i * stride + stride ) );
 
 	}
 
-	for ( const list of tiles.values() ) for ( const [ geometry, material ] of parts ) {
+	for ( const list of tiles.values() ) for ( let [ geometry, material ] of parts ) {
+
+		if ( kindOf ) {
+
+			geometry = geometry.clone();
+			geometry.setAttribute( 'kind', new THREE.InstancedBufferAttribute( new Float32Array( list.map( kindOf ) ), 1 ) );
+
+		}
 
 		const mesh = new THREE.InstancedMesh( geometry, material, list.length );
 		const m = new THREE.Matrix4();
@@ -196,11 +234,11 @@ export function addFurniture( scene, furniture ) {
 	for ( let i = 0; i < trees.length; i += 5 ) {
 
 		const [ x, y, z, , h ] = trees.slice( i, i + 5 );
-		const r = Math.min( 6, Math.max( 2, h * 0.32 ) );
+		const r = Math.min( 6, Math.max( 2, h * 0.32 ) ), kind = kindOfTree( x, z );
 		for ( let k = 0; k < 3; k ++ ) {
 
 			const a = i * 2.4 + k * 2.1;
-			blobs.push( x + Math.cos( a ) * r * 0.35, y + h * ( 0.62 + 0.07 * k ), z + Math.sin( a ) * r * 0.35, a, r * 0.78 );
+			blobs.push( x + Math.cos( a ) * r * 0.35, y + h * ( 0.62 + 0.07 * k ), z + Math.sin( a ) * r * 0.35, a, r * 0.78, kind );
 
 		}
 
@@ -209,9 +247,9 @@ export function addFurniture( scene, furniture ) {
 	const crownH = 0.75; // crown blobs are squashed spheres
 	// (20-sided blobs: chunky, as the console games drew their trees.)
 	instance( scene, 'tree', [ [ new THREE.IcosahedronGeometry( 1, 0 ), leaves ] ], blobs,
-		( [ x, y, z, rot, r ], m ) => m.compose( p.set( x, y, z ), q.setFromAxisAngle( up, rot ), s.set( r, r * crownH, r ) ), 300 );
+		( [ x, y, z, rot, r ], m ) => m.compose( p.set( x, y, z ), q.setFromAxisAngle( up, rot ), s.set( r, r * crownH, r ) ), 300, { stride: 6, kindOf: e => e[ 5 ] } );
 	instance( scene, 'trunk', [ [ cyl( 0.14, 0.24, 1, 0, 7 ), bark ] ], trees,
-		( [ x, y, z, , h ], m ) => m.compose( p.set( x, y, z ), q.identity(), s.set( 1, h * 0.62, 1 ) ), 300 );
+		( [ x, y, z, , h ], m ) => m.compose( p.set( x, y, z ), q.identity(), s.set( 1, h * 0.62, 1 ) ), 300, { kindOf: e => kindOfTree( e[ 0 ], e[ 2 ] ) } );
 
 	// Zebra crossings are painted from the aerial photo (ground detail in src/shading/surfaces.js).
 
