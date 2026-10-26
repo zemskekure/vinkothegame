@@ -20,6 +20,7 @@ const CAPADLO = { steps: 137806765, underpass: 1201427940, metal: 34056146 };
 import { dressSquare } from './dress.mjs';
 import { collectWalls } from './walls.mjs';
 import { collectTheatre } from './theatre.mjs';
+import { collectVenues } from './venues.mjs';
 
 export function collectPlaces( ctx ) {
 
@@ -1166,6 +1167,8 @@ export function collectPlaces( ctx ) {
 
 	}
 	dressSquare( { places, frontFacing, frame, S, L, sign, yAtLocal, streetData, project: ctx.project, streetFacades, toLocal, buildingInfo: ctx.buildingInfo, inHouse: inKept } );
+	// Sponsored venues (data/venues.json): rooms, doors, windows and tables from one entry each.
+	collectVenues( { places, edgeOf, frame, zone, cutout, sideK, tablesAt, terrainAt, S } );
 
 	return places;
 
