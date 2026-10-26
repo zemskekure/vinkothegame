@@ -6,3 +6,6 @@ artifact/assets
 artifact/data
 .square
 *.streetview.jpg
+
+# The owner's friends' photo faces (src/friends.js, tools/friends.mjs): private, never committed.
+public/models/people/friends/

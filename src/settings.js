@@ -11,7 +11,7 @@ import BUNDLED from '../public/game-settings.json';
 
 export const STORAGE_KEY = 'vinko.game-settings';
 export const API_URL = '../api/game-settings';
-export const TOP_KEYS = [ 'people', 'look', 'day', 'pigeon', 'art' ];
+export const TOP_KEYS = [ 'people', 'look', 'day', 'pigeon', 'art', 'world' ];
 
 const isObject = v => !! v && typeof v === 'object' && ! Array.isArray( v );
 

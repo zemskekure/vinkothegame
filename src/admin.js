@@ -143,7 +143,7 @@ export function startAdmin( { bounds, map, life, ps1, day, holub } ) {
 			<ul class="zones" data-zones></ul>
 			<div class="zone" data-zone></div>
 		</section>
-		<section data-tab="map" hidden><h2>Lidé</h2><div data-people></div><p class="hint">Počty lidí se projeví po uložení a novém načtení hry.</p></section>
+		<section data-tab="map" hidden><h2>Lidé</h2><div data-people></div><label class="row" title="ženy stojící v Perlové ulici (víc večer a v noci)"><span>Perlová</span><label><input type="checkbox" data-perlova> zobrazit</label></label><p class="hint">Počty lidí se projeví po uložení a novém načtení hry.</p></section>
 		<section data-tab="pigeon" hidden>
 			<h2>Holub na začátku</h2>
 			<div class="pair">
@@ -281,6 +281,21 @@ export function startAdmin( { bounds, map, life, ps1, day, holub } ) {
 	} );
 
 	addRows( $( '[data-people]' ), PEOPLE, () => {} );
+	// Perlová's women (src/perlova.js): shown or hidden at once; after a reload they aren't made at all.
+	{
+
+		const box = $( '[data-perlova]' );
+		rows.push( () => box.checked = settings.world?.perlova !== false );
+		box.addEventListener( 'change', () => {
+
+			set( settings, 'world.perlova', box.checked );
+			if ( life.perlova ) life.perlova.off = ! box.checked;
+			changed();
+
+		} );
+
+	}
+
 	addRows( $( '[data-look]' ), LOOK, applyLook );
 	addRows( $( '[data-day]' ), DAY, path => {
 
