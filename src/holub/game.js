@@ -37,10 +37,10 @@ export function holubLook( { renderer, scene, sky, sun, hemi, camera } ) {
 
 // --- where a pigeon can stand: the street, or a roof ------------------------------------------------------------
 
-// Highest roof surface on a 1 m grid, rasterised once from the roof triangles.
+// Highest roof surface on a 0.5 m grid, rasterised once from the roof triangles.
 function roofGrid( roofGeo, bounds ) {
 
-	const C = 1, W = Math.ceil( ( bounds.maxX - bounds.minX ) / C ), H = Math.ceil( ( bounds.maxZ - bounds.minZ ) / C );
+	const C = 0.5, W = Math.ceil( ( bounds.maxX - bounds.minX ) / C ), H = Math.ceil( ( bounds.maxZ - bounds.minZ ) / C );
 	const grid = new Float32Array( W * H ).fill( - Infinity );
 	const p = roofGeo.attributes.position;
 	for ( let t = 0; t < p.count; t += 3 ) {
