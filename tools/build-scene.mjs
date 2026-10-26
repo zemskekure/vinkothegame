@@ -15,7 +15,7 @@ import jpeg from 'jpeg-js';
 import { fromFile } from 'geotiff';
 import poly2tri from 'poly2tri';
 import { ShapeUtils, Vector2, Color, SRGBColorSpace } from 'three';
-import { AREA, FIRST_AREA, ORIGIN } from './area.mjs';
+import { AREA, WEST_AREA, FIRST_AREA, ORIGIN } from './area.mjs';
 import { loadStreets, buildPavementMesh, collectFurniture } from './streets.mjs';
 import { collectPlaces } from './places.mjs';
 import { lonLatToSJTSK, lonLatToSJTSKBeyond, toCadastre } from './geo.mjs';
@@ -51,17 +51,23 @@ async function loadRaster( name ) {
 
 	const tiff = await fromFile( new URL( `${name}.tif`, RAW ).pathname );
 	const image = await tiff.getImage();
+	const bounds = image.getBoundingBox();
+	if ( [ AREA.xmin, AREA.ymin, AREA.xmax, AREA.ymax ].some( ( v, i ) => Math.abs( v - bounds[ i ] ) > 0.01 ) ) throw new Error( `${name}: raster bounds do not match AREA; run node tools/fetch-data.mjs` );
 	const [ data ] = await image.readRasters();
 	const width = image.getWidth(), height = image.getHeight();
-	return { data, width, height, cell: ( AREA.xmax - AREA.xmin ) / width };
+	await tiff.close();
+	const cell = ( AREA.xmax - AREA.xmin ) / width;
+	return { data, width, height, cell, westWidth: Math.round( ( WEST_AREA.xmax - AREA.xmin ) / cell ), westRow: Math.round( ( AREA.ymax - WEST_AREA.ymax ) / cell ) };
 
 }
 
-// Bilinear sample at S-JTSK coordinates; row 0 is the northern edge.
+// Bilinear sample at S-JTSK coordinates; row 0 is the northern edge. Inside the previous box, its edge samples
+// keep the original clamp rather than picking up a new neighbour across the old boundary.
 function sample( r, X, Y ) {
 
-	const fx = Math.min( Math.max( ( X - AREA.xmin ) / r.cell - 0.5, 0 ), r.width - 1.001 );
-	const fy = Math.min( Math.max( ( AREA.ymax - Y ) / r.cell - 0.5, 0 ), r.height - 1.001 );
+	const west = X >= WEST_AREA.xmin && X <= WEST_AREA.xmax && Y >= WEST_AREA.ymin && Y <= WEST_AREA.ymax;
+	const fx = Math.min( Math.max( ( X - AREA.xmin ) / r.cell - 0.5, 0 ), ( west ? r.westWidth : r.width ) - 1.001 );
+	const fy = Math.min( Math.max( ( AREA.ymax - Y ) / r.cell - 0.5, west ? r.westRow : 0 ), r.height - 1.001 );
 	const x0 = Math.floor( fx ), y0 = Math.floor( fy );
 	const tx = fx - x0, ty = fy - y0;
 	const i = y0 * r.width + x0;
@@ -81,13 +87,14 @@ function medianFilter( r ) {
 
 		for ( let x = 0; x < w; x ++ ) {
 
+			const west = x < r.westWidth && y >= r.westRow;
 			let n = 0;
 			for ( let dy = - 1; dy <= 1; dy ++ ) {
 
 				for ( let dx = - 1; dx <= 1; dx ++ ) {
 
-					const xx = Math.min( Math.max( x + dx, 0 ), w - 1 );
-					const yy = Math.min( Math.max( y + dy, 0 ), h - 1 );
+					const xx = Math.min( Math.max( x + dx, 0 ), ( west ? r.westWidth : w ) - 1 );
+					const yy = Math.min( Math.max( y + dy, west ? r.westRow : 0 ), h - 1 );
 					win[ n ++ ] = r.data[ yy * w + xx ];
 
 				}
@@ -562,11 +569,13 @@ function THREE_DEG( d ) {
 // Aerial photo (ČÚZK Ortofoto): real roof colours, and a check that tree candidates are green. The first area has a
 // photo of its own, cut as before the area grew (tools/fetch-data.mjs), so what is read off it there stays the same.
 const photo = jpeg.decode( await readFile( new URL( 'ortho.jpg', RAW ) ), { useTArray: true, maxMemoryUsageInMB: 2048 } );
+const westPhoto = jpeg.decode( await readFile( new URL( 'ortho-west.jpg', RAW ) ), { useTArray: true, maxMemoryUsageInMB: 2048 } );
 const firstPhoto = jpeg.decode( await readFile( new URL( 'ortho-first.jpg', RAW ) ), { useTArray: true, maxMemoryUsageInMB: 2048 } );
 const inFirstArea = ( X, Y ) => X >= FIRST_AREA.xmin && X < FIRST_AREA.xmax && Y > FIRST_AREA.ymin && Y <= FIRST_AREA.ymax;
+const inWestArea = ( X, Y ) => X >= WEST_AREA.xmin && X < WEST_AREA.xmax && Y > WEST_AREA.ymin && Y <= WEST_AREA.ymax;
 function photoAt( X, Y ) {
 
-	const [ img, A ] = inFirstArea( X, Y ) ? [ firstPhoto, FIRST_AREA ] : [ photo, AREA ];
+	const [ img, A ] = inFirstArea( X, Y ) ? [ firstPhoto, FIRST_AREA ] : inWestArea( X, Y ) ? [ westPhoto, WEST_AREA ] : [ photo, AREA ];
 	const c = Math.floor( ( X - A.xmin ) / ( A.xmax - A.xmin ) * img.width );
 	const r = Math.floor( ( A.ymax - Y ) / ( A.ymax - A.ymin ) * img.height );
 	if ( c < 0 || r < 0 || c >= img.width || r >= img.height ) return null;
@@ -673,7 +682,9 @@ for ( let r = 0; r < th; r ++ ) {
 }
 
 // Smooth the terrain over a few metres: the survey surface is slightly noisy at street scale, and Old Town streets
-// are smooth slopes. Two passes of a separable 9 m box blur.
+// are smooth slopes. Two passes of a separable 9 m box blur. The earlier box keeps its original blur boundary.
+const westRow = Math.round( ( AREA.ymax - WEST_AREA.ymax ) / TERRAIN_CELL );
+const westCol = Math.round( ( WEST_AREA.xmax - AREA.xmin ) / TERRAIN_CELL );
 for ( let pass = 0; pass < 2; pass ++ ) {
 
 	for ( const [ n, stride, count, step ] of [ [ tw, 1, th, tw ], [ th, tw, tw, 1 ] ] ) {
@@ -682,14 +693,18 @@ for ( let pass = 0; pass < 2; pass ++ ) {
 		for ( let k = 0; k < count; k ++ ) {
 
 			const base = k * step;
+			const westLine = stride === 1 ? k >= westRow : k <= westCol;
+			const westMin = stride === 1 ? 0 : westRow, westMax = stride === 1 ? westCol : th - 1;
 			for ( let i = 0; i < n; i ++ ) line[ i ] = terrain[ base + i * stride ];
 			for ( let i = 0; i < n; i ++ ) {
 
+				const keep = westLine && i >= westMin && i <= westMax;
+				const lo = keep ? westMin : 0, hi = keep ? westMax : n - 1;
 				let sum = 0, m = 0;
 				for ( let d = - 4; d <= 4; d ++ ) {
 
 					const j = i + d;
-					if ( j >= 0 && j < n ) {
+					if ( j >= lo && j <= hi ) {
 
 						sum += line[ j ];
 						m ++;
@@ -740,7 +755,13 @@ for ( let r = 0; r < th; r ++ ) {
 }
 
 let waterLevel = Infinity;
-for ( let i = 0; i < tw * th; i ++ ) if ( riverMask[ i ] ) waterLevel = Math.min( waterLevel, terrain[ i ] );
+// The same Vltava surface continues into the new strip without changing the level in the earlier area.
+for ( let r = westRow; r < th; r ++ ) for ( let c = 0; c <= westCol; c ++ ) {
+
+	const i = r * tw + c;
+	if ( riverMask[ i ] ) waterLevel = Math.min( waterLevel, terrain[ i ] );
+
+}
 const riverAt = ( X, Y ) => {
 
 	const r = Math.round( ( AREA.ymax - Y ) / TERRAIN_CELL ), c = Math.round( ( X - AREA.xmin ) / TERRAIN_CELL );
@@ -769,10 +790,12 @@ const riverAt = ( X, Y ) => {
 		for ( const i of front ) {
 
 			const r = Math.floor( i / tw ), c = i % tw;
+			const west = r >= westRow && c <= westCol;
 			for ( const [ dr, dc ] of [ [ - 1, 0 ], [ 1, 0 ], [ 0, - 1 ], [ 0, 1 ], [ - 1, - 1 ], [ - 1, 1 ], [ 1, - 1 ], [ 1, 1 ] ] ) {
 
 				const rr = r + dr, cc = c + dc;
 				if ( rr < 0 || cc < 0 || rr >= th || cc >= tw || dist[ rr * tw + cc ] !== 255 ) continue;
+				if ( ! west && rr >= westRow && cc <= westCol ) continue;
 				dist[ rr * tw + cc ] = d;
 				next.push( rr * tw + cc );
 
@@ -790,11 +813,13 @@ const riverAt = ( X, Y ) => {
 
 			if ( dist[ i ] !== d ) continue;
 			const r = Math.floor( i / tw ), c = i % tw;
+			const west = r >= westRow && c <= westCol;
 			let sum = 0, n = 0;
 			for ( let dr = - 1; dr <= 1; dr ++ ) for ( let dc = - 1; dc <= 1; dc ++ ) {
 
 				const rr = r + dr, cc = c + dc;
 				if ( rr < 0 || cc < 0 || rr >= th || cc >= tw || dist[ rr * tw + cc ] <= d ) continue;
+				if ( west && ( rr < westRow || cc > westCol ) ) continue;
 				sum += terrain[ rr * tw + cc ];
 				n ++;
 
@@ -1771,7 +1796,7 @@ function polylineDistance( paths, range ) {
 }
 
 // Kerbs follow the house fronts; the free-standing rotunda is not one (the street runs round it at full width).
-const streetData = await loadStreets( { AREA, FIRST_AREA, buildingDist, inBuilding: ( X, Y ) => {
+const streetData = await loadStreets( { AREA, FIRST_AREA, buildingDist, westBuildingDist: ( X, Y ) => buildingDist( Math.max( WEST_AREA.xmin, Math.min( WEST_AREA.xmax - dsm.cell, X ) ), Math.min( WEST_AREA.ymax, Math.max( WEST_AREA.ymin + dsm.cell, Y ) ) ), inBuilding: ( X, Y ) => {
 
 	const id = buildingAt( X, Y );
 	return keptIds.has( id ) && ! HAND_MODELLED.has( buildings[ id ]?.code );
@@ -1904,6 +1929,16 @@ function groundDetail( img, A ) {
 	const first = shrink( groundDetail( firstPhoto, FIRST_AREA ), 2 );
 	await writeFile( new URL( 'ground-detail.jpg', OUT ), jpeg.encode( first, 75 ).data );
 	const wide = shrink( groundDetail( photo, AREA ), 4 );
+	// The earlier area (Malá Strana and the first area) keeps its own photo cut's local contrast and pixel
+	// alignment, as before the northern and eastern strips were added.
+	{
+
+		const west = shrink( groundDetail( westPhoto, WEST_AREA ), 4 );
+		const ox = Math.round( WEST_AREA.xmin - AREA.xmin ), oy = Math.round( AREA.ymax - WEST_AREA.ymax );
+		for ( let y = 0; y < west.height; y ++ ) west.data.copy( wide.data, ( ( y + oy ) * wide.width + ox ) * 4, y * west.width * 4, ( y + 1 ) * west.width * 4 );
+
+	}
+
 	await writeFile( new URL( 'ground-detail-wide.jpg', OUT ), jpeg.encode( wide, 75 ).data );
 	const [ hw, hh ] = [ wide.width, wide.height ];
 	first.W = first.width;
@@ -1934,6 +1969,12 @@ const furniture = collectFurniture( streetData, {
 	toLocal,
 	heightAt: ( X, Y ) => ( terraces.deckAt( X, Y ) ?? terrainAt( X, Y ) ) + 0.03 + streetData.raise( streetData.at( X, Y ).Fk ),
 	dsmTrees: trees,
+	stableTree: ( x, z, dsm ) => {
+
+		const X = x + ORIGIN.x, Y = ORIGIN.y - z, edge = dsm ? TREE_CELL * 2 : 0;
+		return X > WEST_AREA.xmin + edge && X < WEST_AREA.xmax - edge && Y > WEST_AREA.ymin + edge && Y < WEST_AREA.ymax - edge;
+
+	},
 	treeHeightAt: ( X, Y ) => {
 
 		// Mapped trees: height from the surface model where it shows a canopy, else a typical street tree.

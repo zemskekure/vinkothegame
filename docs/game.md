@@ -52,8 +52,20 @@ commit, injected by `vite.config.js`) shows in a corner and in the pause menu. T
 
 ## 3. The world
 
-- Old Town around Betlémské náměstí to Národní, Spálená and Žofín, now also **Kampa, Malá Strana and Petřín** (first
-  layer: terrain, streets, plain houses, trees). Detail per 100 m tile comes from the model's street-photo pipeline.
+- Old Town around Betlémské náměstí to Národní, Spálená and Žofín, **Kampa, Malá Strana and Petřín**, and east and
+  north through **Staroměstské náměstí, Josefov, Celetná, Dlouhá, Haštalské náměstí, Anežský klášter and náměstí
+  Republiky / Revoluční**; Vodičkova is covered in the south. The extensions have the first layer: terrain, streets
+  and pavements, RÚIAN houses with DSM-fitted roofs and generic fronts, trees and orthophoto ground. Detail per
+  100 m tile comes from the model's street-photo pipeline.
+- S-JTSK bounds: x −744950 … −742200, y −1044180 … −1042360 (scene x −1863 … 887, z −922 … 898); origin unchanged
+  at (−743087, −1043282). The north bound is 40 m past −1042400 so it clears Staroměstská náplavka along the Vltava
+  bend. The first area keeps its 50 cm ground detail and finer meshes; the rest has 1 m ground detail. The earlier
+  area (`WEST_AREA` in `tools/area.mjs`: Malá Strana plus the first area) keeps its own photo cuts
+  (`ortho-west*.jpg`), terrain blur and kerb measurements, so it looks as before apart from the seams at its former
+  north and east edges, where streets now run on.
+- Rebuild on top of the raw cache: `node tools/fetch-data.mjs`, `node tools/fetch-osm.mjs` (the fetch keeps the
+  earlier area's JPEG cuts before replacing the full-area images), then
+  `node --max-old-space-size=16000 tools/build-scene.mjs` and `npm run build`.
 - The big map (Tab, or click the minimap) teleports you anywhere.
 - Landmarks modelled by hand from the data (`tools/karluv.mjs` → `src/karluv.js`, `tools/petrin.mjs` → `src/petrin.js`,
   `tools/domes.mjs` → `src/domes.js`): **Karlův most** in stone (arches, piers with cutwaters, parapets, setts, the 30
@@ -62,7 +74,7 @@ commit, injected by `vite.config.js`) shows in a corner and in the pause menu. T
   lattice, galleries) and the funicular's track; St Nicholas's dome and belfry on Malá Strana, St Francis's dome on
   Křižovnické náměstí, Klementinum's Astronomical Tower. Views: `?at=-470,-270,1.2` (on the bridge),
   `?at=-400,-246,-1.94` (to the Old Town tower), `?overview&view=-560,30,-170,-470,10,-280` (the bridge from the river).
-- Known gaps in the new area: houses have default fronts; nobody walks on Karlův most yet; the funicular has no cars.
+- Known gaps in the new area: houses have default fronts; nobody walks on Karlův most yet; the funicular has no cars; the eastern and northern landmarks (Týn, the Old Town Hall, Prašná brána, Obecní dům) are generic RÚIAN blocks with DSM roofs so far.
 
 ## 4. People (NPCs)
 

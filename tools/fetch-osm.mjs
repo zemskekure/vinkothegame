@@ -5,7 +5,7 @@
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 
 // The play area (tools/area.mjs) with a margin, in WGS 84.
-const BBOX = { west: 14.3895, south: 50.0740, east: 14.4245, north: 50.0915 };
+const BBOX = { west: 14.3895, south: 50.0740, east: 14.4335, north: 50.0955 };
 const TILES = 5;
 
 const elements = new Map();

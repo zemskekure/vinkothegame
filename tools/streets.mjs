@@ -10,6 +10,7 @@
 import { readFile } from 'node:fs/promises';
 import { lonLatToSJTSK, lonLatToSJTSKBeyond } from './geo.mjs';
 import { buildKerbs } from './kerbs.mjs';
+import { WEST_AREA } from './area.mjs';
 import { rtin, rtinSize } from './rtin.mjs';
 
 // Artworks mapped as statues that are none: "Za pravdu" on Betlémská kaple is a shadow inscription, eight stone
@@ -26,11 +27,12 @@ const CARRIAGEWAY = new Set( [ 'service', 'residential' ] );
 const SETT = /sett|cobblestone/;
 const surfaceValue = s => s === 'asphalt' || s === 'concrete' ? 1 : SETT.test( s || 'sett' ) ? 0 : 0.5; // 0.5 = paving stones
 
-export async function loadStreets( { AREA, FIRST_AREA, buildingDist, inBuilding, tramPaths } ) {
+export async function loadStreets( { AREA, FIRST_AREA, buildingDist, westBuildingDist = buildingDist, inBuilding, tramPaths } ) {
 
 	// Beyond the first area, moved onto the cadastre (tools/geo.mjs). Each node keeps its plain projection too (raw),
 	// for the first area's kerbs, measured as they always were (below).
 	const project = FIRST_AREA ? await lonLatToSJTSKBeyond( FIRST_AREA, AREA ) : await lonLatToSJTSK();
+	const westProject = FIRST_AREA ? await lonLatToSJTSKBeyond( FIRST_AREA, WEST_AREA ) : await lonLatToSJTSK();
 	const plain = await lonLatToSJTSK();
 	const osm = JSON.parse( await readFile( new URL( '../data/raw/osm.json', import.meta.url ) ) );
 
@@ -40,6 +42,7 @@ export async function loadStreets( { AREA, FIRST_AREA, buildingDist, inBuilding,
 	for ( const el of osm ) if ( el.type === 'node' ) {
 
 		let [ X, Y ] = project( el.lon, el.lat ), [ X0, Y0 ] = plain( el.lon, el.lat );
+		let [ Xw, Yw ] = westProject( el.lon, el.lat );
 		const fix = corrections[ `node/${el.id}` ];
 		if ( fix?.offset ) {
 
@@ -47,14 +50,17 @@ export async function loadStreets( { AREA, FIRST_AREA, buildingDist, inBuilding,
 			Y += fix.offset[ 1 ];
 			X0 += fix.offset[ 0 ];
 			Y0 += fix.offset[ 1 ];
+			Xw += fix.offset[ 0 ];
+			Yw += fix.offset[ 1 ];
 
 		}
-		nodes.set( el.id, { id: el.id, X, Y, tags: el.tags || {}, raw: { id: el.id, X: X0, Y: Y0, tags: el.tags || {} } } );
+		nodes.set( el.id, { id: el.id, X, Y, tags: el.tags || {}, raw: { id: el.id, X: X0, Y: Y0, tags: el.tags || {} }, west: { id: el.id, X: Xw, Y: Yw, tags: el.tags || {} } } );
 
 	}
 
 	const ways = osm.filter( el => el.type === 'way' && el.tags ).map( w => ( { ...w, pts: w.nodes.map( id => nodes.get( id ) ).filter( Boolean ) } ) );
 	const inArea = ( X, Y, m = 0 ) => X > AREA.xmin - m && X < AREA.xmax + m && Y > AREA.ymin - m && Y < AREA.ymax + m;
+	const inWest = ( X, Y, m = 0 ) => X > WEST_AREA.xmin - m && X < WEST_AREA.xmax + m && Y > WEST_AREA.ymin - m && Y < WEST_AREA.ymax + m;
 
 	// --- carriageways
 	const roads = [];
@@ -77,11 +83,12 @@ export async function loadStreets( { AREA, FIRST_AREA, buildingDist, inBuilding,
 		const kerbed = left || right;
 
 		// Keep at least a narrow pavement between the carriageway and the houses.
-		const halfAt = p => Math.max( 1.3, Math.min( width / 2, buildingDist( p.X, p.Y ) - ( kerbed ? 1.0 : 0.3 ) ) );
-		const half = w.pts.map( halfAt ), rawPts = w.pts.map( p => p.raw ), rawHalf = rawPts.map( halfAt );
+		const halfAt = ( p, distance = buildingDist ) => Math.max( 1.3, Math.min( width / 2, distance( p.X, p.Y ) - ( kerbed ? 1.0 : 0.3 ) ) );
+		const half = w.pts.map( p => halfAt( p ) ), rawPts = w.pts.map( p => p.raw ), rawHalf = rawPts.map( p => halfAt( p, westBuildingDist ) );
+		const westPts = w.pts.map( p => p.west ), westHalf = westPts.map( p => halfAt( p, westBuildingDist ) );
 		const sidewalkTagged = Object.keys( t ).some( k => k.startsWith( 'sidewalk' ) );
 		const sidewalkWidthTag = parseFloat( t[ 'sidewalk:width' ] || t[ 'sidewalk:both:width' ] ) || 0;
-		roads.push( { pts: w.pts, half, rawPts, rawHalf, kerbed, left, right, oneway: t.oneway === 'yes' ? 1 : t.oneway === '-1' ? - 1 : 0, sidewalkTagged, sidewalkWidthTag, asphalt: surfaceValue( t.surface ), name: t.name, highway: t.highway } );
+		roads.push( { pts: w.pts, half, rawPts, rawHalf, westPts, westHalf, kerbed, left, right, oneway: t.oneway === 'yes' ? 1 : t.oneway === '-1' ? - 1 : 0, sidewalkTagged, sidewalkWidthTag, asphalt: surfaceValue( t.surface ), name: t.name, highway: t.highway } );
 
 	}
 
@@ -140,8 +147,12 @@ export async function loadStreets( { AREA, FIRST_AREA, buildingDist, inBuilding,
 
 	}
 
-	const nearestRoad = segmentIndex( roads, ( r, i ) => r.half[ i ] );
-	const nearestOpen = segmentIndex( openWays, () => 0 );
+	const currentRoad = segmentIndex( roads, ( r, i ) => r.half[ i ] );
+	const previousRoad = segmentIndex( roads.map( r => ( { ...r, pts: r.westPts, half: r.westHalf } ) ), ( r, i ) => r.half[ i ] );
+	const currentOpen = segmentIndex( openWays, () => 0 );
+	const previousOpen = segmentIndex( openWays.map( w => ( { ...w, pts: w.pts.map( p => p.west ) } ) ), () => 0 );
+	const nearestRoad = ( X, Y, accept ) => ( inWest( X, Y ) ? previousRoad : currentRoad )( X, Y, accept );
+	const nearestOpen = ( X, Y ) => ( inWest( X, Y ) ? previousOpen : currentOpen )( X, Y );
 
 	// Kerbed carriageways (tools/kerbs.mjs): measured from the house fronts and the aerial photo.
 	// --- tram stop platforms (street level; the metro's are underground)
@@ -154,7 +165,7 @@ export async function loadStreets( { AREA, FIRST_AREA, buildingDist, inBuilding,
 		if ( ! w.pts.some( p => inArea( p.X, p.Y ) ) ) continue;
 		const closed = w.nodes[ 0 ] === w.nodes[ w.nodes.length - 1 ];
 		platforms.push( {
-			id: w.id, name: t.name || '', pts: w.pts.map( p => [ p.X, p.Y ] ), rawPts: w.pts.map( p => [ p.raw.X, p.raw.Y ] ), closed, half: ( parseFloat( t.width ) || 2.6 ) / 2,
+			id: w.id, name: t.name || '', pts: w.pts.map( p => [ p.X, p.Y ] ), rawPts: w.pts.map( p => [ p.raw.X, p.raw.Y ] ), westPts: w.pts.map( p => [ p.west.X, p.west.Y ] ), closed, half: ( parseFloat( t.width ) || 2.6 ) / 2,
 			// On the pavement (a stop at the kerb) or an island of its own in the street.
 			island: t.footway !== 'sidewalk' && t.highway !== 'footway',
 			shelter: t.shelter === 'yes', bench: t.bench === 'yes', bin: t.bin === 'yes', board: t.departures_board === 'yes' || t.passenger_information_display === 'yes'
@@ -164,19 +175,30 @@ export async function loadStreets( { AREA, FIRST_AREA, buildingDist, inBuilding,
 
 	// The kerbs are measured along whole streets (house fronts, the photo, the street's width as a whole), so a
 	// street that now runs on out of the first area would measure a little differently inside it. The first area
-	// keeps the kerbs measured from the streets that reach it, as before the area grew west; the rest of the area
-	// takes them from all streets. Both sets of chains go to the street life, each kept to its own part.
+	// keeps the kerbs measured from the streets that reach it, as before the area grew west. Malá Strana keeps its
+	// measurements and photo cuts too; the new strips take all streets. Each set of chains stays in its own area.
 	const inFirst = ( X, Y, m = 0 ) => !! FIRST_AREA && X > FIRST_AREA.xmin - m && X < FIRST_AREA.xmax + m && Y > FIRST_AREA.ymin - m && Y < FIRST_AREA.ymax + m;
+	const westInBuilding = ( X, Y ) => X >= WEST_AREA.xmin && X < WEST_AREA.xmax && Y > WEST_AREA.ymin && Y <= WEST_AREA.ymax && inBuilding( X, Y );
+	console.log( 'kerbs: measuring the expanded area…' );
 	const allKerbs = await buildKerbs( { roads, AREA, inBuilding, tramPaths, islands: platforms.filter( p => p.island ) } );
-	let kerbs = allKerbs;
+	const westRoads = roads.filter( r => r.westPts.some( p => inWest( p.X, p.Y, 30 ) ) ).map( r => ( { ...r, pts: r.westPts, half: r.westHalf } ) );
+	const westIslands = platforms.filter( p => p.island && p.westPts.some( ( [ X, Y ] ) => inWest( X, Y ) ) ).map( p => ( { ...p, pts: p.westPts } ) );
+	console.log( 'kerbs: preserving the west area…' );
+	const west = await buildKerbs( { roads: westRoads, AREA: WEST_AREA, inBuilding: westInBuilding, tramPaths, islands: westIslands } );
+	let kerbs = {
+		sdf: ( X, Y ) => inWest( X, Y ) ? west.sdf( X, Y ) : allKerbs.sdf( X, Y ),
+		chains: [ ...west.chains.map( c => ( { ...c, keep: inWest } ) ), ...allKerbs.chains.map( c => ( { ...c, keep: ( X, Y ) => ! inWest( X, Y ) } ) ) ]
+	};
 	if ( FIRST_AREA ) {
 
 		const firstRoads = roads.filter( r => r.rawPts.some( p => inFirst( p.X, p.Y, 30 ) ) ).map( r => ( { ...r, pts: r.rawPts, half: r.rawHalf } ) );
 		const firstIslands = platforms.filter( p => p.island && p.rawPts.some( ( [ X, Y ] ) => inFirst( X, Y ) ) ).map( p => ( { ...p, pts: p.rawPts } ) );
-		const first = await buildKerbs( { roads: firstRoads, AREA: FIRST_AREA, photoArea: AREA, inBuilding, tramPaths, islands: firstIslands } );
+		console.log( 'kerbs: preserving the first area…' );
+		const first = await buildKerbs( { roads: firstRoads, AREA: FIRST_AREA, photoArea: WEST_AREA, inBuilding: westInBuilding, tramPaths, islands: firstIslands } );
+		const outer = kerbs;
 		kerbs = {
-			sdf: ( X, Y ) => inFirst( X, Y ) ? first.sdf( X, Y ) : allKerbs.sdf( X, Y ),
-			chains: [ ...first.chains.map( c => ( { ...c, keep: inFirst } ) ), ...allKerbs.chains.map( c => ( { ...c, keep: ( X, Y ) => ! inFirst( X, Y ) } ) ) ]
+			sdf: ( X, Y ) => inFirst( X, Y ) ? first.sdf( X, Y ) : outer.sdf( X, Y ),
+			chains: [ ...first.chains.map( c => ( { ...c, keep: inFirst } ) ), ...outer.chains.map( c => ( { ...c, keep: ( X, Y ) => ! inFirst( X, Y ) && c.keep( X, Y ) } ) ) ]
 		};
 
 	}
@@ -469,7 +491,7 @@ export function buildPavementMesh( streets, { AREA, toLocal, heightAt, inBuildin
  * Street furniture and crossings, as { type: [ x, y, z, rotation, scale, … ] } arrays in the scene frame.
  * heightAt( X, Y ) is the walking surface height (street level plus any raised pavement).
  */
-export function collectFurniture( streets, { toLocal, heightAt, dsmTrees, treeHeightAt, tramPaths = [] } ) {
+export function collectFurniture( streets, { toLocal, heightAt, dsmTrees, treeHeightAt, stableTree = () => true, tramPaths = [] } ) {
 
 	const tramSegs = tramPaths.flatMap( p => p.slice( 1 ).map( ( q, i ) => [ p[ i ], q ] ) );
 	const onTramLine = ( X, Y ) => tramSegs.some( ( [ [ ax, ay ], [ bx, by ] ] ) => {
@@ -550,6 +572,7 @@ export function collectFurniture( streets, { toLocal, heightAt, dsmTrees, treeHe
 
 	// Trees found in the surface model that aren't mapped yet (≥ 3 m from any mapped tree).
 	const mapped = [];
+	const mappedLength = out.tree.length;
 	for ( let i = 0; i < out.tree.length; i += 5 ) mapped.push( [ out.tree[ i ], out.tree[ i + 2 ] ] );
 	for ( let i = 0; i < dsmTrees.length; i += 5 ) {
 
@@ -558,6 +581,17 @@ export function collectFurniture( streets, { toLocal, heightAt, dsmTrees, treeHe
 		out.tree.push( x, y, z, 0, h );
 
 	}
+
+	// The crown blobs use the tree's array index at runtime. Keep the previous mapped trees and canopy peaks
+	// ahead of newly covered trees, so extending the map does not turn every existing crown.
+	const keptTrees = [], newTrees = [];
+	for ( let i = 0; i < out.tree.length; i += 5 ) {
+
+		const entry = out.tree.slice( i, i + 5 );
+		( stableTree( entry[ 0 ], entry[ 2 ], i >= mappedLength ) ? keptTrees : newTrees ).push( ...entry );
+
+	}
+	out.tree = [ ...keptTrees, ...newTrees ];
 
 	// Zebra crossings: marked crossing nodes on a carriageway, stripes across its full width.
 	for ( const n of streets.nodes.values() ) {

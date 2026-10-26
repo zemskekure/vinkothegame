@@ -15,7 +15,7 @@
 
 import { readFile } from 'node:fs/promises';
 import jpeg from 'jpeg-js';
-import { HI_TILES } from './area.mjs';
+import { HI_TILES, WEST_AREA, WEST_HI_TILES } from './area.mjs';
 
 const RAW = new URL( '../data/raw/', import.meta.url );
 const PHOTO_CELL = 0.125;
@@ -23,15 +23,22 @@ const STEP = 1.5; // station spacing along a street
 const FIELD_CELL = 0.25;
 const CORNER = 3; // smooth-minimum size where streets meet (kerb corner radius ≈ CORNER / 2)
 
+const photos = new Map();
+
 async function loadPhoto( AREA ) {
 
-	const [ nx, ny ] = HI_TILES;
-	const tiles = [];
-	for ( let i = 0; i < nx; i ++ ) for ( let j = 0; j < ny; j ++ ) tiles.push( { i, j, img: jpeg.decode( await readFile( new URL( `ortho-hi-${i}-${j}.jpg`, RAW ) ), { useTArray: true, maxMemoryUsageInMB: 2048 } ) } );
-	const tw = tiles[ 0 ].img.width, th = tiles[ 0 ].img.height;
+	const west = AREA === WEST_AREA;
+	const prefix = west ? 'ortho-west-hi' : 'ortho-hi';
+	if ( photos.has( prefix ) ) return photos.get( prefix );
+	const [ nx, ny ] = west ? WEST_HI_TILES : HI_TILES;
+	const tw = Math.round( ( AREA.xmax - AREA.xmin ) / nx / PHOTO_CELL );
+	const th = Math.round( ( AREA.ymax - AREA.ymin ) / ny / PHOTO_CELL );
 	const W = tw * nx, H = th * ny;
 	const lum = new Uint8Array( W * H );
-	for ( const { i, j, img } of tiles ) {
+	for ( let i = 0; i < nx; i ++ ) for ( let j = 0; j < ny; j ++ ) {
+
+		const img = jpeg.decode( await readFile( new URL( `${prefix}-${i}-${j}.jpg`, RAW ) ), { useTArray: true, maxMemoryUsageInMB: 2048 } );
+		if ( img.width !== tw || img.height !== th ) throw new Error( `${prefix}-${i}-${j}: unexpected photo tile dimensions` );
 
 		for ( let y = 0; y < th; y ++ ) for ( let x = 0; x < tw; x ++ ) {
 
@@ -49,7 +56,9 @@ async function loadPhoto( AREA ) {
 
 	};
 
-	return { W, H, lum, at };
+	const photo = { W, H, lum, at };
+	photos.set( prefix, photo );
+	return photo;
 
 }
 
@@ -529,7 +538,7 @@ export async function buildKerbs( { roads, AREA, photoArea = AREA, inBuilding, t
 		const img = Buffer.alloc( W * H * 4 );
 		for ( let r = 0; r < H; r ++ ) for ( let c = 0; c < W; c ++ ) {
 
-			const v = photo.lum[ Math.min( photo.H - 1, 2 * r ) * photo.W + Math.min( photo.W - 1, 2 * c ) ];
+			const v = photo.at( AREA.xmin + c * FIELD_CELL, AREA.ymax - r * FIELD_CELL );
 			const f = field[ r * W + c ], i = ( r * W + c ) * 4;
 			const edge = f > 0 && ( ( c > 0 && field[ r * W + c - 1 ] <= 0 ) || ( r > 0 && field[ ( r - 1 ) * W + c ] <= 0 ) || ( c < W - 1 && field[ r * W + c + 1 ] <= 0 ) || ( r < H - 1 && field[ ( r + 1 ) * W + c ] <= 0 ) );
 			const house = inBuilding( AREA.xmin + c * FIELD_CELL, AREA.ymax - r * FIELD_CELL );
