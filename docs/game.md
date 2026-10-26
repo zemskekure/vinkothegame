@@ -64,9 +64,21 @@ commit, injected by `vite.config.js`) shows in a corner and in the pause menu. T
   `src/people.js` (Quaternius CC0 rigs, faceted photo heads, one texture atlas). Rules in `art.crowd` (ugliness,
   textured share, spreads, fixed seed); `?seed=N` fixes the crowd.
 - Walkers on pavements, people seated at café terraces and inside venues (a share of seats only).
-- Planned: **Perlová street**: a few sex workers standing by the walls, more at night (non-explicit, no interaction
-  beyond other NPCs; a settings switch to turn them off). Locals vs tourists mix (faces need tagging). NPC reactions
-  to the pigeon (shoo, feed). Short deadpan lines when you pass.
+- **Friends** (`src/friends.js`): the owner's real friends as named NPCs with their own photo faces, a fixed body and
+  clothes from a seed made from their name. All of them round the front right-hand table in Hostinec U Rotundy (four
+  on the chairs, the rest standing at the table's end, a beer each), some also about the city (spots in `SPOTS`:
+  `kampa` on a bench on Kampa, `betlem` on Betlémské náměstí, `divadlo` on the Národní divadlo tram island). Come
+  within 4 m and the nearest one's name and a line of theirs show above the head (a small DOM label of its own).
+  **Their faces are private** (the repo is public): they live in `public/models/people/friends/` (gitignored) with
+  `friends.json` (name, file, sex, lines, spots), put there by `node tools/friends.mjs [faces folder]`; the build only
+  asks for them when the folder is there (`__FRIENDS__` in `vite.config.js`). Names, lines and places are edited in
+  that `friends.json`. Their faces are never in the crowd's face pool, and the crowd leaves their seats free.
+- **Perlová** (`src/perlova.js`): four women standing by the house walls on Perlová (Staré Město), idle like anyone
+  standing about, no interaction. One by day, three in the evening (and on foot, where the clock stands at the game's
+  evening), four at night (the pigeon's day cycle). Off with `world.perlova: false` in `public/game-settings.json`
+  (also a switch on the admin page, Mapa a lidé).
+- Planned: Locals vs tourists mix (faces need tagging). NPC reactions to the pigeon (shoo, feed). Short deadpan lines
+  from strangers when you pass.
 
 ## 5. Vehicles
 
@@ -109,4 +121,4 @@ commit, injected by `vite.config.js`) shows in a corner and in the pause menu. T
 
 | Done | In progress | Next | Later |
 |---|---|---|---|
-| pigeon flight + story start; walking; jump; scooter; console HUD, loading bar, real pause; teleport map; PS1 look (pigeon); generated ugly people; trams, Czech cars, boats; Bjukitchen; Malá Strana first layer; studio + admin | performance (`perf/ps1`: fast load, smooth frames, PS1 look everywhere); start screen + character creator (`feat/start`) | Perlová NPCs; deliveries (Bjukitchen first); sound | weather; easter eggs; more sponsored interiors; open-source split of the model |
+| pigeon flight + story start; walking; jump; scooter; console HUD, loading bar, real pause; teleport map; PS1 look (pigeon); generated ugly people; trams, Czech cars, boats; Bjukitchen; Malá Strana first layer; studio + admin; friends NPCs; Perlová | performance (`perf/ps1`: fast load, smooth frames, PS1 look everywhere); start screen + character creator (`feat/start`) | deliveries (Bjukitchen first); sound | weather; easter eggs; more sponsored interiors; open-source split of the model |

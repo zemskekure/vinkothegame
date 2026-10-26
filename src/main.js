@@ -1250,7 +1250,7 @@ window.__complete = false;
 
 // Street life: the people (cars hidden for now, ?cars shows them), the trams and the boats, loaded once the city is up.
 load( 'life.json', 'json' ).then( streetLife => Promise.all( [
-	addLife( scene, streetLife, { seats, benches: data.furniture.bench, groundHeight, loadModel, camera, cars: params.has( 'cars' ) } ).then( l => Object.assign( life, l ) ),
+	addLife( scene, streetLife, { seats, benches: data.furniture.bench, groundHeight, loadModel, camera, cars: params.has( 'cars' ), dom: renderer.domElement, player: () => holub ? holub.pos : walking ? walker.pos : null, hour: () => day ? day.hour : null } ).then( l => Object.assign( life, l ) ),
 	addTrams( scene, streetLife?.trams, groundHeight, ( x, z ) => cameraBlocked( x, z ) || onLegie( places?.legie, x, z ) ).then( t => trams = window.__debug.trams = t ),
 	addBoats( scene, { loadModel, groundHeight, waterLevel: data.waterLevel } ).then( b => boats = window.__debug.boats = b )
 ] ) ).then( () => renderer.compileAsync( scene, camera ).catch( () => {} ) ).then( () => window.__complete = true ); // the people's, trams' and boats' pipelines too
