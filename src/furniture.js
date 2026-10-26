@@ -1,17 +1,71 @@
-// Street furniture from OpenStreetMap positions (see tools/streets.mjs), as instanced procedural models:
-// historic Prague lamp posts, benches, bins, bollards, bike stands, fountains, statues on pedestals and trees. Each entry in data.furniture[type] is [ x, y, z, rotation, scale ].
+// Street furniture from OpenStreetMap positions (see tools/streets.mjs), as instanced low-poly models: historic
+// Prague lamp posts, bins and bollards turned from the owner's pictures, benches with his slats, bike stands,
+// fountains, statues on pedestals and trees. Each entry in data.furniture[type] is [ x, y, z, rotation, scale ].
 
 import * as THREE from 'three/webgpu';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { color, positionWorld, mix, float, vec2, floor, fract, abs, smoothstep } from 'three/tsl';
 import { noise2D } from './shading/common.js';
+// The owner's pictures of a historic lamp post, a bin, a bollard and a bench (tools/textures/furniture.py).
+import ATLAS from './furniture-atlas.json';
+
+const atlasTexture = new THREE.TextureLoader().load( 'textures/furniture-atlas.png' );
+atlasTexture.colorSpace = THREE.SRGBColorSpace;
+atlasTexture.magFilter = atlasTexture.minFilter = THREE.NearestFilter;
+atlasTexture.generateMipmaps = false;
+const pictured = new THREE.MeshStandardNodeMaterial( { map: atlasTexture, roughness: 0.6, metalness: 0.2 } );
+pictured.name = 'street furniture';
+
+// A round thing turned on a lathe from its picture's outline (radius by height), the picture wrapped round it: once
+// across the front half, mirrored on the back.
+function lathe( name, segments = 8 ) {
+
+	const T = ATLAS.things[ name ], H = T.height, r = T.rect, pts = T.lathe;
+	const pos = [], uv = [];
+	for ( let i = 0; i < pts.length - 1; i ++ ) for ( let k = 0; k < segments; k ++ ) {
+
+		const ring = ( j, s ) => {
+
+			const a = s / segments * Math.PI * 2, rad = pts[ j ][ 1 ] * H;
+			const u = 1 - Math.abs( 2 * s / segments - 1 );
+			return [ [ Math.sin( a ) * rad, pts[ j ][ 0 ] * H, Math.cos( a ) * rad ], [ r[ 0 ] + ( r[ 2 ] - r[ 0 ] ) * ( 0.5 + ( u - 0.5 ) * 0.98 ), r[ 1 ] + ( r[ 3 ] - r[ 1 ] ) * pts[ j ][ 0 ] ] ];
+
+		};
+
+		const [ a, b, c, d ] = [ ring( i, k ), ring( i, k + 1 ), ring( i + 1, k + 1 ), ring( i + 1, k ) ];
+		for ( const [ p, t ] of [ a, b, c, a, c, d ] ) {
+
+			pos.push( ...p );
+			uv.push( ...t );
+
+		}
+
+	}
+
+	const g = new THREE.BufferGeometry();
+	g.setAttribute( 'position', new THREE.Float32BufferAttribute( pos, 3 ) );
+	g.setAttribute( 'uv', new THREE.Float32BufferAttribute( uv, 2 ) );
+	g.computeVertexNormals();
+	return g;
+
+}
+
+// A box whose every face wears the same picture (a slat of the bench).
+function slatBox( w, h, d, x, y, z, rect ) {
+
+	const g = new THREE.BoxGeometry( w, h, d ).translate( x, y + h / 2, z );
+	const t = g.attributes.uv;
+	for ( let i = 0; i < t.count; i ++ ) t.setXY( i, rect[ 0 ] + ( rect[ 2 ] - rect[ 0 ] ) * t.getX( i ), rect[ 1 ] + ( rect[ 3 ] - rect[ 1 ] ) * t.getY( i ) );
+	return g;
+
+}
+
+const SLAT = ATLAS.things.bench.slat;
 
 const iron = new THREE.MeshStandardNodeMaterial( { color: 0x262b28, metalness: 0.6, roughness: 0.45 } );
 const stone = new THREE.MeshStandardNodeMaterial( { color: 0xa39a8a, roughness: 0.85 } );
-const wood = new THREE.MeshStandardNodeMaterial( { color: 0x7b5434, roughness: 0.7 } );
 const bronze = new THREE.MeshStandardNodeMaterial( { color: 0x4f6a5a, metalness: 0.7, roughness: 0.5 } );
 const water = new THREE.MeshStandardNodeMaterial( { color: 0x29404a, roughness: 0.05, metalness: 0.1 } );
-const lampGlass = new THREE.MeshStandardNodeMaterial( { color: 0xfff2d6, emissive: 0xffd9a0, emissiveIntensity: 0.4, roughness: 0.2 } );
 const bark = new THREE.MeshStandardNodeMaterial( { color: 0x4a3b2c, roughness: 1 } );
 const leaves = new THREE.MeshStandardNodeMaterial( { roughness: 0.9, flatShading: true } );
 leaves.colorNode = mix( color( 0x3e5a24 ), color( 0x5f7d32 ), noise2D( positionWorld.xz.mul( 0.9 ) ) ).mul( mix( float( 0.8 ), float( 1.1 ), noise2D( positionWorld.xz.mul( 0.13 ).add( 7 ) ) ) );
@@ -34,22 +88,15 @@ const brick = new THREE.MeshStandardNodeMaterial( { roughness: 0.9 } );
 // Each model: a list of [ geometry, material ] parts, merged per material.
 export const MODELS = {
 
-	// Cast-iron historic street lamp with a four-sided lantern (about 4.5 m).
-	lamp: [
-		[ mergeGeometries( [
-			cyl( 0.16, 0.2, 0.9, 0, 10 ), cyl( 0.12, 0.12, 0.08, 0.9, 10 ),
-			cyl( 0.055, 0.075, 2.9, 0.98, 10 ), cyl( 0.09, 0.06, 0.25, 3.85, 10 ),
-			cyl( 0.0, 0.26, 0.28, 4.62, 4 ).rotateY( Math.PI / 4 ), cyl( 0.03, 0.03, 0.2, 4.9, 6 )
-		] ), iron ],
-		[ cyl( 0.2, 0.14, 0.52, 4.1, 4 ).rotateY( Math.PI / 4 ), lampGlass ]
-	],
+	// Cast-iron historic street lamp with its lantern (4.6 m), from the owner's picture.
+	lamp: [ [ lathe( 'lamp', 6 ), pictured ] ],
 
 	// Wooden slatted bench on cast-iron legs, 1.8 m long along local x.
 	bench: [
 		[ mergeGeometries( [
-			box( 1.8, 0.04, 0.12, 0, 0.44, - 0.15 ), box( 1.8, 0.04, 0.12, 0, 0.44, 0 ), box( 1.8, 0.04, 0.12, 0, 0.44, 0.15 ),
-			box( 1.8, 0.1, 0.03, 0, 0.62, 0.24 ).rotateX( - 0.15 ), box( 1.8, 0.1, 0.03, 0, 0.76, 0.26 ).rotateX( - 0.15 )
-		] ), wood ],
+			slatBox( 1.8, 0.04, 0.12, 0, 0.44, - 0.15, SLAT ), slatBox( 1.8, 0.04, 0.12, 0, 0.44, 0, SLAT ), slatBox( 1.8, 0.04, 0.12, 0, 0.44, 0.15, SLAT ),
+			slatBox( 1.8, 0.1, 0.03, 0, 0.62, 0.24, SLAT ).rotateX( - 0.15 ), slatBox( 1.8, 0.1, 0.03, 0, 0.76, 0.26, SLAT ).rotateX( - 0.15 )
+		] ), pictured ],
 		[ mergeGeometries( [
 			box( 0.05, 0.44, 0.5, - 0.75, 0, 0 ), box( 0.05, 0.44, 0.5, 0.75, 0, 0 ),
 			box( 0.05, 0.45, 0.05, - 0.75, 0.44, 0.24 ), box( 0.05, 0.45, 0.05, 0.75, 0.44, 0.24 )
@@ -59,9 +106,10 @@ export const MODELS = {
 	// Free-standing brick chimney, tapering, with a corbelled collar near the top; scaled to its height.
 	chimney: [ [ mergeGeometries( [ cyl( 0.03, 0.045, 1, 0, 24 ), cyl( 0.036, 0.036, 0.015, 0.94, 24 ), cyl( 0.04, 0.04, 0.01, 0.955, 24 ) ] ), brick ] ],
 
-	bin: [ [ mergeGeometries( [ cyl( 0.2, 0.18, 0.85, 0, 14 ), cyl( 0.22, 0.22, 0.06, 0.85, 14 ) ] ), new THREE.MeshStandardNodeMaterial( { color: 0x2c3a31, roughness: 0.6, metalness: 0.3 } ) ] ],
+	// The cast-iron bin and the bollard, from the owner's pictures.
+	bin: [ [ lathe( 'bin', 10 ), pictured ] ],
 
-	bollard: [ [ mergeGeometries( [ cyl( 0.09, 0.1, 0.8, 0, 10 ), cyl( 0.11, 0.11, 0.05, 0.62, 10 ), new THREE.SphereGeometry( 0.09, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2 ).translate( 0, 0.8, 0 ) ] ), iron ] ],
+	bollard: [ [ lathe( 'bollard', 8 ), pictured ] ],
 
 	// One U-shaped stand; the scale field repeats it along local x.
 	bikestand: [ [ new THREE.TorusGeometry( 0.38, 0.025, 6, 16, Math.PI ).translate( 0, 0.45, 0 ).rotateY( Math.PI / 2 ), new THREE.MeshStandardNodeMaterial( { color: 0x8a8d8f, metalness: 0.8, roughness: 0.35 } ) ] ],
