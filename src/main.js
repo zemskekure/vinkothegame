@@ -566,7 +566,7 @@ walkerHeight = () => walker.placed ? walker.y + 0.5 : Infinity;
 walkerLevel = () => walker.placed ? walker.y : null;
 
 // Trams and their overhead line (poles kept out of houses).
-const trams = addTrams( scene, places?.life?.trams, groundHeight, ( x, z ) => cameraBlocked( x, z ) || onLegie( places?.legie, x, z ) );
+const trams = await addTrams( scene, places?.life?.trams, groundHeight, ( x, z ) => cameraBlocked( x, z ) || onLegie( places?.legie, x, z ) );
 
 const hud = {
 	mode: document.getElementById( 'mode' ),
