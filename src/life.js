@@ -17,11 +17,8 @@ import { SETTINGS } from './settings.js';
 import { vehicleModel } from './vehicles.js';
 
 // model: [ weight, real length in metres ]
-const CARS = {
-	'car-octavia': [ 4, 4.51 ], 'car-favorit': [ 4, 3.82 ], 'car-trabant': [ 1, 3.56 ], 'kenney-sedan': [ 2, 4.5 ],
-	'kenney-hatchback-sports': [ 1, 4.1 ], 'kenney-suv': [ 2, 4.6 ], 'kenney-van': [ 1, 4.9 ], 'kenney-delivery': [ 1, 5.4 ],
-	'kenney-taxi': [ 2, 4.6 ], 'kenney-police': [ 0.5, 4.6 ]
-};
+// Only the Czech cars (the owner's choice): the generic kit cars looked like toys beside them.
+const CARS = { 'car-octavia': [ 5, 4.51 ], 'car-favorit': [ 4, 3.82 ], 'car-trabant': [ 2, 3.56 ] };
 
 const rnd = ( () => {
 
