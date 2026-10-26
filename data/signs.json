@@ -1136,5 +1136,56 @@
 		"font": "serif",
 		"street": "x-1_z0",
 		"what": "grey capitals along the ground-floor band at the Konviktská end (2025; absent in the 2023 owner photo)"
+	},
+	{
+		"front": "21643172_13",
+		"fromLeft": 0.535,
+		"height": 5.4,
+		"kind": "hanging",
+		"text": "U MALVAZE",
+		"width": 0.6,
+		"bg": "#7a2f2c",
+		"ink": "#eadbb4",
+		"font": "serif",
+		"street": "x-2_z-2",
+		"what": "burgundy cloth banner on an angled pole over the west lantern of the archway, lettered top to bottom"
+	},
+	{
+		"front": "21643172_13",
+		"fromLeft": 0.755,
+		"height": 5.4,
+		"kind": "hanging",
+		"text": "U MALVAZE",
+		"width": 0.6,
+		"bg": "#7a2f2c",
+		"ink": "#eadbb4",
+		"font": "serif",
+		"street": "x-2_z-2",
+		"what": "matching banner over the east lantern of the archway"
+	},
+	{
+		"front": "21643148_1",
+		"fromLeft": 0.65,
+		"height": 2.9,
+		"kind": "board",
+		"text": "PRAGUE",
+		"width": 1.6,
+		"bg": "#f4f2ec",
+		"ink": "#1e1e1e",
+		"font": "sans",
+		"street": "x-2_z-2",
+		"what": "white board in the arched shopfront, black capitals; the start of the line is cut off by the photo edge (OSM lists I ❤️ Prague here)"
+	},
+	{
+		"front": "21643181_17",
+		"fromLeft": 0.22,
+		"height": 3.1,
+		"kind": "letters",
+		"text": "UNITARIA",
+		"width": 1.4,
+		"ink": "#8a4f2e",
+		"font": "serif",
+		"street": "x-2_z-2",
+		"what": "bronze capitals on the wall over the open doorway at the west end of the front (21643202_1)"
 	}
 ]

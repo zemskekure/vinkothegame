@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 420">
+  <rect width="600" height="420" fill="#edb8a5"/>
+  <rect y="390" width="600" height="30" fill="#dba592"/>
+  <path d="M6 58H34" stroke="#232323" stroke-width="5"/>
+  <path d="M6 78Q22 76 28 60" fill="none" stroke="#232323" stroke-width="3"/>
+  <path d="M22 64L36 50L50 64Z" fill="#232323"/>
+  <path d="M22 64H50L46 100H26Z" fill="#262626"/>
+  <path d="M27 70H45L42 94H30Z" fill="#f0d68f"/>
+  <circle cx="36" cy="104" r="4" fill="#232323"/>
+  <rect x="95" y="112" width="160" height="228" fill="#f7f3ec" stroke="#d9cfc2" stroke-width="4"/>
+  <rect x="113" y="130" width="124" height="192" fill="#3f4648"/>
+  <path d="M117 134H233L117 262Z" fill="#7d8a8d" opacity="0.25"/>
+  <path d="M113 178L144 130L175 178L144 226ZM175 178L206 130L237 178L206 226ZM113 274L144 226L175 274L144 322ZM175 274L206 226L237 274L206 322Z" fill="none" stroke="#1f1f1f" stroke-width="4"/>
+  <rect x="113" y="130" width="124" height="192" fill="none" stroke="#1f1f1f" stroke-width="6"/>
+  <g fill="#1f1f1f"><circle cx="175" cy="178" r="5"/><circle cx="144" cy="226" r="5"/><circle cx="206" cy="226" r="5"/><circle cx="175" cy="274" r="5"/></g>
+  <rect x="88" y="340" width="174" height="10" fill="#f3eee4"/>
+  <rect x="300" y="112" width="180" height="228" fill="#f7f3ec" stroke="#d9cfc2" stroke-width="4"/>
+  <rect x="318" y="130" width="144" height="192" fill="#3f4648"/>
+  <path d="M322 134H458L322 262Z" fill="#7d8a8d" opacity="0.25"/>
+  <path d="M318 178L354 130L390 178L354 226ZM390 178L426 130L462 178L426 226ZM318 274L354 226L390 274L354 322ZM390 274L426 226L462 274L426 322Z" fill="none" stroke="#1f1f1f" stroke-width="4"/>
+  <rect x="318" y="130" width="144" height="192" fill="none" stroke="#1f1f1f" stroke-width="6"/>
+  <g fill="#1f1f1f"><circle cx="390" cy="178" r="5"/><circle cx="354" cy="226" r="5"/><circle cx="426" cy="226" r="5"/><circle cx="390" cy="274" r="5"/></g>
+  <rect x="293" y="340" width="194" height="10" fill="#f3eee4"/>
+  <path d="M505 152Q542 128 580 152V252Q580 286 542 300Q505 286 505 252Z" fill="#f5f6f7" stroke="#2b4f9c" stroke-width="5"/>
+  <path d="M513 158Q542 139 572 158V250Q572 279 542 291Q513 279 513 250Z" fill="none" stroke="#2b4f9c" stroke-width="2"/>
+  <text x="542" y="167" text-anchor="middle" font-family="sans-serif" font-size="10" font-weight="bold" letter-spacing="1" fill="#2b4f9c">PASSAGE</text>
+  <text x="542" y="212" text-anchor="middle" font-family="serif" font-size="16" font-weight="bold" fill="#2b4f9c">DISCO</text>
+  <text x="542" y="232" text-anchor="middle" font-family="serif" font-size="16" font-weight="bold" fill="#2b4f9c">DUCK</text>
+  <text x="542" y="262" text-anchor="middle" font-family="sans-serif" font-size="8" font-weight="bold" fill="#2b4f9c">CLOCK TOWER</text>
+</svg>
