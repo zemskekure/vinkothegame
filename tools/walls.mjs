@@ -3,6 +3,7 @@
 // on Náprstkova: four iron-barred openings). Drawn by src/dress.js.
 
 import { readFileSync } from 'node:fs';
+import { EAST_AREA } from './area.mjs';
 
 const HEIGHT = 2.6;
 // Barred gates seen in street photos: way id → fractions along the way (from its first node).
@@ -55,9 +56,18 @@ export function collectWalls( { places, project, L, S, yAtLocal, streetData, ARE
 	let n = 0;
 	for ( const w of osm ) {
 
-		if ( w.type !== 'way' || w.tags?.barrier !== 'wall' ) continue;
-		const pts = w.nodes.map( id => nodes.get( id ) ).filter( Boolean ).map( q => project( q.lon, q.lat ) );
+		const retaining = w.tags?.barrier === 'retaining_wall';
+		if ( w.type !== 'way' || ( w.tags?.barrier !== 'wall' && ! retaining ) ) continue;
+		let pts = w.nodes.map( id => nodes.get( id ) ).filter( Boolean ).map( q => project( q.lon, q.lat ) );
 		if ( pts.length < 2 || ! pts.some( ( [ X, Y ] ) => X > AREA.xmin && X < AREA.xmax && Y > AREA.ymin && Y < AREA.ymax ) ) continue;
+		const inOld = ( [ X, Y ] ) => X >= EAST_AREA.xmin && X <= EAST_AREA.xmax && Y >= EAST_AREA.ymin && Y <= EAST_AREA.ymax;
+		if ( retaining && pts.some( inOld ) ) continue;
+		if ( pts.every( p => ! inOld( p ) ) ) pts = pts.slice( 1 ).flatMap( ( b, i ) => {
+
+			const a = pts[ i ], n = Math.max( 1, Math.ceil( Math.hypot( b[ 0 ] - a[ 0 ], b[ 1 ] - a[ 1 ] ) / 3 ) );
+			return Array.from( { length: n }, ( _, k ) => [ a[ 0 ] + ( b[ 0 ] - a[ 0 ] ) * k / n, a[ 1 ] + ( b[ 1 ] - a[ 1 ] ) * k / n ] );
+
+		} ).concat( [ pts.at( - 1 ) ] );
 		const total = pts.slice( 1 ).reduce( ( a, p, i ) => a + Math.hypot( p[ 0 ] - pts[ i ][ 0 ], p[ 1 ] - pts[ i ][ 1 ] ), 0 );
 		const gates = ( BARRED[ w.id ] || [] ).map( f => f * total );
 		const height = Number( w.tags.height ) || HEIGHT;
@@ -87,8 +97,17 @@ export function collectWalls( { places, project, L, S, yAtLocal, streetData, ARE
 				if ( b - a > 0.1 ) {
 
 					const [ x0, y0, z0 ] = at( a ), [ x1, y1, z1 ] = at( b );
-					walls.push( { kind: 'wall', x0, z0, x1, z1, y: + Math.min( y0, y1 ).toFixed( 2 ), h: height, colour: COLOUR[ w.id ] || '#e6dcc6' } );
-					barrier( x0, z0, x1, z1, Math.max( y0, y1 ) + height );
+					let foot = Math.min( y0, y1 ), top = foot + height;
+					if ( retaining ) {
+
+						const nx = - ( z1 - z0 ) / ( b - a ), nz = ( x1 - x0 ) / ( b - a );
+						const sides = [ - 1, 1 ].map( k => yAtLocal( ( x0 + x1 ) / 2 + nx * k * 2, ( z0 + z1 ) / 2 + nz * k * 2 ) );
+						foot = Math.min( ...sides ) - 0.3;
+						top = Math.max( ...sides ) + 0.5;
+
+					}
+					walls.push( { kind: 'wall', x0, z0, x1, z1, y: + foot.toFixed( 2 ), h: + ( top - foot ).toFixed( 2 ), colour: COLOUR[ w.id ] || '#e6dcc6' } );
+					barrier( x0, z0, x1, z1, retaining ? top : Math.max( y0, y1 ) + height );
 
 				}
 

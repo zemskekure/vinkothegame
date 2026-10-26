@@ -19,6 +19,8 @@ const CAPADLO = { steps: 137806765, underpass: 1201427940, metal: 34056146 };
 
 import { dressSquare } from './dress.mjs';
 import { collectWalls } from './walls.mjs';
+import { collectFirstLayer } from './first-layer.mjs';
+import { EAST_AREA } from './area.mjs';
 import { collectTheatre } from './theatre.mjs';
 import { OSM_OFFSET } from './geo.mjs';
 import { collectVenues } from './venues.mjs';
@@ -1180,7 +1182,13 @@ export function collectPlaces( ctx ) {
 		const len = Math.hypot( bx - ax, bz - az ), lx = ( bx - ax ) / len, lz = ( bz - az ) / len;
 		const y0 = + g.ya.toFixed( 2 ), y1 = + g.yb.toFixed( 2 );
 		places.bridges.push( { x0: + ax.toFixed( 2 ), z0: + az.toFixed( 2 ), x1: + bx.toFixed( 2 ), z1: + bz.toFixed( 2 ), w: g.w, y0, y1, kind: g.kind } );
-		zone( ( ax + bx ) / 2, ( az + bz ) / 2, [ lz, - lx ], g.w / 2, len / 2 + 0.2, { y0, y1, along: [ lx, lz ] } );
+		// Overpasses outside the earlier area carry only a walker already at deck level, so Na Poříčí stays
+		// below Wilsonova instead of jumping onto its flyover when crossing underneath it.
+		const mx = ( g.A[ 0 ] + g.B[ 0 ] ) / 2, my = ( g.A[ 1 ] + g.B[ 1 ] ) / 2;
+		const outsideOld = mx < EAST_AREA.xmin || mx > EAST_AREA.xmax || my < EAST_AREA.ymin || my > EAST_AREA.ymax;
+		const under = terrainAt( mx, my );
+		const over = outsideOld && ! riverAt( mx, my ) && Math.min( y0, y1 ) - under > 2 ? { over: under } : {};
+		zone( ( ax + bx ) / 2, ( az + bz ) / 2, [ lz, - lx ], g.w / 2, len / 2 + 0.2, { y0, y1, along: [ lx, lz ], ...over } );
 		if ( g.w >= 6 ) for ( let d = 12; d < len; d += 25 ) {
 
 			const X = g.A[ 0 ] + ( g.B[ 0 ] - g.A[ 0 ] ) * d / len, Y = g.A[ 1 ] + ( g.B[ 1 ] - g.A[ 1 ] ) * d / len;
@@ -1289,6 +1297,8 @@ export function collectPlaces( ctx ) {
 	dressSquare( { places, frontFacing, frame, S, L, sign, yAtLocal, streetData, project: ctx.project, streetFacades, toLocal, buildingInfo: ctx.buildingInfo, inHouse: inKept } );
 	// Sponsored venues (data/venues.json): rooms, doors, windows and tables from one entry each.
 	collectVenues( { places, edgeOf, frame, zone, cutout, sideK, tablesAt, terrainAt, S } );
+
+	collectFirstLayer( { ...ctx, places } );
 
 	return places;
 
@@ -1462,8 +1472,8 @@ function tramRoutes( ctx, L ) {
 	pieces.forEach( ( p, k ) => {
 
 		const a = nodeOf( p[ 0 ] ), b = nodeOf( p[ p.length - 1 ] );
-		a.edges.push( { k, to: b, pts: p } );
-		b.edges.push( { k, to: a, pts: [ ...p ].reverse() } );
+		a.edges.push( { k, to: b, b, pts: p } );
+		b.edges.push( { k, to: a, b, pts: [ ...p ].reverse() } );
 
 	} );
 
@@ -1475,7 +1485,7 @@ function tramRoutes( ctx, L ) {
 	};
 
 	const routes = [];
-	const walk = ( node, used, pts ) => {
+	const walk = ( node, used, pts, keys ) => {
 
 		let extended = false;
 		for ( const e of node.edges ) {
@@ -1490,22 +1500,34 @@ function tramRoutes( ctx, L ) {
 			}
 
 			extended = true;
-			walk( e.to, new Set( [ ...used, e.k ] ), [ ...pts, ...( pts.length ? e.pts.slice( 1 ) : e.pts ) ] );
+			walk( e.to, new Set( [ ...used, e.k ] ), [ ...pts, ...( pts.length ? e.pts.slice( 1 ) : e.pts ) ], [ ...keys, `${e.k}${e.to === e.b ? '+' : '-'}` ] );
 
 		}
 
-		if ( ! extended && pts.length ) routes.push( pts );
+		if ( ! extended && pts.length ) routes.push( { pts, keys } );
 
 	};
 
-	for ( const n of nodes ) if ( n.edges.length === 1 ) walk( n, new Set(), [] );
+	for ( const n of nodes ) if ( n.edges.length === 1 ) walk( n, new Set(), [], [] );
+	// Every way through the network from every end is a route, which grows fast with the network (the whole of
+	// Prague 1 has hundreds). The longest first, each kept only if it runs along a piece of track, in its direction,
+	// that no route kept before runs along: every track is still served both ways, by a few dozen trams.
+	routes.sort( ( a, b ) => b.pts.length - a.pts.length );
+	const served = new Set();
+	const kept = routes.filter( r => {
+
+		if ( r.keys.every( k => served.has( k ) ) ) return false;
+		for ( const k of r.keys ) served.add( k );
+		return true;
+
+	} ).map( r => r.pts );
 
 	const stops = [];
 	for ( const n of streetData.nodes.values() ) if ( n.tags.railway === 'tram_stop' || ( n.tags.public_transport === 'stop_position' && n.tags.tram === 'yes' ) ) stops.push( n );
 
 	const inside = ( X, Y ) => X > AREA.xmin + 5 && X < AREA.xmax - 5 && Y > AREA.ymin + 5 && Y < AREA.ymax - 5 && ( ! riverAt( X, Y ) || ctx.onBridge?.( X, Y ) );
 	const out = [];
-	for ( const route of routes ) {
+	for ( const route of kept ) {
 
 		// Densify to 2 m, offset to the right-hand track.
 		const dense = [];

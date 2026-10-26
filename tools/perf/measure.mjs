@@ -2,7 +2,8 @@
 //
 //   node tools/perf/measure.mjs <base url> <label> [load|views|all] [shots dir]
 //
-// load: a cold load with the network throttled to the Cloudflare tunnel's ~1.5 MB/s (bytes over the wire, time to
+// load: a cold load (from START, or the AT environment variable: the bare URL stops at the start screen now) with
+// the network throttled to the Cloudflare tunnel's ~1.5 MB/s (bytes over the wire, time to
 // window.__ready, JS heap), then a repeat visit in the same browser. views: frame times (from the game's own
 // rendered frames, the cap lifted with ?fps=240), draw calls and triangles in the busy views, plus a screenshot.
 
@@ -10,8 +11,11 @@ import { launch } from './browser.mjs';
 
 const [ base, label, what = 'all', shots ] = process.argv.slice( 2 );
 
+// Where the load test starts: the game's own start on Betlémské náměstí (src/main.js startAt).
+const START = process.env.AT ? `at=${process.env.AT}` : 'at=-78,68,-1.152';
+
 const VIEWS = {
-	start: '',
+	start: START,
 	narodni: 'at=-250,329,-1.571',
 	betlem: 'at=-20,70,1.571',
 	malastrana: 'overview&view=-650,260,250,-1100,0,-250',
@@ -59,7 +63,7 @@ async function loadTest() {
 		const log = [];
 		watch( page, log );
 		const t0 = Date.now();
-		await page.goto( base, { timeout: 600000, waitUntil: 'domcontentloaded' } );
+		await page.goto( `${base}?${START}`, { timeout: 600000, waitUntil: 'domcontentloaded' } );
 		const ok = await page.waitForFunction( () => window.__ready, null, { timeout: 600000, polling: 100 } ).then( () => true, () => false );
 		const ready = ( Date.now() - t0 ) / 1000;
 		const bytesAtReady = bytes;

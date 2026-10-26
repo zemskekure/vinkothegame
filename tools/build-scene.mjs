@@ -4,7 +4,7 @@
 //             walls extruded from the terrain (DMR 5G) up to the eave and hipped
 //             roofs, both measured from the 0.5 m digital surface model (DMP).
 // Surface:    sidewalks, asphalt, tram rails and parks as a 1 m RGBA map.
-// Terrain:    DMR 5G resampled to a 2 m grid.
+// Terrain:    DMR 5G resampled to a 1 m grid.
 // Trees:      canopy peaks of (surface - terrain) outside buildings.
 //
 // Scene frame: 1 unit = 1 m, x = east, y = up, z = south,
@@ -15,10 +15,10 @@ import jpeg from 'jpeg-js';
 import { fromFile } from 'geotiff';
 import poly2tri from 'poly2tri';
 import { ShapeUtils, Vector2, Color, SRGBColorSpace } from 'three';
-import { AREA, WEST_AREA, FIRST_AREA, ORIGIN } from './area.mjs';
+import { AREA, EAST_AREA, WEST_AREA, FIRST_AREA, ORIGIN } from './area.mjs';
 import { loadStreets, buildPavementMesh, collectFurniture } from './streets.mjs';
 import { collectPlaces } from './places.mjs';
-import { lonLatToSJTSK, lonLatToSJTSKBeyond, toCadastre } from './geo.mjs';
+import { lonLatToSJTSK, lonLatToSJTSKBeyond, lonLatToSJTSKPreserved, toCadastre } from './geo.mjs';
 import { TOWER_CODES as KARLUV_TOWERS, GATE_WAY as KARLUV_GATE, underKarluv } from './karluv.mjs';
 import { PETRIN_TOWER } from './petrin.mjs';
 import { ROOF_CAP, DOME_TOWERS } from './domes.mjs';
@@ -39,7 +39,7 @@ const ROOF_GRID = 1.0; // spacing of interior roof samples (m)
 const ROOF_MESH = 2, ROOF_EDGE_STEP = 4.0;
 const EDGE_STEP = 1.5; // max wall segment length (m)
 // Outside the first area (Malá Strana, Kampa, Petřín, the strip north of Karlova), modelled from the data alone,
-// houses get half as many roof samples each way and wall segments twice as long: the area is three times the size,
+// houses get half as many roof samples each way and wall segments twice as long across the larger area,
 // and these meshes are most of what the game downloads and draws.
 const ROOF_GRID_WIDE = 2.0, ROOF_EDGE_STEP_WIDE = 6.0, EDGE_STEP_WIDE = 3.0;
 const EDGE_INSET = 0.7; // roof edge heights are sampled this far inside the footprint
@@ -57,7 +57,11 @@ async function loadRaster( name ) {
 	const width = image.getWidth(), height = image.getHeight();
 	await tiff.close();
 	const cell = ( AREA.xmax - AREA.xmin ) / width;
-	return { data, width, height, cell, westWidth: Math.round( ( WEST_AREA.xmax - AREA.xmin ) / cell ), westRow: Math.round( ( AREA.ymax - WEST_AREA.ymax ) / cell ) };
+	const cuts = [ WEST_AREA, EAST_AREA, AREA ].map( a => ( {
+		minX: Math.round( ( a.xmin - AREA.xmin ) / cell ), maxX: Math.round( ( a.xmax - AREA.xmin ) / cell ) - 1,
+		minY: Math.round( ( AREA.ymax - a.ymax ) / cell ), maxY: Math.round( ( AREA.ymax - a.ymin ) / cell ) - 1
+	} ) );
+	return { data, width, height, cell, cuts };
 
 }
 
@@ -65,9 +69,10 @@ async function loadRaster( name ) {
 // keep the original clamp rather than picking up a new neighbour across the old boundary.
 function sample( r, X, Y ) {
 
-	const west = X >= WEST_AREA.xmin && X <= WEST_AREA.xmax && Y >= WEST_AREA.ymin && Y <= WEST_AREA.ymax;
-	const fx = Math.min( Math.max( ( X - AREA.xmin ) / r.cell - 0.5, 0 ), ( west ? r.westWidth : r.width ) - 1.001 );
-	const fy = Math.min( Math.max( ( AREA.ymax - Y ) / r.cell - 0.5, west ? r.westRow : 0 ), r.height - 1.001 );
+	const area = [ WEST_AREA, EAST_AREA, AREA ].find( a => X >= a.xmin && X <= a.xmax && Y >= a.ymin && Y <= a.ymax ) || AREA;
+	const cut = r.cuts[ [ WEST_AREA, EAST_AREA, AREA ].indexOf( area ) ];
+	const fx = Math.min( Math.max( ( X - AREA.xmin ) / r.cell - 0.5, cut.minX ), cut.maxX - 0.001 );
+	const fy = Math.min( Math.max( ( AREA.ymax - Y ) / r.cell - 0.5, cut.minY ), cut.maxY - 0.001 );
 	const x0 = Math.floor( fx ), y0 = Math.floor( fy );
 	const tx = fx - x0, ty = fy - y0;
 	const i = y0 * r.width + x0;
@@ -87,14 +92,14 @@ function medianFilter( r ) {
 
 		for ( let x = 0; x < w; x ++ ) {
 
-			const west = x < r.westWidth && y >= r.westRow;
+			const cut = r.cuts.find( a => x >= a.minX && x <= a.maxX && y >= a.minY && y <= a.maxY );
 			let n = 0;
 			for ( let dy = - 1; dy <= 1; dy ++ ) {
 
 				for ( let dx = - 1; dx <= 1; dx ++ ) {
 
-					const xx = Math.min( Math.max( x + dx, 0 ), ( west ? r.westWidth : w ) - 1 );
-					const yy = Math.min( Math.max( y + dy, west ? r.westRow : 0 ), h - 1 );
+					const xx = Math.min( Math.max( x + dx, cut.minX ), cut.maxX );
+					const yy = Math.min( Math.max( y + dy, cut.minY ), cut.maxY );
 					win[ n ++ ] = r.data[ yy * w + xx ];
 
 				}
@@ -315,7 +320,7 @@ for ( const b of buildings ) rasterize( b );
 // Voršilská: an OSM building outline less than a fifth covered by RÚIAN footprints is added.
 {
 
-	const project = await lonLatToSJTSKBeyond( FIRST_AREA, AREA ); // moved onto the cadastre beyond the first area
+	const project = await lonLatToSJTSKPreserved( FIRST_AREA, EAST_AREA, AREA ); // moved onto the cadastre beyond the first area
 	const osm = JSON.parse( await readFile( new URL( 'osm.json', RAW ) ) );
 	const nodes = new Map( osm.filter( e => e.type === 'node' ).map( n => [ n.id, n ] ) );
 	let added = 0;
@@ -568,14 +573,16 @@ function THREE_DEG( d ) {
 
 // Aerial photo (ČÚZK Ortofoto): real roof colours, and a check that tree candidates are green. The first area has a
 // photo of its own, cut as before the area grew (tools/fetch-data.mjs), so what is read off it there stays the same.
-const photo = jpeg.decode( await readFile( new URL( 'ortho.jpg', RAW ) ), { useTArray: true, maxMemoryUsageInMB: 2048 } );
-const westPhoto = jpeg.decode( await readFile( new URL( 'ortho-west.jpg', RAW ) ), { useTArray: true, maxMemoryUsageInMB: 2048 } );
-const firstPhoto = jpeg.decode( await readFile( new URL( 'ortho-first.jpg', RAW ) ), { useTArray: true, maxMemoryUsageInMB: 2048 } );
+const photo = jpeg.decode( await readFile( new URL( 'ortho.jpg', RAW ) ), { useTArray: true, maxMemoryUsageInMB: 4096, maxResolutionInMP: 160 } );
+const eastPhoto = jpeg.decode( await readFile( new URL( 'ortho-east.jpg', RAW ) ), { useTArray: true, maxMemoryUsageInMB: 4096, maxResolutionInMP: 160 } );
+const westPhoto = jpeg.decode( await readFile( new URL( 'ortho-west.jpg', RAW ) ), { useTArray: true, maxMemoryUsageInMB: 4096, maxResolutionInMP: 160 } );
+const firstPhoto = jpeg.decode( await readFile( new URL( 'ortho-first.jpg', RAW ) ), { useTArray: true, maxMemoryUsageInMB: 4096, maxResolutionInMP: 160 } );
 const inFirstArea = ( X, Y ) => X >= FIRST_AREA.xmin && X < FIRST_AREA.xmax && Y > FIRST_AREA.ymin && Y <= FIRST_AREA.ymax;
 const inWestArea = ( X, Y ) => X >= WEST_AREA.xmin && X < WEST_AREA.xmax && Y > WEST_AREA.ymin && Y <= WEST_AREA.ymax;
+const inEastArea = ( X, Y ) => X >= EAST_AREA.xmin && X < EAST_AREA.xmax && Y > EAST_AREA.ymin && Y <= EAST_AREA.ymax;
 function photoAt( X, Y ) {
 
-	const [ img, A ] = inFirstArea( X, Y ) ? [ firstPhoto, FIRST_AREA ] : inWestArea( X, Y ) ? [ westPhoto, WEST_AREA ] : [ photo, AREA ];
+	const [ img, A ] = inFirstArea( X, Y ) ? [ firstPhoto, FIRST_AREA ] : inWestArea( X, Y ) ? [ westPhoto, WEST_AREA ] : inEastArea( X, Y ) ? [ eastPhoto, EAST_AREA ] : [ photo, AREA ];
 	const c = Math.floor( ( X - A.xmin ) / ( A.xmax - A.xmin ) * img.width );
 	const r = Math.floor( ( A.ymax - Y ) / ( A.ymax - A.ymin ) * img.height );
 	if ( c < 0 || r < 0 || c >= img.width || r >= img.height ) return null;
@@ -683,8 +690,12 @@ for ( let r = 0; r < th; r ++ ) {
 
 // Smooth the terrain over a few metres: the survey surface is slightly noisy at street scale, and Old Town streets
 // are smooth slopes. Two passes of a separable 9 m box blur. The earlier box keeps its original blur boundary.
-const westRow = Math.round( ( AREA.ymax - WEST_AREA.ymax ) / TERRAIN_CELL );
-const westCol = Math.round( ( WEST_AREA.xmax - AREA.xmin ) / TERRAIN_CELL );
+const terrainCuts = [ WEST_AREA, EAST_AREA, AREA ].map( a => ( {
+	minC: Math.round( ( a.xmin - AREA.xmin ) / TERRAIN_CELL ), maxC: Math.round( ( a.xmax - AREA.xmin ) / TERRAIN_CELL ),
+	minR: Math.round( ( AREA.ymax - a.ymax ) / TERRAIN_CELL ), maxR: Math.round( ( AREA.ymax - a.ymin ) / TERRAIN_CELL )
+} ) );
+const terrainCut = ( r, c ) => terrainCuts.find( a => c >= a.minC && c <= a.maxC && r >= a.minR && r <= a.maxR );
+const [ westCut ] = terrainCuts;
 for ( let pass = 0; pass < 2; pass ++ ) {
 
 	for ( const [ n, stride, count, step ] of [ [ tw, 1, th, tw ], [ th, tw, tw, 1 ] ] ) {
@@ -693,13 +704,11 @@ for ( let pass = 0; pass < 2; pass ++ ) {
 		for ( let k = 0; k < count; k ++ ) {
 
 			const base = k * step;
-			const westLine = stride === 1 ? k >= westRow : k <= westCol;
-			const westMin = stride === 1 ? 0 : westRow, westMax = stride === 1 ? westCol : th - 1;
 			for ( let i = 0; i < n; i ++ ) line[ i ] = terrain[ base + i * stride ];
 			for ( let i = 0; i < n; i ++ ) {
 
-				const keep = westLine && i >= westMin && i <= westMax;
-				const lo = keep ? westMin : 0, hi = keep ? westMax : n - 1;
+				const cut = stride === 1 ? terrainCut( k, i ) : terrainCut( i, k );
+				const lo = stride === 1 ? cut.minC : cut.minR, hi = stride === 1 ? cut.maxC : cut.maxR;
 				let sum = 0, m = 0;
 				for ( let d = - 4; d <= 4; d ++ ) {
 
@@ -756,7 +765,7 @@ for ( let r = 0; r < th; r ++ ) {
 
 let waterLevel = Infinity;
 // The same Vltava surface continues into the new strip without changing the level in the earlier area.
-for ( let r = westRow; r < th; r ++ ) for ( let c = 0; c <= westCol; c ++ ) {
+for ( let r = westCut.minR; r <= westCut.maxR; r ++ ) for ( let c = westCut.minC; c <= westCut.maxC; c ++ ) {
 
 	const i = r * tw + c;
 	if ( riverMask[ i ] ) waterLevel = Math.min( waterLevel, terrain[ i ] );
@@ -790,12 +799,12 @@ const riverAt = ( X, Y ) => {
 		for ( const i of front ) {
 
 			const r = Math.floor( i / tw ), c = i % tw;
-			const west = r >= westRow && c <= westCol;
+			const cut = terrainCut( r, c );
 			for ( const [ dr, dc ] of [ [ - 1, 0 ], [ 1, 0 ], [ 0, - 1 ], [ 0, 1 ], [ - 1, - 1 ], [ - 1, 1 ], [ 1, - 1 ], [ 1, 1 ] ] ) {
 
 				const rr = r + dr, cc = c + dc;
 				if ( rr < 0 || cc < 0 || rr >= th || cc >= tw || dist[ rr * tw + cc ] !== 255 ) continue;
-				if ( ! west && rr >= westRow && cc <= westCol ) continue;
+				if ( terrainCuts.indexOf( terrainCut( rr, cc ) ) < terrainCuts.indexOf( cut ) ) continue;
 				dist[ rr * tw + cc ] = d;
 				next.push( rr * tw + cc );
 
@@ -813,13 +822,13 @@ const riverAt = ( X, Y ) => {
 
 			if ( dist[ i ] !== d ) continue;
 			const r = Math.floor( i / tw ), c = i % tw;
-			const west = r >= westRow && c <= westCol;
+			const cut = terrainCut( r, c );
 			let sum = 0, n = 0;
 			for ( let dr = - 1; dr <= 1; dr ++ ) for ( let dc = - 1; dc <= 1; dc ++ ) {
 
 				const rr = r + dr, cc = c + dc;
 				if ( rr < 0 || cc < 0 || rr >= th || cc >= tw || dist[ rr * tw + cc ] <= d ) continue;
-				if ( west && ( rr < westRow || cc > westCol ) ) continue;
+				if ( rr < cut.minR || rr > cut.maxR || cc < cut.minC || cc > cut.maxC ) continue;
 				sum += terrain[ rr * tw + cc ];
 				n ++;
 
@@ -839,7 +848,7 @@ for ( let i = 0; i < tw * th; i ++ ) if ( riverMask[ i ] ) terrain[ i ] = waterL
 
 console.log( `river: water level ${( waterLevel + BASE_HEIGHT ).toFixed( 2 )} m` );
 
-// Street-level ground height in the scene frame: the same 2 m grid the terrain mesh is built from.
+// Street-level ground height in the scene frame: the same 1 m grid the terrain mesh is built from.
 function terrainAt( X, Y ) {
 
 	const fx = Math.min( Math.max( ( X - AREA.xmin ) / TERRAIN_CELL, 0 ), tw - 1.001 );
@@ -1071,7 +1080,7 @@ const shopEdges = new Set();
 const pendingSigns = [];
 {
 
-	const project = await lonLatToSJTSKBeyond( FIRST_AREA, AREA );
+	const project = await lonLatToSJTSKPreserved( FIRST_AREA, EAST_AREA, AREA );
 	const osm = JSON.parse( await readFile( new URL( 'osm.json', RAW ) ) );
 	for ( const n of osm ) {
 
@@ -1759,6 +1768,55 @@ const buildingDist = ( X, Y ) => {
 
 };
 
+// The earlier area measures streets against its earlier building context, including the former raster edges.
+const oldWidth = Math.round( ( EAST_AREA.xmax - EAST_AREA.xmin ) / dsm.cell );
+const oldHeight = Math.round( ( EAST_AREA.ymax - EAST_AREA.ymin ) / dsm.cell );
+const oldMask = await readFile( new URL( 'building-mask-east.bin', RAW ) ).catch( () => null );
+if ( oldMask && oldMask.length !== Math.ceil( oldWidth * oldHeight / 8 ) ) throw new Error( 'building-mask-east: unexpected dimensions' );
+const oldDist = new Float64Array( oldWidth * oldHeight );
+const oldC = Math.round( ( EAST_AREA.xmin - AREA.xmin ) / dsm.cell ), oldR = Math.round( ( AREA.ymax - EAST_AREA.ymax ) / dsm.cell );
+for ( let r = 0; r < oldHeight; r ++ ) for ( let c = 0; c < oldWidth; c ++ ) {
+
+	const i = r * oldWidth + c;
+	const occupied = oldMask ? oldMask[ i >> 3 ] >> ( i & 7 ) & 1 : keptIds.has( idGrid[ ( r + oldR ) * W + c + oldC ] );
+	oldDist[ i ] = occupied ? 0 : BIG;
+
+}
+{
+
+	const n = Math.max( oldWidth, oldHeight );
+	const f = new Float64Array( n ), d = new Float64Array( n ), v = new Int32Array( n ), z = new Float64Array( n + 1 );
+	for ( let c = 0; c < oldWidth; c ++ ) {
+
+		for ( let r = 0; r < oldHeight; r ++ ) f[ r ] = oldDist[ r * oldWidth + c ];
+		edt1d( f, oldHeight, d, v, z );
+		for ( let r = 0; r < oldHeight; r ++ ) oldDist[ r * oldWidth + c ] = d[ r ];
+
+	}
+	for ( let r = 0; r < oldHeight; r ++ ) {
+
+		for ( let c = 0; c < oldWidth; c ++ ) f[ c ] = oldDist[ r * oldWidth + c ];
+		edt1d( f, oldWidth, d, v, z );
+		for ( let c = 0; c < oldWidth; c ++ ) oldDist[ r * oldWidth + c ] = d[ c ];
+
+	}
+
+}
+const oldBuildingDist = ( X, Y ) => {
+
+	const c = Math.max( 0, Math.min( oldWidth - 1, Math.floor( ( X - EAST_AREA.xmin ) / dsm.cell ) ) );
+	const r = Math.max( 0, Math.min( oldHeight - 1, Math.floor( ( EAST_AREA.ymax - Y ) / dsm.cell ) ) );
+	return Math.sqrt( oldDist[ r * oldWidth + c ] ) * dsm.cell;
+
+};
+const oldInBuilding = ( X, Y ) => {
+
+	const c = Math.floor( ( X - EAST_AREA.xmin ) / dsm.cell ), r = Math.floor( ( EAST_AREA.ymax - Y ) / dsm.cell );
+	if ( c < 0 || r < 0 || c >= oldWidth || r >= oldHeight ) return false;
+	return oldDist[ r * oldWidth + c ] === 0 && ! HAND_MODELLED.has( buildings[ buildingAt( X, Y ) ]?.code );
+
+};
+
 // Minimum distance from each cell to a set of polylines (only cells within `range`).
 function polylineDistance( paths, range ) {
 
@@ -1796,7 +1854,7 @@ function polylineDistance( paths, range ) {
 }
 
 // Kerbs follow the house fronts; the free-standing rotunda is not one (the street runs round it at full width).
-const streetData = await loadStreets( { AREA, FIRST_AREA, buildingDist, westBuildingDist: ( X, Y ) => buildingDist( Math.max( WEST_AREA.xmin, Math.min( WEST_AREA.xmax - dsm.cell, X ) ), Math.min( WEST_AREA.ymax, Math.max( WEST_AREA.ymin + dsm.cell, Y ) ) ), inBuilding: ( X, Y ) => {
+const streetData = await loadStreets( { AREA, FIRST_AREA, buildingDist, eastInBuilding: oldInBuilding, eastBuildingDist: oldBuildingDist, westBuildingDist: ( X, Y ) => oldBuildingDist( Math.max( WEST_AREA.xmin, Math.min( WEST_AREA.xmax - dsm.cell, X ) ), Math.min( WEST_AREA.ymax, Math.max( WEST_AREA.ymin + dsm.cell, Y ) ) ), inBuilding: ( X, Y ) => {
 
 	const id = buildingAt( X, Y );
 	return keptIds.has( id ) && ! HAND_MODELLED.has( buildings[ id ]?.code );
@@ -1814,6 +1872,8 @@ const withBox = rings => {
 	return { rings, box: [ Math.min( ...xs ), Math.min( ...ys ), Math.max( ...xs ), Math.max( ...ys ) ] };
 
 };
+const parkAreas = parks.map( withBox );
+const inParks = ( X, Y ) => parkAreas.some( ( { rings, box } ) => X >= box[ 0 ] && X <= box[ 2 ] && Y >= box[ 1 ] && Y <= box[ 3 ] && pointInRings( rings, X, Y ) );
 const landcover = JSON.parse( await readFile( new URL( 'landcover.json', RAW ) ).catch( () => '[]' ) ).flatMap( f => f.geometry?.rings ? [ withBox( f.geometry.rings ) ] : [] );
 const inLandcover = ( X, Y ) => landcover.some( ( { rings, box } ) => X >= box[ 0 ] && X <= box[ 2 ] && Y >= box[ 1 ] && Y <= box[ 3 ] && pointInRings( rings, X, Y ) );
 const footpaths = polylineDistance( streetData.ways.filter( w => ( /^(footway|path|steps|track|pedestrian|bridleway|cycleway)$/.test( w.tags.highway ) || w.tags.railway === 'funicular' ) && ! w.tags.tunnel ).map( w => w.pts.map( p => [ p.X, p.Y ] ) ), 2 );
@@ -1827,8 +1887,9 @@ for ( let r = 0; r < sh; r ++ ) {
 		const i = ( r * sw + c ) * 4;
 		const clamp = v => Math.max( 0, Math.min( 255, Math.round( v ) ) );
 		surface[ i ] = clamp( buildingDist( X, Y ) * 40 );
-		surface[ i + 1 ] = parks.some( rings => pointInRings( rings, X, Y ) ) || ( ! inFirstArea( X, Y ) && footpaths[ r * sw + c ] > 1.2 && inLandcover( X, Y ) ) ? 255 : 0;
+		surface[ i + 1 ] = inParks( X, Y ) || ( ! inFirstArea( X, Y ) && footpaths[ r * sw + c ] > 1.2 && inLandcover( X, Y ) ) ? 255 : 0;
 		const st = streetData.at( X, Y );
+		if ( st.pavedArea ) surface[ i + 1 ] = 0;
 		surface[ i + 2 ] = clamp( 128 - st.F * 25 );
 		surface[ i + 3 ] = clamp( tramDist[ r * sw + c ] * 50 );
 		surface2[ i ] = clamp( st.roadAsphalt * 255 );
@@ -1929,13 +1990,13 @@ function groundDetail( img, A ) {
 	const first = shrink( groundDetail( firstPhoto, FIRST_AREA ), 2 );
 	await writeFile( new URL( 'ground-detail.jpg', OUT ), jpeg.encode( first, 75 ).data );
 	const wide = shrink( groundDetail( photo, AREA ), 4 );
-	// The earlier area (Malá Strana and the first area) keeps its own photo cut's local contrast and pixel
-	// alignment, as before the northern and eastern strips were added.
-	{
+	// The earlier areas (the Old Town extension east and north, then Malá Strana and the first area) keep their own
+	// photo cuts' local contrast and pixel alignment, as before the area grew past them.
+	for ( const [ img, A ] of [ [ eastPhoto, EAST_AREA ], [ westPhoto, WEST_AREA ] ] ) {
 
-		const west = shrink( groundDetail( westPhoto, WEST_AREA ), 4 );
-		const ox = Math.round( WEST_AREA.xmin - AREA.xmin ), oy = Math.round( AREA.ymax - WEST_AREA.ymax );
-		for ( let y = 0; y < west.height; y ++ ) west.data.copy( wide.data, ( ( y + oy ) * wide.width + ox ) * 4, y * west.width * 4, ( y + 1 ) * west.width * 4 );
+		const cut = shrink( groundDetail( img, A ), 4 );
+		const ox = Math.round( A.xmin - AREA.xmin ), oy = Math.round( AREA.ymax - A.ymax );
+		for ( let y = 0; y < cut.height; y ++ ) cut.data.copy( wide.data, ( ( y + oy ) * wide.width + ox ) * 4, y * cut.width * 4, ( y + 1 ) * cut.width * 4 );
 
 	}
 
@@ -1972,7 +2033,8 @@ const furniture = collectFurniture( streetData, {
 	stableTree: ( x, z, dsm ) => {
 
 		const X = x + ORIGIN.x, Y = ORIGIN.y - z, edge = dsm ? TREE_CELL * 2 : 0;
-		return X > WEST_AREA.xmin + edge && X < WEST_AREA.xmax - edge && Y > WEST_AREA.ymin + edge && Y < WEST_AREA.ymax - edge;
+		if ( X > WEST_AREA.xmin + edge && X < WEST_AREA.xmax - edge && Y > WEST_AREA.ymin + edge && Y < WEST_AREA.ymax - edge ) return 0;
+		return X > EAST_AREA.xmin + edge && X < EAST_AREA.xmax - edge && Y > EAST_AREA.ymin + edge && Y < EAST_AREA.ymax - edge ? 1 : 2;
 
 	},
 	treeHeightAt: ( X, Y ) => {
@@ -1995,7 +2057,7 @@ const furniture = collectFurniture( streetData, {
 furniture.statue.push( ...landmarkStatues );
 
 const projectRaw = await lonLatToSJTSK();
-const places = collectPlaces( { FIRST_AREA, project: await lonLatToSJTSKBeyond( FIRST_AREA, AREA ), projectCadastre: ( lon, lat ) => toCadastre( projectRaw( lon, lat ) ), photoAt, quay, terraces, openings, buildings, streetFacades, toLocal, terrainAt, buildingAt, keptIds, dsm, idGrid, AREA, ORIGIN, streetData, furniture, riverAt, buildingInfo, zabagedBridges: JSON.parse( await readFile( new URL( 'bridges.json', RAW ) ) ), terrainGrid: { terrain, tw, th, cell: TERRAIN_CELL }, inPark: ( X, Y ) => parks.some( rings => pointInRings( rings, X, Y ) ), tramPaths: JSON.parse( await readFile( new URL( 'tram.json', RAW ) ) ).flatMap( f => f.geometry?.paths || [] ) } );
+const places = collectPlaces( { FIRST_AREA, project: await lonLatToSJTSKPreserved( FIRST_AREA, EAST_AREA, AREA ), projectCadastre: ( lon, lat ) => toCadastre( projectRaw( lon, lat ) ), photoAt, quay, terraces, openings, buildings, streetFacades, toLocal, terrainAt, buildingAt, keptIds, dsm, idGrid, AREA, ORIGIN, streetData, furniture, riverAt, buildingInfo, zabagedBridges: JSON.parse( await readFile( new URL( 'bridges.json', RAW ) ) ), terrainGrid: { terrain, tw, th, cell: TERRAIN_CELL }, inPark: ( X, Y ) => inParks( X, Y ), tramPaths: JSON.parse( await readFile( new URL( 'tram.json', RAW ) ) ).flatMap( f => f.geometry?.paths || [] ) } );
 places.chapel = twinGableFronts[ 0 ] ? { ...twinGableFronts[ 0 ], spire: [ - 36.5, 42.8 ] } : null; // spire: from the aerial photo
 // Awnings on fronts away from the street network (on squares), placed by places.mjs.
 decor.awnings.push( ...places.awnings );

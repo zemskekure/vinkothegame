@@ -119,3 +119,17 @@ export async function lonLatToSJTSKBeyond( area, grown, ramp = 20 ) {
 	};
 
 }
+
+// Keep the projection used inside the earlier area when another edge opens beyond it.
+export async function lonLatToSJTSKPreserved( first, previous, grown ) {
+
+	const old = await lonLatToSJTSKBeyond( first, previous );
+	const next = await lonLatToSJTSKBeyond( first, grown );
+	return ( lon, lat ) => {
+
+		const p = old( lon, lat );
+		return p[ 0 ] >= previous.xmin && p[ 0 ] <= previous.xmax && p[ 1 ] >= previous.ymin && p[ 1 ] <= previous.ymax ? p : next( lon, lat );
+
+	};
+
+}

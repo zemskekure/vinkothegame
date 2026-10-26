@@ -15,7 +15,7 @@
 
 import { readFile } from 'node:fs/promises';
 import jpeg from 'jpeg-js';
-import { HI_TILES, WEST_AREA, WEST_HI_TILES } from './area.mjs';
+import { HI_TILES, EAST_AREA, EAST_HI_TILES, WEST_AREA, WEST_HI_TILES } from './area.mjs';
 
 const RAW = new URL( '../data/raw/', import.meta.url );
 const PHOTO_CELL = 0.125;
@@ -28,9 +28,10 @@ const photos = new Map();
 async function loadPhoto( AREA ) {
 
 	const west = AREA === WEST_AREA;
-	const prefix = west ? 'ortho-west-hi' : 'ortho-hi';
+	const east = AREA === EAST_AREA;
+	const prefix = west ? 'ortho-west-hi' : east ? 'ortho-east-hi' : 'ortho-hi';
 	if ( photos.has( prefix ) ) return photos.get( prefix );
-	const [ nx, ny ] = west ? WEST_HI_TILES : HI_TILES;
+	const [ nx, ny ] = west ? WEST_HI_TILES : east ? EAST_HI_TILES : HI_TILES;
 	const tw = Math.round( ( AREA.xmax - AREA.xmin ) / nx / PHOTO_CELL );
 	const th = Math.round( ( AREA.ymax - AREA.ymin ) / ny / PHOTO_CELL );
 	const W = tw * nx, H = th * ny;
