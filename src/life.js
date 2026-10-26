@@ -340,9 +340,12 @@ export async function addLife( scene, life, { seats = [], benches = [], groundHe
 	};
 
 	const parked = [];
-	if ( cars ) for ( let i = 0; i < life.parked.length; i += 4 ) parked.push( { type: pickCar(), p: life.parked.slice( i, i + 4 ) } );
+	// Old Town streets are half empty of cars: one parking place in three is taken, and none on the pedestrian
+	// squares round Betlémské náměstí (they are paved for walking; the owner: "calm down with the cars").
+	const square = ( x, z ) => Math.hypot( x + 55, z - 60 ) < 55;
+	if ( cars ) for ( let i = 0; i < life.parked.length; i += 4 ) if ( rnd() < 0.33 && ! square( life.parked[ i ], life.parked[ i + 1 ] ) ) parked.push( { type: pickCar(), p: life.parked.slice( i, i + 4 ) } );
 	const movers = [];
-	for ( let k = 0; k < ( cars ? Math.min( 18, drives.length ) : 0 ); k ++ ) {
+	for ( let k = 0; k < ( cars ? Math.min( 6, drives.length ) : 0 ); k ++ ) {
 
 		const path = drives[ Math.floor( rnd() * drives.length ) ];
 		movers.push( { type: pickCar(), path, s: rnd() * path.length * 0.8, speed: 0, cruise: 6 + rnd() * 3 } );
