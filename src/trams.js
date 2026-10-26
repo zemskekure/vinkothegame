@@ -306,7 +306,8 @@ function lineOf( pts ) {
 
 	const end = ( x, z ) => Object.entries( ENDS ).sort( ( a, b ) => Math.hypot( a[ 1 ][ 0 ] - x, a[ 1 ][ 1 ] - z ) - Math.hypot( b[ 1 ][ 0 ] - x, b[ 1 ][ 1 ] - z ) )[ 0 ][ 0 ];
 	const key = [ end( pts[ 0 ], pts[ 1 ] ), end( pts[ pts.length - 2 ], pts[ pts.length - 1 ] ) ].sort().join( ' ' );
-	return LINES[ key ] ?? null;
+	// A pair not in the list: one of the lines through the middle of the area, the same for the same pair.
+	return LINES[ key ] ?? [ 9, 18, 22, 2, 17, 23 ][ [ ...key ].reduce( ( h, c ) => h * 31 + c.charCodeAt( 0 ) >>> 0, 7 ) % 6 ];
 
 }
 
