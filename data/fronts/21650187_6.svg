@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1300 374">
+  <rect width="1300" height="374" fill="#e4d3a2"/>
+  <rect y="18" width="1300" height="356" fill="#24503f"/>
+  <rect y="14" width="1300" height="14" fill="#1a3b2f"/>
+  <rect y="28" width="1300" height="6" fill="#3d735a"/>
+  <rect y="34" width="1300" height="10" fill="#1d4235"/>
+  <rect x="250" y="50" width="380" height="44" fill="none" stroke="#c4a25a" stroke-width="2"/>
+  <text x="440" y="83" text-anchor="middle" font-family="Georgia, Times New Roman, serif" font-size="30" letter-spacing="4" fill="#d8b866">HOTEL LILIOVÁ</text>
+  <rect x="1098" y="54" width="146" height="36" fill="#161616"/>
+  <circle cx="1112" cy="72" r="8" fill="none" stroke="#f2efe6" stroke-width="2"/>
+  <text x="1180" y="78" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="14" letter-spacing="1" fill="#f2efe6">ASIAN FUSION</text>
+  <rect y="100" width="1300" height="8" fill="#3d735a"/>
+  <path d="M8 118H37V358H8ZM193 230H232V358H193ZM648 262H702V358H648ZM1048 118H1082V358H1048ZM1258 118H1292V358H1258Z" fill="none" stroke="#3d735a" stroke-width="3"/>
+  <rect x="45" y="108" width="140" height="266" fill="#1d4235"/>
+  <rect x="56" y="116" width="118" height="28" fill="#2b3633"/>
+  <rect x="56" y="150" width="118" height="216" fill="#24503f" stroke="#1a3b2f" stroke-width="3"/>
+  <rect x="72" y="164" width="86" height="84" fill="#2b3633"/>
+  <path d="M115 164V248" stroke="#24503f" stroke-width="4"/>
+  <rect x="72" y="262" width="86" height="40" fill="none" stroke="#3d735a" stroke-width="3"/>
+  <rect x="72" y="312" width="86" height="44" fill="none" stroke="#3d735a" stroke-width="3"/>
+  <circle cx="160" cy="258" r="4" fill="#c4a25a"/>
+  <rect x="191" y="148" width="44" height="62" fill="#1d4235" stroke="#c4a25a" stroke-width="2"/>
+  <circle cx="213" cy="128" r="13" fill="#2b5fae"/>
+  <circle cx="213" cy="128" r="8" fill="none" stroke="#ffffff" stroke-width="2"/>
+  <rect x="240" y="108" width="400" height="266" fill="#1d4235"/>
+  <rect x="252" y="120" width="376" height="190" fill="#2b3633"/>
+  <path d="M252 158H628M373 120V310M500 120V310" stroke="#24503f" stroke-width="7"/>
+  <polygon points="268,306 330,124 362,124 300,306" fill="#7b8a84" opacity="0.22"/>
+  <rect x="252" y="316" width="376" height="50" fill="#24503f" stroke="#3d735a" stroke-width="3"/>
+  <path d="M377 316V366M502 316V366" stroke="#3d735a" stroke-width="3"/>
+  <rect x="650" y="170" width="50" height="76" fill="#efe8d5" stroke="#1a3b2f" stroke-width="5"/>
+  <path d="M660 186H690M660 198H686M660 210H692M660 222H684" stroke="#8a857a" stroke-width="2"/>
+  <rect x="710" y="108" width="330" height="266" fill="#1d4235"/>
+  <rect x="722" y="120" width="306" height="190" fill="#2b3633"/>
+  <path d="M722 158H1028M824 120V310M926 120V310" stroke="#24503f" stroke-width="7"/>
+  <polygon points="738,306 796,124 826,124 768,306" fill="#7b8a84" opacity="0.22"/>
+  <rect x="722" y="316" width="306" height="50" fill="#24503f" stroke="#3d735a" stroke-width="3"/>
+  <path d="M824 316V366M926 316V366" stroke="#3d735a" stroke-width="3"/>
+  <rect x="1090" y="108" width="160" height="244" fill="#1d4235"/>
+  <rect x="1100" y="116" width="140" height="28" fill="#2b3633"/>
+  <rect x="1100" y="150" width="68" height="202" fill="#2b3633" stroke="#24503f" stroke-width="9"/>
+  <rect x="1172" y="150" width="68" height="202" fill="#2b3633" stroke="#24503f" stroke-width="9"/>
+  <path d="M1104 290H1164M1176 290H1236" stroke="#24503f" stroke-width="7"/>
+  <rect x="1080" y="352" width="180" height="11" fill="#a9a499"/>
+  <rect x="1070" y="363" width="200" height="11" fill="#8f8a80"/>
+  <path d="M0 370H45M185 370H240M640 370H710M1040 370H1070M1270 370H1300" stroke="#1a3b2f" stroke-width="8"/>
+</svg>

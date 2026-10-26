@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 401">
+  <rect width="500" height="401" fill="#f2efe8"/>
+  <rect width="500" height="8" fill="#e1dccf"/>
+  <rect x="140" y="14" width="200" height="50" fill="#f9f7f2" stroke="#8e8779" stroke-width="3"/>
+  <text x="240" y="51" text-anchor="middle" font-family="Georgia, Times New Roman, serif" font-size="32" letter-spacing="6" fill="#2c2925">AURUS</text>
+  <path d="M58 401V221A142 142 0 0 1 342 221V401Z" fill="#dcd5c5"/>
+  <polygon points="190,74 210,74 207,96 193,96" fill="#cfc7b5"/>
+  <path d="M70 401V221A130 130 0 0 1 330 221V401Z" fill="#244690"/>
+  <path d="M82 221A118 118 0 0 1 318 221Z" fill="#2f57a9"/>
+  <text x="200" y="190" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-weight="bold" font-size="18" letter-spacing="1" fill="#ffffff">COCKTAILS TO GO</text>
+  <rect x="70" y="221" width="260" height="10" fill="#1f3f82"/>
+  <rect x="82" y="239" width="74" height="118" fill="#2c3238"/>
+  <rect x="164" y="231" width="72" height="170" fill="#1f3f82"/>
+  <rect x="172" y="241" width="56" height="112" fill="#2c3238"/>
+  <rect x="244" y="239" width="74" height="118" fill="#2c3238"/>
+  <polygon points="92,350 114,244 128,244 106,350" fill="#8a96a6" opacity="0.2"/>
+  <rect x="82" y="363" width="74" height="30" fill="#2f57a9"/>
+  <rect x="244" y="363" width="74" height="30" fill="#2f57a9"/>
+  <rect x="172" y="361" width="56" height="34" fill="none" stroke="#2f57a9" stroke-width="3"/>
+  <rect y="391" width="58" height="10" fill="#aaa497"/>
+  <rect x="342" y="391" width="158" height="10" fill="#aaa497"/>
+</svg>

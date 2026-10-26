@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1780 500">
+  <rect width="1780" height="500" fill="#ebe9e3"/>
+  <rect width="1780" height="24" fill="#f5f4ef"/>
+  <rect y="24" width="1780" height="6" fill="#c9c6be"/>
+  <path d="M0 75H1780M0 120H1780M0 165H1780M0 210H1780M0 255H1780M0 300H1780M0 345H1780M0 390H1780M0 435H1780" stroke="#c3c0b8" stroke-width="6"/>
+  <path d="M0 81H1780M0 126H1780M0 171H1780M0 216H1780M0 261H1780M0 306H1780M0 351H1780M0 396H1780M0 441H1780" stroke="#f6f5f1" stroke-width="3"/>
+  <rect y="472" width="1780" height="28" fill="#a29e95"/>
+  <rect x="48" y="66" width="260" height="434" fill="#1f2f2a"/>
+  <rect x="60" y="78" width="236" height="44" fill="#22382f"/>
+  <rect x="60" y="132" width="236" height="290" fill="#2c3533"/>
+  <polygon points="72,416 110,140 130,140 92,416" fill="#8a9690" opacity="0.18"/>
+  <rect x="143" y="196" width="70" height="304" fill="#1f2f2a"/>
+  <rect x="151" y="206" width="54" height="196" fill="#3a4643"/>
+  <rect x="60" y="428" width="80" height="44" fill="#1f2f2a"/>
+  <rect x="216" y="428" width="80" height="44" fill="#1f2f2a"/>
+  <rect x="404" y="66" width="260" height="434" fill="#2a2926"/>
+  <rect x="416" y="78" width="236" height="44" fill="#c8a04a" stroke="#8c6c2a" stroke-width="3"/>
+  <rect x="416" y="132" width="236" height="290" fill="#6d6455"/>
+  <rect x="499" y="196" width="70" height="304" fill="#2a2926"/>
+  <rect x="507" y="206" width="54" height="196" fill="#9c917c"/>
+  <rect x="416" y="428" width="80" height="44" fill="#2a2926"/>
+  <rect x="572" y="428" width="80" height="44" fill="#2a2926"/>
+  <rect x="752" y="56" width="276" height="444" fill="#e3ded1" stroke="#c4bdab" stroke-width="4"/>
+  <rect x="752" y="96" width="276" height="20" fill="#d8d2c3"/>
+  <rect x="762" y="120" width="30" height="380" fill="#ebe7dc" stroke="#c4bdab" stroke-width="2"/>
+  <rect x="988" y="120" width="30" height="380" fill="#ebe7dc" stroke="#c4bdab" stroke-width="2"/>
+  <path d="M846 58C846 20 934 20 934 58L920 92H860Z" fill="#ece8dd" stroke="#b8b19e" stroke-width="3"/>
+  <circle cx="890" cy="56" r="12" fill="none" stroke="#b8b19e" stroke-width="3"/>
+  <path d="M815 500V218A75 75 0 0 1 965 218V500Z" fill="#2b211b"/>
+  <path d="M822 218A68 68 0 0 1 958 218Z" fill="#3a4441"/>
+  <path d="M890 218V152M890 218L842 170M890 218L938 170" stroke="#4b3527" stroke-width="4"/>
+  <rect x="815" y="218" width="150" height="14" fill="#4b3527"/>
+  <rect x="822" y="232" width="66" height="268" fill="#4b3527" stroke="#2e2018" stroke-width="3"/>
+  <rect x="892" y="232" width="66" height="268" fill="#4b3527" stroke="#2e2018" stroke-width="3"/>
+  <path d="M832 250H878V350H832ZM902 250H948V350H902ZM832 370H878V480H832ZM902 370H948V480H902Z" fill="none" stroke="#6b5040" stroke-width="3"/>
+  <polygon points="878,134 902,134 898,164 882,164" fill="#d6d0c0" stroke="#b8b19e" stroke-width="2"/>
+  <rect x="1116" y="66" width="260" height="434" fill="#183a2f"/>
+  <rect x="1128" y="78" width="236" height="44" fill="#14302a"/>
+  <text x="1246" y="107" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="18" letter-spacing="2" fill="#f4f2ea">STARBUCKS COFFEE</text>
+  <rect x="1128" y="132" width="150" height="290" fill="#2a3431"/>
+  <polygon points="1140,416 1176,140 1196,140 1160,416" fill="#8a9690" opacity="0.18"/>
+  <rect x="1128" y="428" width="150" height="44" fill="#183a2f"/>
+  <rect x="1296" y="142" width="60" height="358" fill="#3b4845"/>
+  <path d="M1296 300H1356" stroke="#183a2f" stroke-width="6"/>
+  <circle cx="1424" cy="100" r="30" fill="#00704a"/>
+  <circle cx="1424" cy="100" r="23" fill="none" stroke="#ffffff" stroke-width="3"/>
+  <circle cx="1424" cy="100" r="11" fill="#ffffff"/>
+  <rect x="1472" y="66" width="260" height="434" fill="#183a2f"/>
+  <rect x="1484" y="78" width="236" height="44" fill="#14302a"/>
+  <rect x="1484" y="132" width="236" height="290" fill="#2a3431"/>
+  <polygon points="1500,416 1536,140 1556,140 1520,416" fill="#8a9690" opacity="0.18"/>
+  <path d="M1602 132V422" stroke="#183a2f" stroke-width="8"/>
+  <rect x="1484" y="428" width="236" height="44" fill="#183a2f"/>
+</svg>
