@@ -271,7 +271,7 @@ export function startRide( { trams, walker, hud, passengers, groundHeight, isBlo
 		if ( prompt !== shown ) {
 
 			shown = prompt;
-			hud.prompt( prompt === 'skutr' ? [ [ [ 'B' ], 'slézt ze skútru' ], [ [ 'E' ], 'nastoupit' ] ] : prompt ? [ [ [ 'E' ], prompt ] ] : null );
+			hud.prompt( prompt === 'skutr' ? [ [ [ 'B' ], 'slézt ze skútru' ], [ [ 'E' ], 'nastoupit' ] ] : prompt ? [ [ [ 'E' ], prompt ] ] : null, hud.touch && prompt && prompt !== 'skutr' ? () => wantE = true : null );
 
 		}
 

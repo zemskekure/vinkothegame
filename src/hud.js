@@ -210,12 +210,19 @@ function makeHud() {
 
 	}
 
-	// --- the key prompt near a tram: [ [ keys, what ], … ] or null
+	// --- the key prompt near a tram: [ [ keys, what ], … ] or null; on a touch screen a tap on it does it (`tap`)
 	const promptEl = add( 'hud-prompt', 'ui-panel' );
-	function prompt( list ) {
+	function prompt( list, tap = null ) {
 
 		promptEl.classList.toggle( 'on', !! list );
 		if ( list ) promptEl.innerHTML = caps( list );
+		promptEl.style.pointerEvents = list && tap ? 'auto' : 'none';
+		promptEl.onpointerdown = list && tap ? e => {
+
+			e.preventDefault();
+			tap();
+
+		} : null;
 
 	}
 

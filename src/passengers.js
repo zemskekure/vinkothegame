@@ -297,10 +297,10 @@ export function addPassengers( { scene, life, trams, platforms, groundHeight, pl
 	// interior groups (so they ride along). `seats`: [ { group, x, z, floor } ]. Returns a function that removes them.
 	function riders( seats, standing ) {
 
-		const list = [];
-		for ( const s of seats ) {
+		// A handful: up to seven seated, on seats dealt out at random.
+		const list = [], dealt = seats.map( s => [ rnd(), s ] ).sort( ( a, b ) => a[ 0 ] - b[ 0 ] ).slice( 0, Math.min( 7, Math.ceil( seats.length * 0.3 ) ) ).map( ( [ , s ] ) => s );
+		for ( const s of dealt ) {
 
-			if ( rnd() > 0.4 ) continue;
 			const p = make( { sitting: true } );
 			const sit = p.body.sitting;
 			if ( ! sit || ! p.act.Sitting ) {
