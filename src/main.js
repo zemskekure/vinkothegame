@@ -293,27 +293,22 @@ const squareGroups = new Set(), heavy = new Set();
 let stillRoots = null, putSince = 0, shadowsStale = false;
 // The trams (src/trams.js), once in: their overhead line is built square by square.
 let trams = { update() {} };
-const hold = geometry => heavy.add( geometry );
-// Once a geometry's positions are on the GPU, its arrays go (the attributes its material doesn't read are never
-// uploaded: they go too); an empty array of the same kind stays, for the layout three reads to build a pipeline.
+const hold = geometry => {
+
+	for ( const a of Object.values( geometry.attributes ) ) heavy.add( a.isInterleavedBufferAttribute ? a.data : a );
+	if ( geometry.index ) heavy.add( geometry.index );
+
+};
+// Once an array is on the GPU it goes; an empty array of the same kind stays, for the layout three reads to build a
+// pipeline. (Attributes a material never reads are never uploaded, and stay.)
 setInterval( () => {
 
-	const empty = b => b.array = new b.array.constructor( 0 );
-	for ( const g of heavy ) {
+	for ( const b of heavy ) {
 
-		const p = g.attributes.position;
-		if ( ! p ) {
-
-			heavy.delete( g );
-			continue;
-
-		}
-
-		const d = renderer.backend.get( p.isInterleavedBufferAttribute ? p.data : p );
+		const d = renderer.backend.get( b );
 		if ( ! d.buffer && ! d.bufferGPU ) continue;
-		for ( const a of Object.values( g.attributes ) ) if ( a.array.length ) empty( a.isInterleavedBufferAttribute ? a.data : a );
-		if ( g.index?.array.length ) empty( g.index );
-		heavy.delete( g );
+		b.array = new b.array.constructor( 0 );
+		heavy.delete( b );
 
 	}
 

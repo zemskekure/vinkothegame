@@ -177,7 +177,10 @@ function instance( scene, type, parts, entries, matrixOf, tile = Infinity, { str
 	for ( const list of tiles.values() ) for ( const [ geometry, material ] of parts ) {
 
 		const matrices = list.map( entry => matrixOf( entry, new THREE.Matrix4() ) );
-		const mesh = new THREE.Mesh( mergeInstances( geometry, matrices, kindOf ? { name: 'kind', values: list.map( kindOf ) } : null ), material );
+		const merged = mergeInstances( geometry, matrices, kindOf ? { name: 'kind', values: list.map( kindOf ) } : null );
+		// Only the pictured materials read the picture's coordinates.
+		if ( ! [ pictured, bark, leaves ].includes( material ) ) merged.deleteAttribute( 'uv' );
+		const mesh = new THREE.Mesh( merged, material );
 		mesh.castShadow = true;
 		mesh.receiveShadow = true;
 		mesh.name = type;

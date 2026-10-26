@@ -220,7 +220,9 @@ export function addEmbankment( scene, stoneMesh, { pillars = [], thin = [], rail
 		const n = list.length / stride;
 		if ( ! n ) return;
 		// Merged into one mesh (src/kit.js mergeInstances: an instanced mesh per square would cost its own node build).
-		const mesh = new THREE.Mesh( mergeInstances( geometry, Array.from( { length: n }, ( _, k ) => matrixAt( k * stride ).clone() ) ), material );
+		const merged = mergeInstances( geometry, Array.from( { length: n }, ( _, k ) => matrixAt( k * stride ).clone() ) );
+		if ( material !== K.panel ) merged.deleteAttribute( 'uv' );
+		const mesh = new THREE.Mesh( merged, material );
 		mesh.castShadow = true;
 		scene.add( mesh );
 
