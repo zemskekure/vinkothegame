@@ -24,11 +24,12 @@ npm run build && npx vite preview --port 4173   # production build
 URL parameters (`src/main.js`): `?at=x,z,yaw` start on foot there (scene frame, see below; the camera looks along
 (−sin yaw, −cos yaw)); `?overview` start in the view from above; `?view=x,y,z,tx,ty,tz` aim the overview camera
 (camera position, target); `?webgl` force WebGL 2; `?signs` show the generic OSM shop name boards (off by
-default: the art direction is real signs only); `?cars` show cars. Without `?at`, you start on Betlémské náměstí.
+default: the art direction is real signs only); `?cars` show cars. `?hd` the plain full-resolution picture instead of the game's console look
+(the model's screenshot tools use it); `?fps=N` the frame cap. Load and frame budgets: `docs/performance.md`. Without `?at`, you start on Betlémské náměstí.
 
 ## Rebuilding the scene
 
-The generated scene (`public/data/`, ~90 MB) is committed; the raw source data (`data/raw/`, ~130 MB) is not
+The generated scene (`public/data/`, packed buffers, ~50 MB; see `docs/performance.md`) is committed; the raw source data (`data/raw/`, ~130 MB) is not
 (gitignored) and must be fetched before `tools/build-scene.mjs` can run:
 
 ```sh

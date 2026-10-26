@@ -20,7 +20,7 @@ The PS1-style game on top of the city: the pigeon, the courier, people, vehicles
 
 - What: `src/` (runtime), `public/models/` (people, vehicles), `public/game-settings.json`.
 - Docs: **`game.md`** (vision, modes, NPCs, vehicles, story, easter eggs, status: start here),
-  `venues.md` (sponsored interiors), `performance.md` (load and frame budgets, when the performance work lands),
+  `venues.md` (sponsored interiors), `performance.md` (load and frame budgets, the packed data formats, how to measure),
   `people-provenance/`.
 
 ## Outside the repo (owner's folder `~/Documents/ChatGPT/PRAGA/`)
