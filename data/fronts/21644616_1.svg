@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 460 420">
+<rect x="0" y="0" width="290" height="16" fill="#d9b672"/>
+<rect x="88" y="160" width="28" height="20" fill="#b5302c"/>
+<rect x="90" y="190" width="24" height="20" fill="#2b4c8c"/>
+<rect x="148" y="104" width="116" height="50" fill="#2e5b3e"/>
+<rect x="148" y="104" width="116" height="50" fill="none" stroke="#c8b36e" stroke-width="3"/>
+<rect x="138" y="168" width="136" height="252" fill="#9c8462"/>
+<rect x="152" y="182" width="108" height="238" fill="#3a2a1e"/>
+<rect x="158" y="196" width="44" height="216" fill="#2d5a3d"/>
+<rect x="210" y="196" width="44" height="216" fill="#2d5a3d"/>
+<path d="M164 220H196M164 300H196M216 220H248M216 300H248" stroke="#1f3e2a" stroke-width="4"/>
+<rect x="166" y="236" width="28" height="44" fill="#e6e0cc"/>
+<rect x="218" y="236" width="28" height="44" fill="#e6e0cc"/>
+<rect x="300" y="138" width="160" height="282" fill="#b3a283"/>
+<path d="M300 190H335M300 240H335M300 290H335M300 340H335M300 390H335M300 140V420" stroke="#8a7a5c" stroke-width="3"/>
+<path d="M335 420V262Q398 196 460 252V420Z" fill="#3e3024"/>
+<path d="M335 262Q398 196 460 252" stroke="#8a7a5c" stroke-width="6" fill="none"/>
+<rect x="300" y="100" width="160" height="40" fill="#3a3530"/>
+<text x="382" y="128" font-family="Arial, sans-serif" font-size="22" font-weight="bold" letter-spacing="2" text-anchor="middle" fill="#f4f0e6">U VEJVODŮ</text>
+<path d="M284 100L312 36H460V100Z" fill="#a8452f"/>
+<path d="M309 44q7 8 14 0q7 8 14 0q7 8 14 0q7 8 14 0q7 8 14 0q7 8 14 0q7 8 14 0q7 8 14 0q7 8 14 0q7 8 14 0M302 60q7 8 14 0q7 8 14 0q7 8 14 0q7 8 14 0q7 8 14 0q7 8 14 0q7 8 14 0q7 8 14 0q7 8 14 0q7 8 14 0q7 8 14 0M295 76q7 8 14 0q7 8 14 0q7 8 14 0q7 8 14 0q7 8 14 0q7 8 14 0q7 8 14 0q7 8 14 0q7 8 14 0q7 8 14 0q7 8 14 0q7 8 14 0M288 92q7 8 14 0q7 8 14 0q7 8 14 0q7 8 14 0q7 8 14 0q7 8 14 0q7 8 14 0q7 8 14 0q7 8 14 0q7 8 14 0q7 8 14 0q7 8 14 0" stroke="#7d2f20" stroke-width="3" fill="none"/>
+<rect x="284" y="98" width="176" height="6" fill="#5e2418"/>
+</svg>

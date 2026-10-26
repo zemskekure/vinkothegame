@@ -1120,5 +1120,72 @@
 		"font": "serif",
 		"street": "x-3_z0",
 		"what": "dark shop board over the shop at the north end of the front (the marks put it right at the front's start)"
+	},
+	{
+		"front": "21646104_1",
+		"fromLeft": 0.29,
+		"height": 5.8,
+		"kind": "hanging",
+		"text": "U VEJVODŮ",
+		"sub": "PILSNER URQUELL ORIGINAL RESTAURANT",
+		"width": 0.9,
+		"bg": "#f2efe6",
+		"ink": "#1f2a24",
+		"font": "serif",
+		"street": "x0_z0",
+		"what": "tall vertical white banner with green border on an iron bracket at first-floor level, above the arched door"
+	},
+	{
+		"front": "21644608_4",
+		"fromLeft": 0.04,
+		"height": 3.9,
+		"kind": "letters",
+		"text": "jazz republic",
+		"sub": "jazz-blues-bar",
+		"width": 1.3,
+		"ink": "#6e6a66",
+		"font": "sans",
+		"street": "x0_z0",
+		"what": "grey lowercase lettering on the plaster above the 1a door with a red neon in its glass"
+	},
+	{
+		"front": "21643636_7",
+		"fromLeft": 0.92,
+		"height": 2.6,
+		"kind": "hanging",
+		"text": "Egoist",
+		"sub": "ROYAL PARFUMS",
+		"width": 0.7,
+		"bg": "#f4f1ea",
+		"ink": "#1e1e1e",
+		"font": "script",
+		"street": "x0_z0",
+		"what": "white board in an ornate wrought-iron bracket frame, script name over serif capitals"
+	},
+	{
+		"front": "21645388_7",
+		"fromLeft": 0.9,
+		"height": 6.5,
+		"kind": "hanging",
+		"text": "HOTEL",
+		"width": 0.6,
+		"bg": "#f2f0ea",
+		"ink": "#3a3a3a",
+		"font": "serif",
+		"street": "x0_z0",
+		"what": "vertical white hanging banner, letters stacked, at second-floor level"
+	},
+	{
+		"front": "21644691_4",
+		"fromLeft": 0.12,
+		"height": 3.4,
+		"kind": "board",
+		"text": "HAVLÍKOVA PŘÍRODNÍ APOTÉKA",
+		"width": 3.3,
+		"bg": "#2f3330",
+		"ink": "#f0ece0",
+		"font": "serif",
+		"street": "x0_z0",
+		"what": "dark fascia with light capitals over dark shopfronts, seen from across the square"
 	}
 ]
