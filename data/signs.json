@@ -224,19 +224,6 @@
 		"what": "restaurant name above the door"
 	},
 	{
-		"front": "21644349_11",
-		"fromLeft": 0.9,
-		"height": 3.6,
-		"kind": "letters",
-		"text": "RESTAURACE",
-		"sub": "STOLETÍ",
-		"width": 1.5,
-		"ink": "#6b5a44",
-		"font": "serif",
-		"street": "konviktska",
-		"what": "restaurant lettering on the wall above the arches near the lamp"
-	},
-	{
 		"front": "21644527_5",
 		"fromLeft": 0.55,
 		"height": 3.6,
@@ -586,7 +573,7 @@
 		"height": 3.2,
 		"kind": "board",
 		"text": "ČESKÁ SPOŘITELNA",
-		"width": 3.0,
+		"width": 3,
 		"bg": "#1f5bd6",
 		"ink": "#ffffff",
 		"font": "sans",
@@ -1120,5 +1107,18 @@
 		"font": "serif",
 		"street": "x-3_z0",
 		"what": "dark shop board over the shop at the north end of the front (the marks put it right at the front's start)"
+	},
+	{
+		"front": "21644349_11",
+		"fromLeft": 0.78,
+		"height": 3.2,
+		"kind": "letters",
+		"text": "RESTAURACE",
+		"sub": "STOLETÍ",
+		"width": 1.5,
+		"ink": "#3d3128",
+		"font": "serif",
+		"street": "x-3_z1",
+		"what": "two-line restaurant name in dark serif capitals painted on the plaster east of the restaurant door, over the terrace"
 	}
 ]
