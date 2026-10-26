@@ -7173,32 +7173,23 @@
 		"signs": false
 	},
 	"21643644": {
-		"note": "Husova 5: white baroque palace, white banded ground floor, tall brown wooden windows in stucco surrounds with hoods, wall lantern and a carved stone portal with a sculpted head. Pass 2: rustic changed from ornate to banded because ornate drew a grey stone base the photo does not have; ground floor two tall windows and the portal door (Street View 2019).",
-		"colour": "#eeebe2",
-		"trim": "#f7f5ef",
-		"floors": 4,
-		"ground": "gate",
-		"rustic": "banded",
+		"note": "Zlatá / Husova 5 (no. 240): plain white baroque palace. A tall ground-floor window with diamond-leaded glazing sits in a grey-ochre stone surround under a moulded hood; upper windows brown-framed. Pass 2: the model matches this front well (pair 10, Street View 2024). Drawn front unchanged.",
+		"colour": "#ebe9e3",
+		"trim": "#cdbf9d",
+		"rustic": "none",
 		"edges": {
-			"48": {
-				"lanterns": true,
+			"23": {
 				"ground": [
 					{
 						"kind": "window",
-						"frame": "wood"
-					},
-					{
-						"kind": "window",
-						"frame": "wood"
-					},
-					{
-						"kind": "door",
-						"arch": true,
-						"frame": "wood"
+						"frame": "dark"
 					}
-				]
+				],
+				"shopfront": "21643644_23.svg",
+				"shopfrontHeight": 4.5
 			}
-		}
+		},
+		"signs": false
 	},
 	"21649251": {
 		"note": "Vejvodova 4/6: pale greenish-white classical house, acanthus consoles under window hoods, round-arched ground-floor openings with an oak door under a sunburst fanlight; next door a cream house with a wooden double door and lantern. Pass 2: confidence raised so the colour applies; the model showed this house brownish-pink, which no photo supports (Street View 2019).",
@@ -7833,6 +7824,404 @@
 					"shop"
 				],
 				"shopfront": "21644195_10.svg"
+			}
+		},
+		"signs": false
+	},
+	"21643661": {
+		"note": "Husova 9 (no. 242): from Zlatá these fronts are a vaulted passage with tagged yellow piers (edge 1) and warm yellow walls about 3 m high with roof-tile coping, ivy at the south end of edge 10 (edges 9, 10). Pass 2 raises confidence so the yellow replaces the grey banded default, and draws the coped walls. The cream courtyard wings with dormers stand behind (pairs 11-14, Street View 2024).",
+		"colour": "#e7c062",
+		"trim": "#d5ac4f",
+		"rustic": "none",
+		"graffiti": true,
+		"edges": {
+			"1": {
+				"ground": [
+					"blank"
+				]
+			},
+			"9": {
+				"ground": [
+					"blank"
+				],
+				"shopfront": "21643661_9.svg"
+			},
+			"10": {
+				"ground": [
+					"blank"
+				],
+				"shopfront": "21643661_10.svg"
+			}
+		},
+		"signs": false
+	},
+	"21643717": {
+		"note": "Liliová 12 / 10 (no. 247): m0-5 white gabled house, carved door with sunburst fanlight in a stone portal, red 246 / blue 12 plates. m5-14.5 pale green house (ground + 2 floors + dormers, was 4), strongly banded: tall white-framed café opening with brown blind under the black ☆DeeAMondCaffé☆ board, lantern, arched red-brown door. m14.5-17.6 cream house: brown shutter and white-framed door under the King George board (pairs 18, 28, Street View 2024). Drawn front.",
+		"colour": "#c8d3a6",
+		"trim": "#eef0e4",
+		"floors": 3,
+		"ground": "shops",
+		"rustic": "banded",
+		"edges": {
+			"11": {
+				"lanterns": true,
+				"ground": [
+					{
+						"kind": "door",
+						"frame": "wood",
+						"arch": true,
+						"size": "wide"
+					},
+					"blank",
+					{
+						"kind": "shop",
+						"frame": "white",
+						"door": true
+					},
+					"blank",
+					{
+						"kind": "door",
+						"frame": "red",
+						"arch": true
+					},
+					{
+						"kind": "door",
+						"frame": "wood",
+						"glazed": true
+					}
+				],
+				"shopfront": "21643717_11.svg"
+			}
+		},
+		"signs": false
+	},
+	"21650438": {
+		"note": "Zlatá 3 / Liliová 10 (nos. 248, 1095): Zlatá side (edge 5) warm ochre, brown windows, wall lantern. Edge 4 is a tall cream wall covered in ivy. Edge 8: pale green banded house; pass 2 reads the brown board 'King George ★★★ HOUSE' over a white-framed glazed door with brown shutters (board starts on 21643717_11), a white double window with frosted panes, then the cream banded gate house from m8.8 (pairs 26, 27, 28, Street View 2024). Drawn fronts 4 and 8.",
+		"colour": "#e6c47e",
+		"trim": "#ead6a6",
+		"floors": 4,
+		"ground": "windows",
+		"rustic": "none",
+		"edges": {
+			"4": {
+				"colour": "#e3dac2",
+				"ground": [
+					"blank"
+				],
+				"shopfront": "21650438_4.svg",
+				"shopfrontHeight": 6.5
+			},
+			"5": {
+				"lanterns": true,
+				"ground": [
+					"window",
+					"window",
+					"window"
+				]
+			},
+			"8": {
+				"colour": "#cbd5ad",
+				"trim": "#f0efe4",
+				"rustic": "banded",
+				"ground": [
+					{
+						"kind": "door",
+						"frame": "wood",
+						"glazed": true
+					},
+					"blank",
+					{
+						"kind": "window",
+						"frame": "white",
+						"size": "wide"
+					}
+				],
+				"shopfront": "21650438_8.svg"
+			}
+		},
+		"signs": false
+	},
+	"21643491": {
+		"note": "Řetězová 5 (no. 223): pale pink house, ornate stucco pediments. Pass 2: ground floor is whitish under a heavy cornice, double windows with clear transoms over frosted lower panes, a wall lantern, a densely tagged stretch (m11-18), then red Montmartre arches with plants. Edge 28: red carved door in a round-arched stone portal with a mask keystone and a grey plaque; the extra window there was wrong (pairs 06, 07, 08, Street View 2014/2024). Drawn fronts.",
+		"colour": "#efdcd6",
+		"trim": "#f4efe8",
+		"floors": 4,
+		"ground": "windows",
+		"rustic": "none",
+		"graffiti": true,
+		"edges": {
+			"26": {
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "white",
+						"size": "wide"
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"size": "wide"
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"size": "wide"
+					},
+					"blank",
+					{
+						"kind": "window",
+						"frame": "white",
+						"arch": true
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"arch": true
+					}
+				],
+				"shopfront": "21643491_26.svg"
+			},
+			"28": {
+				"ground": [
+					{
+						"kind": "door",
+						"frame": "red",
+						"arch": true
+					},
+					"blank"
+				],
+				"shopfront": "21643491_28.svg"
+			}
+		},
+		"signs": false
+	},
+	"21643504": {
+		"note": "Řetězová 7 (no. 224): white house, dark-red sills and surrounds. Café Montmartre ground floor: red under a white band with grey MONTMARTRE letters (start on 21643491_26), red door with grille fanlight, white blind panel, red double gate in an arched stone portal. Pass 2 adds the iron scroll bracket with its dark (unreadable) hanging plate over the gate (proof pair 09, Street View 2024). Drawn front.",
+		"colour": "#f2f0ec",
+		"trim": "#c4554a",
+		"floors": 5,
+		"ground": "restaurant",
+		"rustic": "none",
+		"graffiti": false,
+		"edges": {
+			"8": {
+				"ground": [
+					{
+						"kind": "door",
+						"frame": "red"
+					},
+					"blank",
+					{
+						"kind": "gate",
+						"frame": "red",
+						"arch": true
+					}
+				],
+				"shopfront": "21643504_8.svg"
+			}
+		},
+		"signs": false
+	},
+	"21643733": {
+		"note": "Liliová 6 / Zlatá 8 (no. 249): pink and cream neo-renaissance house, balustraded sills, banded cream ground floor; Art Master Gallery teal fascia, brown shutters lettered ART GAL, display window with a painting, carved double door, barred windows (pairs 02, 20, 21, Street View 2024). Pass 2: the cream gate and lantern given to edge 0 belong to the house over the Zlatá gateway on Liliová, not this lane wall; edge 0 reset to the house colours.",
+		"colour": "#e4b4a4",
+		"trim": "#efe3cc",
+		"floors": 4,
+		"ground": "shops",
+		"rustic": "banded",
+		"edges": {
+			"0": {
+				"colour": "#e4b4a4",
+				"trim": "#efe3cc",
+				"lanterns": false,
+				"ground": [
+					"blank"
+				]
+			},
+			"5": {
+				"ground": [
+					"blank",
+					{
+						"kind": "door",
+						"frame": "wood"
+					},
+					{
+						"kind": "shop",
+						"frame": "white",
+						"size": "wide"
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true
+					},
+					{
+						"kind": "door",
+						"frame": "wood"
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true,
+						"size": "wide"
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true
+					}
+				],
+				"shopfront": "21643733_5.svg"
+			}
+		},
+		"signs": false
+	},
+	"21643482": {
+		"note": "Řetězová 3 (no. 222): edge 3 is a white wall with roof-tile coping and a wide segmental gateway in a sandstone surround, 'U Kunštátů / coffee wine gallery' above, blue 3 and red 222 plates. Edge 4 is a cream garden wall with tile coping and ivy hanging over it. Edge 6 is white-grey plaster with a deep wood-framed barred window (pairs 03, 04, 05, Street View 2014/2017). Drawn fronts 3 and 4.",
+		"colour": "#edeae3",
+		"trim": "#ddd5c3",
+		"rustic": "none",
+		"grilles": true,
+		"edges": {
+			"3": {
+				"ground": [
+					{
+						"kind": "gate",
+						"arch": true,
+						"size": "wide"
+					}
+				],
+				"shopfront": "21643482_3.svg",
+				"shopfrontHeight": 4.6
+			},
+			"4": {
+				"colour": "#efe7d1",
+				"ground": [
+					"blank"
+				],
+				"shopfront": "21643482_4.svg",
+				"shopfrontHeight": 4.6
+			},
+			"6": {
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "wood",
+						"bars": true
+					}
+				]
+			}
+		},
+		"signs": false
+	},
+	"21643709": {
+		"note": "Liliová corner of Řetězová (no. 246): white two-storey house with a curved baroque gable. Pass 2: the green ANTIK board is fixed flat on the wall (not hanging) under a wall lantern, beside an open brown louvered shutter and an arched white window with fanlight and flower box. Drawn on m5-11; m0-5 left clear where the marks put the lane (pair 15, Street View 2024). Edge colour set white; the model showed plain ochre.",
+		"edges": {
+			"3": {
+				"colour": "#efeadc",
+				"trim": "#e5dcc6",
+				"rustic": "none",
+				"lanterns": true,
+				"ground": [
+					"blank",
+					{
+						"kind": "shop",
+						"frame": "wood"
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"arch": true
+					}
+				],
+				"shopfront": "21643709_3.svg"
+			}
+		},
+		"signs": false
+	},
+	"21649278": {
+		"note": "Liliová 14 / 16 (no. 946): m0-7 carved dark wood SIXTY SEVEN TATTOO SHOP front under a lantern. Then ochre house, big-block rustication with voussoirs over round arches: open arched wooden gate, glazed arched shopfront, pub door with radial fanlight and green neon edge between black 'Facundo Bacardí SINCE 1862' boards over poster cases, blue 14 plate, red-brown arched door. Edge 13: smooth cream ground floor, white basket grilles (pairs 17, 22-25, Street View 2017/2024). Drawn fronts.",
+		"colour": "#e2c17c",
+		"trim": "#efe0b8",
+		"floors": 4,
+		"ground": "shops",
+		"rustic": "banded",
+		"grilles": true,
+		"edges": {
+			"13": {
+				"colour": "#e8dba9",
+				"trim": "#e5d4a4",
+				"rustic": "none",
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true
+					}
+				],
+				"shopfront": "21649278_13.svg"
+			},
+			"15": {
+				"lanterns": true,
+				"ground": [
+					{
+						"kind": "shop",
+						"frame": "wood",
+						"size": "wide"
+					},
+					{
+						"kind": "door",
+						"frame": "wood",
+						"glazed": true
+					},
+					{
+						"kind": "gate",
+						"frame": "wood",
+						"arch": true,
+						"size": "wide"
+					},
+					{
+						"kind": "shop",
+						"frame": "wood",
+						"arch": true
+					},
+					{
+						"kind": "door",
+						"frame": "wood",
+						"arch": true
+					},
+					{
+						"kind": "door",
+						"frame": "wood",
+						"arch": true
+					}
+				],
+				"shopfront": "21649278_15.svg"
 			}
 		},
 		"signs": false

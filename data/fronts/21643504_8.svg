@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 810 420">
+  <rect width="810" height="420" fill="#bd4d3d"/>
+  <rect width="810" height="112" fill="#f1efe9"/>
+  <rect y="108" width="810" height="10" fill="#d9d4ca"/>
+  <text x="8" y="92" font-family="Futura, Century Gothic, sans-serif" font-size="78" letter-spacing="6" fill="#6c6c6a">NTMARTRE</text>
+  <path d="M0 160H810M0 168H810" stroke="#a8402f" stroke-width="4"/>
+  <rect x="170" y="168" width="170" height="252" fill="#f2efe8"/>
+  <rect x="186" y="184" width="138" height="236" fill="#b23f2f"/>
+  <path d="M186 240Q255 184 324 240Z" fill="#2a2724"/>
+  <path d="M200 236L310 188M200 196L310 236M230 190V236M255 186V236M280 190V236" stroke="#5a5450" stroke-width="3"/>
+  <rect x="186" y="242" width="138" height="8" fill="#8e3326"/>
+  <path d="M255 250V420" stroke="#8e3326" stroke-width="5"/>
+  <g fill="none" stroke="#8e3326" stroke-width="4">
+    <rect x="198" y="262" width="46" height="70"/>
+    <rect x="266" y="262" width="46" height="70"/>
+    <rect x="198" y="346" width="46" height="62"/>
+    <rect x="266" y="346" width="46" height="62"/>
+  </g>
+  <rect x="210" y="290" width="22" height="14" fill="#efe6d4"/>
+  <path d="M370 420V200Q455 160 540 200V420Z" fill="#f2efe8" stroke="#c9c1b3" stroke-width="8"/>
+  <rect x="402" y="380" width="106" height="8" fill="#9a9590"/>
+  <path d="M570 420V250A110 110 0 0 1 790 250V420Z" fill="#cfc4b1"/>
+  <path d="M592 420V256A88 88 0 0 1 768 256V420Z" fill="#b5402f"/>
+  <path d="M600 262A80 80 0 0 1 760 262Z" fill="#2c2926"/>
+  <path d="M610 262L680 190L750 262M640 262L680 220L720 262M600 262L680 182L760 262" fill="none" stroke="#6e655c" stroke-width="3"/>
+  <rect x="592" y="262" width="176" height="8" fill="#8e3326"/>
+  <path d="M680 270V420" stroke="#8e3326" stroke-width="5"/>
+  <g fill="none" stroke="#8e3326" stroke-width="4">
+    <rect x="606" y="286" width="60" height="56"/>
+    <rect x="694" y="286" width="60" height="56"/>
+    <rect x="606" y="356" width="60" height="54"/>
+    <rect x="694" y="356" width="60" height="54"/>
+  </g>
+  <g fill="none" stroke="#2b2826" stroke-width="5" stroke-linecap="round">
+    <path d="M552 124V214M552 132H650M552 176L640 134"/>
+    <path d="M566 132C566 112 590 108 594 124C598 140 576 142 576 130"/>
+    <path d="M600 132C600 114 624 110 628 126"/>
+    <path d="M552 196C574 196 586 176 572 166"/>
+  </g>
+  <path d="M612 138V150M640 136V150" stroke="#2b2826" stroke-width="3"/>
+  <rect x="600" y="150" width="54" height="62" fill="#3a3734" stroke="#1f1d1c" stroke-width="3"/>
+  <rect x="610" y="160" width="34" height="42" fill="#5a5651"/>
+  <rect y="406" width="810" height="14" fill="#9b8f86"/>
+</svg>

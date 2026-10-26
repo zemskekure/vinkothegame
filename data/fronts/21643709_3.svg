@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 420">
+  <rect x="520" width="580" height="420" fill="#efeadc"/>
+  <rect x="520" width="580" height="22" fill="#e4dcc8"/>
+  <rect x="520" y="22" width="580" height="8" fill="#d6ccb4"/>
+  <rect x="520" width="40" height="420" fill="#e2dac6"/>
+  <path d="M640 40H690M680 40V58" stroke="#2a2a2a" stroke-width="5"/>
+  <path d="M666 58H694L690 106H670Z" fill="#2f3133"/>
+  <rect x="672" y="66" width="16" height="32" fill="#f2e7c4"/>
+  <rect x="626" y="130" width="70" height="120" fill="#2f6b45" stroke="#d9c88f" stroke-width="4"/>
+  <text x="661" y="200" text-anchor="middle" font-family="Georgia, serif" font-size="20" font-weight="bold" fill="#e8d9a0">ANTIK</text>
+  <path d="M840 400V200A100 100 0 0 1 1040 200V400Z" fill="#f6f3ec" stroke="#dcd3bf" stroke-width="8"/>
+  <path d="M858 392V204A82 82 0 0 1 1022 204V392Z" fill="#3c4246"/>
+  <path d="M858 204H1022M940 122V392M858 300H1022M940 204L880 150M940 204L1000 150M940 204L940 122" stroke="#f6f3ec" stroke-width="6"/>
+  <rect x="846" y="370" width="188" height="22" fill="#7a5a3a"/>
+  <g fill="#5d8a4a">
+    <ellipse cx="880" cy="364" rx="26" ry="14"/>
+    <ellipse cx="940" cy="360" rx="30" ry="16"/>
+    <ellipse cx="1000" cy="364" rx="26" ry="14"/>
+  </g>
+  <g fill="#d65a6a">
+    <circle cx="890" cy="356" r="5"/>
+    <circle cx="950" cy="352" r="5"/>
+    <circle cx="1004" cy="358" r="5"/>
+  </g>
+  <path d="M716 380V160Q760 110 830 120V380Z" fill="#8a5a33" stroke="#6a4226" stroke-width="5"/>
+  <g stroke="#6a4226" stroke-width="5">
+    <path d="M722 190L824 150M722 214L824 174M722 238L824 198M722 262L824 222M722 286L824 246M722 310L824 270M722 334L824 294M722 358L824 318"/>
+  </g>
+  <path d="M716 270H830" stroke="#5a381e" stroke-width="8"/>
+  <rect x="520" y="406" width="580" height="14" fill="#a39b94"/>
+</svg>

@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2770 420">
+  <rect width="720" height="420" fill="#4a2c1e"/>
+  <rect y="0" width="720" height="24" fill="#ece4d0"/>
+  <rect x="10" y="34" width="700" height="66" fill="#3a2217"/>
+  <rect x="10" y="34" width="700" height="66" fill="none" stroke="#7a5236" stroke-width="5"/>
+  <text x="400" y="80" text-anchor="middle" font-family="Georgia, Times New Roman, serif" font-size="38" letter-spacing="6" fill="#c9a35a">SIXTY SEVEN TATTOO SHOP</text>
+  <g fill="#1f1d1c" stroke="#7a5236" stroke-width="8">
+    <rect x="30" y="120" width="150" height="250"/>
+    <rect x="230" y="120" width="110" height="250"/>
+    <rect x="360" y="120" width="110" height="250"/>
+  </g>
+  <path d="M105 120V370M30 200H180M30 280H180" stroke="#7a5236" stroke-width="6"/>
+  <g font-family="Georgia, Times New Roman, serif" font-size="30" fill="#c9a35a" text-anchor="middle">
+    <text x="415" y="170">T</text><text x="415" y="205">A</text><text x="415" y="240">T</text>
+    <text x="415" y="275">T</text><text x="415" y="310">O</text><text x="415" y="345">O</text>
+  </g>
+  <rect x="520" y="110" width="170" height="310" fill="#5b3726"/>
+  <rect x="536" y="126" width="138" height="160" fill="#2a2522"/>
+  <circle cx="605" cy="206" r="52" fill="none" stroke="#c9a35a" stroke-width="4"/>
+  <text x="605" y="180" text-anchor="middle" font-family="Georgia, serif" font-size="16" fill="#c9a35a">TATTOO</text>
+  <text x="605" y="222" text-anchor="middle" font-family="Georgia, serif" font-size="38" fill="#c9a35a">&amp;</text>
+  <text x="605" y="244" text-anchor="middle" font-family="Georgia, serif" font-size="14" fill="#c9a35a">PIERCING</text>
+  <rect x="536" y="300" width="138" height="104" fill="none" stroke="#3d2418" stroke-width="5"/>
+  <path d="M30 390H180M230 390H470" stroke="#3a2217" stroke-width="10"/>
+  <rect x="720" width="2050" height="420" fill="#e8d4a4"/>
+  <path d="M720 50H2770M720 100H2770M720 150H2770M720 200H2770M720 250H2770M720 300H2770M720 350H2770" stroke="#d3bb85" stroke-width="7"/>
+  <path d="M800 50V100M920 100V150M800 150V200M1200 50V100M1700 50V100M1820 100V150M2340 50V100M2700 100V150M1700 150V200M2700 200V250M800 250V300M1200 300V350M1700 300V350M800 350V400" stroke="#d3bb85" stroke-width="6"/>
+  <rect x="720" width="2050" height="22" fill="#dcc48e"/>
+  <g fill="none" stroke="#d3bb85" stroke-width="6">
+    <path d="M880 150L860 112M940 128L934 90M1010 120V82M1080 128L1086 90M1140 150L1160 112"/>
+    <path d="M1360 140L1336 104M1410 118L1400 80M1450 110V72M1490 118L1500 80M1540 140L1564 104"/>
+    <path d="M2040 150L2016 112M2080 126L2072 88M2120 118V80M2160 126L2168 88M2200 150L2224 112"/>
+    <path d="M2460 150L2440 116M2500 128L2494 90M2540 120V82M2580 128L2586 90M2620 150L2640 116"/>
+  </g>
+  <g fill="#efe2c2">
+    <path d="M860 420V250A130 130 0 0 1 1120 250V420Z"/>
+    <path d="M1330 420V230A120 120 0 0 1 1570 230V420Z"/>
+    <path d="M2010 420V240A110 110 0 0 1 2230 240V420Z"/>
+    <path d="M2430 420V240A110 110 0 0 1 2650 240V420Z"/>
+  </g>
+  <path d="M884 420V252A106 106 0 0 1 1096 252V420Z" fill="#2c2622"/>
+  <path d="M884 252A106 106 0 0 1 990 146V420H884Z" fill="#6e4430"/>
+  <path d="M896 190H984M890 220H984M888 250H984M888 280H984M888 310H984M888 340H984M888 370H984" stroke="#55331f" stroke-width="5"/>
+  <path d="M1356 400V232A94 94 0 0 1 1544 232V400Z" fill="#2c2724"/>
+  <path d="M1356 232H1544M1450 138V400M1356 300H1544" stroke="#6a4630" stroke-width="7"/>
+  <path d="M2032 420V242A88 88 0 0 1 2208 242V420Z" fill="#1f1b19"/>
+  <path d="M2032 242A88 88 0 0 1 2208 242" fill="none" stroke="#4fd06a" stroke-width="5"/>
+  <path d="M2040 252H2200" stroke="#6a4630" stroke-width="8"/>
+  <path d="M2120 252L2050 206M2120 252L2082 170M2120 252V158M2120 252L2158 170M2120 252L2190 206" stroke="#6a4630" stroke-width="5"/>
+  <rect x="2036" y="256" width="50" height="164" fill="#5b3726"/>
+  <rect x="2154" y="256" width="50" height="164" fill="#5b3726"/>
+  <path d="M1900 420V140A52 52 0 0 1 2004 140V420Z" fill="#1e1c1b"/>
+  <path d="M2236 420V140A52 52 0 0 1 2340 140V420Z" fill="#1e1c1b"/>
+  <g fill="#c8302c">
+    <path d="M1952 108L1968 124L1952 140L1936 124Z"/>
+    <path d="M2288 108L2304 124L2288 140L2272 124Z"/>
+  </g>
+  <g font-family="Brush Script MT, Apple Chancery, cursive" font-size="16" fill="#e8dcc4" text-anchor="middle">
+    <text x="1952" y="164">Facundo Bacardí</text>
+    <text x="2288" y="164">Facundo Bacardí</text>
+  </g>
+  <g font-family="Georgia, serif" font-size="11" fill="#c8302c" text-anchor="middle">
+    <text x="1952" y="180">SINCE</text>
+    <text x="2288" y="180">SINCE</text>
+  </g>
+  <g font-family="Georgia, serif" font-size="20" fill="#e8dcc4" text-anchor="middle">
+    <text x="1952" y="202">1862</text>
+    <text x="2288" y="202">1862</text>
+  </g>
+  <g fill="#3a3533" stroke="#5a4a3c" stroke-width="4">
+    <rect x="1908" y="226" width="88" height="88"/>
+    <rect x="1908" y="322" width="88" height="84"/>
+    <rect x="2244" y="226" width="88" height="88"/>
+    <rect x="2244" y="322" width="88" height="84"/>
+  </g>
+  <g fill="#c98a4a">
+    <rect x="1918" y="236" width="68" height="68"/>
+    <rect x="2254" y="332" width="68" height="64"/>
+  </g>
+  <g fill="#8a4a6a">
+    <rect x="1918" y="332" width="68" height="64"/>
+    <rect x="2254" y="236" width="68" height="68"/>
+  </g>
+  <path d="M2454 420V242A86 86 0 0 1 2626 242V420Z" fill="#8a4a36"/>
+  <path d="M2540 156V420M2454 250H2626" stroke="#5e3022" stroke-width="5"/>
+  <rect x="2360" y="190" width="40" height="30" fill="#2c4d8e"/>
+  <text x="2380" y="212" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#ffffff">14</text>
+  <rect y="406" width="2770" height="14" fill="#a39b94"/>
+</svg>
