@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 420">
+<rect x="0" y="0" width="440" height="420" fill="#c9ae86"/>
+<rect x="0" y="0" width="440" height="30" fill="#dccaa6"/>
+<path d="M0 30H440" stroke="#b39770" stroke-width="5"/>
+<rect x="0" y="388" width="440" height="32" fill="#b39770"/>
+<rect x="10" y="0" width="190" height="420" fill="#e4d8be"/>
+<path d="M10 0V420M200 0V420M10 30H200" stroke="#b8a27c" stroke-width="6" fill="none"/>
+<path d="M60 0Q105 -10 150 0L140 40Q105 60 70 40Z" fill="#d6c6a2" stroke="#b8a27c" stroke-width="4"/>
+<path d="M82 22Q105 4 128 22Q118 36 105 34Q92 36 82 22Z" fill="#c9b68e"/>
+<rect x="45" y="58" width="120" height="362" fill="#5b3a25"/>
+<path d="M105 58V420M52 74H158M52 240H158" stroke="#3d2618" stroke-width="6"/>
+<rect x="60" y="90" width="36" height="136" fill="#6d4730"/>
+<rect x="114" y="90" width="36" height="136" fill="#6d4730"/>
+<rect x="60" y="256" width="36" height="148" fill="#6d4730"/>
+<rect x="114" y="256" width="36" height="148" fill="#6d4730"/>
+<path d="M78 120Q70 158 78 196M132 120Q140 158 132 196" stroke="#4a2e1c" stroke-width="5" fill="none"/>
+<rect x="240" y="40" width="34" height="24" fill="#24407a" stroke="#f1ece0" stroke-width="3"/>
+<text x="257" y="58" text-anchor="middle" font-family="sans-serif" font-size="15" fill="#f4f0e6">20</text>
+<rect x="302" y="162" width="116" height="186" fill="#dccaa6"/>
+<rect x="310" y="170" width="100" height="170" fill="#323b3f"/>
+<path d="M335 170V340M360 170V340M385 170V340M310 198H410M310 227H410M310 255H410M310 283H410M310 312H410" stroke="#1f1d1b" stroke-width="5" fill="none"/>
+<circle cx="335" cy="198" r="12" fill="none" stroke="#1f1d1b" stroke-width="4"/>
+<circle cx="385" cy="198" r="12" fill="none" stroke="#1f1d1b" stroke-width="4"/>
+<circle cx="335" cy="255" r="12" fill="none" stroke="#1f1d1b" stroke-width="4"/>
+<circle cx="385" cy="255" r="12" fill="none" stroke="#1f1d1b" stroke-width="4"/>
+<circle cx="335" cy="312" r="12" fill="none" stroke="#1f1d1b" stroke-width="4"/>
+<circle cx="385" cy="312" r="12" fill="none" stroke="#1f1d1b" stroke-width="4"/>
+<rect x="298" y="346" width="124" height="10" fill="#dccaa6"/>
+</svg>

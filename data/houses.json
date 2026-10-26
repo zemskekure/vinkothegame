@@ -499,7 +499,7 @@
 		}
 	},
 	"21643849": {
-		"note": "Konviktská side: 1930s house, dark grey-brown render (Street View). Tile pass, Betlémská 261/12 (edge 0): pale grey-beige seven-storey front with relief panels, dark brown stone ground floor with the Bistro Café shopfront (two white boards) and an ornate iron gate (marked 21643849_0, 21643857_0, Street View 2024).",
+		"note": "Konviktská side (edge 10): first ~1.8 m is the end of the dark grey-brown 1930s house, the rest the cream glazed-tile front of no. 13 with plain dark-framed windows. Dark brown brick ground floor under a brick course: a dark-framed window with a pale blind at the west end, a white three-pane window at the east end, no sign. Drawn now; it rendered as pale stone slabs (marked 21643849_10, 21649561_5b, Street View 2025).",
 		"colour": "#6f6858",
 		"trim": "#6f6858",
 		"ground": "shops",
@@ -538,13 +538,29 @@
 						"frame": "white"
 					}
 				]
+			},
+			"10": {
+				"colour": "#dcd5c2",
+				"trim": "#cbc3ad",
+				"rustic": "clad",
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "dark"
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					}
+				],
+				"shopfront": "21643849_10.svg"
 			}
 		}
 	},
 	"21643857": {
-		"note": "Konviktská side: narrow two-bay white/cream house (Street View). Tile pass, Betlémská 262/10: edge 0 is grey-beige like no. 261 (door, window with flowers); edge 20 is a yellow-cream neo-renaissance front with heavy banded rustication; its dark arched door lies just over the line on 21650021_2 (marked 21643857_0/20, Street View 2024).",
-		"colour": "#ebe8e0",
-		"trim": "#e3dccb",
+		"note": "Konviktská 11 (edge 5): narrow white house, rough-cast ground floor with two white windows in plaster surrounds under a red pantile ledge; upper floors with grey-beige relief panels between the windows; terrace parasols at the kerb, no sign seen. Ground floor matches the drawing (marked 21643857_5, Street View 2025).",
+		"colour": "#ebe9e2",
+		"trim": "#ddd6c4",
 		"floors": 5,
 		"ground": "restaurant",
 		"rustic": "none",
@@ -567,6 +583,19 @@
 					}
 				]
 			},
+			"5": {
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					}
+				],
+				"shopfront": "21643857_5.svg"
+			},
 			"20": {
 				"colour": "#ecd6a0",
 				"trim": "#f4e6c4",
@@ -585,7 +614,7 @@
 		}
 	},
 	"21643865": {
-		"note": "Konviktská 5/7: Residence Bologna, 1930s functionalist block, white render, green awnings and BOLOGNA banners on Konviktská (Street View). Tile pass, Betlémská edge 2: white upper floors over two storeys of grey render, wide window bays with white iron grids, a brown garage door with a red P BOLOGNA PARKING sign near the east end (marked 21643865_2a/b, Street View 2024).",
+		"note": "Konviktská 5: Residence Bologna. Ground floor redrawn: grey stone fascia with RESIDENCE and BOLOGNA, pale green transom band, glazed entrance (0-8.5 m), stone piers, two shop windows under green-white striped awnings, geranium boxes above. Last ~8 m: cream banded house, Sad Man's Tongue door, oval sign, menu case, windows with flower boxes (marked 21643865_19a/b, owner screenshot, Street View 2025).",
 		"colour": "#eeeeea",
 		"trim": "#f6f6f2",
 		"floors": 6,
@@ -678,7 +707,42 @@
 					"text": "BOLOGNA",
 					"board": "#b33a3f",
 					"ink": "#ffffff"
-				}
+				},
+				"ground": [
+					{
+						"kind": "door",
+						"frame": "dark",
+						"glazed": true,
+						"size": "wide"
+					},
+					{
+						"kind": "shop",
+						"frame": "dark",
+						"glazed": true,
+						"size": "wide"
+					},
+					{
+						"kind": "shop",
+						"frame": "dark",
+						"glazed": true,
+						"size": "wide"
+					},
+					{
+						"kind": "door",
+						"frame": "wood",
+						"glazed": true
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					}
+				],
+				"shopfront": "21643865_19.svg",
+				"shopfrontHeight": 5.2
 			}
 		},
 		"signs": false
@@ -1583,7 +1647,7 @@
 		}
 	},
 	"21644071": {
-		"note": "Konviktská 3 / Betlémská 4: long neo-renaissance block, grey-white upper floors, beige banded ground floor, arched gate on edge 26, doorway on edge 33 (Street View). Tile pass: edge 9 on Betlémská is functionalist like Residence Bologna: white over grey render, wide window bays with white iron grids (marked 21644071_9, Street View 2024). / Konviktská 3 / Betlémská 4: long neo-renaissance block, pale grey-white upper floors with beige stone pediments and balustrades, arched second-floor windows; heavy beige banded rusticated ground floor with tall dark windows over a plinth; on Betlémská front 6 a big round-arched honey-coloured wooden door under a carved keystone head (Street View 2024-05, marked 21644071_4a/4b/6/8).",
+		"note": "Konviktská 3: neo-renaissance block, beige banded ground floor, tagged arched brown gate at the west end, four tall white windows on bracketed sills over grilled cellar windows, bronze plaque. East ~7 m: west end of the Bologna block, redrawn with its grey fascia (MEDITERRANEAN RESTAURANT), red round logo, transom band, striped awnings and terrace glazing (marked 21644071_26a/b, Street View 2025).",
 		"colour": "#e6e4dd",
 		"trim": "#d4cab6",
 		"floors": 4,
@@ -1679,6 +1743,39 @@
 						"size": "wide"
 					}
 				]
+			},
+			"26": {
+				"ground": [
+					{
+						"kind": "gate",
+						"frame": "wood",
+						"arch": true
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "shop",
+						"frame": "dark",
+						"glazed": true,
+						"size": "wide"
+					}
+				],
+				"shopfront": "21644071_26.svg",
+				"shopfrontHeight": 5.2
 			},
 			"39": {
 				"lanterns": true
@@ -1930,7 +2027,7 @@
 		}
 	},
 	"21644101": {
-		"note": "Konviktská 22: baroque palace in cream-beige plaster with a tan plinth storey, curled iron grilles, arched first-floor windows in banded rustication, pedimented window heads. Edge 1 from the west: a narrow tagged door, two grilled windows, the brown portal in a carved stone frame (about 11-12.5 m), three grilled windows. Edge 2 is the narrow cream gabled house with gold UNIQUE lettering over brown-framed shop windows (Street View 2025-09, marked 21644101_1a/1b/2)",
+		"note": "Konviktská 22: baroque palace, cream-beige plaster over a tan plinth storey with curled iron grilles, arched windows in banded rustication above, pedimented heads. Edge 0: three grilled plinth windows. Edge 13: carved brown portal in a stone frame with cartouche, wall lantern, blue plate 20. Plinth drawings match the photos (marked 21644101_0/13, Street View 2025-09).",
 		"colour": "#e4d7b9",
 		"trim": "#ece3cc",
 		"floors": 5,
@@ -1939,6 +2036,26 @@
 		"grilles": true,
 		"graffiti": true,
 		"edges": {
+			"0": {
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "dark",
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "dark",
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "dark",
+						"bars": true
+					}
+				],
+				"shopfront": "21644101_0.svg"
+			},
 			"1": {
 				"ground": [
 					{
@@ -1996,15 +2113,27 @@
 				]
 			},
 			"13": {
-				"lanterns": true
+				"lanterns": true,
+				"ground": [
+					{
+						"kind": "door",
+						"frame": "wood"
+					},
+					{
+						"kind": "window",
+						"frame": "dark",
+						"bars": true
+					}
+				],
+				"shopfront": "21644101_13.svg"
 			}
 		},
 		"signs": false
 	},
 	"21644136": {
-		"note": "Konviktská 14/16: Hotel Cloister Inn, plain modern block in grey render with a setback attic and dormers, dark grey plinth, red awnings over the ground-floor windows, red canopy at the entrance and red vertical CLOISTER INN banners; set back from the street line (Street View)",
+		"note": "Konviktská 14/16: first ~6.7 m pale yellow house (two grilled windows, herringbone door). Then Hotel Cloister Inn: grey render, darker grey window bands (trim darkened), dormered attic; dark grey plinth redrawn with a small red awning and geranium box over each window, red curved entrance canopy, honey plank garage door and a grilled window at the west end; two red CLOISTER INN banners (marked 21644136_16a/b, 21644144_0b, Street View 2025).",
 		"colour": "#a7a399",
-		"trim": "#b3afa5",
+		"trim": "#8e8b84",
 		"floors": 4,
 		"ground": "windows",
 		"rustic": "none",
@@ -2017,21 +2146,130 @@
 					"text": "CLOISTER INN",
 					"board": "#a3283a",
 					"ink": "#ffffff"
-				}
+				},
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true
+					},
+					{
+						"kind": "door",
+						"frame": "wood",
+						"size": "wide"
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "door",
+						"frame": "dark",
+						"glazed": true,
+						"size": "wide"
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "garage",
+						"frame": "wood",
+						"size": "wide"
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true
+					}
+				],
+				"shopfront": "21644136_16.svg"
 			}
 		},
 		"signs": false
 	},
 	"21644144": {
-		"note": "Konviktská 12: restaurant U Ampezonů; pale grey-green three-storey house with white window hoods and cornices, pale horizontally banded ground floor with pilasters, door with 'u Ampezonů' lettering; tall white side wall facing east painted 'RESTAURACE U AMPEZONŮ', tagged at the bottom (Street View)",
-		"colour": "#d8ded3",
-		"trim": "#f2f2ee",
+		"note": "Konviktská 12: restaurant U Ampezonů; pale grey-green three-storey house, white window hoods, closely banded pale ground floor with pilasters: three large windows, brown door under dark serif 'u Ampezonů' letters, three narrow windows; last ~1.2 m is the ochre neighbour's dark door. Drawing matches the photos (marked 21644144_0a/0b, Street View 2025).",
+		"colour": "#dfe2d8",
+		"trim": "#f3f3ee",
 		"floors": 3,
 		"ground": "restaurant",
 		"rustic": "banded",
 		"grilles": false,
 		"graffiti": true,
-		"signs": false
+		"signs": false,
+		"edges": {
+			"0": {
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "door",
+						"frame": "wood",
+						"glazed": true
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"size": "narrow"
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"size": "narrow"
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"size": "narrow"
+					},
+					{
+						"kind": "door",
+						"frame": "dark"
+					}
+				],
+				"shopfront": "21644144_0.svg"
+			}
+		}
 	},
 	"21644152": {
 		"note": "Konviktská 10: 1930s apartment block in pale yellow render with plain framed windows, travertine-clad ground floor with two brown garage doors, a grilled entrance door with a hanging lantern and grilled windows (Street View)",
@@ -3781,15 +4019,47 @@
 		"signs": false
 	},
 	"21649561": {
-		"note": "Konviktská 13/15: 1930s houses; left part (no. 13) clad in cream glazed brick tiles, right part (no. 15) in grey render, both with dark red brick ground floors holding shops (ŠATNA, SECOND HAND) and doorways; plain wide windows (Street View)",
-		"colour": "#dbd2bd",
-		"trim": "#6a3b2f",
-		"floors": 5,
+		"note": "Konviktská 13/15: 1930s houses over one dark brown brick ground floor. No. 13 (first ~6 m): cream glazed tiles, glazed doorway with 997/13 plates, ŠATNA shop (red frame, orange board). No. 15: grey render, SECOND HAND shop, two wide plank doors. Plain wide windows in thin dark frames, no surrounds: trim now near the wall colour (was brick red). Brick courses drawn (marked 21649561_5a/5b, Street View 2025).",
+		"colour": "#938e7e",
+		"trim": "#857f71",
+		"floors": 6,
 		"ground": "shops",
-		"rustic": "none",
+		"rustic": "clad",
 		"grilles": false,
 		"graffiti": false,
-		"signs": false
+		"signs": false,
+		"edges": {
+			"5": {
+				"ground": [
+					{
+						"kind": "door",
+						"frame": "dark",
+						"glazed": true
+					},
+					{
+						"kind": "shop",
+						"frame": "red",
+						"glazed": true
+					},
+					{
+						"kind": "shop",
+						"frame": "red",
+						"glazed": true
+					},
+					{
+						"kind": "gate",
+						"frame": "wood",
+						"size": "wide"
+					},
+					{
+						"kind": "gate",
+						"frame": "wood",
+						"size": "wide"
+					}
+				],
+				"shopfront": "21649561_5.svg"
+			}
+		}
 	},
 	"21649570": {
 		"note": "Konviktská 15: plain six-storey grey-brown 1930s house with a grid of white-framed windows over a dark brown brick-clad ground floor with a glazed door, a wide window and a smaller one; from about 10 m the front runs on as the white parachute-mural firewall of Konviktská 17 with the memorial plaque. The two wooden garage doors noted before are not visible in 2025 (Street View 2025-09, marked 21649570_8)",
@@ -4319,17 +4589,67 @@
 		}
 	},
 	"21650039": {
-		"note": "Konviktská 7/9: neo-renaissance houses; no. 9 (edges 6, 8) in pale yellow-cream, no. 7 (edge 15) in off-white cream; banded rustication with grilled windows on the lower floors, balustrades and arched windows with rich stucco above; large arched gate at no. 7; Golden Tikka and Sad Man's Tongue at street level (Street View)",
-		"colour": "#ecdcae",
-		"trim": "#f2ead6",
+		"note": "No. 9 (edges 8, 6): pale yellow neo-renaissance, banded ground floor with tall grilled windows, brown door with 262 plates; edge 6 now drawn (its ground floor rendered as grey stone). No. 7 (edge 15): off-white with beige stucco, banded ground floor, arched carved gate with 1055/7 plates, two sash windows; edge set ornate for its stucco upper floors, ground floor covered by the drawing (marked 21650039_6/8/15, Street View 2025).",
+		"colour": "#e9d8a6",
+		"trim": "#f3ead2",
 		"floors": 5,
 		"ground": "restaurant",
 		"rustic": "ornate",
 		"grilles": true,
 		"graffiti": false,
 		"edges": {
+			"6": {
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true
+					}
+				],
+				"shopfront": "21650039_6.svg"
+			},
+			"8": {
+				"ground": [
+					"blank",
+					{
+						"kind": "door",
+						"frame": "wood"
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true
+					}
+				],
+				"shopfront": "21650039_8.svg"
+			},
 			"15": {
-				"lanterns": true
+				"lanterns": true,
+				"colour": "#ede9df",
+				"trim": "#d8c4a0",
+				"rustic": "ornate",
+				"ground": [
+					{
+						"kind": "gate",
+						"frame": "wood",
+						"arch": true
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					}
+				],
+				"shopfront": "21650039_15.svg",
+				"shopfrontHeight": 5.2
 			}
 		},
 		"signs": false
@@ -5533,15 +5853,53 @@
 		}
 	},
 	"155557548": {
-		"note": "Konviktská 18: pale yellow neo-renaissance house with pedimented windows, cream banded-rusticated ground floor with grilled windows and a herringbone wooden door; seen mostly at the edge of its photo and next to the Cloister Inn (Street View)",
-		"colour": "#e9d9a3",
-		"trim": "#f1ebdc",
-		"floors": 5,
+		"note": "Konviktská 18: first ~7 m a narrow off-white ornate neo-renaissance house (six storeys, rich stucco, pilasters, arched first-floor windows): arched dark portal at the east end, small grilled windows in a banded plinth. Colour warmed (rendered blue-grey) and the edge set ornate for the stucco; the drawing covers the ground floor. Last ~4.5 m: the pale yellow house with two tall grilled windows (marked 155557548_3, Street View 2025).",
+		"colour": "#e6e2d6",
+		"trim": "#ece8dc",
+		"floors": 6,
 		"ground": "windows",
 		"rustic": "banded",
 		"grilles": true,
 		"graffiti": false,
-		"signs": false
+		"signs": false,
+		"edges": {
+			"3": {
+				"rustic": "ornate",
+				"ground": [
+					{
+						"kind": "door",
+						"frame": "dark",
+						"arch": true
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"bars": true
+					}
+				],
+				"shopfront": "155557548_3.svg"
+			}
+		}
 	},
 	"973673162": {
 		"note": "Na Perštýně 6: pale yellow baroque house, triangular gable with cornice, segmental stucco window caps, white pilaster strips; ochre banded-rustication ground floor with an arched gateway closed by an ornate diamond-lattice iron grille; black lamp post in front (theatre-entrance attribution from the earlier note not verifiable in the photo) (Street View 2026)",
