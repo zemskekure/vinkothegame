@@ -7,6 +7,17 @@ import * as THREE from 'three/webgpu';
 import { makePigeon } from './pigeon.js';
 import { ART } from './ps1.js';
 import { getHud } from '../hud.js';
+import { SETTINGS } from '../settings.js';
+
+// How the pigeon flies, tunable in the game settings (`pigeon`, admin page ?admin, tab Holub). A city pigeon
+// cruises at about 40 km/h; the rest is what felt calm and easy to steer.
+export const FLIGHT = {
+	speed: 10, // cruising airspeed, m/s (W flaps up to 1.45 × that, S slows to half)
+	turn: 1.1, // the fastest turn, rad/s
+	bank: 24, // how far it leans into a turn, degrees
+	camDistance: 2.2, // the camera behind the bird in flight, m (it trails a little further when fast)
+	camLag: 0.45 // how long the camera takes to swing back behind after a turn, s
+};
 
 // --- the look ---------------------------------------------------------------------------------------------------
 
@@ -175,8 +186,10 @@ export function startHolub( { scene, camera, dom, roofGeo, bounds, groundHeight,
 	const pos = new THREE.Vector3( start[ 0 ], 0, start[ 1 ] );
 	pos.y = surfaceAt( pos.x, pos.z );
 	const vel = new THREE.Vector3();
-	let airspeed = 6, airPitch = 0, turnRate = 0, lookedAt = 0, mode = 'walk', heading = start[ 2 ], yaw = start[ 2 ] + Math.PI, pitch = 0.3, dist = 0.95, idle = 0;
-	let peck = 0, pecking = 0, poop = 0, poopCooldown = 0, bank = 0, lastYaw = yaw;
+	const tune = Object.assign( {}, FLIGHT, SETTINGS.pigeon );
+	let airspeed = 6, vy = 0, turnRate = 0, liftoff = 0, airTime = 0, landed = false, lookedAt = 0, mode = 'walk', heading = start[ 2 ], yaw = start[ 2 ] + Math.PI, pitch = 0.3, dist = 0.95, idle = 0;
+	let peck = 0, pecking = 0, poop = 0, poopCooldown = 0, bank = 0, height = 0;
+	const slide = new THREE.Vector3(); // what is left of the speed just after touching down
 	const keys = new Set();
 	const score = { food: 0, drops: 0, hits: 0 };
 	const drops = [], splats = [];
@@ -442,8 +455,14 @@ export function startHolub( { scene, camera, dom, roofGeo, bounds, groundHeight,
 		pos.z = nz;
 		if ( here - there > 0.6 ) {
 
+			// Off the edge, wings open: a slow glide out that picks up speed.
 			mode = 'glide';
-			vel.set( Math.sin( heading ) * 2, 0, Math.cos( heading ) * 2 );
+			airspeed = 4;
+			vy = - 0.5;
+			liftoff = 0;
+			airTime = 0;
+			slide.set( 0, 0, 0 );
+			vel.set( Math.sin( heading ) * airspeed, vy, Math.cos( heading ) * airspeed );
 
 		}
 
@@ -478,19 +497,41 @@ export function startHolub( { scene, camera, dom, roofGeo, bounds, groundHeight,
 			// In flight, the stick also turns: sideways steers the view (and so the bird) round.
 
 		}
+		// Keys still held from the flight (S to land) don't walk the bird off once it is down; let go first.
+		if ( mode === 'walk' || mode === 'sit' ) {
+
+			if ( ! ix && ! iz ) landed = false;
+			else if ( landed ) ix = iz = 0;
+
+		}
+
 		let speed = 0;
 
 		if ( mode === 'walk' || mode === 'sit' ) {
 
 			if ( keys.has( 'Space' ) ) {
 
+				// A hop and a few hard wingbeats up to about head height, then the bird levels off by itself.
 				mode = 'fly';
-				vel.copy( fwd ).multiplyScalar( 2.5 ).setY( 3.2 );
-				airspeed = 5;
-				airPitch = 0.35;
+				vy = 2.6;
+				airspeed = 3.5;
+				liftoff = 0.6;
+				airTime = 0;
+				turnRate = 0;
+				bank = 0;
+				slide.set( 0, 0, 0 );
 				heading = Math.atan2( fwd.x, fwd.z );
+				vel.set( Math.sin( heading ) * airspeed, vy, Math.cos( heading ) * airspeed );
 				say( 'Frrr!' );
 				emit( 'takeoff' );
+
+			} else if ( mode === 'walk' && slide.lengthSq() > 0.01 ) {
+
+				// Just landed: the last of the speed runs out in a few quick steps.
+				if ( ! tryMove( pos.x + slide.x * dt, pos.z ) ) slide.x = 0;
+				if ( mode === 'walk' && ! tryMove( pos.x, pos.z + slide.z * dt ) ) slide.z = 0;
+				slide.multiplyScalar( Math.exp( - 5 * dt ) );
+				speed = slide.length();
 
 			} else if ( mode === 'walk' && ( ix || iz ) && pecking <= 0 ) {
 
@@ -534,62 +575,172 @@ export function startHolub( { scene, camera, dom, roofGeo, bounds, groundHeight,
 
 		} else {
 
-			// Flight, arcade style: the bird keeps its own heading, pitch and airspeed, and every input eases in and
-			// out (no snapping). A/D bank and turn, W flaps for speed (Shift: harder), S brakes, Space climbs with
-			// wingbeats, C dives. Diving trades height for speed and climbing speed for height, as in a glide; slow
-			// and not flapping, the bird sinks. The mouse only swings the camera round, which drifts back behind.
+			// Flight, calm and forgiving: the bird keeps its own heading, airspeed and climb, every input eases in and
+			// out, and with nothing pressed it flies straight and level at a pigeon's cruising speed (~40 km/h).
+			// A/D turn, leaning into the turn; W flaps (a little faster, climbing gently); S slows down and, slow,
+			// sinks; Space flaps up; C or Shift glides down. Slow and low over a roof, a ledge or the pavement, it
+			// flares and lands by itself. The mouse only swings the camera round, which drifts back behind.
 			const damp = ( a, b, k ) => a + ( b - a ) * ( 1 - Math.exp( - k * dt ) );
-			const climb = ( keys.has( 'Space' ) ? 1 : 0 ) - ( keys.has( 'KeyC' ) ? 1 : 0 );
-			const flapping = climb > 0 || iz > 0;
-			turnRate = damp( turnRate, - ix * ( 1.6 - Math.min( 0.6, airspeed / 40 ) ), 4 );
-			heading += turnRate * dt;
-			airPitch = damp( airPitch, climb > 0 ? 0.42 : climb < 0 ? - 0.65 : - 0.1, 3 );
-			const cruise = iz > 0 ? ( fast ? 20 : 13 ) : iz < 0 ? 3.5 : 8;
-			airspeed = damp( airspeed, cruise, iz < 0 ? 2 : 0.9 ) - Math.sin( airPitch ) * 7 * dt;
-			airspeed = THREE.MathUtils.clamp( airspeed, 2.5, 26 );
-			const cp = Math.cos( airPitch );
-			want.set( Math.sin( heading ) * cp * airspeed, Math.sin( airPitch ) * airspeed - ( flapping ? 0 : Math.max( 0, 6 - airspeed ) * 0.35 ), Math.cos( heading ) * cp * airspeed );
-			vel.lerp( want, 1 - Math.exp( - 6 * dt ) );
-			mode = flapping ? 'fly' : 'glide';
+			const up = keys.has( 'Space' ), down = keys.has( 'KeyC' ) || keys.has( 'ShiftLeft' ) || keys.has( 'ShiftRight' );
+			const flap = up || iz > 0;
+			const cruise = tune.speed;
+			liftoff -= dt;
+			airTime += dt;
+			const water = overWater( pos.x, pos.z );
+			height = pos.y - ( water ? waterLevel + 0.6 : surfaceAt( pos.x, pos.z ) );
+			// Landing: near something to stand on and slow (S), coming down, or just slow a while after taking off,
+			// the bird brakes and settles on it.
+			const flare = liftoff <= 0 && ! flap && ! water && height < 2.5 && ( vy < - 0.3 || iz < 0 || airTime > 2.5 && airspeed < cruise * 0.6 );
 
+			let target = iz > 0 ? cruise * 1.45 : iz < 0 ? cruise * 0.5 : cruise;
+			if ( down && iz >= 0 ) target *= 1.15; // gliding down picks up a little speed
+			if ( flare ) target = Math.min( target, 3.5 );
+			airspeed = damp( airspeed, target, flare || iz < 0 ? 1.3 : target > airspeed ? 0.8 : 0.5 );
+
+			// Held slow (S), the wings hold less: below about 80 % of cruise the bird sinks gently.
+			const sink = iz >= 0 ? 0 : THREE.MathUtils.clamp( ( cruise * 0.8 - airspeed ) / ( cruise * 0.3 ), 0, 1 ) * 1.2;
+			let wantVy = up ? 3 : iz > 0 ? 1.2 : down ? - 3.5 : - sink;
+			if ( liftoff > 0 ) wantVy = Math.max( wantVy, 2.2 );
+			if ( flare ) wantVy = Math.max( wantVy, - Math.max( 0.6, height * 1.2 ) );
+			// A roof or a ledge just ahead and a little higher: the bird lifts over it by itself instead of hitting it.
+			const reach = Math.max( 2, airspeed * 0.8 );
+			const clear = surfaceAt( pos.x + Math.sin( heading ) * reach, pos.z + Math.cos( heading ) * reach ) + ( flare ? 0 : 0.6 ) - pos.y;
+			if ( clear > 0 && clear < 5 ) wantVy = Math.max( wantVy, Math.min( 4, clear / 0.8 ) );
+			// A wall too high to lift over: the bird turns away along it, to the nearer open side (the side it is
+			// already turning to first), as a bird would, instead of flying into it.
+			let avoid = 0;
+			if ( clear >= 5 ) {
+
+				const free = a => surfaceAt( pos.x + Math.sin( a ) * reach, pos.z + Math.cos( a ) * reach ) < pos.y - 0.3;
+				const first = ix > 0 ? - 1 : ix < 0 ? 1 : ( Math.sign( turnRate ) || 1 );
+				avoid = first * 1.6;
+				for ( let k = 1; k <= 6; k ++ ) {
+
+					if ( free( heading + first * k * 0.25 ) ) {
+
+						avoid = first * k * 0.25;
+						break;
+
+					}
+
+					if ( free( heading - first * k * 0.25 ) ) {
+
+						avoid = - first * k * 0.25;
+						break;
+
+					}
+
+				}
+
+			}
+
+			vy = damp( vy, wantVy, 2.2 );
+
+			// Turning: the turn eases in and out, and the bird leans into it (left turn, left wing down) by an angle
+			// that follows the turn. The camera does not roll with it: the horizon stays level.
+			turnRate = damp( turnRate, THREE.MathUtils.clamp( - ix * tune.turn + avoid * 2, - tune.turn * 1.4, tune.turn * 1.4 ), 2.5 );
+			heading += turnRate * dt;
+			bank = damp( bank, - THREE.MathUtils.clamp( turnRate / Math.max( 0.1, tune.turn ), - 1.2, 1.2 ) * THREE.MathUtils.degToRad( tune.bank ), 4 );
+			mode = flap || liftoff > 0 || flare ? 'fly' : 'glide';
+
+			vel.set( Math.sin( heading ) * airspeed, vy, Math.cos( heading ) * airspeed );
 			const nx = pos.x + vel.x * dt, nz = pos.z + vel.z * dt;
 			let ny = pos.y + vel.y * dt;
-			// Walls: no flying through a house; slide along it.
-			if ( surfaceAt( nx, pos.z ) <= ny - 0.05 ) pos.x = nx; else vel.x *= - 0.2;
-			if ( surfaceAt( pos.x, nz ) <= ny - 0.05 ) pos.z = nz; else vel.z *= - 0.2;
+			// Walls: no flying through a house; the bird slides along it, losing a little speed. A low edge (a
+			// cornice, a ridge just above) it simply hops over.
+			let scraped = false;
+			const sx = surfaceAt( nx, pos.z );
+			if ( sx <= ny - 0.05 ) pos.x = nx;
+			else if ( sx - ny < 0.35 ) {
+
+				ny = sx + 0.05;
+				pos.x = nx;
+
+			} else {
+
+				vel.x = 0;
+				scraped = true;
+
+			}
+
+			const sz = surfaceAt( pos.x, nz );
+			if ( sz <= ny - 0.05 ) pos.z = nz;
+			else if ( sz - ny < 0.35 ) {
+
+				ny = sz + 0.05;
+				pos.z = nz;
+
+			} else {
+
+				vel.z = 0;
+				scraped = true;
+
+			}
+
+			// Along a wall, the bird turns to fly with it rather than pressing into it.
+			if ( scraped ) {
+
+				// The open direction nearest the heading, a step away, and the bird swings round to it quickly.
+				airspeed *= Math.exp( - 0.4 * dt );
+				const open = o => surfaceAt( pos.x + Math.sin( heading + o ) * 1.2, pos.z + Math.cos( heading + o ) * 1.2 ) < ny - 0.05;
+				const side = Math.sign( turnRate ) || 1;
+				for ( let k = 1; k <= 10; k ++ ) {
+
+					const o = open( side * k * 0.3 ) ? side * k * 0.3 : open( - side * k * 0.3 ) ? - side * k * 0.3 : 0;
+					if ( o ) {
+
+						heading += o * ( 1 - Math.exp( - 4 * dt ) );
+						break;
+
+					}
+
+				}
+
+			}
 			pos.x = THREE.MathUtils.clamp( pos.x, bounds.minX + 1, bounds.maxX - 1 );
 			pos.z = THREE.MathUtils.clamp( pos.z, bounds.minZ + 1, bounds.maxZ - 1 );
-			const floor = overWater( pos.x, pos.z ) ? waterLevel + 0.6 : surfaceAt( pos.x, pos.z );
+			const onWater = overWater( pos.x, pos.z );
+			const floor = onWater ? waterLevel + 0.6 : surfaceAt( pos.x, pos.z );
 			ny = Math.min( ny, floor + 160 );
-			if ( ny <= floor ) {
+			// Landing on a slope (a roof) the bird may hover just above it: close enough counts as down.
+			if ( ny <= floor || flare && ny - floor < 0.15 && ! onWater ) {
 
 				ny = floor;
-				if ( overWater( pos.x, pos.z ) ) vel.y = Math.max( vel.y, 1.5 );
-				else if ( vel.y <= 0.5 && ! keys.has( 'Space' ) && airspeed < 9 ) {
+				if ( onWater || flap || liftoff > 0 ) vy = Math.max( vy, onWater ? 1 : 0 ); // skims along
+				else if ( airspeed < 7.5 ) {
 
+					// Down: the rest of the speed runs out in a few steps on the ground.
 					mode = 'walk';
+					landed = true;
+					slide.set( vel.x, 0, vel.z ).multiplyScalar( 0.4 );
 					vel.set( 0, 0, 0 );
+					vy = turnRate = bank = 0;
 					emit( 'land', roofAt( pos.x, pos.z ) - groundHeight( pos.x, pos.z ) );
+
+				} else {
+
+					// Too fast to stand: a soft bounce, a little slower each time.
+					vy = 1.2;
+					airspeed *= 0.7;
 
 				}
 
 			}
 
 			pos.y = ny;
-			bank += ( THREE.MathUtils.clamp( turnRate * 0.45, - 0.9, 0.9 ) - bank ) * ( 1 - Math.exp( - 5 * dt ) );
-			// The camera swings back behind the bird when the mouse has been still for a moment.
-			if ( performance.now() - lookedAt > 1200 ) {
+			// The camera swings back behind the bird when the mouse has been still for a moment, lagging a little
+			// in turns so the motion shows; it looks slightly down on the bird, a bit more when it climbs.
+			if ( performance.now() - lookedAt > 900 ) {
 
 				const d = THREE.MathUtils.euclideanModulo( heading + Math.PI - yaw + Math.PI, Math.PI * 2 ) - Math.PI;
-				yaw += d * ( 1 - Math.exp( - 1.8 * dt ) );
-				pitch += ( 0.25 - airPitch * 0.4 - pitch ) * ( 1 - Math.exp( - 1.2 * dt ) );
+				yaw += d * ( 1 - Math.exp( - dt / Math.max( 0.05, tune.camLag ) ) );
+				pitch = damp( pitch, 0.28 + THREE.MathUtils.clamp( vy, - 4, 4 ) * 0.03, 1.5 );
 
 			}
+
 			speed = vel.length();
 
 		}
-
-		lastYaw = yaw;
 
 		// Droppings: fall, check for a person on the way down, splat on what they hit.
 		for ( let i = drops.length - 1; i >= 0; i -- ) {
@@ -648,7 +799,7 @@ export function startHolub( { scene, camera, dom, roofGeo, bounds, groundHeight,
 
 		// Camera: behind the bird, closer on the ground, further in flight; kept out of the houses.
 		const flying = mode === 'fly' || mode === 'glide';
-		const d = dist * ( flying ? 1.9 : 1 );
+		const d = flying ? tune.camDistance * dist / 0.95 : dist;
 		camTarget.set( pos.x, pos.y + ( flying ? 0.25 : 0.22 ), pos.z );
 		let k = d;
 		for ( ; k > 0.35; k -= 0.15 ) {
@@ -660,8 +811,9 @@ export function startHolub( { scene, camera, dom, roofGeo, bounds, groundHeight,
 
 		camPos.copy( camTarget ).addScaledVector( look, - k );
 		camPos.y = Math.max( camPos.y, ( overWater( camPos.x, camPos.z ) ? waterLevel : surfaceAt( camPos.x, camPos.z ) ) + 0.12 );
-		camera.position.lerp( camPos, 1 - Math.exp( - ( flying ? 5 : 10 ) * dt ) );
-		const fov = 62 + ( flying ? Math.min( 14, airspeed * 0.6 ) : 0 );
+		camera.position.lerp( camPos, 1 - Math.exp( - ( flying ? 10 : 10 ) * dt ) );
+		// A touch wider when fast, never more than a few degrees.
+		const fov = 62 + ( flying ? THREE.MathUtils.clamp( ( airspeed - tune.speed * 0.5 ) * 0.4, 0, 5 ) : 0 );
 		if ( Math.abs( camera.fov - fov ) > 0.05 ) {
 
 			camera.fov += ( fov - camera.fov ) * ( 1 - Math.exp( - 3 * dt ) );
@@ -717,6 +869,12 @@ export function startHolub( { scene, camera, dom, roofGeo, bounds, groundHeight,
 
 		return yaw;
 
-	}, score };
+	}, score,
+	// The flight numbers, live (the admin page writes into them), and the state for tests.
+	tune, get flight() {
+
+		return { mode, airspeed, vy, bank, turnRate, height, y: pos.y, heading };
+
+	} };
 
 }

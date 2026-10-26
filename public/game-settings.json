@@ -24,7 +24,7 @@
 	},
 	"world": { "perlova": true },
 	"day": { "startHour": 18.6, "minutes": 16 },
-	"pigeon": { "start": [ -74, 66, 2.0074 ] },
+	"pigeon": { "start": [ -74, 66, 2.0074 ], "speed": 10, "turn": 1.1, "bank": 24, "camDistance": 2.2, "camLag": 0.45 },
 	"art": {
 		"headFacets": 6,
 		"headScale": 1,
