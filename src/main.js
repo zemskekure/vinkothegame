@@ -1013,7 +1013,8 @@ const streetSegs = data.streets.flatMap( st => st.paths.flatMap( path => {
 } ) );
 
 // Away from any street: the quarter, Malá Strana west of the first area (over the river), else Staré Město.
-const quarter = x => x < FB.minX ? 'Malá Strana' : 'Staré Město';
+// (Hradčany and Strahov above Malá Strana: west of Nerudova's top and north-west of Petřín, roughly.)
+const quarter = ( x, z ) => x < - 1000 && z < - 380 ? 'Hradčany' : x < FB.minX ? 'Malá Strana' : 'Staré Město';
 
 function nearestStreet( x, z ) {
 
@@ -1280,7 +1281,7 @@ renderer.setAnimationLoop( () => {
 
 		}
 
-		if ( me ) hud.place( nearestStreet( me.x, me.z ), quarter( me.x ) );
+		if ( me ) hud.place( nearestStreet( me.x, me.z ), quarter( me.x, me.z ) );
 
 	}
 
@@ -1386,7 +1387,7 @@ const samples = new THREE.Group();
 
 }
 
-window.__debug = { setFps: f => FPS = f, stream, squareGroups, squareLog: [], graffiti, day, renderer, scene, batched, camera, isBlocked, groundHeight, walker, life, trams, boats, holub, solids, waterLevel: data.waterLevel };
+window.__debug = { setFps: f => FPS = f, stream, squareGroups, squareLog: [], goTo, graffiti, day, renderer, scene, batched, camera, isBlocked, groundHeight, walker, life, trams, boats, holub, solids, waterLevel: data.waterLevel };
 window.__THREE = THREE;
 window.__ready = true;
 // The courier's first message, on the pager.
