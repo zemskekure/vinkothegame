@@ -49,7 +49,8 @@ export function createMinimap( { bounds, surface, surface2, S, isHouse, terrainH
 	const view = document.createElement( 'canvas' );
 	const dpr = Math.min( 2, window.devicePixelRatio || 1 );
 	view.width = view.height = size * dpr;
-	view.style.cssText = `position:fixed;${ touch ? 'right:12px;top:12px' : 'left:16px;bottom:16px' };width:${size}px;height:${size}px;border-radius:50%;box-shadow:0 2px 10px rgba(0,0,0,0.45);border:3px solid rgba(20,24,30,0.75);z-index:2;pointer-events:none;display:none`;
+	view.style.cssText = `position:fixed;${ touch ? 'right:12px;top:12px' : 'left:16px;bottom:16px' };width:${size}px;height:${size}px;border-radius:50%;box-shadow:0 2px 10px rgba(0,0,0,0.45);border:3px solid rgba(20,24,30,0.75);z-index:2;cursor:pointer;display:none`;
+	view.title = 'Mapa (Tab): klikni a přenes se';
 	document.body.appendChild( view );
 	const v = view.getContext( '2d' );
 	const RANGE = touch ? 70 : 85; // metres from the centre to the rim
@@ -141,9 +142,113 @@ export function createMinimap( { bounds, surface, surface2, S, isHouse, terrainH
 
 	}
 
+	// The big map: the whole area north up, filling the screen; a click on it picks a place to go to (onPick), the
+	// street under the pointer is named (labelAt). Esc, Tab or a click beside the map closes it.
+	let open = null;
+	function openMap( { x, z, onPick, onClose, labelAt } ) {
+
+		if ( open ) return;
+		const layer = document.createElement( 'div' );
+		layer.style.cssText = 'position:fixed;inset:0;z-index:20;background:rgba(14,16,20,0.78);display:flex;align-items:center;justify-content:center;cursor:crosshair';
+		const big = document.createElement( 'canvas' );
+		const fit = Math.min( ( innerWidth - 40 ) / W, ( innerHeight - 90 ) / H );
+		big.style.cssText = `width:${Math.floor( W * fit )}px;height:${Math.floor( H * fit )}px;box-shadow:0 4px 30px rgba(0,0,0,0.6);border:3px solid rgba(20,24,30,0.9);image-rendering:pixelated`;
+		big.width = Math.floor( W * fit * dpr );
+		big.height = Math.floor( H * fit * dpr );
+		const tip = document.createElement( 'div' );
+		tip.style.cssText = 'position:fixed;left:50%;bottom:18px;transform:translateX(-50%);color:#fff;font:600 14px system-ui,sans-serif;text-shadow:0 1px 3px #000;pointer-events:none';
+		tip.textContent = 'Klikni, kam se přenést · Esc zavřít';
+		layer.append( big, tip );
+		document.body.appendChild( layer );
+
+		const b = big.getContext( '2d' ), kx = big.width / W, ky = big.height / H;
+		b.imageSmoothingEnabled = false;
+		b.drawImage( map, 0, 0, big.width, big.height );
+		const toBig = ( px, pz ) => [ ( px - bounds.minX ) / S.cell * kx, ( pz - bounds.minZ ) / S.cell * ky ];
+		b.font = `600 ${ 10 * dpr }px system-ui, sans-serif`;
+		b.textAlign = 'center';
+		b.textBaseline = 'middle';
+		for ( const m of markers ) {
+
+			const [ mx, my ] = toBig( m.x, m.z );
+			b.beginPath();
+			b.arc( mx, my, 7 * dpr, 0, Math.PI * 2 );
+			b.fillStyle = m.colour;
+			b.fill();
+			b.lineWidth = 1.5 * dpr;
+			b.strokeStyle = '#fff';
+			b.stroke();
+			b.fillStyle = '#fff';
+			b.fillText( m.icon, mx, my + 0.5 * dpr );
+
+		}
+
+		const [ px, py ] = toBig( x, z );
+		b.beginPath();
+		b.arc( px, py, 6 * dpr, 0, Math.PI * 2 );
+		b.fillStyle = '#c4533a';
+		b.fill();
+		b.lineWidth = 2 * dpr;
+		b.strokeStyle = '#fff';
+		b.stroke();
+
+		const at = e => {
+
+			const r = big.getBoundingClientRect();
+			const u = ( e.clientX - r.left ) / r.width, w = ( e.clientY - r.top ) / r.height;
+			return u < 0 || u > 1 || w < 0 || w > 1 ? null : [ bounds.minX + u * W * S.cell, bounds.minZ + w * H * S.cell ];
+
+		};
+
+		const close = () => {
+
+			layer.remove();
+			removeEventListener( 'keydown', key, true );
+			open = null;
+			onClose?.();
+
+		};
+
+		const key = e => {
+
+			if ( e.code === 'Escape' || e.code === 'Tab' ) {
+
+				e.preventDefault();
+				e.stopPropagation();
+				close();
+
+			}
+
+		};
+
+		addEventListener( 'keydown', key, true );
+		layer.addEventListener( 'pointermove', e => {
+
+			const p = at( e );
+			tip.textContent = p && labelAt ? `${labelAt( p[ 0 ], p[ 1 ] ) || 'Sem'} · klikni pro přenesení` : 'Klikni, kam se přenést · Esc zavřít';
+
+		} );
+		layer.addEventListener( 'click', e => {
+
+			const p = at( e );
+			close();
+			if ( p ) onPick( p[ 0 ], p[ 1 ] );
+
+		} );
+		open = { close };
+
+	}
+
 	return {
 		update,
 		map, // the whole area at S.cell metres a pixel, north up (the admin page draws on it)
+		view, // the dial (main.js opens the big map from a click on it)
+		openMap,
+		get isOpen() {
+
+			return !! open;
+
+		},
 		setVisible: on => {
 
 			view.style.display = on ? 'block' : 'none';

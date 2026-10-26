@@ -620,7 +620,7 @@ function setMode( walk ) {
 	hud.help.textContent = touch
 		? ( walk ? 'Joystick vlevo dole chůze (až k okraji běh) · táhni prstem kamerou' : 'Táhni prstem pro otáčení · dvěma prsty přiblížení a posun' )
 		: walk
-			? 'Klikni a ovládej kameru myší · WASD chůze · Shift běh · B moped · kolečko zoom · V pohled z očí'
+			? 'Klikni a ovládej kameru myší · WASD chůze · Shift běh · B moped · kolečko zoom · V pohled z očí · Tab mapa'
 			: 'Táhni myší pro otáčení · kolečko přiblížení · pravé tlačítko posun';
 	hud.place.style.display = walk ? 'block' : 'none';
 	minimap.setVisible( walk );
@@ -703,6 +703,40 @@ function nearestStreet( x, z ) {
 	return best;
 
 }
+
+// The big map (a click on the dial, or Tab): click a place to be there at once, on foot or as the pigeon.
+function openBigMap() {
+
+	if ( minimap.isOpen || ! ( holub || walking ) ) return;
+	if ( document.pointerLockElement ) document.exitPointerLock();
+	const me = holub ? holub.pos : walker.pos;
+	const wasLocked = holub?.locked;
+	if ( holub ) holub.locked = true;
+	minimap.openMap( {
+		x: me.x, z: me.z, labelAt: nearestStreet,
+		onClose: () => {
+
+			if ( holub ) holub.locked = wasLocked;
+
+		},
+		onPick: ( x, z ) => {
+
+			if ( holub ) holub.place( x, z, holub.heading );
+			else walker.teleport( x, z, walker.yaw );
+
+		}
+	} );
+
+}
+
+minimap.view.addEventListener( 'click', openBigMap );
+addEventListener( 'keydown', e => {
+
+	if ( e.code !== 'Tab' || minimap.isOpen || e.target.closest?.( 'input, textarea, select' ) ) return;
+	e.preventDefault();
+	openBigMap();
+
+} );
 
 document.getElementById( 'credit' ).textContent = data.attribution + ' · fasády podle fotek © Mapillary (CC BY-SA) · lidé: Quaternius (CC0) · auta: Kenney (CC0) · rendering after Slop New York (MIT, Mr.doob)';
 
