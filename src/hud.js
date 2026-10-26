@@ -77,7 +77,7 @@ const caps = list => list.map( ( [ keys, what ] ) => `<span>${keys.map( k => `<s
 export const KEYS = {
 	walk: [ [ [ 'W', 'A', 'S', 'D' ], 'chůze' ], [ [ 'Shift' ], 'běh' ], [ [ 'Mezerník' ], 'skok' ], [ [ 'B' ], 'skútr' ], [ [ 'V' ], 'z očí' ], [ [ 'Tab' ], 'mapa' ], [ [ 'M' ], 'shora' ], [ [ 'Esc' ], 'menu' ] ],
 	ride: [ [ [ 'W' ], 'plyn' ], [ [ 'S' ], 'brzda' ], [ [ 'A', 'D' ], 'řízení' ], [ [ 'B' ], 'sesednout' ], [ [ 'Tab' ], 'mapa' ], [ [ 'Esc' ], 'menu' ] ],
-	pigeon: [ [ [ 'W', 'A', 'S', 'D' ], 'chůze a let' ], [ [ 'Mezerník' ], 'vzlétnout' ], [ [ 'C' ], 'dolů / sednout' ], [ [ 'E' ], 'zobnout' ], [ [ 'Q' ], 'bobek' ], [ [ 'Tab' ], 'mapa' ], [ [ 'Esc' ], 'menu' ] ],
+	pigeon: [ [ [ 'W', 'A', 'S', 'D' ], 'chůze a let' ], [ [ 'Mezerník' ], 'vzlétnout / výš' ], [ [ 'S' ], 'v letu: přistát' ], [ [ 'C' ], 'níž / sednout' ], [ [ 'E' ], 'zobnout' ], [ [ 'Q' ], 'bobek' ], [ [ 'Tab' ], 'mapa' ], [ [ 'Esc' ], 'menu' ] ],
 	above: [ [ [ 'Myš' ], 'otáčení' ], [ [ 'Kolečko' ], 'přiblížení' ], [ [ 'M' ], 'na ulici' ], [ [ 'Esc' ], 'menu' ] ]
 };
 const TOUCH_KEYS = {

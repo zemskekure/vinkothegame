@@ -4,7 +4,7 @@ The one place for what the game is, what's in it and what's next. Read it before
 date when something lands (move items between the status columns, add new ideas at the bottom of their section).
 The city it is played in, the Prague model, is a separate thing: see `docs/README.md` for the split.
 
-Last update: 2026-10-26.
+Last update: 2026-10-26 (pigeon flight).
 
 ## 1. Vision
 
@@ -23,7 +23,7 @@ Last update: 2026-10-26.
 
 | Mode | What it is | State |
 |---|---|---|
-| **Holub (pigeon)** | Starts straight in the city on the pavement of Betlémské náměstí: walk, sit, peck crumbs, fly. Controls: A/D turn, W flap/faster, S brake, Space climb, C dive, mouse looks; the camera settles behind after 1.2 s. Day and night (T skips time). The egg and the first day's tutorial (`src/holub/story.js`) only with `?vejce`. | playable (`?holub`) |
+| **Holub (pigeon)** | Starts straight in the city on the pavement of Betlémské náměstí: walk, sit, peck crumbs, fly. Flight is calm and forgiving (`src/holub/game.js`, flight section): cruises at ~10 m/s and holds its height with no keys pressed; A/D turn (leaning into the turn, ~24°, the camera stays level), W flaps (faster, climbing gently), S slows down and sinks (near a roof, ledge or the pavement it flares and lands by itself), Space takes off with a hop / climbs, C or Shift glides down; it lifts itself over low edges ahead and turns along walls instead of hitting them; touching down too fast is a soft bounce. The mouse orbits the camera, which swings back behind after ~1 s. Tuning (speed, turn rate, bank, camera distance and lag): `pigeon` in `public/game-settings.json`, live on the admin page (?admin, tab Holub). Day and night (T skips time). The egg and the first day's tutorial (`src/holub/story.js`) only with `?vejce`. | playable (`?holub`) |
 | **Kurýr (food-delivery courier)** | A character made in the creator, on foot or on a delivery scooter (B): leans into turns, bumps over setts and tram rails, 40 km/h top. Later: deliveries from real restaurants to addresses, against the clock, for tips. | riding works; creator + start screen in progress (`feat/start`); deliveries planned |
 | **Jen se projet (free roam)** | On foot, no goal. Space jumps (a 0.7 m hop, legs tucked; not on the scooter). | works (default today) |
 | Overview | The city from above (M). | works |
@@ -122,3 +122,9 @@ commit, injected by `vite.config.js`) shows in a corner and in the pause menu. T
 | Done | In progress | Next | Later |
 |---|---|---|---|
 | pigeon flight + story start; walking; jump; scooter; console HUD, loading bar, real pause; teleport map; PS1 look (pigeon); generated ugly people; trams, Czech cars, boats; Bjukitchen; Malá Strana first layer; studio + admin; friends NPCs; Perlová | performance (`perf/ps1`: fast load, smooth frames, PS1 look everywhere); start screen + character creator (`feat/start`) | deliveries (Bjukitchen first); sound | weather; easter eggs; more sponsored interiors; open-source split of the model |
+
+## Queue (owner's requests not started yet)
+
+- Trams and cars solid (the walker, the scooter and the pigeon collide with them).
+- Ride the tram: board at a stop, sit or stand inside (T3 and 15T interiors from the owner's textures `tram_t3_interior`, `tram_15t_interior`, `tram_seat_fabric`), ride along the line with the city passing by, get off at a stop.
+- Passengers getting on and off at tram stops.
