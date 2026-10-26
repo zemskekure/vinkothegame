@@ -20,7 +20,7 @@ import { attribute, select, texture, uv, vec2, float, pow } from 'three/tsl';
 import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js';
 import { snapVertex, BODY_LEVELS, ART } from './holub/ps1.js';
 
-export const SLOT = { keep: 0, top: 1, bottom: 2, hair: 3, skin: 4, face: 5 };
+export const SLOT = { keep: 0, top: 1, bottom: 2, hair: 3, skin: 4, face: 5, chest: 6 };
 const LOOKS = [ 'lookTop', 'lookBottom', 'lookHair', 'lookSkin', 'lookFace' ];
 const BLOCK_HEADS = ! new URLSearchParams( location.search ).has( 'modelheads' ); // ?modelheads keeps the modelled heads
 // In the pigeon game (?holub) the people are drawn like the rest of its late-90s picture: faceted (one normal per
@@ -40,20 +40,22 @@ export const BODIES = [
 ].map( ( [ sex, file ] ) => ( { sex, file, animated: file.startsWith( 'animated' ) } ) );
 
 // What people in Prague wear on an ordinary day: mostly dark and muted, some colour. sRGB.
-const TOPS = [ 0x1d1d20, 0x2b2c31, 0x3c3e44, 0x6d7076, 0xa3a5a8, 0xe6e3dc, 0xd8cfbd, 0x1f2a44, 0x2d3d5c, 0x4c6a8f,
+export const TOPS = [ 0x1d1d20, 0x2b2c31, 0x3c3e44, 0x6d7076, 0xa3a5a8, 0xe6e3dc, 0xd8cfbd, 0x1f2a44, 0x2d3d5c, 0x4c6a8f,
 	0x8fb0cf, 0x6b2230, 0xa33a32, 0xc4562f, 0xc89b2c, 0x5a5e3a, 0x2f4a3a, 0x3f6b5a, 0x8b8160, 0xa87b4f, 0x5a3e2b, 0xd49aa4, 0x7b4f7a ];
-const BOTTOMS = [ 0x1a1a1c, 0x2a2b2f, 0x24324d, 0x34496b, 0x4f6a90, 0x6e86a8, 0x55575c, 0x8a8a86, 0xbcae8e, 0x8b7f5e,
+export const BOTTOMS = [ 0x1a1a1c, 0x2a2b2f, 0x24324d, 0x34496b, 0x4f6a90, 0x6e86a8, 0x55575c, 0x8a8a86, 0xbcae8e, 0x8b7f5e,
 	0x4c4f34, 0x4a3426, 0x6b5a48 ];
-const HAIR = [ 0x16110e, 0x2a1d15, 0x3b281b, 0x5a3b24, 0x7a5434, 0xa78457, 0xcfb27c, 0x8c8a86, 0xc9c6c0, 0x6e2f1d ];
-const SKIN = [ 0xf1d0b5, 0xeac2a1, 0xe3b38f, 0xd9a47e, 0xc98e66, 0xb97a55, 0x9a6244, 0x6e452f ];
+export const HAIR = [ 0x16110e, 0x2a1d15, 0x3b281b, 0x5a3b24, 0x7a5434, 0xa78457, 0xcfb27c, 0x8c8a86, 0xc9c6c0, 0x6e2f1d ];
+export const SKIN = [ 0xf1d0b5, 0xeac2a1, 0xe3b38f, 0xd9a47e, 0xc98e66, 0xb97a55, 0x9a6244, 0x6e452f ];
 
-const lin = hex => new THREE.Color().setHex( hex ); // converts sRGB to the linear working space
-const pick = ( rnd, list ) => list[ Math.floor( rnd() * list.length ) ];
 
 // ---------------------------------------------------------------------------
 // The wardrobe: an atlas of low-resolution textures, nearest-filtered.
 
 const TILE = 128, GRID = 16; // a 2048 px atlas of 128 px tiles
+// Garment fronts (a hoodie, a cardigan, a flannel shirt… photographed flat) take two tiles each: a patch of their
+// plain fabric in the last row (FABRIC_ROW + i), for the back and sleeves, and the front itself one row up, stretched
+// over the chest. A top whose tile is in the last row shows the front on its chest triangles (slot 6).
+const FABRIC_ROW = ( GRID - 1 ) * GRID, FRONT_ROW = ( GRID - 2 ) * GRID;
 
 // A drawn pixel face (16 × 16, scaled up): eyes, brows, nose shadow, mouth; white where the skin colour shows.
 function drawFace( c, x0, y0, variant = 0 ) {
@@ -85,6 +87,7 @@ export async function loadWardrobe() {
 	const c = canvas.getContext( '2d', { willReadFrequently: true } );
 	c.imageSmoothingEnabled = false;
 	const tiles = { faces: [], heads: [], clothes: [], skin: [] };
+	let fronts = 0;
 	let next = 0;
 	const place = draw => {
 
@@ -122,6 +125,34 @@ export async function loadWardrobe() {
 		return k.setRGB( r / n / 255, g / n / 255, b / n / 255, THREE.SRGBColorSpace ).toArray();
 
 	};
+
+	// Garment fronts (manifest `fronts`: { file, crop, patch }, rectangles as fractions of the image): the patch fills
+	// its fabric tile; the front's body (`crop`, without the sleeves) is drawn over the patch's mean colour, so what is
+	// transparent round the collar shows the same cloth.
+	if ( manifest?.fronts ) await Promise.all( manifest.fronts.slice( 0, GRID ).map( async ( { file, crop, patch } ) => {
+
+		try {
+
+			const img = new Image();
+			img.src = `models/people/fronts/${file}`;
+			await img.decode();
+			const W = img.naturalWidth, H = img.naturalHeight, i = fronts ++;
+			const fx = ( i % GRID ) * TILE, fy = Math.floor( FABRIC_ROW / GRID ) * TILE + Math.floor( i / GRID ) * TILE;
+			c.drawImage( img, patch[ 0 ] * W, patch[ 1 ] * H, ( patch[ 2 ] - patch[ 0 ] ) * W, ( patch[ 3 ] - patch[ 1 ] ) * H, fx, fy, TILE, TILE );
+			const m = mean( fx, fy, 0, 0, 1, 1 );
+			const k = new THREE.Color().fromArray( m );
+			c.fillStyle = '#' + k.getHexString( THREE.SRGBColorSpace );
+			c.fillRect( fx, fy - TILE, TILE, TILE );
+			c.drawImage( img, crop[ 0 ] * W, crop[ 1 ] * H, ( crop[ 2 ] - crop[ 0 ] ) * W, ( crop[ 3 ] - crop[ 1 ] ) * H, fx, fy - TILE, TILE, TILE );
+			tiles.clothes.push( { t: FABRIC_ROW + i, file, part: 'top', dir: 'fronts', front: true, mean: m, own: true } );
+
+		} catch ( e ) {
+
+			console.warn( 'people: texture missing', 'fronts', file );
+
+		}
+
+	} ) );
 
 	if ( manifest ) await Promise.all( Object.keys( tiles ).flatMap( kind => ( manifest[ kind ] || [] ).map( async entry => {
 
@@ -210,7 +241,7 @@ export async function loadWardrobe() {
 
 // The wardrobe without the textures the art direction left out of the streets (art.exclude: file names by kind);
 // a kind left with nothing keeps all of its textures.
-function allowed( tiles ) {
+export function allowed( tiles ) {
 
 	const out = {};
 	for ( const [ kind, list ] of Object.entries( tiles ) ) {
@@ -221,82 +252,6 @@ function allowed( tiles ) {
 	}
 
 	return out;
-
-}
-
-// A person's look, see the top of the file. A photo face comes with its own skin and hair colours; tiles are
-// { t, sex, skin, hair }.
-export function dress( rnd, sex, wardrobe ) {
-
-	const T = allowed( wardrobe.tiles );
-	const paint = ( list, p, tiles = [], pt = 0 ) => {
-
-		if ( rnd() > p ) return [ 0, 0, 0, 0 ];
-		const k = lin( pick( rnd, list ) ).multiplyScalar( 0.9 + rnd() * 0.2 );
-		if ( tiles.length && rnd() < pt ) {
-
-			// A photographed fabric keeps its own colour (a little lighter or darker); a drawn pattern is tinted.
-			const tile = pick( rnd, tiles );
-			if ( tile.own ) {
-
-				const v = 0.85 + rnd() * 0.2;
-				return [ v, v, v, 2 + tile.t ];
-
-			}
-
-			return [ 1 - ( 1 - k.r ) * 0.5, 1 - ( 1 - k.g ) * 0.5, 1 - ( 1 - k.b ) * 0.5, 2 + tile.t ];
-
-		}
-
-		return [ k.r, k.g, k.b, 1 ];
-
-	};
-
-	// The photographed tile (hair, skin) nearest a colour, tinted so that on average it is that colour.
-	const matched = ( tiles, colour ) => {
-
-		let best = null, bd = Infinity;
-		for ( const tile of tiles ) {
-
-			const d = tile.mean.reduce( ( a, v, i ) => a + ( v - colour[ i ] ) ** 2, 0 );
-			if ( d < bd ) {
-
-				bd = d;
-				best = tile;
-
-			}
-
-		}
-
-		return [ ...colour.slice( 0, 3 ).map( ( v, i ) => Math.min( 1.6, v / Math.max( 0.02, best.mean[ i ] ) ) ), 2 + best.t ];
-
-	};
-
-	const sexed = list => list.filter( x => ! x.sex || x.sex === sex );
-	const fabrics = part => sexed( T.clothes.filter( x => ! x.part || x.part === part ) );
-
-	const faces = T.faces.filter( f => ! f.sex || f.sex === sex ), face = pick( rnd, faces.length ? faces : T.faces );
-	let skin, hair;
-	if ( face.skin ) {
-
-		skin = [ ...face.skin, 1 ];
-		hair = [ ...face.hair, 1 ];
-
-	} else {
-
-		skin = paint( SKIN.slice( 0, rnd() < 0.85 ? 5 : 8 ), 1, T.skin, 0.5 );
-		hair = rnd() < 0.15 ? [ ...lin( pick( rnd, HAIR.slice( 7, 9 ) ) ).toArray(), 1 ] : paint( HAIR, 1 );
-
-	}
-
-	// Photographed hair and skin, matched to the face's own colours; otherwise any hair tile tinted by the hair.
-	const photoHeads = T.heads.filter( x => x.own ), photoSkin = T.skin.filter( x => x.own );
-	if ( photoHeads.length && hair[ 3 ] === 1 ) hair = matched( photoHeads, hair );
-	else if ( T.heads.length ) hair = [ ...hair.slice( 0, 3 ), 2 + pick( rnd, T.heads ).t ];
-	if ( face.skin && photoSkin.length ) skin = matched( photoSkin, skin );
-	// A photo face as it is; the drawn one in the skin colour.
-	const look = face.skin ? [ 1, 1, 1, 2 + face.t ] : [ ...( skin[ 3 ] === 1 ? skin.slice( 0, 3 ) : lin( SKIN[ 2 ] ).toArray() ), 2 + face.t ];
-	return [ paint( TOPS, 0.9, fabrics( 'top' ), 0.35 ), paint( BOTTOMS, 0.75, fabrics( 'bottom' ), 0.3 ), hair, skin, look ];
 
 }
 
@@ -316,9 +271,14 @@ function lookMaterial( wardrobe, look ) {
 
 	const base = attribute( 'color', 'vec3' );
 	const mode = select( slot.lessThan( 0.5 ), float( 0 ), l.w );
-	const t = mode.sub( 2 ).max( 0 ).round();
+	// The chest (slot 6, dressed like the top) is one picture from collar to hem: its UVs run 0…1 once, and a garment
+	// front's fabric tile swaps for the front itself there.
+	const chest = slot.greaterThan( 5.5 );
+	const t0 = mode.sub( 2 ).max( 0 ).round();
+	const t = select( chest.and( t0.greaterThanEqual( FABRIC_ROW ) ), t0.sub( GRID ), t0 );
 	const cell = vec2( t.mod( GRID ), t.div( GRID ).floor() );
-	const tex = texture( wardrobe.map, cell.add( uv().fract().clamp( 0.004, 0.996 ) ).div( GRID ) ).rgb.mul( l.xyz );
+	const local = select( chest, uv(), uv().fract() ).clamp( 0.004, 0.996 );
+	const tex = texture( wardrobe.map, cell.add( local ).div( GRID ) ).rgb.mul( l.xyz );
 	const colour = select( mode.lessThan( 0.5 ), base, select( mode.lessThan( 1.5 ), l.xyz, tex ) );
 	m.colorNode = colour;
 	if ( PS1 ) {
@@ -465,6 +425,310 @@ function headBox( min, max, toBody ) {
 }
 
 // ---------------------------------------------------------------------------
+// Body shapes
+//
+// Nobody on the street is built like the models: a person's shape is a sum of displacements of the body's rest
+// pose, one per knob (SHAPE, each about −1 … 1, 0 as modelled), weighted by the knob. Rigged bodies move the
+// vertices before the skinning, so the walk, the idle and the sitting clips bend the new shape at the old joints;
+// that is enough for a belly, a big head or long shins, and nothing in the animation has to change. Skinned people
+// get their own positions (computed once, when they come near); the instanced ones carry the first knobs as morph
+// targets on their shared pose, weighted per instance.
+
+export const SHAPE = [ 'fat', 'belly', 'hips', 'head', 'hunch', 'shoulders', 'legs', 'torso', 'arms', 'neck', 'tilt', 'lumps' ];
+// The knobs the instanced (far, seated, posed) people have: what still shows from a distance or sitting down.
+const INSTANCED_SHAPE = 5;
+
+const smooth = ( a, b, x ) => {
+
+	const t = Math.min( 1, Math.max( 0, ( x - a ) / ( b - a ) ) );
+	return t * t * ( 3 - 2 * t );
+
+};
+const ramp = ( a, b, x ) => Math.min( 1, Math.max( 0, ( x - a ) / ( b - a ) ) );
+
+// A small random displacement for a point, the same for every vertex there (so seams don't open).
+function lump( x, y, z, out ) {
+
+	let h = Math.imul( Math.round( x * 400 ), 73856093 ) ^ Math.imul( Math.round( y * 400 ), 19349663 ) ^ Math.imul( Math.round( z * 400 ), 83492791 );
+	for ( let k = 0; k < 3; k ++ ) {
+
+		h = Math.imul( h ^ ( h >>> 15 ), 2246822507 );
+		h = Math.imul( h ^ ( h >>> 13 ), 3266489909 );
+		h ^= h >>> 16;
+		out[ k ] = ( h >>> 0 ) / 4294967296 * 2 - 1;
+
+	}
+
+	return out;
+
+}
+
+// Which part of the body a bone moves.
+function region( name ) {
+
+	name = name.replace( /[_.]/g, '' );
+	if ( /^Abdomen/.test( name ) ) return 'belly';
+	if ( /^(Torso|Chest|Shoulder)/.test( name ) ) return 'chest';
+	if ( /^Neck/.test( name ) ) return 'neck';
+	if ( /^Head/.test( name ) ) return 'head';
+	if ( /^UpperArm/.test( name ) ) return 'arm';
+	if ( /^LowerArm/.test( name ) ) return 'forearm';
+	if ( /^(Palm|Wrist|MiddleHand|Fingers|Thumb|Index|Middle|Ring|Pinky)/.test( name ) ) return 'hand';
+	if ( /^UpperLeg/.test( name ) ) return 'thigh';
+	if ( /^LowerLeg/.test( name ) ) return 'shin';
+	if ( /^Foot/.test( name ) ) return 'foot';
+	return 'hips';
+
+}
+
+// The displacements of a rigged body (positions in the body's frame: y up, facing +z, feet on y ≈ 0), one
+// Float32Array per SHAPE knob. `joint( name )` is a bone's rest position in the same frame; `weights( i )` the
+// vertex's weight per region; `head` the indices of the gem head's vertices.
+function rigShapes( position, weights, joint, head ) {
+
+	const n = position.length / 3, out = SHAPE.map( () => new Float32Array( n * 3 ) );
+	let top = - Infinity, bottom = Infinity;
+	for ( let i = 0; i < n; i ++ ) {
+
+		top = Math.max( top, position[ i * 3 + 1 ] );
+		bottom = Math.min( bottom, position[ i * 3 + 1 ] );
+
+	}
+
+	const H = top - bottom;
+	const mid = ( a, b ) => a && b ? a.clone().add( b ).multiplyScalar( 0.5 ) : a || b;
+	const legL = joint( 'UpperLegL' ), legR = joint( 'UpperLegR' ), kneeL = joint( 'LowerLegL' ), kneeR = joint( 'LowerLegR' );
+	const armL = joint( 'UpperArmL' ), armR = joint( 'UpperArmR' ), elbowL = joint( 'LowerArmL' ), elbowR = joint( 'LowerArmR' );
+	const handL = joint( 'PalmL' ) || joint( 'WristL' ), handR = joint( 'PalmR' ) || joint( 'WristR' );
+	const yLeg = mid( legL, legR ).y, yKnee = mid( kneeL, kneeR ).y, yShoulder = mid( armL, armR ).y;
+	const neck = joint( 'Neck' ), yNeck = neck.y, xLeg = Math.abs( legL.x - legR.x ) / 2, xShoulder = Math.abs( armL.x - armR.x ) / 2;
+	const headTop = top;
+
+	// The spine's depth (z) and the head's centre, from the vertices.
+	let zc = 0, zn = 0;
+	const hc = new THREE.Vector3();
+	for ( let i = 0; i < n; i ++ ) {
+
+		const w = weights( i );
+		if ( w.belly + w.chest > 0.5 ) {
+
+			zc += position[ i * 3 + 2 ];
+			zn ++;
+
+		}
+
+	}
+
+	zc /= Math.max( 1, zn );
+	for ( const i of head ) hc.x += position[ i * 3 ] / head.length, hc.y += position[ i * 3 + 1 ] / head.length, hc.z += position[ i * 3 + 2 ] / head.length;
+	if ( ! head.length ) hc.copy( joint( 'Head' ) );
+
+	// Distance from a point to a line (a limb), as the vector from the line out to the point.
+	const v = new THREE.Vector3(), p = new THREE.Vector3(), radial = ( a, b, target ) => {
+
+		const d = p.subVectors( b, a ).normalize();
+		target.subVectors( v, a );
+		return target.addScaledVector( d, - target.dot( d ) );
+
+	};
+
+	const r = new THREE.Vector3(), q = [ 0, 0, 0 ];
+	const yB = yLeg + 0.3 * ( yNeck - yLeg ), sB = 0.17 * ( yNeck - yLeg ), yPivot = yLeg + 0.5 * ( yShoulder - yLeg );
+	for ( let i = 0; i < n; i ++ ) {
+
+		v.fromArray( position, i * 3 );
+		const w = weights( i ), x = v.x, y = v.y, z = v.z, side = x >= 0 ? 1 : - 1;
+		const left = ( legL.x >= 0 ) === ( x >= 0 );
+		const trunk = w.hips + w.belly + w.chest, leg = w.thigh + w.shin + w.foot, arm = w.arm + w.forearm + w.hand, up = 1 - leg;
+		const set = ( k, dx, dy, dz ) => {
+
+			out[ k ][ i * 3 ] += dx;
+			out[ k ][ i * 3 + 1 ] += dy;
+			out[ k ][ i * 3 + 2 ] += dz;
+
+		};
+
+		// fat: thicker round the spine, the thighs, the arms and the neck; arms and legs pushed out to keep clear.
+		const t = trunk * ( 1 - 0.6 * smooth( yShoulder - 0.03 * H, yNeck, y ) );
+		set( 0, x * 0.45 * t, 0, ( z - zc ) * 0.45 * t );
+		if ( w.thigh + w.shin > 0 ) {
+
+			radial( left ? legL : legR, left ? kneeL : kneeR, r );
+			r.multiplyScalar( 0.4 * w.thigh + 0.2 * w.shin );
+			set( 0, r.x, r.y, r.z );
+
+		}
+
+		if ( w.arm + w.forearm > 0 ) {
+
+			const sl = ( armL.x >= 0 ) === ( x >= 0 );
+			radial( sl ? armL : armR, sl ? elbowL : elbowR, r );
+			r.multiplyScalar( 0.35 * w.arm + 0.15 * w.forearm );
+			set( 0, r.x, r.y, r.z );
+
+		}
+
+		set( 0, side * ( 0.25 * xShoulder * arm + 0.3 * xLeg * leg ) + x * 0.35 * w.neck, 0, ( z - zc ) * 0.35 * w.neck );
+
+		// belly: forward (and a little sideways) round the navel.
+		const g = Math.exp( - ( ( ( y - yB ) / sB ) ** 2 ) ) * ( w.belly + w.hips + w.chest );
+		set( 1, x * 0.25 * g, 0, 0.1 * H * g * ramp( 0, 0.06 * H, z - zc ) );
+
+		// hips: wider at the hip joints, a bigger seat behind.
+		const g2 = Math.exp( - ( ( ( y - yLeg ) / ( 0.1 * H ) ) ** 2 ) ) * ( trunk + w.thigh );
+		set( 2, x * 0.35 * g2 + side * 0.15 * xLeg * leg, 0, - 0.05 * H * g2 * ramp( 0, 0.05 * H, zc - z ) );
+
+		// head: the gem bigger or smaller about its centre.
+		if ( w.head > 0.99 ) set( 3, ( x - hc.x ) * 0.35, ( y - hc.y ) * 0.35, ( z - hc.z ) * 0.35 );
+
+		// hunch: the upper back bent forward over the chest, the head pushed forward and down; the arms hang from the
+		// shoulders, so they move as the shoulders do.
+		const yy = y * ( 1 - arm ) + yShoulder * arm;
+		const a = Math.max( 0, yy - yPivot ) / ( headTop - yPivot ) * up;
+		set( 4, 0, - 0.03 * H * a - 0.02 * H * w.head, 0.1 * H * a ** 1.5 + 0.04 * H * w.head );
+
+		// shoulders: the arms further out, the chest wider under them.
+		set( 5, side * 0.03 * H * arm + x * 0.3 * smooth( yShoulder - 0.15 * H, yShoulder, y ) * trunk, 0, 0 );
+
+		// legs: longer thighs; everything above the hips rises with them, the feet stay on the ground.
+		set( 6, 0, 0.07 * H * ( leg * ramp( yKnee, yLeg, y ) + up ), 0 );
+
+		// torso: longer between the hips and the shoulders.
+		set( 7, 0, 0.06 * H * ( trunk * ramp( yLeg, yShoulder, y ) + arm + w.neck + w.head ), 0 );
+
+		// arms: longer forearms and hands, along the arm.
+		if ( w.forearm + w.hand > 0 ) {
+
+			const sl = ( armL.x >= 0 ) === ( x >= 0 ), e = sl ? elbowL : elbowR, h = sl ? handL : handR;
+			if ( e && h ) {
+
+				const d = p.subVectors( h, e ), len = d.length();
+				d.normalize();
+				const f = w.hand + w.forearm * ramp( 0, len, r.subVectors( v, e ).dot( d ) );
+				set( 8, d.x * 0.06 * H * f, d.y * 0.06 * H * f, d.z * 0.06 * H * f );
+
+			}
+
+		}
+
+		// neck: the head on a longer neck (or sunk into the shoulders).
+		set( 9, 0, 0.04 * H * ( w.head + w.neck * ramp( yNeck, hc.y, y ) ), 0 );
+
+		// tilt: one shoulder higher, the head leaning to the low side.
+		const b = smooth( yPivot, yShoulder, yy ) * up;
+		set( 10, - 0.02 * H * w.head, 0.035 * H * b * ( arm > 0.5 ? side : Math.max( - 1, Math.min( 1, x / xShoulder ) ) ), 0 );
+
+		// lumps: hand-made wonkiness, a centimetre or two anywhere.
+		lump( x, y, z, q );
+		set( 11, q[ 0 ] * 0.012 * H, q[ 1 ] * 0.012 * H, q[ 2 ] * 0.012 * H );
+
+	}
+
+	return { H, deltas: out, top: out.map( d => {
+
+		// How much taller each knob makes the body: the rise of its highest point.
+		let best = 0, at = - Infinity;
+		for ( let i = 0; i < n; i ++ ) if ( position[ i * 3 + 1 ] > at ) {
+
+			at = position[ i * 3 + 1 ];
+			best = d[ i * 3 + 1 ];
+
+		}
+
+		return best;
+
+	} ) };
+
+}
+
+// The same knobs, roughly, for a body without bones (the posed humans): `head` are the head box's vertices; the
+// figure is upright from the hips up in every pose.
+function poseShapes( position, head, height ) {
+
+	const n = position.length / 3, out = SHAPE.map( () => new Float32Array( n * 3 ) ), H = height;
+	const hc = new THREE.Vector3(), q = [ 0, 0, 0 ];
+	let neck = Infinity;
+	for ( const i of head ) {
+
+		hc.x += position[ i * 3 ] / head.length;
+		hc.y += position[ i * 3 + 1 ] / head.length;
+		hc.z += position[ i * 3 + 2 ] / head.length;
+		neck = Math.min( neck, position[ i * 3 + 1 ] );
+
+	}
+
+	const isHead = new Uint8Array( n );
+	for ( const i of head ) isHead[ i ] = 1;
+	const yLeg = neck - 0.36 * H, yB = neck - 0.25 * H;
+	for ( let i = 0; i < n; i ++ ) {
+
+		const x = position[ i * 3 ], y = position[ i * 3 + 1 ], z = position[ i * 3 + 2 ];
+		const set = ( k, dx, dy, dz ) => {
+
+			out[ k ][ i * 3 ] += dx;
+			out[ k ][ i * 3 + 1 ] += dy;
+			out[ k ][ i * 3 + 2 ] += dz;
+
+		};
+
+		if ( isHead[ i ] ) {
+
+			set( 3, ( x - hc.x ) * 0.35, ( y - hc.y ) * 0.35, ( z - hc.z ) * 0.35 );
+			set( 4, 0, - 0.02 * H, 0.06 * H );
+			set( 9, 0, 0.04 * H, 0 );
+
+		} else {
+
+			const t = smooth( yLeg - 0.2 * H, yLeg, y ) * ( 1 - smooth( neck - 0.06 * H, neck, y ) );
+			set( 0, ( x - hc.x ) * 0.4 * t, 0, ( z - hc.z ) * 0.4 * t );
+			const g = Math.exp( - ( ( ( y - yB ) / ( 0.08 * H ) ) ** 2 ) );
+			set( 1, ( x - hc.x ) * 0.2 * g, 0, 0.1 * H * g * ramp( 0, 0.06 * H, z - hc.z ) );
+			const g2 = Math.exp( - ( ( ( y - yLeg ) / ( 0.1 * H ) ) ** 2 ) );
+			set( 2, ( x - hc.x ) * 0.35 * g2, 0, - 0.05 * H * g2 * ramp( 0, 0.05 * H, hc.z - z ) );
+			const a = smooth( yB, neck, y );
+			set( 4, 0, - 0.03 * H * a, 0.08 * H * a );
+
+		}
+
+		lump( x, y, z, q );
+		set( 11, q[ 0 ] * 0.012 * H, q[ 1 ] * 0.012 * H, q[ 2 ] * 0.012 * H );
+
+	}
+
+	return { H, deltas: out, top: out.map( () => 0 ) };
+
+}
+
+// The shape knobs as a list of weights (SHAPE order) from { fat, belly, … }.
+export function shapeWeights( shape = {} ) {
+
+	return SHAPE.map( k => shape[ k ] || 0 );
+
+}
+
+// Positions of a body in a shape: the rest positions plus the weighted displacements.
+function shaped( base, shapes, w ) {
+
+	const out = new Float32Array( base );
+	shapes.deltas.forEach( ( d, k ) => {
+
+		if ( w[ k ] ) for ( let i = 0; i < out.length; i ++ ) out[ i ] += d[ i ] * w[ k ];
+
+	} );
+	return out;
+
+}
+
+// A static geometry's morph targets for the instanced people: the first knobs' displacements.
+function morphs( geometry, deltas ) {
+
+	geometry.morphAttributes.position = deltas.slice( 0, INSTANCED_SHAPE ).map( d => new THREE.BufferAttribute( d, 3 ) );
+	geometry.morphTargetsRelative = true;
+	return geometry;
+
+}
+
+// ---------------------------------------------------------------------------
 // Skinned bodies
 
 // Merges a loaded character's skinned primitives into one SkinnedMesh on the first primitive's skeleton, and swaps
@@ -550,7 +814,7 @@ function mergeBody( gltf, spec ) {
 	// The head: a coarse faceted gem (by default 6 sides, 4 rings) a size too big, PS1 style, with the photo face
 	// stretched straight on over its front half and hair on the rest; carried by the head bone. Sides and size are the
 	// art direction's (HEAD).
-	const headUV = [];
+	const headUV = [], head = [];
 	if ( BLOCK_HEADS && headBone >= 0 ) {
 
 		const inv = skeleton.boneInverses[ headBone ].clone().multiply( Winv ), toBody = inv.clone().invert();
@@ -576,6 +840,7 @@ function mergeBody( gltf, spec ) {
 				color.push( 1, 1, 1 );
 				skinIndex.push( headBone, 0, 0, 0 );
 				skinWeight.push( 1, 0, 0, 0 );
+				head.push( vo + k + m );
 				headUV.push( vo + k + m, ( q.x - bb.min.x ) / ( bb.max.x - bb.min.x ), ( bb.max.y - q.y ) / ( bb.max.y - bb.min.y ) );
 
 			}
@@ -587,12 +852,77 @@ function mergeBody( gltf, spec ) {
 
 	}
 
+	// Bones' rest positions in the body's frame, and each vertex's weight per part of the body.
+	const joints = {};
+	skeleton.bones.forEach( ( b, k ) => joints[ b.name.replace( /[_.]/g, '' ) ] = new THREE.Vector3().applyMatrix4( W.clone().multiply( skeleton.boneInverses[ k ].clone().invert() ) ) );
+	const regions = skeleton.bones.map( b => region( b.name ) );
+	const weights = i => {
+
+		const w = { hips: 0, belly: 0, chest: 0, neck: 0, head: 0, arm: 0, forearm: 0, hand: 0, thigh: 0, shin: 0, foot: 0 };
+		for ( let k = 0; k < 4; k ++ ) w[ regions[ skinIndex[ i * 4 + k ] ] ] += skinWeight[ i * 4 + k ];
+		return w;
+
+	};
+
+	// The chest: the top's triangles facing forward between the hips and the shoulders, given vertices of their own
+	// (slot 6) with UVs straight across the front, collar at the top, hem at the bottom.
+	const chestUV = [];
+	{
+
+		const yLeg = ( joints.UpperLegL.y + joints.UpperLegR.y ) / 2, yShoulder = ( joints.UpperArmL.y + joints.UpperArmR.y ) / 2;
+		const xs = Math.abs( joints.UpperArmL.x - joints.UpperArmR.x ) / 2 * 1.05;
+		const top = yShoulder + 0.08 * ( yShoulder - yLeg ), bottom = yLeg - 0.05 * ( yShoulder - yLeg );
+		const C = new THREE.Vector3(), A = new THREE.Vector3(), B = new THREE.Vector3(), Nt = new THREE.Vector3();
+		const copies = new Map();
+		for ( let t = 0; t < index.length; t += 3 ) {
+
+			const [ a, b, c ] = [ index[ t ], index[ t + 1 ], index[ t + 2 ] ];
+			if ( slot[ a ] !== SLOT.top || slot[ b ] !== SLOT.top || slot[ c ] !== SLOT.top ) continue;
+			C.fromArray( position, a * 3 ).add( v.fromArray( position, b * 3 ) ).add( v.fromArray( position, c * 3 ) ).divideScalar( 3 );
+			A.fromArray( position, b * 3 ).sub( v.fromArray( position, a * 3 ) );
+			B.fromArray( position, c * 3 ).sub( v.fromArray( position, a * 3 ) );
+			Nt.crossVectors( A, B ).normalize();
+			if ( Nt.z < 0.35 || C.y < bottom || C.y > top || Math.abs( C.x ) > xs ) continue;
+			const w = weights( a );
+			if ( w.hips + w.belly + w.chest < 0.5 ) continue;
+			for ( let m = 0; m < 3; m ++ ) {
+
+				const o = index[ t + m ];
+				if ( ! copies.has( o ) ) {
+
+					const k = position.length / 3;
+					position.push( position[ o * 3 ], position[ o * 3 + 1 ], position[ o * 3 + 2 ] );
+					normal.push( normal[ o * 3 ], normal[ o * 3 + 1 ], normal[ o * 3 + 2 ] );
+					color.push( color[ o * 3 ], color[ o * 3 + 1 ], color[ o * 3 + 2 ] );
+					slot.push( SLOT.chest );
+					for ( let j = 0; j < 4; j ++ ) {
+
+						skinIndex.push( skinIndex[ o * 4 + j ] );
+						skinWeight.push( skinWeight[ o * 4 + j ] );
+
+					}
+
+					chestUV.push( k, ( position[ o * 3 ] + xs ) / ( 2 * xs ), ( top - position[ o * 3 + 1 ] ) / ( top - bottom ) );
+					copies.set( o, k );
+
+				}
+
+				index[ t + m ] = copies.get( o );
+
+			}
+
+		}
+
+	}
+
 	const geometry = new THREE.BufferGeometry();
 	const P = new Float32Array( position ), Nn = new Float32Array( normal );
 	geometry.setAttribute( 'position', new THREE.BufferAttribute( P, 3 ) );
 	geometry.setAttribute( 'normal', new THREE.BufferAttribute( Nn, 3 ) );
 	const UV = boxUV( P, Nn, 1 / 1.75 * ( new THREE.Box3().setFromArray( P ).getSize( v ).y ) );
 	for ( let k = 0; k < headUV.length; k += 3 ) UV.set( [ headUV[ k + 1 ], headUV[ k + 2 ] ], headUV[ k ] * 2 );
+	for ( let k = 0; k < chestUV.length; k += 3 ) UV.set( [ chestUV[ k + 1 ], chestUV[ k + 2 ] ], chestUV[ k ] * 2 );
+	geometry.userData.shapes = rigShapes( P, weights, name => joints[ name ], head );
 	geometry.setAttribute( 'uv', new THREE.BufferAttribute( UV, 2 ) );
 	geometry.setAttribute( 'color', new THREE.BufferAttribute( new Float32Array( color ), 3 ) );
 	geometry.setAttribute( 'slot', new THREE.BufferAttribute( new Float32Array( slot ), 1 ) );
@@ -624,17 +954,36 @@ function findBone( root, name ) {
 
 }
 
-// Positions of a skinned mesh in its current pose, as a static geometry (normals from the faces).
+// Positions of a skinned mesh in its current pose, as a static geometry (normals from the faces), with the shape
+// knobs' displacements carried into the pose as morph targets.
 function bake( mesh ) {
 
-	const src = mesh.geometry, count = src.attributes.position.count;
-	const position = new Float32Array( count * 3 ), v = new THREE.Vector3();
-	for ( let i = 0; i < count; i ++ ) mesh.getVertexPosition( i, v ).applyMatrix4( mesh.matrixWorld ).toArray( position, i * 3 );
+	const src = mesh.geometry, count = src.attributes.position.count, rest = src.attributes.position.array;
+	const v = new THREE.Vector3();
+	const pose = from => {
+
+		const out = new Float32Array( count * 3 );
+		for ( let i = 0; i < count; i ++ ) mesh.applyBoneTransform( i, v.fromArray( from, i * 3 ) ).applyMatrix4( mesh.matrixWorld ).toArray( out, i * 3 );
+		return out;
+
+	};
+
+	const position = pose( rest );
 	const g = new THREE.BufferGeometry();
 	g.setAttribute( 'position', new THREE.BufferAttribute( position, 3 ) );
 	for ( const name of [ 'uv', 'color', 'slot' ] ) g.setAttribute( name, src.attributes[ name ] );
 	g.setIndex( src.index );
 	g.computeVertexNormals();
+	const deltas = src.userData.shapes.deltas.slice( 0, INSTANCED_SHAPE ).map( d => {
+
+		const moved = new Float32Array( rest );
+		for ( let i = 0; i < moved.length; i ++ ) moved[ i ] += d[ i ];
+		const p = pose( moved );
+		for ( let i = 0; i < p.length; i ++ ) p[ i ] -= position[ i ];
+		return p;
+
+	} );
+	morphs( g, deltas );
 	return g;
 
 }
@@ -686,15 +1035,22 @@ export function prepareBody( gltf, spec ) {
 		const geometry = bake( mesh );
 		const hips = findBone( root, 'Hips' ).getWorldPosition( new THREE.Vector3() );
 		const p = geometry.attributes.position;
-		let bottom = Infinity;
+		let bottom = Infinity, at = 0;
 		for ( let i = 0; i < p.count; i ++ ) {
 
 			const y = p.getY( i ), z = p.getZ( i );
-			if ( y > 0.1 * height && Math.abs( z - hips.z ) < 0.1 * height ) bottom = Math.min( bottom, y );
+			if ( y > 0.1 * height && Math.abs( z - hips.z ) < 0.1 * height && y < bottom ) {
+
+				bottom = y;
+				at = i;
+
+			}
 
 		}
 
-		sitting = { geometry, hipsZ: hips.z, bottom };
+		// How the seat of the trousers moves with each knob (a big seat sits higher).
+		const drop = geometry.morphAttributes.position.map( d => d.getY( at ) );
+		sitting = { geometry, hipsZ: hips.z, bottom, drop };
 		sit.stop();
 
 	}
@@ -702,7 +1058,7 @@ export function prepareBody( gltf, spec ) {
 	mixer.stopAllAction();
 	mixer.uncacheRoot( root );
 	root.updateMatrixWorld( true );
-	return { spec, root, clips, height, pace, walking, sitting };
+	return { spec, root, clips, height, pace, walking, sitting, shapes: mesh.geometry.userData.shapes };
 
 }
 
@@ -710,17 +1066,26 @@ export function prepareBody( gltf, spec ) {
 export function lookAttribute( geometry, look ) {
 
 	const slot = geometry.attributes.slot.array, out = new Float32Array( slot.length * 4 );
-	for ( let i = 0; i < slot.length; i ++ ) if ( slot[ i ] > 0 ) out.set( look[ slot[ i ] - 1 ], i * 4 );
+	for ( let i = 0; i < slot.length; i ++ ) if ( slot[ i ] > 0 ) out.set( look[ slot[ i ] === SLOT.chest ? 0 : slot[ i ] - 1 ], i * 4 );
 	return new THREE.BufferAttribute( out, 4 );
 
 }
 
-// A skinned person: a clone of the body, scaled to their height, wearing their look, with a mixer.
-export function makeSkinned( body, look, height ) {
+// A body's height in a shape (in the units of body.height).
+export function shapedHeight( body, shape ) {
+
+	const w = shapeWeights( shape );
+	return body.height * ( 1 + body.shapes.top.reduce( ( a, d, k ) => a + d * w[ k ], 0 ) / body.shapes.H );
+
+}
+
+// A skinned person: a clone of the body in their shape, scaled to their height (and `width` across), wearing their
+// look, with a mixer.
+export function makeSkinned( body, look, height, shape = null, width = 1 ) {
 
 	const object = cloneSkinned( body.root );
-	const s = height / body.height;
-	object.scale.setScalar( s );
+	const s = height / shapedHeight( body, shape );
+	object.scale.set( s * width, s, s * width );
 	let mesh = null;
 	object.traverse( o => {
 
@@ -733,6 +1098,8 @@ export function makeSkinned( body, look, height ) {
 	for ( const name of [ 'position', 'normal', 'uv', 'color', 'skinIndex', 'skinWeight', 'slot' ] ) geometry.setAttribute( name, src.attributes[ name ] );
 	geometry.setIndex( src.index );
 	geometry.setAttribute( 'look', lookAttribute( src, look ) );
+	if ( shape ) geometry.setAttribute( 'position', new THREE.BufferAttribute( shaped( src.attributes.position.array, body.shapes, shapeWeights( shape ) ), 3 ) );
+	geometry.userData.shapes = body.shapes;
 	mesh.geometry = geometry;
 	mesh.material = SKINNED;
 	mesh.frustumCulled = false;
@@ -753,6 +1120,17 @@ export function makeBatch( geometry, count ) {
 	mesh.receiveShadow = true;
 	mesh.frustumCulled = false;
 	mesh.setLook = ( i, look ) => LOOKS.forEach( ( name, k ) => g.attributes[ name ].array.set( look[ k ], i * 4 ) );
+	// The shape knobs this pose has as morph targets, per instance.
+	const dummy = { morphTargetInfluences: [] };
+	mesh.setShape = ( i, shape ) => {
+
+		if ( ! g.morphAttributes.position ) return;
+		dummy.morphTargetInfluences = shapeWeights( shape ).slice( 0, g.morphAttributes.position.length );
+		mesh.setMorphAt( i, dummy );
+		if ( i === 0 ) mesh.morphTargetInfluences.splice( 0, Infinity, ...dummy.morphTargetInfluences );
+		mesh.morphTexture.needsUpdate = true;
+
+	};
 	return mesh;
 
 }
@@ -848,6 +1226,9 @@ export function preparePosed( gltf ) {
 		g.setAttribute( 'slot', new THREE.BufferAttribute( cat( S, h.attributes.slot.array ), 1 ) );
 		g.computeVertexNormals();
 		g.computeBoundingBox();
+		const first = P.length / 3, box = [];
+		for ( let i = first; i < g.attributes.position.count; i ++ ) box.push( i );
+		morphs( g, poseShapes( g.attributes.position.array, box, height ).deltas );
 		return g;
 
 	};
@@ -864,7 +1245,7 @@ export function preparePosed( gltf ) {
 	const seat = pose => {
 
 		const g = geometry( pose ), p = g.attributes.position;
-		let bottom = Infinity, z = 0;
+		let bottom = Infinity, z = 0, at = 0;
 		for ( let i = 0; i < p.count; i ++ ) {
 
 			const y = p.getY( i );
@@ -872,12 +1253,13 @@ export function preparePosed( gltf ) {
 
 				bottom = y;
 				z = p.getZ( i );
+				at = i;
 
 			}
 
 		}
 
-		return { bottom, z };
+		return { bottom, z, drop: g.morphAttributes.position.map( d => d.getY( at ) ) };
 
 	};
 

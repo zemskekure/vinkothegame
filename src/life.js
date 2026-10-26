@@ -10,7 +10,8 @@
 
 import * as THREE from 'three/webgpu';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { BODIES, dress, loadWardrobe, useWardrobe, prepareBody, preparePosed, makeSkinned, makeBatch } from './people.js';
+import { BODIES, loadWardrobe, useWardrobe, prepareBody, preparePosed, makeSkinned, makeBatch, shapedHeight, shapeWeights } from './people.js';
+import { rulesFrom, gameSeed, personSeed, generatePerson, lookOf } from './persona.js';
 import { SETTINGS } from './settings.js';
 
 const CARS = { sedan: 5, 'hatchback-sports': 3, suv: 3, van: 2, taxi: 1, delivery: 1, 'sedan-sports': 2, 'suv-luxury': 2 }; // model: weight
@@ -101,9 +102,19 @@ export async function addLife( scene, life, { seats = [], benches = [], groundHe
 		Promise.all( [ 'male', 'female' ].map( async n => preparePosed( await loadModel( `models/people/posed-humans/${n}.glb`, 'models/people/' ) ) ) )
 	] );
 	const sitters = bodies.filter( b => b.sitting );
-	// The 2019 bodies a little more often than the modular ones: they are the everyday clothes.
-	const pickBody = () => rnd() < 0.55 ? Math.floor( rnd() * 8 ) : 8 + Math.floor( rnd() * ( bodies.length - 8 ) );
-	const heightOf = sex => sex === 'f' ? 1.6 + rnd() * 0.13 : 1.72 + rnd() * 0.14;
+
+	// Who they are (src/persona.js): new people every game start, made by the art direction's rules (game settings,
+	// `art.crowd`), each from their own seed, so a person stays the same while the game runs.
+	const rules = rulesFrom( SETTINGS.art ), seed = gameSeed( rules );
+	let made = 0;
+	const person = options => generatePerson( rules, personSeed( seed, made ++ ), wardrobe, options );
+	// The sum of the knobs' displacements of one point (a seat's lowest point), weighted by a shape.
+	const moved = ( drop, shape ) => {
+
+		const w = shapeWeights( shape );
+		return drop.reduce( ( a, d, k ) => a + d * w[ k ], 0 );
+
+	};
 
 	// --- agents: walkers spread over the lines by length, sitters on most chairs and stools and some benches,
 	// a few people standing about in pairs
@@ -153,8 +164,9 @@ export async function addLife( scene, life, { seats = [], benches = [], groundHe
 	const walkerCount = Math.max( 0, Math.round( SETTINGS.people.walkers ?? Math.min( 220, total / 12 ) ) );
 	for ( let i = 0; i < walkerCount; i ++ ) {
 
-		const [ path, s ] = along(), body = pickBody(), sex = bodies[ body ].spec.sex;
-		agents.push( { walk: true, path, s, dir: rnd() < 0.5 ? 1 : - 1, speed: 1.0 + rnd() * 0.45, side: ( rnd() - 0.5 ) * 0.5, x: 0, y: 0, z: 0, yaw: 0, phase: rnd(), body, height: heightOf( sex ), look: dress( rnd, sex, wardrobe ) } );
+		const [ path, s ] = along(), spec = person(), body = BODIES.findIndex( b => b.file === spec.body );
+		const sc = spec.height / shapedHeight( bodies[ body ], spec.shape );
+		agents.push( { walk: true, path, s, dir: rnd() < 0.5 ? 1 : - 1, speed: 1.0 + rnd() * 0.45, side: ( rnd() - 0.5 ) * 0.5, x: 0, y: 0, z: 0, yaw: 0, phase: rnd(), body, spec, height: spec.height, scale: [ sc * spec.width, sc, sc * spec.width ], look: lookOf( spec, wardrobe ) } );
 
 	}
 
@@ -163,9 +175,10 @@ export async function addLife( scene, life, { seats = [], benches = [], groundHe
 	const seated = sitters.map( () => [] ), posedAt = new Map();
 	const sitAt = ( x, y, z, yaw, seatH, back ) => {
 
-		const k = Math.floor( rnd() * sitters.length ), b = sitters[ k ], h = heightOf( b.spec.sex ), sc = h / b.height;
+		const spec = person( { sitting: true } ), k = Math.max( 0, sitters.findIndex( b => b.spec.file === spec.body ) ), b = sitters[ k ];
+		const sc = spec.height / shapedHeight( b, spec.shape );
 		const fx = Math.sin( yaw ), fz = Math.cos( yaw ), o = back + b.sitting.hipsZ * sc;
-		const a = { walk: false, x: x - fx * o, y, z: z - fz * o, yaw, oy: seatH - b.sitting.bottom * sc + 0.01, scale: sc, look: dress( rnd, b.spec.sex, wardrobe ) };
+		const a = { walk: false, x: x - fx * o, y, z: z - fz * o, yaw, oy: seatH - ( b.sitting.bottom + moved( b.sitting.drop, spec.shape ) ) * sc + 0.01, spec, scale: [ sc * spec.width, sc, sc * spec.width ], look: lookOf( spec, wardrobe ) };
 		agents.push( a );
 		seated[ k ].push( a );
 
@@ -173,8 +186,8 @@ export async function addLife( scene, life, { seats = [], benches = [], groundHe
 
 	const posedPerson = ( x, y, z, yaw, pose, sex = rnd() < 0.5 ? 0 : 1 ) => {
 
-		const P = posed[ sex ], h = heightOf( sex ? 'f' : 'm' );
-		const a = { walk: false, posed: true, x, y, z, yaw, oy: 0, scale: h / P.height, look: dress( rnd, sex ? 'f' : 'm', wardrobe ) };
+		const P = posed[ sex ], spec = person( { posed: true, sex: sex ? 'f' : 'm' } ), sc = spec.height / P.height;
+		const a = { walk: false, posed: true, x, y, z, yaw, oy: 0, spec, scale: [ sc * spec.width, sc, sc * spec.width ], look: lookOf( spec, wardrobe ) };
 		const key = sex + pose;
 		if ( ! posedAt.has( key ) ) posedAt.set( key, { geometry: P.geometry( pose ), list: [] } );
 		posedAt.get( key ).list.push( a );
@@ -194,10 +207,10 @@ export async function addLife( scene, life, { seats = [], benches = [], groundHe
 			const yaw = rot + Math.PI, fx = Math.sin( yaw ), fz = Math.cos( yaw );
 			const sex = rnd() < 0.5 ? 0 : 1, seat = posed[ sex ].seat( 'Sitting' );
 			const a = posedPerson( 0, y, 0, yaw, 'Sitting', sex );
-			const o = 0.08 + seat.z * a.scale;
+			const o = 0.08 + seat.z * a.scale[ 1 ];
 			a.x = x + Math.cos( rot ) * ox - fx * o;
 			a.z = z - Math.sin( rot ) * ox - fz * o;
-			a.oy = 0.47 - seat.bottom * a.scale;
+			a.oy = 0.47 - ( seat.bottom + moved( seat.drop, a.spec.shape ) ) * a.scale[ 1 ];
 
 		}
 
@@ -232,8 +245,9 @@ export async function addLife( scene, life, { seats = [], benches = [], groundHe
 	const setAt = ( mesh, i, a, y ) => {
 
 		q.setFromAxisAngle( v.set( 0, 1, 0 ), a.yaw );
-		mesh.setMatrixAt( i, m4.compose( v.set( a.x, y, a.z ), q, sv.setScalar( a.scale ) ) );
+		mesh.setMatrixAt( i, m4.compose( v.set( a.x, y, a.z ), q, sv.fromArray( a.scale ) ) );
 		mesh.setLook( i, a.look );
+		mesh.setShape( i, a.spec.shape );
 
 	};
 
@@ -254,7 +268,12 @@ export async function addLife( scene, life, { seats = [], benches = [], groundHe
 		const list = agents.filter( a => a.walk && a.body === k );
 		list.forEach( ( a, i ) => a.slot = i );
 		const mesh = makeBatch( b.walking, list.length );
-		list.forEach( ( a, i ) => mesh.setLook( i, a.look ) );
+		list.forEach( ( a, i ) => {
+
+			mesh.setLook( i, a.look );
+			mesh.setShape( i, a.spec.shape );
+
+		} );
 		scene.add( mesh );
 		return mesh;
 
@@ -267,7 +286,7 @@ export async function addLife( scene, life, { seats = [], benches = [], groundHe
 		if ( ! a.skinned ) {
 
 			const b = bodies[ a.body ];
-			a.skinned = makeSkinned( b, a.look, a.height );
+			a.skinned = makeSkinned( b, a.look, a.height, a.spec.shape, a.spec.width );
 			const act = a.skinned.mixer.clipAction( b.clips.Walk );
 			act.play();
 			act.time = a.phase * b.clips.Walk.duration;
@@ -381,8 +400,7 @@ export async function addLife( scene, life, { seats = [], benches = [], groundHe
 
 				if ( a.skinned?.object.parent ) crowd.remove( a.skinned.object );
 				q.setFromAxisAngle( v.set( 0, 1, 0 ), a.yaw );
-				const sc = a.height / bodies[ a.body ].height;
-				mesh.setMatrixAt( a.slot, m4.compose( v.set( a.x, a.y, a.z ), q, sv.setScalar( sc ) ) );
+				mesh.setMatrixAt( a.slot, m4.compose( v.set( a.x, a.y, a.z ), q, sv.fromArray( a.scale ) ) );
 
 			}
 
@@ -431,6 +449,6 @@ export async function addLife( scene, life, { seats = [], benches = [], groundHe
 	}
 
 	update( 0 );
-	return { update, placeWalkers, walks, agents, bodies, people: agents.length, cars: parked.length + movers.length };
+	return { update, placeWalkers, walks, agents, bodies, seed, people: agents.length, cars: parked.length + movers.length };
 
 }

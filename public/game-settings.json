@@ -10,14 +10,14 @@
 		]
 	},
 	"look": {
-		"lines": 220,
-		"levels": 64,
-		"dither": 0,
-		"grain": 0,
-		"snap": 120,
-		"contrast": 1.1,
-		"saturation": 1.08,
-		"exposure": 1,
+		"lines": 300,
+		"levels": 62,
+		"dither": 0.55,
+		"grain": 0.025,
+		"snap": 0,
+		"contrast": 0.95,
+		"saturation": 1.17,
+		"exposure": 1.02,
 		"sun": 1,
 		"fog": 1,
 		"fogColour": ""
@@ -30,6 +30,12 @@
 		"flat": true,
 		"bodyLevels": 12,
 		"exclude": { "faces": [], "heads": [], "clothes": [], "skin": [] },
+		"crowd": {
+			"ugliness": 0.5,
+			"textured": 0.8,
+			"seed": 0,
+			"spread": { "fat": 1, "belly": 1, "legs": 1, "head": 1, "hunch": 1, "height": 1 }
+		},
 		"pigeon": { "texture": "plain", "size": 1 },
 		"photoFood": false,
 		"studio": { "sunAzimuth": 35, "sunElevation": 40, "ambient": 0.7, "background": "golden_evening", "turntable": false },
