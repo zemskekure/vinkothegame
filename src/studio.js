@@ -293,14 +293,31 @@ const generated = ( i, seed = personSeed( base, i ) ) => ( { ...generatePerson( 
 const saved = art().lineup || [];
 const lineup = Array.from( { length: SIZE }, ( _, i ) => saved[ i ]?.shape ? { ...generated( i ), ...saved[ i ], seated: i === SEATED } : generated( i ) );
 
+// How the standing people move: held still in the idle pose, or playing a clip on the spot (Idle, Walk, Run) so
+// the animations can be judged on the new body shapes. Only for looking; it isn't saved.
+let motion = null;
+const playMotion = ( s, clips ) => {
+
+	const clip = clips[ motion ] || clips.Idle || clips.Walk;
+	s.mixer.stopAllAction();
+	s.mixer.clipAction( clip ).play();
+	if ( ! motion ) s.mixer.setTime( clip.duration * 0.2 );
+
+};
+
 // A person standing (the clip's idle pose, held still) or sitting on a bench.
 async function person( p ) {
 
 	const b = await body( p.body );
 	const s = build( p, b, wardrobe );
+	s.clips = b.clips;
 	const clip = p.seated && b.clips.Sitting ? b.clips.Sitting : b.clips.Idle || b.clips.Walk;
-	s.mixer.clipAction( clip ).play();
-	s.mixer.setTime( clip.duration * ( p.seated ? 0.5 : 0.2 ) );
+	if ( p.seated ) {
+
+		s.mixer.clipAction( clip ).play();
+		s.mixer.setTime( clip.duration * 0.5 );
+
+	} else playMotion( s, b.clips );
 	s.object.updateMatrixWorld( true );
 	if ( ! p.seated ) return { object: s.object, skinned: s };
 	// On a park bench (seat 0.46 m), hips a little in front of the backrest.
@@ -516,6 +533,7 @@ panel.innerHTML = `
 	<section data-tab="people" hidden>
 		<h2>Generátor lidí</h2>
 		<div class="buttons"><button class="primary" data-shuffle>🎲 Zamíchat</button></div>
+		<label class="row" title="Jen na prohlížení animací, neukládá se"><span>Pohyb</span><select data-motion style="grid-column: span 2"><option value="">stojí</option><option value="Idle">přešlapuje</option><option value="Walk">chodí</option><option value="Run">běží</option></select></label>
 		<div data-crowd></div>
 		<label class="row" title="0 = při každém spuštění hry noví lidé; jiné číslo = pokaždé titíž (na zkoušení)"><span>Pevné semínko</span><input type="number" min="0" step="1" data-seed style="grid-column: span 2"></label>
 		<p class="hint">Podle těchto pravidel se při každém spuštění hry vyrobí noví lidé do ulic. Zamíchat ukáže jinou šestici; posuvníky přepočítají tutéž šestici.</p>
@@ -750,6 +768,13 @@ addRows( $( '[data-crowd]' ), [
 	[ 'art.crowd.spread.height', 'Rozptyl – výška', 0, 2, 0.05 ]
 ], null, () => regenerate() );
 $( '[data-shuffle]' ).addEventListener( 'click', () => regenerate( true ) );
+$( '[data-motion]' ).addEventListener( 'change', e => {
+
+	motion = e.target.value || null;
+	for ( let i = 0; i < people.length; i ++ ) if ( people[ i ].skinned && ! lineup[ i ].seated ) playMotion( people[ i ].skinned, people[ i ].skinned.clips );
+	invalidate();
+
+} );
 const seedInput = $( '[data-seed]' );
 seedInput.addEventListener( 'change', () => {
 
@@ -1076,7 +1101,8 @@ renderer.setAnimationLoop( now => {
 	const dt = Math.min( timer.getDelta(), 0.1 );
 	last = now;
 	const moving = controls.update();
-	if ( fly || moving || art().studio.turntable ) invalidate();
+	if ( fly || moving || art().studio.turntable || motion ) invalidate();
+	if ( motion ) for ( let i = 0; i < people.length; i ++ ) if ( people[ i ].skinned && ! lineup[ i ].seated ) people[ i ].skinned.mixer.update( dt );
 	if ( performance.now() > awakeUntil ) return;
 	if ( fly ) {
 
