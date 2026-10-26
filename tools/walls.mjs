@@ -9,7 +9,7 @@ const HEIGHT = 2.6;
 const BARRED = { 398651531: [ 0.36, 0.61, 0.77, 0.88 ] };
 const COLOUR = { 398651531: '#efe0b2' };
 
-export function collectWalls( { places, project, L, S, yAtLocal, streetData, AREA } ) {
+export function collectWalls( { places, project, L, S, yAtLocal, streetData, AREA, underDeck } ) {
 
 	const osm = JSON.parse( readFileSync( new URL( '../data/raw/osm.json', import.meta.url ) ) );
 	const nodes = new Map( osm.filter( e => e.type === 'node' ).map( n => [ n.id, n ] ) );
@@ -28,6 +28,26 @@ export function collectWalls( { places, project, L, S, yAtLocal, streetData, ARE
 		}
 
 		return null;
+
+	};
+
+	// A wall's walk barrier. Where a bridge deck passes across over the wall (the river wall under Most Legií by Malá
+	// Strana) it stops only a walker down at the wall, not one crossing the bridge above: those stretches block below
+	// the wall's top plus a metre and let anyone higher through (src/main.js barrierAt).
+	const barrier = ( x0, z0, x1, z1, top ) => {
+
+		const len = Math.hypot( x1 - x0, z1 - z0 ), n = Math.max( 1, Math.ceil( len / 0.5 ) );
+		const [ X0, Y0 ] = S( x0, z0 ), [ X1, Y1 ] = S( x1, z1 ), ux = ( X1 - X0 ) / ( len || 1 ), uy = ( Y1 - Y0 ) / ( len || 1 );
+		const under = k => !! underDeck?.( X0 + ( X1 - X0 ) * k / n, Y0 + ( Y1 - Y0 ) * k / n, ux, uy, top );
+		let k0 = 0;
+		for ( let k = 1; k <= n; k ++ ) {
+
+			if ( k < n && under( k ) === under( k0 ) ) continue;
+			const a = [ x0 + ( x1 - x0 ) * k0 / n, z0 + ( z1 - z0 ) * k0 / n ], b = [ x0 + ( x1 - x0 ) * k / n, z0 + ( z1 - z0 ) * k / n ];
+			places.barriers.push( [ + a[ 0 ].toFixed( 2 ), + a[ 1 ].toFixed( 2 ), + b[ 0 ].toFixed( 2 ), + b[ 1 ].toFixed( 2 ), ...( under( k0 ) ? [ 999, + ( top + 1 ).toFixed( 2 ) ] : [ - 99 ] ) ] );
+			k0 = k;
+
+		}
 
 	};
 
@@ -68,7 +88,7 @@ export function collectWalls( { places, project, L, S, yAtLocal, streetData, ARE
 
 					const [ x0, y0, z0 ] = at( a ), [ x1, y1, z1 ] = at( b );
 					walls.push( { kind: 'wall', x0, z0, x1, z1, y: + Math.min( y0, y1 ).toFixed( 2 ), h: height, colour: COLOUR[ w.id ] || '#e6dcc6' } );
-					places.barriers.push( [ x0, z0, x1, z1, - 99 ] );
+					barrier( x0, z0, x1, z1, Math.max( y0, y1 ) + height );
 
 				}
 
@@ -76,7 +96,7 @@ export function collectWalls( { places, project, L, S, yAtLocal, streetData, ARE
 
 					const [ x0, y0, z0 ] = at( Math.max( 0, o0 ) ), [ x1, , z1 ] = at( Math.min( len, o1 ) );
 					walls.push( { kind, x0, z0, x1, z1, y: y0, h: height, colour: COLOUR[ w.id ] || '#e6dcc6' } );
-					if ( kind === 'barred' ) places.barriers.push( [ x0, z0, x1, z1, - 99 ] );
+					if ( kind === 'barred' ) barrier( x0, z0, x1, z1, y0 + height );
 
 				}
 

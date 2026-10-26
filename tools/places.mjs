@@ -924,7 +924,7 @@ export function collectPlaces( ctx ) {
 					const inner = lg.half - lg.rail, mid = inner - lg.walk / 2;
 					for ( const sgn of [ - 1, 1 ] ) zone( ( ax + bx ) / 2 - lz * sgn * mid, ( az + bz ) / 2 + lx * sgn * mid, [ lz, - lx ], lg.walk / 2, len / 2 + 0.05, { y0: + ( ya + kerb ).toFixed( 2 ), y1: + ( yb + kerb ).toFixed( 2 ), along: [ lx, lz ] } );
 					zone( ( ax + bx ) / 2, ( az + bz ) / 2, [ lz, - lx ], inner - lg.walk + 0.01, len / 2 + 0.05, { y0: ya, y1: yb, along: [ lx, lz ] } );
-					bridgeSegs0.push( { A: S( ax, az ), B: S( bx, bz ), w: lg.half * 2, kind: 'legie' } );
+					bridgeSegs0.push( { A: S( ax, az ), B: S( bx, bz ), w: lg.half * 2, kind: 'legie', ya, yb } );
 
 				}
 
@@ -1157,6 +1157,17 @@ export function collectPlaces( ctx ) {
 		return Math.hypot( X - g.A[ 0 ] - t * dx, Y - g.A[ 1 ] - t * dy ) < g.w / 2 + 1;
 
 	} );
+	// Whether a wall at X, Y running along ( ux, uy ) passes across under a deck whose road is over a metre above the
+	// wall's top `top` (scene heights): not along it (the parapets of Karlův most are OSM walls too) and not at its
+	// edges, but across its inner part (the river wall under Most Legií by Malá Strana). tools/walls.mjs.
+	ctx.underDeck = ( X, Y, ux, uy, top ) => bridgeSegs.some( g => {
+
+		const dx = g.B[ 0 ] - g.A[ 0 ], dy = g.B[ 1 ] - g.A[ 1 ], l = Math.hypot( dx, dy );
+		const t = ( ( X - g.A[ 0 ] ) * dx + ( Y - g.A[ 1 ] ) * dy ) / ( l * l );
+		if ( t < 0 || t > 1 || Math.abs( ( X - g.A[ 0 ] ) * dy - ( Y - g.A[ 1 ] ) * dx ) / l > g.w / 2 - 1 ) return false;
+		return Math.abs( ( ux * dx + uy * dy ) / l ) < 0.7 && g.ya + ( g.yb - g.ya ) * t > top + 1;
+
+	} );
 	console.log( `places: ${bridgeSegs.length} bridge deck segments, ${places.piers.length} piers` );
 
 	// --- tram stops: each platform's axis, length and the side its tracks are on, for the shelter, the stop sign
@@ -1205,7 +1216,7 @@ export function collectPlaces( ctx ) {
 
 	places.life = streetLife( ctx, L );
 	places.barriers ||= [];
-	collectWalls( { places, project: ctx.project, L, S, yAtLocal, streetData, AREA } );
+	collectWalls( { places, project: ctx.project, L, S, yAtLocal, streetData, AREA, underDeck: ctx.underDeck } );
 
 	// The garden at the west end of Konviktská and Betlémská (the park by the embankment): a cream wall about 1.4 m
 	// high with a clipped hedge over it along the streets, not open lawn (Street View 2024-05 down Konviktská).
