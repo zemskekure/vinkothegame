@@ -1,4 +1,10 @@
 // Which page: the art direction studio (?studio, src/studio.js), a small still scene of its own, or the city and
-// its games (src/main.js). Only the chosen one is loaded.
+// its games (src/main.js). Only the chosen one is loaded. Before the city, the start screen (src/start.js) lets the
+// player choose the pigeon or the courier, unless the address already says where to go.
 if ( new URLSearchParams( location.search ).has( 'studio' ) ) await import( './studio.js' );
-else await import( './main.js' );
+else {
+
+	await ( await import( './start.js' ) ).startScreen();
+	await import( './main.js' );
+
+}

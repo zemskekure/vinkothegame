@@ -628,6 +628,9 @@ scene.traverse( o => {
 // meshopt-compressed.
 const gltfLoader = new GLTFLoader().setMeshoptDecoder( MeshoptDecoder );
 const loadModel = async ( path, dir ) => gltfLoader.parseAsync( await load( path, 'arrayBuffer', '' ), dir );
+// The player (src/player.js): a person of the streets, as made in the character creator, in place of the plain figure.
+// Built before the crowd (addLife, at the end of this file): the crowd's material then takes over the shared atlas.
+const player = HOLUB ? null : await ( await import( './player.js' ) ).makePlayer( loadModel );
 // The people, the trams and the boats come after the city (see the end of this file): one can walk while their
 // models download. Until then they are empty stand-ins.
 const life = { update() {}, agents: [], walks: [] };
@@ -710,6 +713,7 @@ function cameraBlocked( x, z ) {
 
 const walker = new Walker( camera, renderer.domElement, ( x, z ) => groundHeight( x, z, walker.placed ? walker.y : null ), isBlocked, scene, cameraBlocked, ceilingAt );
 walker.setScooter( loadModel );
+player?.dress( walker, { ride: window.GAME === 'courier' } ); // the courier (src/start.js) starts on the scooter
 // How rough the street is under the scooter: 0 asphalt, ½ paving stones, 1 granite setts (surface2: the carriageway's
 // surface on the road, the open area's off it), plus a jolt across the tram rails.
 walker.roughAt = ( x, z ) => {
