@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 401">
+  <rect width="820" height="401" fill="#b2bea8"/>
+  <rect width="820" height="7" fill="#8e9a86"/>
+  <rect y="7" width="820" height="3" fill="#c3cdb9"/>
+  <rect y="372" width="820" height="29" fill="#97a28f"/>
+  <rect y="370" width="820" height="3" fill="#86917e"/>
+  <text x="548" y="46" text-anchor="middle" font-family="Georgia, Times New Roman, serif" font-size="23" letter-spacing="1" fill="#2a221c">HOTEL AT THE BLACK STAR</text>
+  <circle cx="70" cy="152" r="23" fill="#1d1d1b"/>
+  <circle cx="70" cy="152" r="17" fill="none" stroke="#d8d2c2" stroke-width="2"/>
+  <rect x="100" y="70" width="138" height="30" fill="#ece6d4" stroke="#6b5a48" stroke-width="2"/>
+  <text x="169" y="91" text-anchor="middle" font-family="Georgia, Times New Roman, serif" font-size="16" letter-spacing="2" fill="#2a221c">RESTAURANT</text>
+  <rect x="106" y="122" width="126" height="250" fill="#9da993"/>
+  <rect x="114" y="130" width="110" height="242" fill="#5a3a24"/>
+  <rect x="124" y="142" width="40" height="96" fill="#2c2b28"/>
+  <rect x="174" y="142" width="40" height="96" fill="#2c2b28"/>
+  <path d="M169 130V372" stroke="#3e2819" stroke-width="4"/>
+  <rect x="124" y="254" width="40" height="104" fill="none" stroke="#6b5040" stroke-width="3"/>
+  <rect x="174" y="254" width="40" height="104" fill="none" stroke="#6b5040" stroke-width="3"/>
+  <rect x="290" y="84" width="38" height="24" fill="#b3271f"/>
+  <rect x="292.5" y="86.5" width="33" height="19" fill="none" stroke="#f2e9e4" stroke-width="1.5"/>
+  <text x="309" y="101" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-weight="bold" font-size="13" fill="#ffffff">177</text>
+  <rect x="398" y="122" width="106" height="250" fill="#9da993"/>
+  <rect x="406" y="130" width="90" height="242" fill="#4a3425"/>
+  <rect x="416" y="142" width="70" height="90" fill="#2c2b28"/>
+  <path d="M451 142V232" stroke="#4a3425" stroke-width="4"/>
+  <rect x="416" y="250" width="32" height="110" fill="none" stroke="#6b5040" stroke-width="3"/>
+  <rect x="454" y="250" width="32" height="110" fill="none" stroke="#6b5040" stroke-width="3"/>
+  <circle cx="488" cy="262" r="3.5" fill="#c9a86a"/>
+  <text x="543" y="74" text-anchor="middle" font-family="Georgia, Times New Roman, serif" font-size="12" letter-spacing="2" fill="#3a2e25">RESTAURANT</text>
+  <path d="M590 89H514" stroke="#4a3426" stroke-width="3"/>
+  <polygon points="502,89 516,82 516,96" fill="#4a3426"/>
+  <rect x="580" y="122" width="106" height="196" fill="#9da993"/>
+  <rect x="586" y="128" width="94" height="184" fill="#5a3a24"/>
+  <rect x="594" y="136" width="36" height="46" fill="#2e2d2a"/>
+  <rect x="636" y="136" width="36" height="46" fill="#2e2d2a"/>
+  <rect x="594" y="190" width="36" height="114" fill="#2e2d2a"/>
+  <rect x="636" y="190" width="36" height="114" fill="#2e2d2a"/>
+  <polygon points="600,300 618,194 628,194 610,300" fill="#8a948a" opacity="0.25"/>
+  <rect x="576" y="312" width="114" height="10" fill="#8d9886"/>
+</svg>

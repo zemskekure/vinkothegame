@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 405">
+  <rect y="20" width="680" height="385" fill="#3a2316"/>
+  <rect y="12" width="680" height="16" fill="#29180e"/>
+  <rect y="28" width="680" height="5" fill="#6d472b"/>
+  <path d="M6 33h9v7h-9zM24 33h9v7h-9zM42 33h9v7h-9zM60 33h9v7h-9zM78 33h9v7h-9zM96 33h9v7h-9zM114 33h9v7h-9zM132 33h9v7h-9zM150 33h9v7h-9zM168 33h9v7h-9zM186 33h9v7h-9zM204 33h9v7h-9zM222 33h9v7h-9zM240 33h9v7h-9zM258 33h9v7h-9zM276 33h9v7h-9zM294 33h9v7h-9zM312 33h9v7h-9zM330 33h9v7h-9zM348 33h9v7h-9zM366 33h9v7h-9zM384 33h9v7h-9zM402 33h9v7h-9zM420 33h9v7h-9zM438 33h9v7h-9zM456 33h9v7h-9zM474 33h9v7h-9zM492 33h9v7h-9zM510 33h9v7h-9zM528 33h9v7h-9zM546 33h9v7h-9zM564 33h9v7h-9zM582 33h9v7h-9zM600 33h9v7h-9zM618 33h9v7h-9zM636 33h9v7h-9zM654 33h9v7h-9zM672 33h8v7h-8z" fill="#5a3a22"/>
+  <text x="340" y="94" text-anchor="middle" font-family="Georgia, Times New Roman, serif" font-size="44" letter-spacing="2" fill="#d6b15c">THE GOLDEN EAGLE</text>
+  <rect y="108" width="680" height="6" fill="#6d472b"/>
+  <rect x="26" y="120" width="628" height="40" fill="#1f140c" stroke="#8a6a3a" stroke-width="2"/>
+  <path d="M183 120V160M340 120V160M497 120V160" stroke="#3a2316" stroke-width="3"/>
+  <text x="340" y="149" text-anchor="middle" font-family="Brush Script MT, Apple Chancery, cursive" font-size="28" fill="#d6b15c">Bohemian Garnet</text>
+  <rect x="2" y="120" width="22" height="12" fill="#6d472b"/>
+  <rect x="656" y="120" width="22" height="12" fill="#6d472b"/>
+  <path d="M7 132H19V390H7ZM661 132H673V390H661Z" fill="none" stroke="#6d472b" stroke-width="3"/>
+  <rect x="26" y="166" width="244" height="190" fill="#29180e"/>
+  <rect x="36" y="176" width="224" height="170" fill="#5b3c1f"/>
+  <path d="M36 232H260M36 290H260" stroke="#b98c40" stroke-width="3"/>
+  <ellipse cx="58" cy="218" rx="9" ry="12" fill="#b2392b"/>
+  <ellipse cx="82" cy="219" rx="8" ry="11" fill="#d5a43f"/>
+  <ellipse cx="104" cy="220" rx="7" ry="10" fill="#b2392b"/>
+  <ellipse cx="184" cy="276" rx="9" ry="12" fill="#d5a43f"/>
+  <ellipse cx="208" cy="277" rx="8" ry="11" fill="#2f5a8a"/>
+  <ellipse cx="230" cy="278" rx="7" ry="10" fill="#b2392b"/>
+  <ellipse cx="70" cy="334" rx="8" ry="10" fill="#d9b24a"/>
+  <ellipse cx="96" cy="334" rx="8" ry="10" fill="#c43a2c"/>
+  <path d="M148 176V346" stroke="#29180e" stroke-width="6"/>
+  <rect x="286" y="166" width="108" height="239" fill="#29180e"/>
+  <rect x="298" y="178" width="84" height="120" fill="#4d3824"/>
+  <rect x="298" y="312" width="84" height="80" fill="none" stroke="#6d472b" stroke-width="3"/>
+  <circle cx="374" cy="304" r="4" fill="#d6b15c"/>
+  <rect x="410" y="166" width="244" height="190" fill="#29180e"/>
+  <rect x="420" y="176" width="224" height="170" fill="#5b3c1f"/>
+  <path d="M420 232H644M420 290H644" stroke="#b98c40" stroke-width="3"/>
+  <ellipse cx="444" cy="220" rx="8" ry="10" fill="#d9b24a"/>
+  <ellipse cx="468" cy="220" rx="8" ry="10" fill="#c43a2c"/>
+  <ellipse cx="492" cy="220" rx="8" ry="10" fill="#d9b24a"/>
+  <ellipse cx="584" cy="278" rx="8" ry="10" fill="#2f5a8a"/>
+  <ellipse cx="608" cy="278" rx="8" ry="10" fill="#d9b24a"/>
+  <ellipse cx="560" cy="334" rx="9" ry="12" fill="#b2392b"/>
+  <path d="M532 176V346" stroke="#29180e" stroke-width="6"/>
+  <rect x="26" y="356" width="244" height="44" fill="#29180e" stroke="#6d472b" stroke-width="3"/>
+  <rect x="410" y="356" width="244" height="44" fill="#29180e" stroke="#6d472b" stroke-width="3"/>
+</svg>
