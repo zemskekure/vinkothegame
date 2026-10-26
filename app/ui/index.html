@@ -150,7 +150,26 @@
 				<p class="muted" style="margin:0 0 8px">${c.autopilot ? 'Bere buňku po buňce (nejdřív chyby, pak od Betlémského náměstí ven)' : 'Vypnuto. Buňku lze spustit i ručně na její stránce.'}${c.autoMerge ? ', hotové rovnou slučuje do hry.' : ', hotové nechává ke kontrole.'}</p>
 				${c.pausedReason ? `<p class="warn">${esc( c.pausedReason )}</p>` : ''}
 				${cur ? `<div class="now"><a href="/sezeni/${cur.id}"><b>${cur.cell}</b> · ${esc( cur.step || '' )} · ${running?.minutes ?? 0} min · ${tokens( running?.tokens )} tokenů · ${usd( running?.cost || 0 )}</a></div>` : '<p class="muted" style="margin:0">Teď nic neběží.</p>'}
-				${c.queued.length ? `<p class="muted">Ve frontě: ${c.queued.map( q => `<a href="/cell/${q.cell}">${q.cell}</a>` ).join( ', ' )}</p>` : ''}`;
+				${c.queued.length ? `<p class="muted">Ve frontě: ${c.queued.map( q => `<a href="/cell/${q.cell}">${q.cell}</a>` ).join( ', ' )}</p>` : ''}
+				<div class="row between" style="margin-top:12px"><h2>Codex <span class="muted">(ChatGPT)</span></h2>
+				<button id="codex-lane" class="${c.codexLane ? 'on' : ''}">${c.codexLane ? 'Zapnuto · vypnout' : 'Zapnout'}</button></div>
+				<p class="muted" style="margin:0 0 8px">${c.codexLane ? 'Druhá linka vedle autopilota, bere jiné buňky.' : 'Vypnuto.'}${c.codexPausedUntil ? ` Limit plánu, pokračuje v ${new Date( c.codexPausedUntil ).toLocaleTimeString( 'cs' ).slice( 0, 5 )}.` : ''}</p>
+				${c.codexCurrent ? `<div class="now"><a href="/sezeni/${c.codexCurrent.id}"><b>${c.codexCurrent.cell}</b> · ${esc( c.codexCurrent.step || '' )}</a></div>` : ''}`;
+			document.getElementById( 'codex-lane' ).onclick = async () => {
+
+				try {
+
+					await api( '/api/codex-lane', { method: 'POST', body: JSON.stringify( { on: ! c.codexLane } ) } );
+
+				} catch ( e ) {
+
+					alert( e.message );
+
+				}
+
+				load();
+
+			};
 			document.getElementById( 'autopilot' ).onclick = async () => {
 
 				try {

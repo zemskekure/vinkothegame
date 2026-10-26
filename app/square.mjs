@@ -4,7 +4,8 @@
 // the data files and the built scene in it. The session's row in the app's database follows it all (state,
 // step, tokens, screenshots, the pull request), so the square shows on the map while it runs.
 //
-//   node app/square.mjs x0_z1 [--budget 40]      run one square by hand (the app's queue calls runSquare too)
+//   node app/square.mjs x0_z1 [--budget 40] [--codex]   run one square by hand (the app's queue calls runSquare too);
+//                                                      --codex reviews with the Codex CLI (ChatGPT plan) instead of Claude
 //
 // Settings as for the app (environment or <GRID_DATA>/.env): GMAPS_KEY, STREETVIEW_DIR (default
 // <GRID_DATA>/streetview), SQUARE_BASE (the branch squares start from, default origin/look/x0_z2), SQUARE_WORKTREES
@@ -35,7 +36,7 @@ export const reviewPrompt = ( square, work ) => `Follow docs/review-brief.md for
 const correctionPrompt = ( square, work, proof ) => `Second pass for ${square}. Read ${work}/review-pass1.json, the model/photo pairs in ${proof}/index.html, and ${proof}/proof.json. Compare the model with Street View from the same camera positions, using owner photos as supplements. For each prominent frontage, inspect the photographed ground-floor rhythm, material, entrance and real signs beside the model. If it still looks generic, revise its SVG; do not count a text label alone as a correction. Match the game's drawn style without raw photo overlays. Correct the visual description and drawings once. Write a complete corrected ${work}/review.json, including unchanged houses and signs, and list every remaining prominent visual mismatch in visualIssues with its front and photo evidence. If none remain, write visualIssues: []. Report layout problems separately. Follow docs/review-brief.md. Do not edit the repository or try to guess geometry.`;
 
 // Runs one square for an existing session row; resolves when the session has ended (state set on the row).
-export async function runSquare( { db, grid, data, live, env, id, budget = 40, setStatus, onChild = () => {}, cancelled = () => false } ) {
+export async function runSquare( { db, grid, data, live, env, id, budget = 40, setStatus, onChild = () => {}, cancelled = () => false, reviewer = 'claude' } ) {
 
 	const s = db.prepare( 'SELECT * FROM sessions WHERE id = ?' ).get( id );
 	const square = s.cell, cell = grid.cells.get( square );
@@ -77,7 +78,7 @@ export async function runSquare( { db, grid, data, live, env, id, budget = 40, s
 
 	// Who pays for the reviewer: the subscription (CLAUDE_CODE_OAUTH_TOKEN), or with SQUARE_USE_API=1 the API key's
 	// prepaid credit, capped in total by SQUARE_API_CAP dollars (default 70) and per run by SQUARE_API_PER_RUN (10).
-	const useAPI = env.SQUARE_USE_API === '1' && !! env.ANTHROPIC_API_KEY;
+	const useAPI = reviewer === 'claude' && env.SQUARE_USE_API === '1' && !! env.ANTHROPIC_API_KEY;
 	const childEnv = extra => {
 
 		// A Claude Code session started from inside another one would otherwise think it is nested.
@@ -126,7 +127,22 @@ export async function runSquare( { db, grid, data, live, env, id, budget = 40, s
 
 	};
 
-	update( { state: 'running', started: now(), branch, step: 'příprava', pid: process.pid } );
+	// A plan's usage limit (the Claude plan's 5-hour window or week, the ChatGPT plan's) pauses this reviewer's lane
+	// for an hour instead of failing one cell after another.
+	const limited = text => {
+
+		if ( /usage limit|rate.?limit|limit reached|hit your limit|quota|credit balance/i.test( text ) ) {
+
+			const key = reviewer === 'codex' ? 'codex_paused_until' : 'paused_until';
+			db.prepare( 'INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value' ).run( key, new Date( Date.now() + 3600e3 ).toISOString() );
+			if ( reviewer !== 'codex' ) db.prepare( 'INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value' ).run( 'paused_reason', `Limit: ${String( text ).slice( 0, 200 )} (další pokus za hodinu)` );
+
+		}
+		return text;
+
+	};
+
+	update( { state: 'running', started: now(), branch, step: 'příprava', pid: process.pid, reviewer } );
 	setStatus( square, 'in_progress' );
 
 	// A fresh worktree off the base branch. A leftover worktree of an earlier run is removed only when it is clean
@@ -189,14 +205,15 @@ export async function runSquare( { db, grid, data, live, env, id, budget = 40, s
 
 	}
 
-	const result = await claude( args, reviewPrompt( square, work ), Number( settings.session_minutes || 60 ) * 60e3 );
+	const minutes = Number( settings.session_minutes || 60 ) * 60e3;
+	const result = reviewer === 'codex' ? await codex( reviewPrompt( square, work ), minutes ) : await claude( args, reviewPrompt( square, work ), minutes );
 	if ( useAPI ) update( { api_cost: result?.total_cost_usd || 0 } );
 	if ( cancelled() ) return fail( 'Zastaveno ručně.' );
 	const transcript = countTranscript( result?.session_id );
 	if ( transcript ) for ( const [ key, value ] of transcript.messages ) cumulativeUsage.messages.set( key, value );
 	saveUsage( db, id, cumulativeUsage );
 	update( { claude_session: result?.session_id || null, summary: ( result?.result || '' ).trim() } );
-	if ( ! result || result.is_error ) return fail( result?.result || 'Claude skončil bez výsledku.' );
+	if ( ! result || result.is_error ) return fail( limited( result?.result || 'Claude skončil bez výsledku.' ) );
 
 	// "Do not edit the repository" is checked, not trusted.
 	const touched = ( await git( [ 'status', '--porcelain' ] ) ).out.trim();
@@ -227,13 +244,13 @@ export async function runSquare( { db, grid, data, live, env, id, budget = 40, s
 	step( 'correction review' );
 	renameSync( join( work, 'review.json' ), join( work, 'review-pass1.json' ) );
 	const beforeCorrection = ( await git( [ 'status', '--porcelain' ] ) ).out.trim();
-	const corrected = await claude( [ ...args, '--add-dir', firstDir ], correctionPrompt( square, work, join( firstDir, 'proof' ) ), Number( settings.session_minutes || 60 ) * 60e3 );
+	const corrected = reviewer === 'codex' ? await codex( correctionPrompt( square, work, join( firstDir, 'proof' ) ), minutes ) : await claude( [ ...args, '--add-dir', firstDir ], correctionPrompt( square, work, join( firstDir, 'proof' ) ), minutes );
 	if ( useAPI ) update( { api_cost: ( result?.total_cost_usd || 0 ) + ( corrected?.total_cost_usd || 0 ) } );
 	if ( cancelled() ) return fail( 'Zastaveno ručně.' );
 	const correctionTranscript = countTranscript( corrected?.session_id );
 	if ( correctionTranscript ) for ( const [ key, value ] of correctionTranscript.messages ) cumulativeUsage.messages.set( key, value );
 	saveUsage( db, id, cumulativeUsage );
-	if ( ! corrected || corrected.is_error ) return fail( corrected?.result || 'Correction review failed.' );
+	if ( ! corrected || corrected.is_error ) return fail( limited( corrected?.result || 'Correction review failed.' ) );
 	if ( ( await git( [ 'status', '--porcelain' ] ) ).out.trim() !== beforeCorrection ) return fail( 'the correction reviewer changed the repository' );
 	if ( ! existsSync( join( work, 'review.json' ) ) ) return fail( 'correction reviewer did not write review.json' );
 	// The second review is complete, so apply it to the same base as pass one. Otherwise removed descriptions
@@ -296,6 +313,76 @@ export async function runSquare( { db, grid, data, live, env, id, budget = 40, s
 	note( `PR ${link}` );
 	setStatus( square, 'review' );
 	return true;
+
+	// Runs the Codex CLI (ChatGPT plan, `codex login`) as the reviewer instead of Claude Code: headless, in a sandbox that
+	// can write only the square's work folder (the repository and the photos are read-only to it), its JSON events
+	// into the session log. Resolves with a result shaped like Claude's ({ result, is_error }).
+	function codex( prompt, timeout ) {
+
+		return new Promise( resolve => {
+
+			const last = join( work, 'codex-last-message.txt' );
+			const args = [ 'exec', '--json', '--sandbox', 'workspace-write', '--cd', work, '--skip-git-repo-check', '--output-last-message', last,
+				'-c', `model_reasoning_effort="${env.CODEX_EFFORT || 'high'}"` ];
+			if ( env.CODEX_MODEL ) args.push( '--model', env.CODEX_MODEL );
+			args.push( '-' );
+			const preamble = `You are working in ${work} (the square's work folder; the only place you may write). The game repository is ${tree}: read its CLAUDE.md and docs/review-brief.md there first; relative paths like docs/… mean that repository. Look at photos with your image viewing tool. Never modify the repository.\n\n`;
+			const e = childEnv();
+			delete e.ANTHROPIC_API_KEY;
+			delete e.CLAUDE_CODE_OAUTH_TOKEN;
+			const child = spawn( env.CODEX_BIN || 'codex', args, { cwd: work, env: e } );
+			onChild( child );
+			const log = createWriteStream( join( logs, `${id}.log` ), { flags: 'a' } );
+			let failure = null, buf = '';
+			const killer = setTimeout( () => {
+
+				note( `Časový limit ${Math.round( timeout / 60e3 )} min, ukončuji.` );
+				child.kill( 'SIGTERM' );
+
+			}, timeout );
+
+			child.stdout.on( 'data', d => {
+
+				buf += d;
+				let nl;
+				while ( ( nl = buf.indexOf( '\n' ) ) >= 0 ) {
+
+					const raw = buf.slice( 0, nl );
+					buf = buf.slice( nl + 1 );
+					if ( ! raw.trim() ) continue;
+					log.write( clean( raw ) + '\n' );
+					try {
+
+						const line = JSON.parse( raw );
+						if ( line.type === 'thread.started' && line.thread_id ) update( { claude_session: `codex:${line.thread_id}` } );
+						if ( line.type === 'turn.failed' || line.type === 'error' ) failure = line.error?.message || line.message || JSON.stringify( line ).slice( 0, 300 );
+
+					} catch {}
+
+				}
+
+			} );
+
+			child.stderr.on( 'data', d => log.write( JSON.stringify( { type: 'app', text: clean( d ).slice( 0, 1000 ), at: now() } ) + '\n' ) );
+			child.stdin.end( preamble + prompt );
+			let settled = false;
+			const done = ( code, error ) => {
+
+				if ( settled ) return;
+				settled = true;
+				clearTimeout( killer );
+				log.end();
+				const text = existsSync( last ) ? readFileSync( last, 'utf8' ).trim() : '';
+				resolve( error ? { is_error: true, result: `codex se nespustil: ${error.message}` } : { is_error: code !== 0 || !! failure, result: failure || text || `codex skončil (kód ${code})` } );
+
+			};
+
+			child.on( 'error', e => done( - 1, e ) );
+			child.on( 'close', code => done( code ) );
+
+		} );
+
+	}
 
 	// Runs claude, following its stream-json output into the session log; resolves with the result event.
 	function claude( args, prompt, timeout ) {
@@ -542,7 +629,8 @@ if ( process.argv[ 1 ] === fileURLToPath( import.meta.url ) ) {
 	const setStatus = ( cell, status ) => db.prepare( 'INSERT INTO cells (id, status, updated) VALUES (?, ?, ?) ON CONFLICT(id) DO UPDATE SET status = excluded.status, updated = excluded.updated' ).run( cell, status, now() );
 	const { lastInsertRowid } = db.prepare( "INSERT INTO sessions (cell, kind, state, prompt, created) VALUES (?, 'square', 'queued', ?, ?)" ).run( square, reviewPrompt( square, join( data, 'squares', square ) ), now() );
 	const id = Number( lastInsertRowid );
-	const ok = await runSquare( { db, grid, data, live, env, id, budget: b > 0 ? Number( process.argv[ b + 1 ] ) : 40, setStatus } );
+	const reviewer = process.argv.includes( '--codex' ) ? 'codex' : 'claude';
+	const ok = await runSquare( { db, grid, data, live, env, id, budget: b > 0 ? Number( process.argv[ b + 1 ] ) : 40, setStatus, reviewer } );
 	const row = db.prepare( 'SELECT state, error, pr, images, images_fetched, started, ended FROM sessions WHERE id = ?' ).get( id );
 	console.log( JSON.stringify( { session: id, ...row, usage: summaryOf( db, id ) }, ( k, v ) => k === 'models' ? undefined : v, 1 ) );
 	process.exit( ok ? 0 : 1 );

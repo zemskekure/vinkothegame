@@ -58,7 +58,7 @@ const grid = loadGrid( Number( ENV.GRID_CELL || 100 ) );
 const BASE = WORK ? ENV.GRID_BRANCH || execFileSync( 'git', [ 'rev-parse', '--abbrev-ref', 'HEAD' ], { cwd: WORK } ).toString().trim() : null;
 const jobs = createJobs( {
 	db, grid, data: DATA, live: REPO, work: WORK, base: BASE, password: PASSWORD,
-	env: Object.fromEntries( [ 'CLAUDE_CODE_OAUTH_TOKEN', 'MAPILLARY_TOKEN', 'CLAUDE_BIN', 'PATH', 'GMAPS_KEY', 'GH_TOKEN', 'ANTHROPIC_API_KEY', 'SQUARE_USE_API', 'SQUARE_API_CAP', 'SQUARE_API_PER_RUN', 'STREETVIEW_DIR', 'OWNER_PHOTOS_DIR', 'SQUARE_BASE', 'SQUARE_WORKTREES' ].filter( k => ENV[ k ] ).map( k => [ k, ENV[ k ] ] ) ),
+	env: Object.fromEntries( [ 'CLAUDE_CODE_OAUTH_TOKEN', 'MAPILLARY_TOKEN', 'CLAUDE_BIN', 'PATH', 'GMAPS_KEY', 'GH_TOKEN', 'ANTHROPIC_API_KEY', 'SQUARE_USE_API', 'SQUARE_API_CAP', 'SQUARE_API_PER_RUN', 'STREETVIEW_DIR', 'OWNER_PHOTOS_DIR', 'SQUARE_BASE', 'SQUARE_WORKTREES', 'SQUARE_EFFORT', 'CODEX_BIN', 'CODEX_EFFORT', 'CODEX_MODEL' ].filter( k => ENV[ k ] ).map( k => [ k, ENV[ k ] ] ) ),
 	gameURL: `http://127.0.0.1:${PORT}/game/`, previewURL: `http://127.0.0.1:${PORT}/preview/`
 } );
 
@@ -142,7 +142,9 @@ function control() {
 
 	const s = getSettings( db );
 	// A run started by hand (node app/square.mjs) shows too: it writes to the same database.
-	const current = jobs.current() || db.prepare( "SELECT * FROM sessions WHERE state IN ('running', 'building') ORDER BY id DESC LIMIT 1" ).get();
+	const current = jobs.current() || db.prepare( "SELECT * FROM sessions WHERE state IN ('running', 'building') AND IFNULL( reviewer, 'claude' ) <> 'codex' ORDER BY id DESC LIMIT 1" ).get();
+	// The Codex lane (app/lane.mjs) is its own process; its run shows from the database.
+	const codex = db.prepare( "SELECT * FROM sessions WHERE state IN ('queued', 'running', 'building') AND reviewer = 'codex' ORDER BY id DESC LIMIT 1" ).get();
 	return {
 		sessions: !! WORK, base: BASE, squareBase: ENV.SQUARE_BASE || 'origin/look/x0_z2',
 		api: ENV.SQUARE_USE_API === '1' && ENV.ANTHROPIC_API_KEY ? { spent: apiSpent( db ), cap: Number( ENV.SQUARE_API_CAP || 70 ) } : null,
@@ -151,7 +153,9 @@ function control() {
 		pausedUntil: s.paused_until > now() ? s.paused_until : null, pausedReason: s.paused_reason || null,
 		queued: db.prepare( "SELECT id, cell FROM sessions WHERE state = 'queued' ORDER BY id" ).all(),
 		current: current ? { id: current.id, cell: current.cell, step: current.step, started: current.started } : null,
-		modelShots: s.model_shots || null
+		modelShots: s.model_shots || null,
+		codexLane: s.codex_lane === '1', codexPausedUntil: s.codex_paused_until > now() ? s.codex_paused_until : null,
+		codexCurrent: codex ? { id: codex.id, cell: codex.cell, step: codex.step, started: codex.started } : null
 	};
 
 }
@@ -487,8 +491,7 @@ async function route( req, res ) {
 	if ( p === '/api/autopilot' && m === 'POST' ) {
 
 		const { on } = await json( req );
-		// Tile pipelines on the API key need no session checkout (GRID_WORK); plain sessions do.
-		if ( on && ENV.SQUARE_USE_API !== '1' ) needJobs();
+		// The autopilot runs tile pipelines (app/square.mjs), which need no session checkout (GRID_WORK).
 		setSetting( db, 'autopilot', on ? '1' : '0' );
 		if ( on ) {
 
@@ -498,6 +501,15 @@ async function route( req, res ) {
 
 		}
 
+		return send( res, 200, control() );
+
+	}
+
+	if ( p === '/api/codex-lane' && m === 'POST' ) {
+
+		const { on } = await json( req );
+		setSetting( db, 'codex_lane', on ? '1' : '0' );
+		if ( on ) setSetting( db, 'codex_paused_until', '' );
 		return send( res, 200, control() );
 
 	}

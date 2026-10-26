@@ -11,8 +11,8 @@ import { join } from 'node:path';
 import { UsageCounter } from './usage.mjs';
 import { getSettings, setSetting } from './db.mjs';
 import { describe, viewsOf } from './grid.mjs';
-import { summary } from './stats.mjs';
 import { runSquare, reviewPrompt } from './square.mjs';
+import { pickCell } from './pick.mjs';
 
 const now = () => new Date().toISOString();
 const DAY = 24 * 3600e3;
@@ -192,45 +192,8 @@ export function createJobs( { db, grid, data, live, work, base, env, gameURL, pr
 
 	}
 
-	// The next cell for the autopilot, or null.
-	function nextCell() {
-
-		const s = getSettings( db );
-		const recent = db.prepare( "SELECT COUNT(*) AS n FROM sessions WHERE kind IN ( 'cell', 'square' ) AND started >= ?" ).get( new Date( Date.now() - DAY ).toISOString() ).n;
-		if ( recent >= Number( s.max_per_day ) ) return { stop: `denní strop ${s.max_per_day} sezení` };
-		const sum = summary( db );
-		if ( sum.week.share && sum.week.share.week >= Number( s.max_week_pct ) ) return { stop: `odhad týdenního limitu ${sum.week.share.week.toFixed( 0 )} % ≥ ${s.max_week_pct} %` };
-
-		const startCell = [ ...grid.cells.values() ].find( c => c.streets.includes( 'Betlémské náměstí' ) ) || [ ...grid.cells.values() ][ 0 ];
-		const dist = c => Math.hypot( c.col - startCell.col, c.row - startCell.row );
-		const candidates = [];
-		for ( const c of grid.cells.values() ) {
-
-			if ( ! c.buildings.length ) continue;
-			const row = db.prepare( 'SELECT status FROM cells WHERE id = ?' ).get( c.id );
-			const status = row?.status || 'todo';
-			if ( status === 'in_progress' ) continue;
-			const last = db.prepare( "SELECT state, ended FROM sessions WHERE cell = ? AND kind IN ( 'cell', 'square' ) ORDER BY id DESC LIMIT 1" ).get( c.id );
-			const newestBug = db.prepare( 'SELECT MAX(created) AS t FROM bugs WHERE cell = ? AND open = 1' ).get( c.id ).t;
-			// Bugs reported after the cell's last session send it back to work.
-			if ( newestBug && ( ! last || newestBug > ( last.ended || '' ) ) ) {
-
-				candidates.push( { c, rank: 0 } );
-				continue;
-
-			}
-
-			if ( status === 'done' || status === 'review' || last?.state === 'review' ) continue;
-			// A cell whose last attempt failed waits half a day before the autopilot tries it again.
-			if ( last && [ 'failed', 'conflict' ].includes( last.state ) && Date.now() - Date.parse( last.ended || 0 ) < DAY / 2 ) continue;
-			candidates.push( { c, rank: 1 } );
-
-		}
-
-		candidates.sort( ( a, b ) => a.rank - b.rank || dist( a.c ) - dist( b.c ) );
-		return candidates[ 0 ] ? { cell: candidates[ 0 ].c.id } : { stop: 'žádná další buňka' };
-
-	}
+	// The next cell for the autopilot (app/pick.mjs), or { stop }.
+	const nextCell = () => pickCell( db, grid );
 
 	// STOP: nothing more is spent. The queue is emptied, the autopilot switched off, the running session and any
 	// square run started by hand are killed, Claude processes included; nothing starts until resume().
@@ -265,6 +228,7 @@ export function createJobs( { db, grid, data, live, work, base, env, gameURL, pr
 		}
 
 		execFile( 'pkill', [ '-f', 'claude -p --output-format stream-json' ], () => {} );
+		execFile( 'pkill', [ '-f', 'codex exec --json' ], () => {} );
 		execFile( 'pkill', [ '-f', 'night-queue' ], () => {} );
 
 	}
@@ -295,8 +259,9 @@ export function createJobs( { db, grid, data, live, work, base, env, gameURL, pr
 
 				}
 
-				// On the API key the autopilot runs the street-photo tile pipeline (app/square.mjs), one tile after another.
-				next = { id: env.SQUARE_USE_API === '1' ? enqueueSquare( pick.cell ) : enqueue( pick.cell ) };
+				// The autopilot runs the street-photo tile pipeline (app/square.mjs), one tile after another, on the API
+				// credit (SQUARE_USE_API=1) or the Claude plan.
+				next = { id: enqueueSquare( pick.cell ) };
 
 			}
 
