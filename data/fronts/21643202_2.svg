@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 970 420">
+  <rect width="970" height="420" fill="#d6ccb3"/>
+  <path d="M0 22H970" stroke="#c4b89c" stroke-width="10"/>
+  <rect y="398" width="970" height="22" fill="#c3b89e"/>
+  <rect x="20" y="88" width="244" height="332" fill="#f1eee6"/>
+  <path d="M14 88H270" stroke="#e2ddd2" stroke-width="8"/>
+  <rect x="40" y="108" width="204" height="292" fill="#3c4448"/>
+  <rect x="40" y="110" width="204" height="42" fill="#161616"/>
+  <text x="142" y="139" text-anchor="middle" font-family="serif" font-size="24" fill="#ffffff">Cosmetics</text>
+  <path d="M40 172H244M134 152V400" stroke="#f1eee6" stroke-width="5"/>
+  <rect x="146" y="178" width="92" height="222" fill="none" stroke="#f1eee6" stroke-width="6"/>
+  <rect x="154" y="290" width="5" height="22" fill="#c9c4b8"/>
+  <path d="M40 152L134 260V152Z" fill="#6f7d80" opacity="0.3"/>
+  <rect x="648" y="88" width="304" height="332" fill="#f1eee6"/>
+  <path d="M642 88H958" stroke="#e2ddd2" stroke-width="8"/>
+  <rect x="670" y="108" width="260" height="292" fill="#3c4448"/>
+  <rect x="670" y="110" width="260" height="42" fill="#161616"/>
+  <text x="800" y="138" text-anchor="middle" font-family="serif" font-size="21" fill="#ffffff">Manicure &amp; Pedicure</text>
+  <path d="M670 172H930M800 152V400" stroke="#f1eee6" stroke-width="5"/>
+  <path d="M670 152L800 270V152Z" fill="#6f7d80" opacity="0.3"/>
+</svg>

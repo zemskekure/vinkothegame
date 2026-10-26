@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1110 420">
+  <rect width="1110" height="420" fill="#ece5d3"/>
+  <rect y="398" width="1110" height="22" fill="#d8cfbb"/>
+  <rect x="290" y="130" width="250" height="290" fill="#a8847a"/>
+  <path d="M290 130H540" stroke="#8f6c62" stroke-width="6"/>
+  <rect x="310" y="150" width="210" height="270" fill="#6e4b2f"/>
+  <rect x="322" y="166" width="84" height="160" fill="#34302c"/>
+  <rect x="424" y="166" width="84" height="160" fill="#34302c"/>
+  <path d="M342 166V326M364 166V326M386 166V326M444 166V326M466 166V326M488 166V326M322 246H406M424 246H508" stroke="#c9b48c" stroke-width="3"/>
+  <rect x="322" y="340" width="84" height="66" fill="#5c3e26"/>
+  <rect x="424" y="340" width="84" height="66" fill="#5c3e26"/>
+  <path d="M415 150V420" stroke="#4a3220" stroke-width="5"/>
+  <rect x="398" y="70" width="36" height="32" fill="#2b4a8c" stroke="#e8e8e8" stroke-width="2"/>
+  <text x="416" y="95" text-anchor="middle" font-family="sans-serif" font-size="22" fill="#ffffff">5</text>
+  <rect x="553" y="228" width="26" height="54" fill="#9a9a95"/>
+  <rect x="598" y="172" width="58" height="134" fill="#c8742e" stroke="#6b4a2e" stroke-width="4"/>
+  <rect x="600" y="174" width="54" height="18" fill="#3d3a35"/>
+  <text x="627" y="187" text-anchor="middle" font-family="serif" font-size="9" fill="#e0c27a">UNITARIA</text>
+  <rect x="608" y="200" width="38" height="94" fill="#efe6cf"/>
+  <rect x="750" y="140" width="290" height="280" fill="#b09a8c"/>
+  <rect x="772" y="162" width="246" height="258" fill="#3a3634"/>
+  <rect x="820" y="192" width="150" height="228" fill="#5a4a3c"/>
+  <rect x="832" y="206" width="56" height="200" fill="#2c2f31"/>
+  <rect x="902" y="206" width="56" height="200" fill="#2c2f31"/>
+  <text x="895" y="120" text-anchor="middle" font-family="serif" font-weight="bold" font-size="30" letter-spacing="2" fill="#8a5a30">UNITARIA</text>
+</svg>

@@ -1,4 +1,161 @@
 {
+	"21643202": {
+		"note": "Anenská, three fronts. Edge 1 (no. 5): plain pale cream, barred wooden door in red-brown stone frame, recessed door under bronze UNITARIA letters. Edge 2: greige, pedimented windows, iron balcony on a carved console at left, white-framed shops Cosmetics and Manicure & Pedicure. Edge 3: cream, pediments, U ZÁBRADLÍ and COFFEE AND WINE banners by a white door. (Street View 2024)",
+		"colour": "#eadcb5",
+		"trim": "#f2ead2",
+		"floors": 4,
+		"ground": "shops",
+		"rustic": "none",
+		"edges": {
+			"1": {
+				"colour": "#ece5d3",
+				"trim": "#f2eee4",
+				"ground": [
+					{
+						"kind": "door",
+						"frame": "wood",
+						"bars": true,
+						"size": "wide"
+					},
+					{
+						"kind": "door",
+						"frame": "dark",
+						"glazed": true,
+						"size": "wide"
+					}
+				],
+				"shopfront": "21643202_1.svg"
+			},
+			"2": {
+				"colour": "#d6ccb3",
+				"trim": "#ece6d6",
+				"ground": [
+					{
+						"kind": "shop",
+						"frame": "white",
+						"glazed": true
+					},
+					"blank",
+					{
+						"kind": "shop",
+						"frame": "white",
+						"size": "wide"
+					}
+				],
+				"balconies": [
+					{
+						"floor": 1,
+						"from": 0,
+						"to": 0.18,
+						"depth": 0.8
+					}
+				],
+				"shopfront": "21643202_2.svg"
+			},
+			"3": {
+				"ground": [
+					"blank",
+					{
+						"kind": "door",
+						"frame": "white",
+						"glazed": true
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					}
+				],
+				"shopfront": "21643202_3.svg"
+			}
+		},
+		"signs": false
+	},
+	"21643211": {
+		"note": "Smetanovo nábřeží side of Karlova 189/2: weathered grey-beige baroque front. Tall ground-floor windows in stone frames between rusticated pilaster strips, heavily tagged, wall lantern. Upper floors alternate framed windows and blank recessed panels. (Street View 2025)",
+		"colour": "#c9c0ad",
+		"trim": "#d8d1c2",
+		"floors": 4,
+		"ground": "windows",
+		"rustic": "banded",
+		"graffiti": true,
+		"edges": {
+			"4": {
+				"lanterns": true,
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "white",
+						"size": "wide"
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"size": "wide"
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"size": "wide"
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"size": "wide"
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"size": "wide"
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"size": "wide"
+					}
+				],
+				"shopfront": "21643211_4.svg"
+			}
+		},
+		"signs": false
+	},
+	"21643245": {
+		"note": "Křižovnické náměstí 193/2 by the bridge tower: very pale cream four-storey house, pedimented windows, dormers on a pitched roof, ground floor of dark-framed shop windows and doors. Seen from a distance; signs unreadable. (Street View 2014)",
+		"colour": "#ece6d8",
+		"trim": "#f5f2ea",
+		"floors": 4,
+		"ground": "shops",
+		"rustic": "none",
+		"edges": {
+			"8": {
+				"ground": [
+					{
+						"kind": "shop",
+						"frame": "dark"
+					},
+					{
+						"kind": "door",
+						"frame": "dark"
+					},
+					{
+						"kind": "shop",
+						"frame": "dark"
+					},
+					{
+						"kind": "shop",
+						"frame": "dark"
+					},
+					{
+						"kind": "door",
+						"frame": "dark"
+					},
+					{
+						"kind": "shop",
+						"frame": "dark"
+					}
+				]
+			}
+		}
+	},
 	"21643253": {
 		"note": "Smetanovo nábřeží by Karlův most: pale cream house with a great arched gateway over the street",
 		"colour": "#ece4d2",
@@ -7,19 +164,127 @@
 		"rustic": "none"
 	},
 	"21643288": {
-		"note": "Smetanovo nábřeží: long ochre-yellow front with plain window surrounds",
-		"colour": "#e1b56e",
-		"trim": "#ecd6a8",
+		"note": "Corrected from plain ochre. Anenská lane (edge 7): apricot-ochre, banded rustication, quoins, windows set high over a plain plinth, dark door at west end, pink-framed door, wall lantern. Smetanovo lane (edge 11, 197/26): pale cream, banded rustic ground floor, black doorway, walled-up opening, arched wooden gate, heavily tagged. (Street View 2023, 2025)",
+		"colour": "#e4dac4",
+		"trim": "#efe8d8",
 		"ground": "windows",
-		"rustic": "none"
+		"rustic": "banded",
+		"floors": 5,
+		"edges": {
+			"7": {
+				"colour": "#dfae7c",
+				"trim": "#e9c9a0",
+				"rustic": "banded",
+				"lanterns": true,
+				"ground": [
+					{
+						"kind": "door",
+						"frame": "dark"
+					},
+					"window",
+					"window",
+					"window",
+					"window",
+					{
+						"kind": "door",
+						"frame": "red"
+					},
+					"window",
+					"window",
+					"window"
+				]
+			},
+			"11": {
+				"colour": "#e4dac4",
+				"trim": "#efe8d8",
+				"rustic": "banded",
+				"ground": [
+					{
+						"kind": "door",
+						"frame": "dark",
+						"size": "wide"
+					},
+					"blank",
+					"niche",
+					{
+						"kind": "gate",
+						"arch": true,
+						"frame": "wood",
+						"size": "wide"
+					}
+				],
+				"shopfront": "21643288_11.svg"
+			}
+		},
+		"signs": false
 	},
 	"21643296": {
-		"note": "Smetanovo nábřeží 198 / Novotného lávka: Karlovy lázně club, dark red-brown front, arched ground-floor windows boarded white and tagged",
-		"colour": "#7d3e2f",
-		"trim": "#94523f",
-		"ground": "blank",
+		"note": "Karlovy lázně (198): corrected, upper floors are pale cream with ochre window surrounds and an ochre dentilled frieze, not dark red-brown. Only the ground floor is red brick with big round-arched windows: dark glass tagged red on the lane, lower parts boarded white on Novotného lávka. (Street View 2023, 2025)",
+		"colour": "#ece0bf",
+		"trim": "#d8bc84",
+		"ground": "windows",
 		"graffiti": true,
-		"rustic": "none"
+		"rustic": "clad",
+		"floors": 5,
+		"edges": {
+			"1": {
+				"ground": [
+					{
+						"kind": "window",
+						"arch": true,
+						"frame": "dark",
+						"size": "wide"
+					},
+					{
+						"kind": "window",
+						"arch": true,
+						"frame": "dark",
+						"size": "wide"
+					},
+					{
+						"kind": "window",
+						"arch": true,
+						"frame": "dark",
+						"size": "wide"
+					},
+					{
+						"kind": "window",
+						"arch": true,
+						"frame": "dark",
+						"size": "wide"
+					},
+					{
+						"kind": "window",
+						"arch": true,
+						"frame": "dark",
+						"size": "wide"
+					}
+				],
+				"shopfront": "21643296_1.svg"
+			},
+			"3": {
+				"ground": [
+					{
+						"kind": "window",
+						"arch": true,
+						"frame": "white",
+						"size": "wide"
+					},
+					"blank",
+					{
+						"kind": "window",
+						"arch": true,
+						"frame": "white",
+						"size": "wide"
+					}
+				],
+				"shopfront": "21643296_3.svg"
+			}
+		},
+		"signs": false
+	},
+	"21643300": {
+		"note": "Novotného lávka: seen edge-on behind a van. Cream upper floor with a tall arched window and part of a big red letter sign outlined in blue (only 'KA' visible), dark brown brick ground floor with downpipes. (Street View 2024)"
 	},
 	"21643342": {
 		"note": "Smetanovo nábřeží: cream upper floors over a black-fronted bar",
@@ -5437,12 +5702,24 @@
 			}
 		}
 	},
+	"43628966": {
+		"note": "Klementinum, portico of sv. Salvátor on Křižovnické náměstí: open arcade of grey sandstone piers on tall pedestals with round arches and carved capitals; a walk-through porch, not a wall. (Street View 2024)",
+		"colour": "#bdb5a4",
+		"trim": "#a89f8e",
+		"rustic": "none"
+	},
 	"46669345": {
 		"note": "Kostel sv. Martina ve zdi (Martinská): Gothic church of dark rubble stone (grey, ochre and rust stones) with sandstone tracery windows and buttresses, NOT whitewashed; steep tiled roof; tower at the south-west corner (data/icons.json) (Street View 2024–26, owner screenshots Sept 2025)",
 		"style": "gothic",
 		"colour": "#968a78",
 		"trim": "#c9b994",
 		"rustic": "rubble"
+	},
+	"46669388": {
+		"note": "Staroměstská mostecká věž: dark weathered sandstone Gothic tower; east face with the pointed bridge gate arch, sculpture gallery and tracery above, corner turrets with spires. Marks partly fall on open terrace. (Street View 2014)",
+		"colour": "#6b6255",
+		"trim": "#57503f",
+		"style": "gothic"
 	},
 	"46687530": {
 		"note": "Bartolomějská north side: long plain white plastered wall of the same white complex as the portal house, a tall round-headed barred window and an oval window above the ground floor, high lunette windows under the eaves, ground floor almost blank with a couple of small barred windows (Street View 2026, marked 46687530_5). / Bartolomějská, west of Ponrepo: white baroque house with window crowns, an oval window, a wall lantern, a small round hanging sign and a rusticated ground floor with two dark green doors: a tagged panelled double door at the west end and an arched one carved with a sunburst (Street View 2025-09, marked 46687530_4)",

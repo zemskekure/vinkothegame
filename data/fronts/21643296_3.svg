@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1060 420">
+  <rect width="1060" height="420" fill="#9a4a33"/>
+  <rect width="1060" height="12" fill="#ece0bf"/>
+  <rect y="12" width="1060" height="14" fill="#7f3b28"/>
+  <path d="M0 40H1060M0 55H1060M0 70H1060M0 85H1060M0 100H1060M0 115H1060M0 130H1060M0 145H1060M0 160H1060M0 175H1060M0 190H1060M0 205H1060M0 220H1060M0 235H1060M0 250H1060M0 265H1060M0 280H1060M0 295H1060M0 310H1060M0 325H1060M0 340H1060M0 355H1060M0 370H1060M0 385H1060" stroke="#b77a63" stroke-width="1.5" opacity="0.6"/>
+  <path d="M-50 420V205A175 175 0 0 1 300 205V420M750 420V205A175 175 0 0 1 1100 205V420" fill="none" stroke="#7f3b28" stroke-width="22"/>
+  <path d="M-50 420V205A175 175 0 0 1 300 205V420ZM750 420V205A175 175 0 0 1 1100 205V420Z" fill="#2c3235"/>
+  <path d="M125 30V210M925 30V210M-50 205H300M750 205H1100M40 70V210M210 70V210M840 70V210M1010 70V210" stroke="#d8d6d0" stroke-width="5"/>
+  <rect x="-40" y="212" width="330" height="198" fill="#f0f0ec"/>
+  <rect x="760" y="212" width="330" height="198" fill="#f0f0ec"/>
+  <path d="M125 212V410M925 212V410" stroke="#d2d2cc" stroke-width="3"/>
+  <path d="M520 420V190" stroke="#8a8a88" stroke-width="6"/>
+  <circle cx="520" cy="160" r="38" fill="#d23a30"/>
+  <circle cx="520" cy="160" r="30" fill="#b9c3c8"/>
+  <rect y="402" width="1060" height="18" fill="#8e877c"/>
+</svg>
