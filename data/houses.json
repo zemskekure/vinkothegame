@@ -1583,7 +1583,7 @@
 		}
 	},
 	"21644071": {
-		"note": "Konviktská 3 / Betlémská 4: long neo-renaissance block, grey-white upper floors, beige banded ground floor, arched gate on edge 26, doorway on edge 33 (Street View). Tile pass: edge 9 on Betlémská is functionalist like Residence Bologna: white over grey render, wide window bays with white iron grids (marked 21644071_9, Street View 2024). / Konviktská 3 / Betlémská 4: long neo-renaissance block, pale grey-white upper floors with beige stone pediments and balustrades, arched second-floor windows; heavy beige banded rusticated ground floor with tall dark windows over a plinth; on Betlémská front 6 a big round-arched honey-coloured wooden door under a carved keystone head (Street View 2024-05, marked 21644071_4a/4b/6/8).",
+		"note": "Konviktská 3 / Betlémská 4 / Karoliny Světlé 16: neo-renaissance block, grey-white upper floors, pedimented windows over balustraded aprons, arched windows under pediments (statues on Betlémská). Beige banded ground floor: white-framed windows on consoles, grey plinth, grilled cellar windows, wall lanterns on Karoliny Světlé. Konviktská 3: carved honey door in a pedimented portal; Betlémská: arched honey door with keystone head (Street View 2024-25).",
 		"colour": "#e6e4dd",
 		"trim": "#d4cab6",
 		"floors": 4,
@@ -1592,6 +1592,31 @@
 		"grilles": false,
 		"graffiti": true,
 		"edges": {
+			"3": {
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "gate",
+						"frame": "wood",
+						"arch": true
+					},
+					{
+						"kind": "door",
+						"frame": "wood"
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					}
+				]
+			},
 			"4": {
 				"ground": [
 					{
@@ -1680,11 +1705,164 @@
 					}
 				]
 			},
+			"27": {
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					}
+				]
+			},
+			"29": {
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					}
+				]
+			},
+			"30": {
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					}
+				]
+			},
+			"33": {
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					}
+				]
+			},
+			"34": {
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "door",
+						"frame": "wood",
+						"size": "wide"
+					}
+				]
+			},
 			"39": {
-				"lanterns": true
+				"lanterns": true,
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					}
+				]
 			},
 			"41": {
-				"lanterns": true
+				"lanterns": true,
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					}
+				]
+			},
+			"42": {
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					},
+					{
+						"kind": "window",
+						"frame": "white"
+					}
+				]
 			}
 		},
 		"signs": false
@@ -2034,17 +2212,52 @@
 		"signs": false
 	},
 	"21644152": {
-		"note": "Konviktská 10: 1930s apartment block in pale yellow render with plain framed windows, travertine-clad ground floor with two brown garage doors, a grilled entrance door with a hanging lantern and grilled windows (Street View)",
+		"note": "Konviktská 10/12. No. 10: 1930s six-storey block in pale yellow render, travertine-clad ground floor: wide brown wooden garage door with glass slits, glazed wooden door, recessed entrance with a black iron grille door under a lantern (no. 10 plate), two windows behind white lattice grilles. The first ~5 m of this front is no. 12: grey-green banded ground floor, dark-framed windows between white pilasters (Street View 2025).",
 		"colour": "#e3cf9b",
 		"trim": "#ebdcb4",
 		"floors": 6,
 		"ground": "gate",
-		"rustic": "none",
+		"rustic": "clad",
 		"grilles": true,
 		"graffiti": false,
 		"edges": {
 			"14": {
-				"lanterns": true
+				"lanterns": true,
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "dark"
+					},
+					{
+						"kind": "window",
+						"frame": "dark"
+					},
+					{
+						"kind": "garage",
+						"frame": "wood",
+						"size": "wide"
+					},
+					{
+						"kind": "door",
+						"frame": "wood",
+						"glazed": true
+					},
+					{
+						"kind": "door",
+						"frame": "dark",
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"bars": true,
+						"frame": "white"
+					},
+					{
+						"kind": "window",
+						"bars": true,
+						"frame": "white"
+					}
+				]
 			}
 		},
 		"signs": false
@@ -2366,11 +2579,74 @@
 		"signs": false
 	},
 	"21644322": {
-		"note": "Konviktská 4 / Karoliny Světlé 19: photo shows a large ornate neo-renaissance corner block in sandstone beige with balustraded windows, corner domed turret and shop fronts (incl. a mini market); unclear which part is this 6 m front (Street View)",
-		"signs": false
+		"note": "Konviktská 4 / Karoliny Světlé 19: ornate neo-renaissance corner house, greige, balustraded windows, columned corner bay with a domed turret. Pinkish beige block-rusticated ground floor over a smooth plinth, tagged. Konviktská: SOUVENIR SHOP door, POTRAVINY window. Karoliny Světlé: ABSINTH window, two dark-framed windows, grey roller shutter, columned arched portal no. 19. Mini Market on the chamfered corner (Street View 2025, owner photos 2023).",
+		"signs": false,
+		"colour": "#d9cfc1",
+		"trim": "#e6ded2",
+		"floors": 4,
+		"ground": "shops",
+		"rustic": "banded",
+		"grilles": false,
+		"graffiti": true,
+		"edges": {
+			"2": {
+				"ground": [
+					{
+						"kind": "shop",
+						"frame": "dark"
+					},
+					{
+						"kind": "door",
+						"frame": "dark",
+						"glazed": true
+					},
+					{
+						"kind": "shop",
+						"frame": "dark"
+					}
+				],
+				"shopfront": "21644322_2.svg",
+				"shopfrontHeight": 4.8
+			},
+			"14": {
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "wood"
+					},
+					{
+						"kind": "window",
+						"frame": "wood"
+					},
+					{
+						"kind": "shop",
+						"frame": "dark"
+					}
+				],
+				"shopfront": "21644322_14.svg",
+				"shopfrontHeight": 4.8
+			},
+			"18": {
+				"ground": [
+					{
+						"kind": "garage",
+						"frame": "grey"
+					},
+					{
+						"kind": "door",
+						"frame": "wood",
+						"arch": true
+					},
+					{
+						"kind": "window",
+						"frame": "wood"
+					}
+				]
+			}
+		}
 	},
 	"21644331": {
-		"note": "Konviktská 2 / Divadelní corner: grand pale beige neo-renaissance apartment palace. Banded rusticated ground floor with big round-arched windows; piano nobile with balustraded balconies and engaged columns; rich cornices and console brackets above; about five storeys to the main cornice. Faces the Kranner's Fountain park across Divadelní (Street View 2024)",
+		"note": "Konviktská 2 / Divadelní corner: grand pale beige neo-renaissance apartment palace, about five storeys, balustraded balconies, engaged columns, rich cornices. Banded rusticated ground floor with big round-arched windows in white multi-pane frames; on Konviktská three of them and the arched entrance (brown door, globe lamp, no. 2 plate) at the west end. Its banded rustication meets no. 4's block rustication (Street View 2024-25).",
 		"signs": false,
 		"colour": "#d8c9af",
 		"trim": "#ccbb9c",
@@ -2380,6 +2656,34 @@
 		"grilles": false,
 		"graffiti": false,
 		"edges": {
+			"10": {
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "white",
+						"arch": true
+					},
+					{
+						"kind": "door",
+						"frame": "wood",
+						"arch": true
+					}
+				]
+			},
+			"12": {
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "white",
+						"arch": true
+					},
+					{
+						"kind": "window",
+						"frame": "white",
+						"arch": true
+					}
+				]
+			},
 			"22": {
 				"ground": [
 					{
@@ -2399,7 +2703,7 @@
 		}
 	},
 	"21644349": {
-		"note": "Divadelní 20 / Karoliny Světlé 21: plain baroque house in warm beige, eared window surrounds with cornice hoods; banded rusticated ground floor with arched bays, brown doors and grilled windows with flower boxes; lower than its ornate neighbours (three storeys). OSM lists Communio (social facility) here but no visible sign (Street View 2024). Divadelní front: blind round arches in the rustication, each with a small barred window (count estimated, own screenshots May 2024).",
+		"note": "Konviktská 1 / Karoliny Světlé 21: plain baroque house in warm beige, three storeys, eared window surrounds with cornice hoods. Banded rusticated ground floor of round-arched bays: barred windows with flower boxes, brown doors; RESTAURACE STOLETÍ in dark serif letters near the east end over a terrace with umbrellas. Divadelní: blind arches with small barred windows. Communio: no visible sign (Street View 2024-25).",
 		"colour": "#e2d2ab",
 		"trim": "#d3c096",
 		"ground": "windows",
@@ -2409,6 +2713,61 @@
 		"edges": {
 			"8": {
 				"lanterns": true
+			},
+			"11": {
+				"ground": [
+					{
+						"kind": "window",
+						"bars": true,
+						"arch": true
+					},
+					{
+						"kind": "door",
+						"frame": "wood",
+						"arch": true,
+						"glazed": true
+					},
+					{
+						"kind": "window",
+						"bars": true,
+						"arch": true
+					},
+					{
+						"kind": "door",
+						"frame": "wood",
+						"arch": true
+					},
+					{
+						"kind": "window",
+						"bars": true,
+						"arch": true
+					},
+					{
+						"kind": "window",
+						"bars": true,
+						"arch": true
+					},
+					{
+						"kind": "window",
+						"bars": true,
+						"arch": true
+					},
+					{
+						"kind": "door",
+						"frame": "wood",
+						"arch": true
+					},
+					{
+						"kind": "window",
+						"bars": true,
+						"arch": true
+					},
+					{
+						"kind": "door",
+						"frame": "dark",
+						"arch": true
+					}
+				]
 			},
 			"15": {
 				"ground": [
@@ -2439,11 +2798,34 @@
 		"floors": 3
 	},
 	"21644357": {
-		"note": "Karoliny Světlé 23: tall brown-beige neo-renaissance house with gables, rich window heads and a neo-gothic gabled portal; partly hidden by trees, seen obliquely (Street View)",
-		"signs": false
+		"note": "Karoliny Světlé 23: tall brown-beige neo-renaissance house, about six storeys, rich stucco window heads and a gable, partly behind trees. Ground floor: neo-gothic portal with a crocketed pointed gable between pinnacles over a dark iron-and-glass door (no. 23 plate); right of it two grey-blue shopfronts under black awnings; left of it a shop with a carved lattice band and red goods (Street View 2024).",
+		"signs": false,
+		"colour": "#c3a986",
+		"trim": "#b29773",
+		"floors": 6,
+		"ground": "shops",
+		"edges": {
+			"11": {
+				"ground": [
+					{
+						"kind": "door",
+						"frame": "dark"
+					},
+					{
+						"kind": "shop",
+						"frame": "grey"
+					},
+					{
+						"kind": "shop",
+						"frame": "grey",
+						"door": true
+					}
+				]
+			}
+		}
 	},
 	"21644365": {
-		"note": "Divadelní 24 / Betlémská corner: pale cream renovated house, sandstone-clad ground floor; on Divadelní the White Sage shop window and glazed double door, a second shopfront, grey garage door, glazed house door (own screenshots 2024). Betlémská side (front 0) looks like no. 323: pale yellow, orange window frames, cornices and string course, flower boxes, ending at the vaulted arch over the lane (Street View 2024-05, marked 21644365_0a/0b).",
+		"note": "Divadelní 24 / Betlémská 2-3 / Karoliny Světlé 25: on Divadelní a renovated pale cream house, sandstone-clad ground floor, White Sage shopfront (own screenshots 2024). On Karoliny Světlé the north end is the pale yellow house no. 323 with orange-brown window frames, further south a lower pale cream house with brown windows, string courses and three gabled dormers (Street View 2024).",
 		"edges": {
 			"0": {
 				"colour": "#f0d8a4",
@@ -3592,7 +3974,7 @@
 		}
 	},
 	"21649324": {
-		"note": "Konviktská 8: low two-storey house with pale olive-green upper floor, white ground floor with a grilled window, steep red tiled roof with dormer; low white wall with a red door to its left. Photo for edge 0 shows the neighbouring yellow block no. 10 instead (Street View)",
+		"note": "Konviktská 8 (no. 952): low two-storey house, pale olive-green upper floor over a white ground floor with grilled windows, steep red tiled roof with dormers; to its east a low white wall with a red gate. 952/8 plates by the street lamp. The photo for edge 0 shows the yellow block no. 10 instead (Street View 2025).",
 		"colour": "#d4d5a8",
 		"trim": "#f0efe8",
 		"floors": 2,
@@ -3600,7 +3982,25 @@
 		"rustic": "none",
 		"grilles": true,
 		"graffiti": false,
-		"signs": false
+		"signs": false,
+		"edges": {
+			"10": {
+				"ground": [
+					{
+						"kind": "gate",
+						"frame": "red"
+					},
+					{
+						"kind": "window",
+						"bars": true
+					},
+					{
+						"kind": "window",
+						"bars": true
+					}
+				]
+			}
+		}
 	},
 	"21649367": {
 		"note": "Národní 25-27, Palác Metro: cream neo-renaissance upper floors with pedimented windows. Dark grey granite arcade below: pink-lit BUBBLIFY shop at the left, the stone portico with four fluted columns and a balustraded balcony over the arched passage, then the long black KFC fascia over a brown-framed shopfront and a recessed entrance (Street View 2026, marked 21649367_19a/19b).",
@@ -4088,17 +4488,40 @@
 		"signs": false
 	},
 	"21649693": {
-		"note": "Konviktská (by the Rotunda of the Holy Cross): narrow neoclassical house in ochre-beige with two tall arched brown wooden doors, a pair of windows above, attic band with three oculi under a pediment, balustraded roof terrace behind; plaque by the right door (Street View)",
+		"note": "Karoliny Světlé 14 by the Rotunda of the Holy Cross: tall ochre-sand house; banded rusticated ground floor with a round-arched window and a big round-arched dark brown double door under a radial fanlight. Konviktská side: narrow ochre front with a pediment, two oculi and an arched door, a low white wall with a small arched niche, balustraded roof terrace behind (Street View 2025).",
 		"colour": "#dcc59c",
 		"trim": "#e6d4b2",
-		"floors": 3,
+		"floors": 4,
 		"ground": "gate",
 		"rustic": "none",
 		"grilles": false,
 		"graffiti": false,
 		"edges": {
 			"14": {
-				"lanterns": true
+				"lanterns": true,
+				"ground": [
+					{
+						"kind": "window",
+						"frame": "wood",
+						"arch": true
+					},
+					{
+						"kind": "door",
+						"frame": "wood",
+						"arch": true,
+						"size": "wide"
+					}
+				]
+			},
+			"17": {
+				"ground": [
+					"niche",
+					{
+						"kind": "door",
+						"frame": "wood",
+						"arch": true
+					}
+				]
 			}
 		},
 		"signs": false
