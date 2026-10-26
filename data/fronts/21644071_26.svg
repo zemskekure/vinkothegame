@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2780 520">
+<rect x="0" y="0" width="2050" height="520" fill="#dbcfb5"/>
+<path d="M0 45H2050M0 90H2050M0 135H2050M0 180H2050M0 225H2050M0 270H2050M0 315H2050M0 360H2050M0 405H2050" stroke="#c0b295" stroke-width="6"/>
+<rect x="0" y="420" width="2050" height="100" fill="#c9bda3"/>
+<path d="M0 420H2050" stroke="#b3a68a" stroke-width="8"/>
+<rect x="10" y="70" width="250" height="450" fill="#e3d8c0"/>
+<path d="M30 520V185A105 105 0 0 1 240 185V520Z" fill="#cfc2a6"/>
+<path d="M48 520V190A87 87 0 0 1 222 190V520Z" fill="#5e4030"/>
+<path d="M48 190A87 87 0 0 1 222 190Z" fill="#2f3437"/>
+<path d="M135 103V190M74 128L135 190M196 128L135 190" stroke="#5e4030" stroke-width="5"/>
+<path d="M135 196V520M48 196H222" stroke="#3f2a1e" stroke-width="7"/>
+<rect x="64" y="216" width="56" height="120" fill="#6d4b38" stroke="#3f2a1e" stroke-width="4"/>
+<rect x="150" y="216" width="56" height="120" fill="#6d4b38" stroke="#3f2a1e" stroke-width="4"/>
+<rect x="64" y="356" width="56" height="150" fill="#6d4b38" stroke="#3f2a1e" stroke-width="4"/>
+<rect x="150" y="356" width="56" height="150" fill="#6d4b38" stroke="#3f2a1e" stroke-width="4"/>
+<path d="M118 70l17 36l17 -36z" fill="#d1c4a6"/>
+<path d="M60 420q20 -30 40 0t40 -10M150 440q15 -25 35 -5q10 15 30 -10M70 470l50 15M160 400q20 20 40 -5" stroke="#f0eee8" stroke-width="5" fill="none"/>
+<path d="M80 455q20 -20 45 5M170 480q15 -20 30 0" stroke="#1d1d1d" stroke-width="5" fill="none"/>
+<g>
+<rect x="580" y="110" width="150" height="270" fill="#e8dfca"/>
+<rect x="592" y="122" width="126" height="246" fill="#3a4246"/>
+<path d="M655 122V368M592 200H718" stroke="#f1eee6" stroke-width="8"/>
+<rect x="570" y="380" width="170" height="16" fill="#cbbd9e"/>
+<path d="M585 396h18v18h-18zM707 396h18v18h-18z" fill="#cbbd9e"/>
+<rect x="610" y="440" width="90" height="62" fill="#262626"/>
+<path d="M628 440V502M646 440V502M664 440V502M682 440V502" stroke="#4a4a48" stroke-width="5"/>
+</g>
+<g transform="translate(500 0)">
+<rect x="580" y="110" width="150" height="270" fill="#e8dfca"/>
+<rect x="592" y="122" width="126" height="246" fill="#3a4246"/>
+<path d="M655 122V368M592 200H718" stroke="#f1eee6" stroke-width="8"/>
+<rect x="570" y="380" width="170" height="16" fill="#cbbd9e"/>
+<path d="M585 396h18v18h-18zM707 396h18v18h-18z" fill="#cbbd9e"/>
+<rect x="610" y="440" width="90" height="62" fill="#262626"/>
+<path d="M628 440V502M646 440V502M664 440V502M682 440V502" stroke="#4a4a48" stroke-width="5"/>
+</g>
+<g transform="translate(920 0)">
+<rect x="580" y="110" width="150" height="270" fill="#e8dfca"/>
+<rect x="592" y="122" width="126" height="246" fill="#3a4246"/>
+<path d="M655 122V368M592 200H718" stroke="#f1eee6" stroke-width="8"/>
+<rect x="570" y="380" width="170" height="16" fill="#cbbd9e"/>
+<path d="M585 396h18v18h-18zM707 396h18v18h-18z" fill="#cbbd9e"/>
+<rect x="610" y="440" width="90" height="62" fill="#262626"/>
+<path d="M628 440V502M646 440V502M664 440V502M682 440V502" stroke="#4a4a48" stroke-width="5"/>
+</g>
+<g transform="translate(1220 0)">
+<rect x="580" y="110" width="150" height="270" fill="#e8dfca"/>
+<rect x="592" y="122" width="126" height="246" fill="#3a4246"/>
+<path d="M655 122V368M592 200H718" stroke="#f1eee6" stroke-width="8"/>
+<rect x="570" y="380" width="170" height="16" fill="#cbbd9e"/>
+<path d="M585 396h18v18h-18zM707 396h18v18h-18z" fill="#cbbd9e"/>
+<rect x="610" y="440" width="90" height="62" fill="#262626"/>
+<path d="M628 440V502M646 440V502M664 440V502M682 440V502" stroke="#4a4a48" stroke-width="5"/>
+</g>
+<rect x="1680" y="150" width="56" height="70" fill="#8a6a3e" stroke="#6a4f2c" stroke-width="4"/>
+<rect x="2050" y="0" width="730" height="520" fill="#aeaca4"/>
+<rect x="2046" y="0" width="8" height="520" fill="#a29f97"/>
+<path d="M2090 22h320v14h-320zM2450 22h310v14h-310z" fill="#8a4a32"/>
+<path d="M2100 18a10 10 0 0 1 20 0M2170 16a10 10 0 0 1 20 0M2260 18a10 10 0 0 1 20 0M2350 16a10 10 0 0 1 20 0M2490 18a10 10 0 0 1 20 0M2580 16a10 10 0 0 1 20 0M2670 18a10 10 0 0 1 20 0" fill="#3f6b35"/>
+<g fill="#c8323a">
+<circle cx="2110" cy="12" r="9"/><circle cx="2150" cy="9" r="9"/><circle cx="2195" cy="13" r="9"/><circle cx="2240" cy="9" r="9"/><circle cx="2285" cy="12" r="9"/><circle cx="2330" cy="9" r="9"/><circle cx="2375" cy="13" r="9"/><circle cx="2400" cy="9" r="8"/>
+<circle cx="2470" cy="12" r="9"/><circle cx="2510" cy="9" r="9"/><circle cx="2555" cy="13" r="9"/><circle cx="2600" cy="9" r="9"/><circle cx="2645" cy="12" r="9"/><circle cx="2690" cy="9" r="9"/><circle cx="2740" cy="13" r="9"/>
+</g>
+<rect x="2050" y="36" width="730" height="16" fill="#c9c7bf"/>
+<rect x="2050" y="52" width="730" height="6" fill="#8e8c85"/>
+<rect x="2050" y="58" width="730" height="114" fill="#b3b1a8"/>
+<rect x="2050" y="172" width="730" height="8" fill="#8e8c85"/>
+<text x="2440" y="132" text-anchor="middle" font-family="serif" font-size="44" letter-spacing="2" fill="#2a2a29">MEDITERRANEAN RESTAURANT</text>
+<rect x="2050" y="58" width="60" height="462" fill="#a9a79f"/>
+<rect x="2110" y="180" width="670" height="315" fill="#4a4237"/>
+<rect x="2118" y="188" width="654" height="88" fill="#b8c3ba"/>
+<path d="M2118 210H2772M2118 232H2772M2118 254H2772" stroke="#949f97" stroke-width="3"/>
+<path d="M2445 188V276" stroke="#4a4237" stroke-width="8"/>
+<circle cx="2160" cy="232" r="34" fill="#c0312b" stroke="#f3eee4" stroke-width="6"/>
+<rect x="2118" y="338" width="654" height="157" fill="#3b3a35"/>
+<rect x="2150" y="350" width="260" height="70" fill="#a88c58" opacity="0.7"/>
+<rect x="2480" y="350" width="260" height="70" fill="#a88c58" opacity="0.7"/>
+<path d="M2160 455h40v40M2230 455h40v40M2300 455h40v40M2500 455h40v40M2570 455h40v40M2640 455h40v40" stroke="#8a6a44" stroke-width="7" fill="none"/>
+<path d="M2445 338V495M2280 338V495M2610 338V495" stroke="#4a4237" stroke-width="9"/>
+<rect x="2110" y="276" width="670" height="8" fill="#3b3f3b"/>
+<rect x="2110" y="284" width="670" height="54" fill="#eef0e8"/>
+<path d="M2118 284h22v54h-22zm44 0h22v54h-22zm44 0h22v54h-22zm44 0h22v54h-22zm44 0h22v54h-22zm44 0h22v54h-22zm44 0h22v54h-22zM2452 284h22v54h-22zm44 0h22v54h-22zm44 0h22v54h-22zm44 0h22v54h-22zm44 0h22v54h-22zm44 0h22v54h-22zm44 0h22v54h-22zm44 0h22v54h-22z" fill="#2f8558"/>
+<path d="M2445 284V338" stroke="#c9c7bf" stroke-width="6"/>
+<path d="M2110 338H2780" stroke="#24603f" stroke-width="4"/>
+<rect x="2050" y="495" width="730" height="25" fill="#8f8c85"/>
+</svg>
