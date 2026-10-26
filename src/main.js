@@ -1179,6 +1179,7 @@ renderer.setAnimationLoop( () => {
 	passengers.update( dt );
 	const me = holub ? holub.pos : walking ? walker.pos : null;
 	if ( me ) solids.gather( me.x, me.z );
+	for ( const f of ANIMATE ) f( dt ); // the turning Kafka head, the orloj's apostles…
 
 	if ( holub ) {
 
