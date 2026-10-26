@@ -17,6 +17,7 @@
 import * as THREE from 'three/webgpu';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { crispTexture, DIR } from './vehicles.js';
+import { box } from './solids.js';
 
 const CRUISE = 9, ACCEL = 1.0, BRAKE = 1.3, DWELL = 12;
 const WIRE_H = 5.7;
@@ -191,12 +192,13 @@ function train( type, info, material ) {
 
 			const model = new THREE.Mesh( s.geometry, material );
 			model.castShadow = model.receiveShadow = true;
-			list.push( { L: s.L, gap: k === 0 && c > 0 ? 1.0 : 0, model } );
+			list.push( { L: s.L, gap: k === 0 && c > 0 ? 1.0 : 0, model, car: c, k } );
 
 		} );
 
 	}
 
+	list.type = type;
 	return list;
 
 }
@@ -307,7 +309,7 @@ export async function addTrams( scene, routes, groundHeight, isBlocked = () => f
 		const sections = train( pick( i ), info, material );
 		for ( const sec of sections ) scene.add( sec.model );
 		const length = sections.reduce( ( n, sec, k ) => n + sec.L + ( k ? sec.gap : 0 ), 0 );
-		return { path, stops: r.stops, sections, length, s: length + 2 + ( ( i * 137 ) % Math.max( 1, path.length - length - 10 ) ), v: CRUISE * 0.6, dwell: 0, served: new Set() };
+		return { path, spec: FLEET[ sections.type ], type: sections.type, stops: r.stops, sections, length, s: length + 2 + ( ( i * 137 ) % Math.max( 1, path.length - length - 10 ) ), v: CRUISE * 0.6, dwell: 0, served: new Set() };
 
 	} );
 
@@ -358,6 +360,9 @@ export async function addTrams( scene, routes, groundHeight, isBlocked = () => f
 
 				const back = front - sec.L;
 				const [ fx, fz ] = at( t.path, front ), [ bx, bz ] = at( t.path, back );
+				sec.px = sec.model.position.x;
+				sec.pz = sec.model.position.z;
+				sec.pyaw = sec.model.rotation.y;
 				sec.model.position.set( ( fx + bx ) / 2, Math.max( groundHeight( fx, fz ), groundHeight( bx, bz ) ), ( fz + bz ) / 2 );
 				sec.model.rotation.y = Math.atan2( fx - bx, fz - bz );
 				front = back - sec.gap;
@@ -369,6 +374,26 @@ export async function addTrams( scene, routes, groundHeight, isBlocked = () => f
 	}
 
 	update( 0 );
-	return { update, trams };
+
+	// Every section as a solid box (src/solids.js), for the trams near ( x, z ).
+	function boxes( x, z, r, out ) {
+
+		for ( const t of trams ) {
+
+			const head = t.sections[ 0 ].model.position;
+			if ( Math.abs( head.x - x ) > r + t.length || Math.abs( head.z - z ) > r + t.length ) continue;
+			for ( const sec of t.sections ) {
+
+				const p = sec.model.position;
+				if ( Math.abs( p.x - x ) > r || Math.abs( p.z - z ) > r ) continue;
+				out.push( box( p.x, p.y, p.z, sec.model.rotation.y, sec.L, t.spec.width, t.spec.height, t.dwell > 0 ? 0 : t.v, sec.px, sec.pz, sec.pyaw, sec ) );
+
+			}
+
+		}
+
+	}
+
+	return { update, trams, boxes };
 
 }

@@ -62,6 +62,9 @@ export class Walker {
 		this.hopV = 0;
 		this.jumpWanted = false;
 		this.lookTime = 0;
+		// The trams and cars near by (src/solids.js), set by the game: solid like the houses.
+		this.solids = null;
+		this.shove = [ 0, 0 ];
 
 		dom.addEventListener( 'click', () => {
 
@@ -293,7 +296,27 @@ export class Walker {
 
 		}
 
-		return false;
+		return !! this.solids?.hit( x, z, this.y, RADIUS );
+
+	}
+
+	// A tram or car that has moved into one shoves one aside (src/solids.js), never into a house; on the scooter a
+	// knock costs the speed.
+	shoved( dt ) {
+
+		if ( ! this.solids || ! dt ) return;
+		const [ dx, dz ] = this.solids.push( this.pos.x, this.pos.z, this.y, RADIUS, dt, this.shove );
+		if ( ! dx && ! dz ) return;
+		const p = this.pos;
+		for ( let k = 0; k < 5; k ++ ) if ( ! this.isBlocked( p.x + dx * ( 1 - k / 5 ), p.z + dz * ( 1 - k / 5 ) ) ) {
+
+			p.x += dx * ( 1 - k / 5 );
+			p.z += dz * ( 1 - k / 5 );
+			break;
+
+		}
+
+		if ( this.riding ) this.speed *= 0.5;
 
 	}
 
@@ -370,6 +393,7 @@ export class Walker {
 		this.phase += dt * ( moving > WALK + 0.5 ? 9.5 : 6.2 ) * Math.min( 1, this.stride + 0.2 );
 		this.time += dt;
 
+		this.shoved( dt );
 		this.settle( dt, safe );
 
 	}
@@ -449,6 +473,7 @@ export class Walker {
 
 		this.stride += ( 0 - this.stride ) * Math.min( 1, dt * 8 );
 		this.time += dt;
+		this.shoved( dt );
 		this.settle( dt, safe );
 
 	}

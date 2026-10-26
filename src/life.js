@@ -19,6 +19,7 @@ import { vehicleModel } from './vehicles.js';
 import { carFleet } from './cars.js';
 import { addFriends } from './friends.js';
 import { addPerlova } from './perlova.js';
+import { box } from './solids.js';
 
 // How often each car turns up. Every one is made from the owner's pictures (src/cars.js); `model`: a downloaded model
 // ( file, real length in metres ) to draw instead. Only Czech street cars (the owner's choice): the generic kit cars
@@ -484,6 +485,15 @@ export async function addLife( scene, life, { seats = [], benches = [], groundHe
 			// Slow down behind a car ahead on the same lane.
 			let gap = Infinity;
 			for ( const o of movers ) if ( o !== m && o.path === m.path && o.s > m.s ) gap = Math.min( gap, o.s - m.s );
+			// And for the player standing in the lane ahead (cars brake for people; the trams don't).
+			const me = player?.();
+			if ( me && m.x !== undefined ) {
+
+				const dx = me.x - m.x, dz = me.z - m.z, ahead = dx * Math.sin( m.yaw ) + dz * Math.cos( m.yaw );
+				if ( ahead > 0 && ahead < 16 && Math.abs( dx * Math.cos( m.yaw ) - dz * Math.sin( m.yaw ) ) < 1.6 ) gap = Math.min( gap, ahead + 3 );
+
+			}
+
 			const target = gap < 9 ? 0 : gap < 20 ? m.cruise * ( gap - 9 ) / 11 : m.cruise;
 			m.speed += Math.max( - 6 * dt, Math.min( 2.5 * dt, target - m.speed ) );
 			m.s += m.speed * dt;
@@ -504,7 +514,9 @@ export async function addLife( scene, life, { seats = [], benches = [], groundHe
 			sample( m.path, m.s, at );
 			sample( m.path, Math.min( m.path.length, m.s + 3.5 ), at2 );
 			const y = groundHeight( at.x, at.z ), y2 = groundHeight( at2.x, at2.z );
-			placeCar( m.batch, m.index, at.x, y, at.z, Math.atan2( at.dx, at.dz ), - Math.atan2( y2 - y, 3.5 ) );
+			[ m.px, m.pz, m.pyaw ] = [ m.x ?? at.x, m.z ?? at.z, m.yaw ?? Math.atan2( at.dx, at.dz ) ];
+			[ m.x, m.y, m.z, m.yaw ] = [ at.x, y, at.z, Math.atan2( at.dx, at.dz ) ];
+			placeCar( m.batch, m.index, at.x, y, at.z, m.yaw, - Math.atan2( y2 - y, 3.5 ) );
 
 		}
 
@@ -538,6 +550,40 @@ export async function addLife( scene, life, { seats = [], benches = [], groundHe
 	}
 
 	update( 0 );
-	return { update, placeWalkers, walks, agents, bodies, seed, friends, perlova, people: agents.length, cars: parked.length + movers.length, carMeshes: Object.fromEntries( carTypes.map( ( n, k ) => [ n, batches[ k ]?.mesh ] ) ) };
+
+	// The cars as solid boxes (src/solids.js): their size from the geometry, parked ones where they stand, the moving
+	// ones where they are this frame.
+	const sizes = carModels.map( ( { geometry } ) => {
+
+		if ( ! geometry.boundingBox ) geometry.computeBoundingBox();
+		const b = geometry.boundingBox;
+		return { length: b.max.z - b.min.z, width: b.max.x - b.min.x, height: b.max.y - b.min.y, oz: ( b.max.z + b.min.z ) / 2 };
+
+	} );
+	const carBox = ( type, x, y, z, yaw, speed, px, pz, pyaw ) => {
+
+		const k = sizes[ type ], sx = Math.sin( yaw ) * k.oz, sz = Math.cos( yaw ) * k.oz;
+		return box( x + sx, y, z + sz, yaw, k.length, k.width, k.height, speed, px + sx, pz + sz, pyaw );
+
+	};
+	function boxes( x, z, r, out ) {
+
+		for ( const c of parked ) {
+
+			if ( Math.abs( c.p[ 0 ] - x ) > r || Math.abs( c.p[ 2 ] - z ) > r ) continue;
+			out.push( carBox( c.type, c.p[ 0 ], c.p[ 1 ], c.p[ 2 ], c.p[ 3 ], 0, c.p[ 0 ], c.p[ 2 ], c.p[ 3 ] ) );
+
+		}
+
+		for ( const m of movers ) {
+
+			if ( m.x === undefined || Math.abs( m.x - x ) > r || Math.abs( m.z - z ) > r ) continue;
+			out.push( carBox( m.type, m.x, m.y, m.z, m.yaw, m.speed, m.px, m.pz, m.pyaw ) );
+
+		}
+
+	}
+
+	return { update, placeWalkers, walks, boxes, agents, bodies, seed, friends, perlova, people: agents.length, cars: parked.length + movers.length, carMeshes: Object.fromEntries( carTypes.map( ( n, k ) => [ n, batches[ k ]?.mesh ] ) ) };
 
 }
