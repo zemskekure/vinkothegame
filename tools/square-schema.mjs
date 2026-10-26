@@ -26,7 +26,12 @@ export function validateReview( review, inventory ) {
 	const fronts = new Map( inventory.fronts.map( f => [ f.front, f ] ) );
 	if ( ! object( review.houses ) ) errors.push( 'houses must be an object' );
 	if ( ! Array.isArray( review.signs ) ) errors.push( 'signs must be an array' );
-	if ( ! Array.isArray( review.issues ) || review.issues.some( v => typeof v !== 'string' || v.length > 500 ) ) errors.push( 'issues must be short strings' );
+	// Notes and mismatch texts only inform the next pass, so an over-long one is cut short rather than costing the tile.
+	const cut = ( v, n ) => typeof v === 'string' && v.length > n ? v.slice( 0, n - 1 ) + '…' : v;
+	if ( Array.isArray( review.issues ) ) review.issues = review.issues.map( v => cut( v, 500 ) );
+	for ( const issue of Array.isArray( review.layoutIssues ) ? review.layoutIssues : [] ) if ( object( issue ) ) Object.assign( issue, { where: cut( issue.where, 120 ), evidence: cut( issue.evidence, 500 ) } );
+	for ( const issue of Array.isArray( review.visualIssues ) ? review.visualIssues : [] ) if ( object( issue ) ) Object.assign( issue, { what: cut( issue.what, 300 ), evidence: cut( issue.evidence, 500 ) } );
+	if ( ! Array.isArray( review.issues ) || review.issues.some( v => typeof v !== 'string' ) ) errors.push( 'issues must be short strings' );
 	if ( ! Array.isArray( review.layoutIssues ) ) errors.push( 'layoutIssues must be an array' );
 	if ( ! Array.isArray( review.visualIssues ) ) errors.push( 'visualIssues must be an array, even when no visible mismatch remains' );
 	for ( const [ n, issue ] of ( Array.isArray( review.layoutIssues ) ? review.layoutIssues : [] ).entries() ) {
