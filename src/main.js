@@ -1082,7 +1082,39 @@ renderer.setAnimationLoop( () => {
 
 } );
 
-document.getElementById( 'loading' ).remove();
+// Every material's GPU pipeline prepared before play, all round the city, so a sign, an awning or a tram that first
+// comes into view doesn't stall a frame while its shader is built (the hitch when turning the camera).
+{
+
+	const loading = document.getElementById( 'loading' );
+	loading.textContent = 'Připravuji obraz…';
+	const hidden = [];
+	scene.traverse( o => {
+
+		if ( ! o.visible ) return;
+		if ( o.frustumCulled ) {
+
+			o.frustumCulled = false;
+			hidden.push( o );
+
+		}
+
+	} );
+	try {
+
+		await renderer.compileAsync( scene, camera );
+
+	} catch ( e ) {
+
+		console.warn( 'compileAsync', e );
+
+	}
+
+	for ( const o of hidden ) o.frustumCulled = true;
+	loading.remove();
+
+}
+
 window.__debug = { setFps: f => FPS = f, renderer, scene, batched, camera, isBlocked, groundHeight, walker, life, trams, boats, holub, waterLevel: data.waterLevel };
 window.__THREE = THREE;
 window.__ready = true;
@@ -1093,4 +1125,4 @@ load( 'life.json', 'json' ).then( streetLife => Promise.all( [
 	addLife( scene, streetLife, { seats, benches: data.furniture.bench, groundHeight, loadModel, camera, cars: params.has( 'cars' ) } ).then( l => Object.assign( life, l ) ),
 	addTrams( scene, streetLife?.trams, groundHeight, ( x, z ) => cameraBlocked( x, z ) || onLegie( places?.legie, x, z ) ).then( t => trams = window.__debug.trams = t ),
 	addBoats( scene, { loadModel, groundHeight, waterLevel: data.waterLevel } ).then( b => boats = window.__debug.boats = b )
-] ) ).then( () => window.__complete = true );
+] ) ).then( () => renderer.compileAsync( scene, camera ).catch( () => {} ) ).then( () => window.__complete = true ); // the people's, trams' and boats' pipelines too
