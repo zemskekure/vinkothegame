@@ -370,6 +370,36 @@ function boxUV( position, normal, metre ) {
 
 }
 
+// A gem head for a posed body (already in body space, facing +z): a coarse faceted sphere `w` across and `h` tall
+// centred on (x, y, z), the photo face planar-mapped over the triangles facing forward, hair on the rest.
+function gemHead( x, y, z, w, h ) {
+
+	const gem = new THREE.SphereGeometry( 0.5, HEAD.facets, Math.max( 2, Math.round( HEAD.facets * 2 / 3 ) ) ).toNonIndexed();
+	const g = gem.attributes.position, pos = [], uvs = [], slot = [], index = [];
+	const A = new THREE.Vector3(), B = new THREE.Vector3(), N = new THREE.Vector3(), q = [ 0, 1, 2 ].map( () => new THREE.Vector3() );
+	for ( let k = 0; k < g.count; k += 3 ) {
+
+		for ( let m = 0; m < 3; m ++ ) q[ m ].set( g.getX( k + m ) * w, g.getY( k + m ) * h, g.getZ( k + m ) * w );
+		N.crossVectors( A.subVectors( q[ 1 ], q[ 0 ] ), B.subVectors( q[ 2 ], q[ 0 ] ) );
+		const outward = N.dot( q[ 0 ] ) >= 0;
+		const face = N.normalize().z * ( outward ? 1 : - 1 ) > 0.15;
+		const base = pos.length / 3;
+		for ( let m = 0; m < 3; m ++ ) {
+
+			pos.push( q[ m ].x + x, q[ m ].y + y, q[ m ].z + z );
+			uvs.push( q[ m ].x / w + 0.5, 0.5 - q[ m ].y / h );
+			slot.push( face ? SLOT.face : SLOT.hair );
+
+		}
+
+		index.push( base, base + ( outward ? 1 : 2 ), base + ( outward ? 2 : 1 ) );
+
+	}
+
+	return { pos, uvs, slot, index };
+
+}
+
 // A box head: corners from `toBody( local )` (a box from `min` to `max` in some local frame), the face on the side
 // whose normal points most along +z in body space. Returns arrays to append; UVs 0…1 per side (v down, the
 // atlas is drawn top-down), the face upright and not mirrored.
@@ -1216,7 +1246,8 @@ export function preparePosed( gltf ) {
 
 		// Square-ish box: as wide as deep, a little taller.
 		const size = head.getSize( v ), c = head.getCenter( new THREE.Vector3() ), w = Math.max( size.x, size.z ) * 0.95;
-		const hb = headBox( new THREE.Vector3( c.x - w / 2, head.min.y, c.z - w / 2 ), new THREE.Vector3( c.x + w / 2, head.max.y + 0.02 * height, c.z + w / 2 ), l => l );
+		// The same faceted gem as the walking people's (not a box): the face stretched over its front half.
+		const hb = gemHead( c.x, ( head.min.y + head.max.y + 0.02 * height ) / 2, c.z, w * 1.15 * HEAD.scale, ( head.max.y + 0.02 * height - head.min.y ) * 1.1 * HEAD.scale );
 		const hg = new THREE.BufferGeometry();
 		hg.setAttribute( 'position', new THREE.Float32BufferAttribute( hb.pos, 3 ) );
 		hg.setAttribute( 'uv', new THREE.Float32BufferAttribute( hb.uvs, 2 ) );
