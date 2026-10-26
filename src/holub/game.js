@@ -144,7 +144,7 @@ function scatterFood( scene, spots, surfaceAt, rnd ) {
 
 // --- the game -----------------------------------------------------------------------------------------------------
 
-export function startHolub( { scene, camera, dom, roofGeo, bounds, groundHeight, waterLevel, places, furniture, life, start, indoors = () => false, solids = null } ) {
+export function startHolub( { scene, camera, dom, roofGeo = null, roofAt: roofLookup = null, bounds, groundHeight, waterLevel, places, furniture, life, start, indoors = () => false, solids = null } ) {
 
 	// What happens, for the story (src/holub/story.js): 'peck' (food name), 'takeoff', 'land' (height above the street),
 	// 'walk' (metres), 'drop', 'hit'.
@@ -159,7 +159,8 @@ export function startHolub( { scene, camera, dom, roofGeo, bounds, groundHeight,
 
 	let seed = 7;
 	const rnd = () => ( ( seed = ( seed * 16807 ) % 2147483647 ) / 2147483647 );
-	const roofAt = roofGrid( roofGeo, bounds );
+	// The roofs' heights: from the streamed squares (src/stream.js) when given, else rasterised here from one mesh.
+	const roofAt = roofLookup || roofGrid( roofGeo, bounds );
 	// Inside a walk-in room (the pub, the večerka…) the floor; elsewhere the street or the roof over it. A tram's or a
 	// car's roof (src/solids.js) counts too, for a bird at `y` no lower than a little under it: one that flies or
 	// walks into the side of a tram meets a wall, one on the street under a tram passing over stays on the street.

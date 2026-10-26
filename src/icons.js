@@ -6,14 +6,22 @@
 import * as THREE from 'three/webgpu';
 import { Kit, plain, M, cyl, ball, textTexture } from './kit.js';
 
-export function addIcons( scene, icons, groundHeight, buildings ) {
+// Each icon stands on the ground where it is: `when( x, z )` resolves once that ground is in (the streamed city,
+// src/stream.js); without it, at once.
+export function addIcons( scene, icons, groundHeight, buildings, when = null ) {
 
 	for ( const icon of icons ) {
 
-		if ( icon.kind === 'letters' ) addLetters( scene, icon, groundHeight );
-		else if ( icon.kind === 'butterfly' ) addButterfly( scene, icon, groundHeight );
-		else if ( icon.kind === 'cupola' ) addCupola( scene, icon, groundHeight, buildings );
-		else if ( icon.kind === 'tower' ) addTower( scene, icon, groundHeight );
+		const add = () => {
+
+			if ( icon.kind === 'letters' ) addLetters( scene, icon, groundHeight );
+			else if ( icon.kind === 'butterfly' ) addButterfly( scene, icon, groundHeight );
+			else if ( icon.kind === 'cupola' ) addCupola( scene, icon, groundHeight, buildings );
+			else if ( icon.kind === 'tower' ) addTower( scene, icon, groundHeight );
+
+		};
+		if ( when ) when( icon.x, icon.z ).then( add );
+		else add();
 
 	}
 

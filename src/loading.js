@@ -21,10 +21,11 @@ const STYLE = `
 	#loading .pct { color: #ffd34a; }
 `;
 
-// The first files the game needs (src/main.js), the biggest; the start screen preloads the same ones.
-export const DATA = [ 'scene.json', 'walls.bin', 'walls-table.bin', 'roofs.bin', 'roofs-table.bin', 'terrain.bin', 'surfaces.bin', 'pavement.bin', 'footprints.bin', 'embankment.bin', 'ground-detail.jpg', 'ground-detail-wide.jpg' ];
+// The first files the game needs (src/main.js): the city's index, the coarse heights, the map, the first area's ground
+// detail; the start screen preloads the same ones. The squares of the city stream in after them (src/stream.js).
+export const DATA = [ 'scene.json', 'heights.bin', 'map.png', 'ground-detail.jpg' ];
 // The download's share of the bar.
-const DOWNLOAD = 0.4;
+const DOWNLOAD = 0.12;
 
 const files = new Map();
 let el = null, fill, label, pct, timer = 0;

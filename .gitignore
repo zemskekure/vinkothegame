@@ -9,3 +9,4 @@ artifact/data
 
 # The owner's friends' photo faces (src/friends.js, tools/friends.mjs): private, never committed.
 public/models/people/friends/
+data/scene

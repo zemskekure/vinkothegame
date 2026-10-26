@@ -45,7 +45,7 @@ const groundAt = ( X, Y ) => {
 
 const scene = JSON.parse( await readFile( new URL( '../public/data/scene.json', import.meta.url ) ) );
 const fp = scene.footprints;
-const mask = new Uint8Array( await readFile( new URL( '../public/data/footprints.bin', import.meta.url ) ) );
+const mask = new Uint8Array( await readFile( new URL( '../data/scene/footprints.bin', import.meta.url ) ) );
 const blocked = ( X, Y ) => {
 
 	const c = Math.floor( ( X - AREA.xmin ) / fp.cell ), r = Math.floor( ( AREA.ymax - Y ) / fp.cell );

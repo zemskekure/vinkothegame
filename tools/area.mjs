@@ -36,3 +36,7 @@ export const ORIGIN = { x: - 743087, y: - 1043282 };
 export const HI_TILES = [ 8, 6 ];
 // The 25 cm overview orthophoto, stitched from 4 × 4 tiles of 3806 × 2352 px.
 export const ORTHO_TILES = [ 4, 4 ];
+
+// The squares the game streams (tools/tiles.mjs → public/data/tiles/, src/stream.js), metres a side, from the area's
+// north-west corner. The ground and pavement meshes keep every triangle within one of them (tools/rtin.mjs).
+export const TILE = 256;

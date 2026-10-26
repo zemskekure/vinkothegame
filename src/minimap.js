@@ -14,61 +14,15 @@ const COLOURS = {
 	ground: [ 160, 156, 148 ]
 };
 
-export function createMinimap( { bounds, surface, surface2, S, isHouse, terrainHeight, waterLevel, markers, touch, bridges = [] } ) {
+export function createMinimap( { bounds, image, cell = 1, markers, touch } ) {
 
-	const W = S.width, H = S.height;
+	// The whole city's map (tools/tiles.mjs draws it once, in COLOURS, bridges and house outlines included).
+	const S = { cell }, W = image.width, H = image.height;
 	const map = document.createElement( 'canvas' );
-	map.width = W;
-	map.height = H;
-	const ctx = map.getContext( '2d' );
-	const img = ctx.createImageData( W, H );
-	for ( let r = 0; r < H; r ++ ) for ( let c = 0; c < W; c ++ ) {
-
-		const i = r * W + c;
-		const x = bounds.minX + ( c + 0.5 ) * S.cell, z = bounds.minZ + ( r + 0.5 ) * S.cell;
-		const F = ( 128 - surface[ i * 4 + 2 ] ) / 25, Fk = ( 128 - surface2[ i * 4 + 2 ] ) / 25;
-		let col = COLOURS.ground;
-		if ( isHouse( x, z ) ) col = COLOURS.house;
-		else if ( terrainHeight( x, z ) < waterLevel ) col = COLOURS.river;
-		else if ( surface[ i * 4 + 1 ] > 128 ) col = COLOURS.park;
-		else if ( F < 0 ) col = COLOURS.road;
-		else if ( Fk > 0 && Fk < 8.5 ) col = COLOURS.pavement;
-		img.data.set( [ ...col, 255 ], i * 4 );
-
-	}
-
-	ctx.putImageData( img, 0, 0 );
-
-	// House outlines: darken house pixels next to open ground.
-	const d = ctx.getImageData( 0, 0, W, H );
-	const house = ( c, r ) => d.data[ ( r * W + c ) * 4 ] === COLOURS.house[ 0 ] && d.data[ ( r * W + c ) * 4 + 1 ] === COLOURS.house[ 1 ];
-	const edge = new Uint8Array( W * H );
-	for ( let r = 1; r < H - 1; r ++ ) for ( let c = 1; c < W - 1; c ++ ) if ( house( c, r ) && ( ! house( c - 1, r ) || ! house( c + 1, r ) || ! house( c, r - 1 ) || ! house( c, r + 1 ) ) ) edge[ r * W + c ] = 1;
-	for ( let i = 0; i < W * H; i ++ ) if ( edge[ i ] ) d.data.set( [ 150, 138, 122 ], i * 4 );
-	ctx.putImageData( d, 0, 0 );
-
-	// Bridges: the decks over the river would be drawn as water (the terrain under them), so they are drawn over it.
-	// A bridge is a list of strips { pts: [ [ x, z ], … ], w, fill, inner } in the scene frame, metres: each a band of
-	// its width along its line, pavement or road coloured; first a darker parapet edge round all but the inner strips
-	// (Most Legií's carriageway between its pavements).
-	ctx.save();
-	ctx.scale( 1 / S.cell, 1 / S.cell );
-	ctx.translate( - bounds.minX, - bounds.minZ );
-	ctx.lineJoin = 'round';
-	ctx.lineCap = 'butt';
-	const band = ( s, w, colour ) => {
-
-		ctx.beginPath();
-		s.pts.forEach( ( [ x, z ], i ) => i ? ctx.lineTo( x, z ) : ctx.moveTo( x, z ) );
-		ctx.lineWidth = w;
-		ctx.strokeStyle = `rgb(${colour.join( ',' )})`;
-		ctx.stroke();
-
-	};
-
-	for ( const s of bridges.flat() ) if ( ! s.inner ) band( s, s.w + 2 * S.cell, [ 70, 72, 76 ] );
-	for ( const s of bridges.flat() ) band( s, s.w, COLOURS[ s.fill ] );
-	ctx.restore();
+	map.width = image.width;
+	map.height = image.height;
+	map.getContext( '2d' ).drawImage( image, 0, 0 );
+	image.close?.();
 
 	// The on-screen dial.
 	const size = touch ? 128 : 190;

@@ -6,6 +6,7 @@ import * as THREE from 'three/webgpu';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { color, positionWorld, mix, float, vec2, floor, fract, abs, smoothstep, step, attribute, texture, uv } from 'three/tsl';
 import { noise2D } from './shading/common.js';
+import { mergeInstances } from './kit.js';
 // The owner's pictures of a historic lamp post, a bin, a bollard and a bench (tools/textures/furniture.py).
 import ATLAS from './furniture-atlas.json';
 
@@ -173,19 +174,10 @@ function instance( scene, type, parts, entries, matrixOf, tile = Infinity, { str
 
 	}
 
-	for ( const list of tiles.values() ) for ( let [ geometry, material ] of parts ) {
+	for ( const list of tiles.values() ) for ( const [ geometry, material ] of parts ) {
 
-		if ( kindOf ) {
-
-			geometry = geometry.clone();
-			geometry.setAttribute( 'kind', new THREE.InstancedBufferAttribute( new Float32Array( list.map( kindOf ) ), 1 ) );
-
-		}
-
-		const mesh = new THREE.InstancedMesh( geometry, material, list.length );
-		const m = new THREE.Matrix4();
-		list.forEach( ( entry, i ) => mesh.setMatrixAt( i, matrixOf( entry, m ) ) );
-		mesh.computeBoundingSphere();
+		const matrices = list.map( entry => matrixOf( entry, new THREE.Matrix4() ) );
+		const mesh = new THREE.Mesh( mergeInstances( geometry, matrices, kindOf ? { name: 'kind', values: list.map( kindOf ) } : null ), material );
 		mesh.castShadow = true;
 		mesh.receiveShadow = true;
 		mesh.name = type;
@@ -235,9 +227,11 @@ export function addFurniture( scene, furniture ) {
 
 		const [ x, y, z, , h ] = trees.slice( i, i + 5 );
 		const r = Math.min( 6, Math.max( 2, h * 0.32 ) ), kind = kindOfTree( x, z );
+		// The crown turned by the tree's place in the whole city's list (a square's trees carry theirs: src/stream.js).
+		const n = furniture.treeIndex ? furniture.treeIndex[ i / 5 ] * 5 : i;
 		for ( let k = 0; k < 3; k ++ ) {
 
-			const a = i * 2.4 + k * 2.1;
+			const a = n * 2.4 + k * 2.1;
 			blobs.push( x + Math.cos( a ) * r * 0.35, y + h * ( 0.62 + 0.07 * k ), z + Math.sin( a ) * r * 0.35, a, r * 0.78, kind );
 
 		}

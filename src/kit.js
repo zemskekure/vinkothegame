@@ -15,6 +15,53 @@ export const SUN = new THREE.Vector3().setFromSphericalCoords( 1, THREE.MathUtil
 // Per-frame updates for animated set pieces (the Kafka head…): called with dt from the main loop.
 export const ANIMATE = [];
 
+// Copies of a small shape (street furniture, trees, railing posts) merged into one plain mesh, each copy placed by
+// its matrix, with an optional value per copy as a vertex attribute (`extra`: { name, values }). The streamed squares
+// (src/stream.js) draw their furniture so: an instanced mesh of its own per square costs three a node build of its own
+// (its matrices are a uniform of that mesh), a fifth of a second each; merged meshes share the material's.
+const _n = new THREE.Matrix3(), _v = new THREE.Vector3();
+export function mergeInstances( geometry, matrices, extra = null ) {
+
+	const src = geometry.attributes, n = matrices.length, vc = src.position.count;
+	const g = new THREE.BufferGeometry();
+	const pos = new Float32Array( vc * n * 3 ), nor = src.normal ? new Float32Array( vc * n * 3 ) : null, uvs = src.uv ? new Float32Array( vc * n * 2 ) : null;
+	const ex = extra ? new Float32Array( vc * n ) : null;
+	matrices.forEach( ( m, k ) => {
+
+		_n.getNormalMatrix( m );
+		for ( let v = 0; v < vc; v ++ ) {
+
+			_v.fromBufferAttribute( src.position, v ).applyMatrix4( m ).toArray( pos, ( k * vc + v ) * 3 );
+			if ( nor ) _v.fromBufferAttribute( src.normal, v ).applyMatrix3( _n ).normalize().toArray( nor, ( k * vc + v ) * 3 );
+			if ( uvs ) {
+
+				uvs[ ( k * vc + v ) * 2 ] = src.uv.getX( v );
+				uvs[ ( k * vc + v ) * 2 + 1 ] = src.uv.getY( v );
+
+			}
+
+			if ( ex ) ex[ k * vc + v ] = extra.values[ k ];
+
+		}
+
+	} );
+	g.setAttribute( 'position', new THREE.BufferAttribute( pos, 3 ) );
+	if ( nor ) g.setAttribute( 'normal', new THREE.BufferAttribute( nor, 3 ) );
+	if ( uvs ) g.setAttribute( 'uv', new THREE.BufferAttribute( uvs, 2 ) );
+	if ( ex ) g.setAttribute( extra.name, new THREE.BufferAttribute( ex, 1 ) );
+	if ( geometry.index ) {
+
+		const ic = geometry.index.count, index = new Uint32Array( ic * n );
+		for ( let k = 0; k < n; k ++ ) for ( let i = 0; i < ic; i ++ ) index[ k * ic + i ] = geometry.index.getX( i ) + k * vc;
+		g.setIndex( new THREE.BufferAttribute( index, 1 ) );
+
+	}
+
+	g.computeBoundingSphere();
+	return g;
+
+}
+
 export const plain = ( hex, opts = {} ) => new THREE.MeshStandardNodeMaterial( { color: hex, roughness: 0.8, ...opts } );
 export const glow = ( hex, intensity = 1.5 ) => new THREE.MeshStandardNodeMaterial( { color: hex, emissive: hex, emissiveIntensity: intensity, roughness: 0.4 } );
 

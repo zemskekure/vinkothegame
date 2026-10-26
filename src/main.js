@@ -6,9 +6,11 @@ import { createRoofMaterial, createGroundMaterial, createWaterMaterial } from '.
 import { Walker } from './walker.js';
 import { addFurniture } from './furniture.js';
 import { addSky } from './sky.js';
-import { streetFronts, addGraffiti } from './graffiti.js';
+import { streetFronts, prepareGraffiti } from './graffiti.js';
 import { addSigns } from './signs.js';
 import { addDecor, addEmbankment } from './decor.js';
+import { addWalls } from './dress.js';
+import { createStream } from './stream.js';
 import { addPlaces } from './places.js';
 import { addIcons } from './icons.js';
 import { addShopfronts } from './fronts.js';
@@ -29,8 +31,7 @@ import { startStory } from './holub/story.js';
 import { ps1Look } from './holub/ps1.js';
 import { startDay } from './holub/sky.js';
 import { SETTINGS } from './settings.js';
-import { batchStatic, splitByTile } from './batch.js';
-import { unpackWalls, unpackRoofs, unpackTerrain, unpackPavement, unpackSurfaces } from './unpack.js';
+import { batchStatic } from './batch.js';
 import * as loading from './loading.js';
 import { getHud } from './hud.js';
 import { backToStart } from './start.js';
@@ -81,14 +82,15 @@ async function load( name, type = 'arrayBuffer', dir = 'data/', track = false ) 
 
 }
 
-// The city's buffers are packed (tools/pack.mjs, src/unpack.js): about a fifth of the raw floats, and less again
-// over the wire once the server gzips them.
-// (let: each download is let go once unpacked, below.)
-let [ data, wallsBuf, wallTableBuf, roofsBuf, roofTableBuf, terrainBuf, surfacesBuf, pavementBuf, footprintBuf, embankmentBuf ] = await Promise.all( [
+// The city comes by square (src/stream.js, tools/tiles.mjs): first the small index of the whole city (the bounds,
+// the squares, the hand-made places, the street names), the map and the ground every 8 m; then the squares round
+// where one starts, nearest first.
+const [ data, coarseBuf, mapBlob ] = await Promise.all( [
 	load( 'scene.json', 'json', 'data/', true ),
-	...[ 'walls.bin', 'walls-table.bin', 'roofs.bin', 'roofs-table.bin', 'terrain.bin', 'surfaces.bin', 'pavement.bin', 'footprints.bin', 'embankment.bin' ].map( n => load( n, 'arrayBuffer', 'data/', true ) )
+	load( 'heights.bin', 'arrayBuffer', 'data/', true ),
+	load( 'map.png', 'blob', 'data/', true )
 ] );
-await loading.step( 'Skládám terén', 0.4, 0.46 );
+await loading.step( 'Skládám terén', 0.12, 0.16 );
 
 const { bounds } = data;
 const params = new URLSearchParams( location.search );
@@ -162,101 +164,77 @@ scene.add( sun, sun.target, hemi );
 if ( HOLUB ) holubLook( { renderer, scene, sky, sun, hemi, camera } );
 
 // ---------------------------------------------------------------------------
-// Terrain and street surfaces
+// Where one starts: on foot (?at, else Betlémské náměstí), the pigeon's start, or the view from above's target.
 
-const T = data.terrain;
-// The ground is drawn from a mesh of the 1 m grid (tools/rtin.mjs at build time): big triangles where the ground is
-// flat, small ones where it bends, every grid point along the retaining walls. The grid's heights (for walking,
-// the people, the trams) are read off the same triangles.
-const terrainGeo = new THREE.BufferGeometry();
-const terrainMesh = unpackTerrain( terrainBuf, data.packed[ 'terrain.bin' ], T );
-const heights = terrainMesh.heights;
-terrainBuf = null;
-const vertexAt = new Map(); // grid point → corner
-{
+// Start on Betlémské náměstí, at the west end of the square by Oliva Nera's terrace, looking at the chapel.
+function startAt() {
 
-	const { grid } = terrainMesh, pos = new Float32Array( grid.length * 3 );
-	for ( let v = 0; v < grid.length; v ++ ) {
-
-		const g = grid[ v ], c = g % T.width, r = ( g - c ) / T.width;
-		pos[ v * 3 ] = bounds.minX + c * T.cell;
-		pos[ v * 3 + 1 ] = terrainMesh.y[ v ];
-		pos[ v * 3 + 2 ] = bounds.minZ + r * T.cell;
-		vertexAt.set( g, v );
-
-	}
-
-	terrainGeo.setAttribute( 'position', new THREE.BufferAttribute( pos, 3 ) );
+	const [ x, z, tx, tz ] = [ - 78, 68, - 42, 52 ];
+	return `${x},${z},${Math.atan2( - ( tx - x ), - ( tz - z ) ).toFixed( 3 )}`;
 
 }
 
-const tp = terrainGeo.attributes.position;
-// Retaining walls (tools/quay.mjs: the náplavka's wall under Smetanovo nábřeží, Čapadlo's lane): the 1 m grid would
-// ramp across a wall's foot. Grid points within 1.5 m of the wall line move onto it (the high ones from behind, the
-// low ones from in front), and the triangles still spanning from the top to the foot are dropped: the ground meets
-// the wall face in a straight line on both sides.
-{
+const holubStart = SETTINGS.pigeon.start;
+const firstFocus = ( () => {
 
-	const mark = new Uint8Array( tp.count ), mids = new Float32Array( tp.count );
-	for ( const [ x0, z0, x1, z1, nx, nz, top, low ] of data.cliffs || [] ) {
+	if ( HOLUB ) return [ holubStart[ 0 ], holubStart[ 1 ] ];
+	if ( params.has( 'overview' ) ) {
 
-		const dx = x1 - x0, dz = z1 - z0, l2 = dx * dx + dz * dz, mid = ( top + low ) / 2;
-		if ( ! l2 ) continue;
-		const c0 = Math.max( 0, Math.floor( ( Math.min( x0, x1 ) - 1.6 - bounds.minX ) / T.cell ) ), c1 = Math.min( T.width - 1, Math.ceil( ( Math.max( x0, x1 ) + 1.6 - bounds.minX ) / T.cell ) );
-		const r0 = Math.max( 0, Math.floor( ( Math.min( z0, z1 ) - 1.6 - bounds.minZ ) / T.cell ) ), r1 = Math.min( T.height - 1, Math.ceil( ( Math.max( z0, z1 ) + 1.6 - bounds.minZ ) / T.cell ) );
-		for ( let r = r0; r <= r1; r ++ ) for ( let c = c0; c <= c1; c ++ ) {
+		if ( params.has( 'view' ) ) {
 
-			const i = vertexAt.get( r * T.width + c );
-			if ( i === undefined || mark[ i ] ) continue;
-			const x = bounds.minX + c * T.cell, z = bounds.minZ + r * T.cell;
-			const t = ( ( x - x0 ) * dx + ( z - z0 ) * dz ) / l2;
-			if ( t < - 0.01 || t > 1.01 ) continue;
-			const d = ( x - x0 ) * nx + ( z - z0 ) * nz, y = tp.getY( i );
-			if ( Math.abs( d ) >= 1.5 ) continue;
-			const to = y > mid ? - 0.02 : 0.02;
-			tp.setXYZ( i, x - nx * ( d - to ), y, z - nz * ( d - to ) );
-			mark[ i ] = 1;
-			mids[ i ] = mid;
+			const [ x, , z, tx, , tz ] = params.get( 'view' ).split( ',' ).map( Number );
+			// From above one looks a way off: the squares round what one looks at, and towards the camera.
+			return [ tx * 0.8 + x * 0.2, tz * 0.8 + z * 0.2 ];
 
 		}
 
-	}
-
-	const index = terrainMesh.index, kept = [];
-	for ( let k = 0; k < index.length; k += 3 ) {
-
-		const v = [ index[ k ], index[ k + 1 ], index[ k + 2 ] ], m = v.find( i => mark[ i ] );
-		if ( m !== undefined ) {
-
-			const mid = mids[ m ];
-			if ( v.some( i => tp.getY( i ) > mid ) && v.some( i => tp.getY( i ) < mid ) ) continue;
-
-		}
-
-		kept.push( ...v );
+		return [ - 20, 30 ];
 
 	}
 
-	terrainGeo.setIndex( new THREE.BufferAttribute( kept.length < index.length ? new Uint32Array( kept ) : index, 1 ) );
+	const [ x, z ] = ( params.get( 'at' ) || startAt() ).split( ',' ).map( Number );
+	return [ x, z ];
 
-}
+} )();
 
-terrainGeo.computeVertexNormals();
+// ---------------------------------------------------------------------------
+// The squares: the ground, the pavements, the houses, the street furniture of each, and what walking asks of them
 
+const stream = createStream( { index: data, apply: square => putSquare( square ), release: square => dropSquare( square ), radii: { ready: Number( params.get( 'ready' ) ) || 0, load: Number( params.get( 'load' ) ) || 0 } } );
+stream.setCoarse( new Int16Array( coarseBuf ) );
+const firstSquares = stream.prime( ...firstFocus );
+// Before play, the squares are put in as they arrive (no frame to keep smooth yet).
+const pump = setInterval( () => stream.update( ...firstFocus, 0, 0, { everything: true } ), 25 );
+
+// The street maps and the aerial ground detail of the whole city, filled in square by square on the GPU (each
+// square's own small texture copied in, then let go): nothing of them stays in memory here.
 const S = data.surface;
-const surfaceTexture = buf => {
+function cityTexture( format, bytes ) {
 
-	const tex = new THREE.DataTexture( buf, S.width, S.height, THREE.RGBAFormat );
+	const tex = new THREE.DataTexture( new Uint8Array( S.width * S.height * bytes ), S.width, S.height, format );
 	tex.magFilter = tex.minFilter = THREE.LinearFilter;
+	tex.generateMipmaps = false;
 	tex.needsUpdate = true;
+	renderer.initTexture( tex );
+	tex.image.data = null;
 	return tex;
 
-};
+}
 
-const [ surfaceBytes, surface2 ] = unpackSurfaces( surfacesBuf, S.width, S.height );
-surfacesBuf = null;
-const surfaceTex = surfaceTexture( surfaceBytes ), surface2Tex = surfaceTexture( surface2 );
-// The aerial photo's ground detail: 25 cm over the first area, 50 cm over the whole area.
+const surfaceTex = cityTexture( THREE.RGBAFormat, 4 ), surface2Tex = cityTexture( THREE.RGBAFormat, 4 );
+const detailWideTex = cityTexture( THREE.RedFormat, 1 );
+const copyAt = new THREE.Vector2();
+function copyInto( city, bytes, w, h, format, x, z ) {
+
+	const part = new THREE.DataTexture( bytes, w, h, format );
+	part.needsUpdate = true;
+	if ( renderer.backend.isWebGPUBackend ) renderer.initTexture( part );
+	renderer.copyTextureToTexture( part, city, null, copyAt.set( Math.round( x - bounds.minX ), Math.round( z - bounds.minZ ) ) );
+	part.dispose();
+
+}
+
+// The aerial photo's ground detail: 50 cm over the first area (one picture), 1 m elsewhere (by square).
 const loadDetail = async name => {
 
 	// From the start screen's download if it has it (src/start.js), else from the server.
@@ -270,70 +248,242 @@ const loadDetail = async name => {
 	return tex;
 
 };
-await loading.step( 'Pokládám dlažbu', 0.46, 0.5 );
 const groundDetail = await loadDetail( 'ground-detail.jpg' );
-const groundDetailWide = data.firstBounds ? await loadDetail( 'ground-detail-wide.jpg' ) : null;
-const groundMaterial = createGroundMaterial( surfaceTex, surface2Tex, bounds, groundDetail, FB, groundDetailWide );
-const terrain = new THREE.Mesh( terrainGeo, groundMaterial );
-terrain.receiveShadow = true;
-scene.add( terrain );
+const groundMaterial = createGroundMaterial( surfaceTex, surface2Tex, bounds, groundDetail, FB, detailWideTex );
+const pavementMaterial = createGroundMaterial( surfaceTex, surface2Tex, bounds, groundDetail, FB, detailWideTex );
+pavementMaterial.side = THREE.DoubleSide;
+// Roofs: flat-shaded so every hip and gable face reads crisply.
+const roofMaterial = createRoofMaterial();
 
-// Decks over a street below (tools/terraces.mjs): Národní over Divadelní, the piazzetta's edge over the covered
-// pavement. Slabs of their own, drawn with the street's surface; the street below is in the terrain.
-{
+// Described ground floors (tools/build-scene.mjs): one row per street front, one texel per 0.25 m of the front
+// holding the opening there: kind + 10 × frame colour, its left and right edge (m) and flags. Half floats: those
+// are filterable under WebGPU too (32-bit floats are not), and keep the edges to about 3 cm.
+const GF_TEXELS = 256;
+const groundRows = data.groundFloors || [];
+const gfData = new Uint16Array( GF_TEXELS * Math.max( 1, groundRows.length ) * 4 );
+groundRows.forEach( ( row, r ) => {
 
-	const decks = data.places?.theatre?.decks;
-	if ( decks ) {
+	for ( const [ u0, u1, kind, frame, flags ] of row ) {
 
-		const pos = [], quadAt = ( a, b, c, d ) => pos.push( ...a, ...b, ...c, ...a, ...c, ...d );
-		const t = decks.tunnel, y = t.y + 0.01;
-		quadAt( [ t.x0, y, t.z0 ], [ t.x0, y, t.z1 ], [ t.x1, y, t.z1 ], [ t.x1, y, t.z0 ] );
-		for ( let i = 1; i < decks.strip.length; i ++ ) {
+		for ( let t = Math.max( 0, Math.floor( u0 / 0.25 ) ); t <= Math.min( GF_TEXELS - 1, Math.floor( u1 / 0.25 ) ); t ++ ) {
 
-			const [ za, xa0, xa1, ya ] = decks.strip[ i - 1 ], [ zb, xb0, xb1, yb ] = decks.strip[ i ];
-			quadAt( [ xa0, ya + 0.01, za ], [ xb0, yb + 0.01, zb ], [ xb1, yb + 0.01, zb ], [ xa1, ya + 0.01, za ] );
+			gfData.set( [ kind + 10 * frame, u0, u1, flags ].map( THREE.DataUtils.toHalfFloat ), ( r * GF_TEXELS + t ) * 4 );
 
 		}
 
-		const geo = new THREE.BufferGeometry();
-		geo.setAttribute( 'position', new THREE.Float32BufferAttribute( pos, 3 ) );
-		geo.computeVertexNormals();
-		const deck = new THREE.Mesh( geo, groundMaterial );
-		deck.receiveShadow = true;
-		scene.add( deck );
+	}
+
+} );
+const groundFloorTexture = new THREE.DataTexture( gfData, GF_TEXELS, Math.max( 1, groundRows.length ), THREE.RGBAFormat, THREE.HalfFloatType );
+groundFloorTexture.magFilter = groundFloorTexture.minFilter = THREE.NearestFilter;
+groundFloorTexture.needsUpdate = true;
+const facadeMaterial = createFacadeMaterial( data.places?.cutouts || [], groundFloorTexture );
+
+// Landmark facades (style 1 Národní divadlo sandstone, 2 Máj white panels, 3 Betlémská kaple white render).
+const LANDMARK_COLOURS = { 1: 0xb59a74, 2: 0xe6e6e2, 3: 0xf1ede5 };
+const plasterColour = new THREE.Color();
+// Tags, stickers and posters on the ground floors (src/graffiti.js), square by square.
+const graffitiReady = prepareGraffiti( { streets: data.streets, groundFloors: groundRows } ).catch( e => console.warn( 'graffiti', e ) );
+let graffitiPlace = null;
+graffitiReady.then( g => graffitiPlace = g );
+
+// What every square's meshes have in common: in the scene's still city (they cast shadows), skipped by the batching,
+// shown only within the haze (the loop below), their arrays let go once on the GPU.
+const squareGroups = new Set(), heavy = new Set();
+let stillRoots = null, putSince = 0, shadowsStale = false;
+// The trams (src/trams.js), once in: their overhead line is built square by square.
+let trams = { update() {} };
+const hold = geometry => heavy.add( geometry );
+// Once a geometry's positions are on the GPU, its arrays go (the attributes its material doesn't read are never
+// uploaded: they go too); an empty array of the same kind stays, for the layout three reads to build a pipeline.
+setInterval( () => {
+
+	const empty = b => b.array = new b.array.constructor( 0 );
+	for ( const g of heavy ) {
+
+		const p = g.attributes.position;
+		if ( ! p ) {
+
+			heavy.delete( g );
+			continue;
+
+		}
+
+		const d = renderer.backend.get( p.isInterleavedBufferAttribute ? p.data : p );
+		if ( ! d.buffer && ! d.bufferGPU ) continue;
+		for ( const a of Object.values( g.attributes ) ) if ( a.array.length ) empty( a.isInterleavedBufferAttribute ? a.data : a );
+		if ( g.index?.array.length ) empty( g.index );
+		heavy.delete( g );
 
 	}
 
+}, 2000 );
+
+function putSquare( square ) {
+
+	const t0 = performance.now();
+	const D = square.data, group = new THREE.Group();
+	group.name = `square ${square.i},${square.j}`;
+	group.userData.square = true;
+	group.userData.x0 = D.x0;
+	group.userData.z0 = D.z0;
+	const mesh = ( geometry, material, shadows = true ) => {
+
+		const m = new THREE.Mesh( geometry, material );
+		m.castShadow = shadows;
+		m.receiveShadow = true;
+		m.frustumCulled = true;
+		geometry.computeBoundingSphere();
+		group.add( m );
+		hold( geometry );
+		return m;
+
+	};
+
+	if ( D.terrain ) {
+
+		const g = new THREE.BufferGeometry();
+		g.setAttribute( 'position', new THREE.BufferAttribute( D.terrain.position, 3 ) );
+		g.setAttribute( 'normal', new THREE.BufferAttribute( D.terrain.normal, 3 ) );
+		g.setIndex( new THREE.BufferAttribute( D.terrain.index, 1 ) );
+		mesh( g, groundMaterial, false );
+		D.terrain = null;
+
+	}
+
+	if ( D.pavement ) {
+
+		const g = new THREE.BufferGeometry();
+		g.setAttribute( 'position', new THREE.BufferAttribute( D.pavement.position, 3 ) );
+		g.setAttribute( 'normal', new THREE.BufferAttribute( D.pavement.normal, 3 ) );
+		g.setIndex( new THREE.BufferAttribute( D.pavement.index, 1 ) );
+		mesh( g, pavementMaterial, false );
+		D.pavement = null;
+
+	}
+
+	if ( D.walls ) {
+
+		const ws = data.wallStride, walls = D.walls.walls, n = walls.length / ws;
+		const fronts = graffitiPlace ? streetFronts( walls, ws, D.walls.index ) : null;
+		const g = new THREE.BufferGeometry();
+		const wib = new THREE.InterleavedBuffer( walls, ws );
+		// Packed into vec4s: WebGPU allows at most 16 values passed from vertex to fragment shader.
+		[ [ 'position', 3, 0 ], [ 'wallA', 4, 3 ], [ 'wallB', 4, 7 ], [ 'wallC', 4, 13 ], [ 'trimColour', 3, 17 ], [ 'house', 4, 20 ] ].forEach( ( [ name, size, offset ] ) => g.setAttribute( name, new THREE.InterleavedBufferAttribute( wib, size, offset ) ) );
+		// Measured colour from street photos when there is one, else a typical Prague plaster.
+		const plaster = new Float32Array( n * 3 );
+		for ( let i = 0; i < n; i ++ ) {
+
+			const r = walls[ i * ws + 10 ], landmark = LANDMARK_COLOURS[ walls[ i * ws + 16 ] ];
+			if ( landmark ) plasterColour.setHex( landmark );
+			else if ( r >= 0 ) plasterColour.setRGB( r, walls[ i * ws + 11 ], walls[ i * ws + 12 ], THREE.SRGBColorSpace );
+			else plasterColour.setHex( PLASTER[ Math.floor( walls[ i * ws + 8 ] * PLASTER.length ) ] );
+			plaster.set( [ plasterColour.r, plasterColour.g, plasterColour.b ], i * 3 );
+
+		}
+
+		g.setAttribute( 'plaster', new THREE.BufferAttribute( plaster, 3 ) );
+		g.setAttribute( 'normal', new THREE.BufferAttribute( D.walls.normal, 3 ) );
+		g.setIndex( new THREE.BufferAttribute( D.walls.index, 1 ) );
+		mesh( g, facadeMaterial );
+		if ( fronts?.length ) graffitiPlace( group, fronts, groundHeight );
+		D.walls = null;
+
+	}
+
+	if ( D.roofs ) {
+
+		const rs = data.roofStride, g = new THREE.BufferGeometry();
+		const rib = new THREE.InterleavedBuffer( D.roofs.roofs, rs );
+		g.setAttribute( 'position', new THREE.InterleavedBufferAttribute( rib, 3, 0 ) );
+		g.setAttribute( 'roofKind', new THREE.InterleavedBufferAttribute( rib, 1, 3 ) );
+		g.setAttribute( 'seed', new THREE.InterleavedBufferAttribute( rib, 1, 4 ) );
+		g.setAttribute( 'roofColor', new THREE.InterleavedBufferAttribute( rib, 3, 5 ) );
+		g.setAttribute( 'normal', new THREE.BufferAttribute( D.roofs.normal, 3 ) );
+		mesh( g, roofMaterial );
+		// The pigeon stands on the roofs (src/stream.js roof): their corners stay for it.
+		D.roofPos = HOLUB ? D.roofs.position : null;
+		D.roofs = null;
+
+	}
+
+	if ( D.surface ) {
+
+		copyInto( surfaceTex, D.surface.s1, D.surface.w, D.surface.h, THREE.RGBAFormat, D.x0, D.z0 );
+		copyInto( surface2Tex, D.surface.s2, D.surface.w, D.surface.h, THREE.RGBAFormat, D.x0, D.z0 );
+		D.surface.s1 = D.surface.s2 = null;
+
+	}
+
+	if ( D.detail ) {
+
+		copyInto( detailWideTex, D.detail.data, D.detail.w, D.detail.h, THREE.RedFormat, D.x0, D.z0 );
+		D.detail = null;
+
+	}
+
+	const H = D.header;
+	if ( D.embankment ) addEmbankment( group, D.embankment, { pillars: H.posts?.pillars || [], thin: H.posts?.thin || [], rails: H.rails || [] } );
+	D.embankment = null;
+	if ( Object.keys( H.furniture ).length ) addFurniture( group, H.furniture );
+	if ( H.walls?.length ) addWalls( group, H.walls );
+	// The trams' overhead line over this square (src/trams.js), once the trams are in.
+	trams.catenary?.( group, D.x0, D.z0, data.tiles.size );
+	D.header = { i: H.i, j: H.j };
+
+	group.traverse( o => {
+
+		if ( ! o.isMesh ) return;
+		if ( o.isInstancedMesh && ! o.boundingSphere ) o.computeBoundingSphere();
+		if ( ! o.isInstancedMesh && o.geometry !== undefined ) hold( o.geometry );
+
+	} );
+	scene.add( group );
+	// Its pipelines (shared with the other squares') and its buffers on the GPU now, in the background, so its arrays
+	// can go even while it is out of sight, and its first sight costs nothing.
+	if ( window.__ready ) {
+
+		const flipped = [];
+		group.traverse( o => o.frustumCulled && flipped.push( o ) );
+		for ( const o of flipped ) o.frustumCulled = false;
+		renderer.compileAsync( group, camera, scene ).catch( () => {} );
+		for ( const o of flipped ) o.frustumCulled = true;
+
+	}
+
+	squareGroups.add( group );
+	stillRoots?.add( group );
+	square.group = group;
+	// A square coming in near where one is: the still city's shadows are drawn again.
+	if ( Math.abs( D.x0 + 128 - shadowCentre.x ) < 700 && Math.abs( D.z0 + 128 - shadowCentre.z ) < 700 ) shadowsStale = true;
+	putSince = Math.max( putSince, performance.now() - t0 );
+	window.__debug?.squareLog?.push( [ performance.now(), square.i, square.j, + ( performance.now() - t0 ).toFixed( 1 ), D.bytes ] );
+
 }
 
-// Raised pavements with their kerbs (double-sided: the kerb faces are only wound one way).
-const pavementGeo = new THREE.BufferGeometry();
-{
+function dropSquare( square ) {
 
-	const { positions, index } = unpackPavement( pavementBuf, data.packed[ 'pavement.bin' ] );
-	pavementBuf = null;
-	pavementGeo.setAttribute( 'position', new THREE.BufferAttribute( positions, 3 ) );
-	pavementGeo.setIndex( new THREE.BufferAttribute( index, 1 ) );
+	const group = square.group;
+	if ( ! group ) return;
+	group.traverse( o => {
 
-}
+		if ( o.isMesh ) {
 
-pavementGeo.computeVertexNormals();
-const pavementMaterial = createGroundMaterial( surfaceTex, surface2Tex, bounds, groundDetail, FB, groundDetailWide );
-pavementMaterial.side = THREE.DoubleSide;
-const pavement = new THREE.Mesh( pavementGeo, pavementMaterial );
-pavement.receiveShadow = true;
-scene.add( pavement );
+			o.geometry.dispose();
+			if ( o.isInstancedMesh ) o.dispose();
 
-function terrainHeight( x, z ) {
+		}
 
-	const fx = THREE.MathUtils.clamp( ( x - bounds.minX ) / T.cell, 0, T.width - 1.001 );
-	const fz = THREE.MathUtils.clamp( ( z - bounds.minZ ) / T.cell, 0, T.height - 1.001 );
-	const x0 = Math.floor( fx ), z0 = Math.floor( fz ), tx = fx - x0, tz = fz - z0;
-	const i = z0 * T.width + x0;
-	return ( heights[ i ] * ( 1 - tx ) + heights[ i + 1 ] * tx ) * ( 1 - tz ) +
-		( heights[ i + T.width ] * ( 1 - tx ) + heights[ i + T.width + 1 ] * tx ) * tz;
+	} );
+	scene.remove( group );
+	squareGroups.delete( group );
+	stillRoots?.delete( group );
+	square.group = null;
 
 }
+
+// The ground's height: from the square's own grid where it is in, else the coarse grid (things far off).
+const terrainHeight = ( x, z ) => stream.height( x, z ) ?? stream.heightCoarse( x, z );
 
 // Walking surface: street level plus the raised pavement (kerb field in surface2's blue channel).
 // Walkable zones from tools/places.mjs (rooms, doorways, stairs): oriented rectangles with their own floor height.
@@ -437,16 +587,18 @@ function cliffClamp( x, z, h ) {
 
 }
 
-// Ground for everything but the walker (trams, people, furniture): the upper level where two overlap.
-function groundHeight( x, z, y = null ) {
+// Ground for everything but the walker (trams, people, furniture): the upper level where two overlap. Where the
+// square isn't in, the coarse grid (no kerbs, no walls); `strict` asks for nothing there instead (NaN: the walker
+// holds still until it comes).
+function groundHeight( x, z, y = null, strict = false ) {
 
 	const zn = zoneAt( x, z, y );
 	if ( zn ) return zoneHeight( zn, x, z );
-	const col = Math.min( S.width - 1, Math.max( 0, Math.floor( ( x - bounds.minX ) / S.cell ) ) );
-	const row = Math.min( S.height - 1, Math.max( 0, Math.floor( ( z - bounds.minZ ) / S.cell ) ) );
-	const Fk = ( 128 - surface2[ ( row * S.width + col ) * 4 + 2 ] ) / 25;
+	const h = stream.height( x, z );
+	if ( h === null ) return strict ? NaN : stream.heightCoarse( x, z );
+	const k = stream.surfaceByte( x, z, 'fk' ), Fk = ( 128 - ( k ?? 128 ) ) / 25;
 	const raise = Fk > 0 && Fk < 8.5 ? data.kerbHeight : 0;
-	return cliffClamp( x, z, terrainHeight( x, z ) ) + raise;
+	return cliffClamp( x, z, h ) + raise;
 
 }
 
@@ -459,17 +611,45 @@ water.position.set( centre.x, data.waterLevel, centre.z );
 water.receiveShadow = true;
 scene.add( water );
 
+// Decks over a street below (tools/terraces.mjs): Národní over Divadelní, the piazzetta's edge over the covered
+// pavement. Slabs of their own, drawn with the street's surface; the street below is in the terrain.
+{
+
+	const decks = data.places?.theatre?.decks;
+	if ( decks ) {
+
+		const pos = [], quadAt = ( a, b, c, d ) => pos.push( ...a, ...b, ...c, ...a, ...c, ...d );
+		const t = decks.tunnel, y = t.y + 0.01;
+		quadAt( [ t.x0, y, t.z0 ], [ t.x0, y, t.z1 ], [ t.x1, y, t.z1 ], [ t.x1, y, t.z0 ] );
+		for ( let i = 1; i < decks.strip.length; i ++ ) {
+
+			const [ za, xa0, xa1, ya ] = decks.strip[ i - 1 ], [ zb, xb0, xb1, yb ] = decks.strip[ i ];
+			quadAt( [ xa0, ya + 0.01, za ], [ xb0, yb + 0.01, zb ], [ xb1, yb + 0.01, zb ], [ xa1, ya + 0.01, za ] );
+
+		}
+
+		const geo = new THREE.BufferGeometry();
+		geo.setAttribute( 'position', new THREE.Float32BufferAttribute( pos, 3 ) );
+		geo.computeVertexNormals();
+		const deck = new THREE.Mesh( geo, groundMaterial );
+		deck.receiveShadow = true;
+		scene.add( deck );
+
+	}
+
+}
+
 // Beyond the modelled area: plain ground fading into the fog, carried on level from the area's edge (else Petřín's
-// top would stand on a cliff over a plain).
+// top would stand on a cliff over a plain). The edge's height from the coarse grid (the squares there may not be in).
 {
 
 	const pos = [], FAR = 5000, { minX, maxX, minZ, maxZ } = bounds;
-	const at = ( x, z ) => [ x, terrainHeight( x, z ) - 0.05, z ];
+	const at = ( x, z ) => [ x, stream.heightCoarse( x, z ) - 0.05, z ];
 	const out = ( p, nx, nz ) => [ p[ 0 ] + nx * FAR, p[ 1 ], p[ 2 ] + nz * FAR ];
 	const quad = ( a, b, c, d ) => pos.push( ...a, ...b, ...c, ...a, ...c, ...d );
 	const side = ( x0, z0, x1, z1, nx, nz ) => {
 
-		const n = Math.round( Math.hypot( x1 - x0, z1 - z0 ) / 2 );
+		const n = Math.round( Math.hypot( x1 - x0, z1 - z0 ) / 8 );
 		for ( let i = 0; i < n; i ++ ) {
 
 			const p = at( x0 + ( x1 - x0 ) * i / n, z0 + ( z1 - z0 ) * i / n ), q = at( x0 + ( x1 - x0 ) * ( i + 1 ) / n, z0 + ( z1 - z0 ) * ( i + 1 ) / n );
@@ -497,111 +677,23 @@ scene.add( water );
 }
 
 // ---------------------------------------------------------------------------
-// Buildings
+// The hand-made city (all of it, whatever square it stands in): places, signs, decor
 
-await loading.step( 'Stavím domy', 0.5, 0.58 );
-
-// Roofs: flat-shaded so every hip and gable face reads crisply.
-const roofs = new THREE.Mesh( ( () => {
-
-	const rs = data.roofStride;
-	const roofIndexed = new THREE.BufferGeometry();
-	const roofData = unpackRoofs( roofsBuf, roofTableBuf, data.packed[ 'roofs.bin' ], rs );
-	roofsBuf = roofTableBuf = null;
-	const rib = new THREE.InterleavedBuffer( roofData.roofs, rs );
-	roofIndexed.setAttribute( 'position', new THREE.InterleavedBufferAttribute( rib, 3, 0 ) );
-	roofIndexed.setAttribute( 'roofKind', new THREE.InterleavedBufferAttribute( rib, 1, 3 ) );
-	roofIndexed.setAttribute( 'seed', new THREE.InterleavedBufferAttribute( rib, 1, 4 ) );
-	roofIndexed.setAttribute( 'roofColor', new THREE.InterleavedBufferAttribute( rib, 3, 5 ) );
-	roofIndexed.setIndex( new THREE.BufferAttribute( roofData.index, 1 ) );
-	const roofGeo = roofIndexed.toNonIndexed();
-	roofGeo.computeVertexNormals();
-	return roofGeo;
-
-} )(), createRoofMaterial() );
-roofs.castShadow = roofs.receiveShadow = true;
-scene.add( roofs );
-
-// The walls (built in a function of their own, so their arrays can go once they are on the GPU), and the street
-// fronts' ground floors for the graffiti (src/graffiti.js).
-let graffitiFronts = [];
-const wallGeo = ( () => {
-
-	const ws = data.wallStride;
-	const wallData = unpackWalls( wallsBuf, wallTableBuf, data.packed[ 'walls.bin' ], ws );
-	wallsBuf = wallTableBuf = null;
-	const walls = wallData.walls;
-	graffitiFronts = streetFronts( walls, ws, wallData.index );
-	const wallGeo = new THREE.BufferGeometry();
-	const wib = new THREE.InterleavedBuffer( walls, ws );
-	// Packed into vec4s: WebGPU allows at most 16 values passed from vertex to fragment shader.
-	[ [ 'position', 3, 0 ], [ 'wallA', 4, 3 ], [ 'wallB', 4, 7 ], [ 'wallC', 4, 13 ], [ 'trimColour', 3, 17 ], [ 'house', 4, 20 ] ].forEach( ( [ name, size, offset ] ) => {
-
-		wallGeo.setAttribute( name, new THREE.InterleavedBufferAttribute( wib, size, offset ) );
-
-	} );
-
-	// Landmark facades (style 1 Národní divadlo sandstone, 2 Máj white panels, 3 Betlémská kaple white render).
-	const LANDMARK_COLOURS = { 1: 0xb59a74, 2: 0xe6e6e2, 3: 0xf1ede5 };
-	const plaster = new Float32Array( walls.length / ws * 3 );
-	const c = new THREE.Color();
-	for ( let i = 0, n = walls.length / ws; i < n; i ++ ) {
-
-		// Measured colour from street photos when there is one, else a typical Prague plaster.
-		const r = walls[ i * ws + 10 ];
-		const landmark = LANDMARK_COLOURS[ walls[ i * ws + 16 ] ];
-		if ( landmark ) c.setHex( landmark );
-		else if ( r >= 0 ) c.setRGB( r, walls[ i * ws + 11 ], walls[ i * ws + 12 ], THREE.SRGBColorSpace );
-		else c.setHex( PLASTER[ Math.floor( walls[ i * ws + 8 ] * PLASTER.length ) ] );
-		plaster.set( [ c.r, c.g, c.b ], i * 3 );
-
-	}
-
-	wallGeo.setAttribute( 'plaster', new THREE.BufferAttribute( plaster, 3 ) );
-	wallGeo.setIndex( new THREE.BufferAttribute( wallData.index, 1 ) );
-	wallGeo.computeVertexNormals();
-	return wallGeo;
-
-} )();
-// Described ground floors (tools/build-scene.mjs): one row per street front, one texel per 0.25 m of the front
-// holding the opening there: kind + 10 × frame colour, its left and right edge (m) and flags. Half floats: those
-// are filterable under WebGPU too (32-bit floats are not), and keep the edges to about 3 cm.
-const GF_TEXELS = 256;
-const groundRows = data.groundFloors || [];
-const gfData = new Uint16Array( GF_TEXELS * Math.max( 1, groundRows.length ) * 4 );
-groundRows.forEach( ( row, r ) => {
-
-	for ( const [ u0, u1, kind, frame, flags ] of row ) {
-
-		for ( let t = Math.max( 0, Math.floor( u0 / 0.25 ) ); t <= Math.min( GF_TEXELS - 1, Math.floor( u1 / 0.25 ) ); t ++ ) {
-
-			gfData.set( [ kind + 10 * frame, u0, u1, flags ].map( THREE.DataUtils.toHalfFloat ), ( r * GF_TEXELS + t ) * 4 );
-
-		}
-
-	}
-
-} );
-const groundFloorTexture = new THREE.DataTexture( gfData, GF_TEXELS, Math.max( 1, groundRows.length ), THREE.RGBAFormat, THREE.HalfFloatType );
-groundFloorTexture.magFilter = groundFloorTexture.minFilter = THREE.NearestFilter;
-groundFloorTexture.needsUpdate = true;
-
-await loading.sub( 0.5 );
-const wallMesh = new THREE.Mesh( wallGeo, createFacadeMaterial( data.places?.cutouts || [], groundFloorTexture ) );
-wallMesh.castShadow = wallMesh.receiveShadow = true;
-scene.add( wallMesh );
-
-// ---------------------------------------------------------------------------
-// Street furniture and trees (OpenStreetMap, plus canopy peaks found in the surface model)
-
-await loading.step( 'Rozmisťuji lavičky a stromy', 0.58, 0.66 );
+await loading.step( 'Stavím domy', 0.16, 0.24 );
 
 // The chimney courtyard's benches and lamps, the museum gate's lanterns: ordinary furniture and decor.
 const places = data.places;
+const extraFurniture = { bench: [], lamp: [] };
 if ( places?.yard ) {
 
-	for ( const [ x, z, y, rot ] of places.yard.benches ) data.furniture.bench.push( x, y, z, rot, 1 );
-	for ( const [ x, z, y ] of places.yard.lamps ) data.furniture.lamp.push( x, y, z, 0, 1 );
+	for ( const [ x, z, y, rot ] of places.yard.benches ) {
+
+		extraFurniture.bench.push( x, y, z, rot, 1 );
+		data.furniture.bench?.push( x, y, z, rot, 1 );
+
+	}
+
+	for ( const [ x, z, y ] of places.yard.lamps ) extraFurniture.lamp.push( x, y, z, 0, 1 );
 
 }
 
@@ -617,68 +709,38 @@ if ( places?.gate ) {
 
 }
 
-addFurniture( scene, data.furniture );
+addFurniture( scene, extraFurniture );
 // Generic name boards from OpenStreetMap: off until the city gets its own signs and logos (?signs shows them).
 if ( params.has( 'signs' ) ) addSigns( scene, data.signs || [], renderer );
 addDecor( scene, data.decor );
 await addShopfronts( scene, data.decor?.shopfronts );
-addEmbankment( scene, embankmentBuf, data.embankment );
-embankmentBuf = null;
 
 await loading.sub( 0.5 );
 // Signature places (rotunda, pub, café, champagne bar, museum gate, stairs) and street life (people, cars).
 const { seats } = addPlaces( scene, places, data.furniture, data.waterLevel );
-// Local icons: big lettering, sculptures, domed corner towers (data/icons.json).
-addIcons( scene, ICONS, groundHeight, data.buildings );
-// Tags, throw-ups, stickers and torn posters on the ground floors.
-const graffiti = await addGraffiti( scene, graffitiFronts, { streets: data.streets, groundFloors: groundRows, groundHeight } ).catch( e => console.warn( 'graffiti', e ) );
-graffitiFronts = null;
-// The still city in few draw calls (src/batch.js): the hand-made pieces merged per material and 150 m square, the
-// big meshes cut into 200 m squares that are skipped when out of view.
-await loading.step( 'Slučuji město', 0.66, 0.72 );
+// Local icons: big lettering, sculptures, domed corner towers (data/icons.json), each once its square is in.
+addIcons( scene, ICONS, groundHeight, data.buildings, ( x, z ) => stream.whenLoaded( x, z, 1 ) );
+const graffiti = { pieces: 0 };
+// The still city in few draw calls (src/batch.js): the hand-made pieces merged per material and 150 m square (the
+// squares of the streamed city are skipped: they come and go).
+await loading.step( 'Slučuji město', 0.24, 0.3 );
 const batched = batchStatic( scene );
-const tiles = [ terrain, pavement, wallMesh, roofs ].map( mesh => splitByTile( mesh ) );
-const roofTiles = tiles[ 3 ];
-for ( const mesh of [ terrain, pavement, wallMesh, roofs ] ) mesh.geometry = new THREE.BufferGeometry();
-// Once on the GPU, the big meshes' arrays are dropped from memory: an empty array of the same kind stays, for the
-// buffer layout the renderer reads when it builds a pipeline.
-{
-
-	const heavy = new Set();
-	for ( const g of tiles.map( t => t.userData.geometry ) ) {
-
-		for ( const a of Object.values( g.attributes ) ) heavy.add( a.isInterleavedBufferAttribute ? a.data : a );
-		if ( g.index ) heavy.add( g.index );
-
-	}
-
-	const drop = setInterval( () => {
-
-		for ( const b of heavy ) {
-
-			const d = renderer.backend.get( b );
-			if ( ! d.buffer && ! d.bufferGPU ) continue;
-			b.array = new b.array.constructor( 0 );
-			heavy.delete( b );
-
-		}
-
-		if ( ! heavy.size ) clearInterval( drop );
-
-	}, 2000 );
-
-}
-const stillRoots = new Set( scene.children );
-// Everything still, with where it is (a sphere around it), to leave out what lies past the haze (the loop below).
+stillRoots = new Set( scene.children );
+for ( const g of squareGroups ) stillRoots.add( g );
+// Everything still and hand-made, with where it is (a sphere around it), to leave out what lies past the haze (the
+// loop below; the streamed squares are shown by their own distance).
 const beyondFog = [];
 scene.updateMatrixWorld( true );
 scene.traverse( o => {
 
 	if ( ! o.isMesh ) return;
+	for ( let p = o; p; p = p.parent ) if ( p.userData.square ) return;
 	if ( o.isInstancedMesh && ! o.boundingSphere ) o.computeBoundingSphere();
 	if ( ! o.isInstancedMesh && ! o.geometry.boundingSphere ) o.geometry.computeBoundingSphere();
 	const sphere = ( o.isInstancedMesh ? o.boundingSphere : o.geometry.boundingSphere ).clone().applyMatrix4( o.matrixWorld );
 	if ( sphere.radius < 2000 ) beyondFog.push( { o, sphere } );
+	// The still city's arrays aren't read again once on the GPU: let go (as the squares' are).
+	if ( ! o.isInstancedMesh && ! o.isSkinnedMesh && ! o.morphTargetInfluences ) hold( o.geometry );
 
 } );
 // Models: Quaternius' people (CC0) and the vehicles (public/models/vehicles/CREDITS.md); textures resolve next to them. The people are
@@ -687,7 +749,7 @@ const gltfLoader = new GLTFLoader().setMeshoptDecoder( MeshoptDecoder );
 const loadModel = async ( path, dir ) => gltfLoader.parseAsync( await load( path, 'arrayBuffer', '' ), dir );
 // The player (src/player.js): a person of the streets, as made in the character creator, in place of the plain figure.
 // Built before the crowd (addLife, at the end of this file): the crowd's material then takes over the shared atlas.
-await loading.step( HOLUB ? 'Čechrám peří' : 'Oblékám postavu', 0.72, 0.76 );
+await loading.step( HOLUB ? 'Čechrám peří' : 'Oblékám postavu', 0.3, 0.34 );
 const player = HOLUB ? null : await ( await import( './player.js' ) ).makePlayer( loadModel );
 // The people, the trams and the boats come after the city (see the end of this file): one can walk while their
 // models download. Until then they are empty stand-ins.
@@ -704,8 +766,6 @@ orbit.minDistance = 20;
 orbit.maxDistance = 900;
 orbit.enableDamping = true;
 
-const fp = data.footprints;
-const footprintBits = new Uint8Array( footprintBuf );
 // Walk barriers (tools/places.mjs): railings along the river edge, each blocking above a height (-99: always;
 // higher: you pass below it, through the underpass under the street). On a 0.5 m grid of segment lists.
 const BAR = 0.5, barW = Math.ceil( ( bounds.maxX - bounds.minX ) / BAR ), barGrid = new Map();
@@ -746,30 +806,27 @@ let walkerHeight = () => Infinity;
 // Ceiling over a walkable zone (underpass, passages, arcades): the third-person camera stays below it.
 const ceilingAt = ( x, z ) => zoneAt( x, z, walkerHeight() )?.ceil ?? Infinity;
 
+// Blocked: a house, a barrier, the river, the city's edge, and a square that isn't in yet (one waits at its edge).
 function isBlocked( x, z ) {
 
-	const col = Math.floor( ( x - bounds.minX ) / fp.cell ), row = Math.floor( ( z - bounds.minZ ) / fp.cell );
-	if ( col < 0 || row < 0 || col >= fp.width || row >= fp.height ) return true;
+	const inside = stream.house( x, z );
+	if ( inside === null ) return true;
 	const y = walkerHeight();
 	if ( barrierAt( x, z, y ) ) return true;
 	if ( zoneAt( x, z, y ) ) return false;
 	if ( groundHeight( x, z, y ) < data.waterLevel + 1 ) return true; // stay out of the river
-	const i = row * fp.width + col;
-	return ( footprintBits[ i >> 3 ] >> ( i & 7 ) ) & 1;
+	return inside;
 
 }
 
 // The third-person camera keeps out of houses (but not out of the walk-in rooms, nor over the river).
 function cameraBlocked( x, z ) {
 
-	const col = Math.floor( ( x - bounds.minX ) / fp.cell ), row = Math.floor( ( z - bounds.minZ ) / fp.cell );
-	if ( col < 0 || row < 0 || col >= fp.width || row >= fp.height || zoneAt( x, z ) ) return false;
-	const i = row * fp.width + col;
-	return ( footprintBits[ i >> 3 ] >> ( i & 7 ) ) & 1;
+	return stream.house( x, z ) === 1 && ! zoneAt( x, z );
 
 }
 
-const walker = new Walker( camera, renderer.domElement, ( x, z ) => groundHeight( x, z, walker.placed ? walker.y : null ), isBlocked, scene, cameraBlocked, ceilingAt );
+const walker = new Walker( camera, renderer.domElement, ( x, z ) => groundHeight( x, z, walker.placed ? walker.y : null, true ), isBlocked, scene, cameraBlocked, ceilingAt );
 // The trams and the cars are solid (src/solids.js): their boxes near the player, gathered every frame.
 const solids = new Solids();
 walker.solids = solids;
@@ -777,27 +834,47 @@ walker.setScooter( loadModel );
 player?.dress( walker, { ride: window.GAME === 'courier' } ); // the courier (src/start.js) starts on the scooter
 // How rough the street is under the scooter: 0 asphalt, ½ paving stones, 1 granite setts (surface2: the carriageway's
 // surface on the road, the open area's off it), plus a jolt across the tram rails.
-walker.roughAt = ( x, z ) => {
-
-	const col = Math.min( S.width - 1, Math.max( 0, Math.floor( ( x - bounds.minX ) / S.cell ) ) );
-	const row = Math.min( S.height - 1, Math.max( 0, Math.floor( ( z - bounds.minZ ) / S.cell ) ) );
-	const i = ( row * S.width + col ) * 4;
-	const onRoad = surfaceBytes[ i + 2 ] > 128;
-	const code = onRoad ? surface2[ i ] : surface2[ i + 1 ];
-	const rails = surfaceBytes[ i + 3 ] < 20 ? 0.6 : 0;
-	return Math.max( rails, code === 40 ? 0.3 : 1 - code / 255 );
-
-};
+walker.roughAt = ( x, z ) => ( stream.surfaceByte( x, z, 'rough' ) ?? 128 ) / 255;
 walkerHeight = () => walker.placed ? walker.y + 0.5 : Infinity;
 walkerLevel = () => walker.placed ? walker.y : null;
 
 // Trams and their overhead line (poles kept out of houses).
-let trams = { update() {} }, boats = { update() {} };
+let boats = { update() {} };
 // Riding the trams (src/ride.js) and the people at the stops (src/passengers.js), once the trams and people are in.
 let ride = { update() {} }, passengers = { update() {} };
 
 // The HUD (src/hud.js): the street's name as an area title, key hints, the speedometer, the pause menu.
 const hud = getHud();
+
+// The squares round the start, in before play (the rest keep streaming in as one goes); under ?hd (the model's
+// screenshots) every square within LOAD.
+await loading.step( 'Stahuji okolí', 0.34, 0.76 );
+{
+
+	const shown = setInterval( () => loading.stepProgress( stream.readyProgress() ), 100 );
+	await firstSquares;
+	while ( ! PS1 && ! stream.settled ) await new Promise( r => setTimeout( r, 100 ) );
+	clearInterval( shown );
+	clearInterval( pump );
+
+}
+
+// To (x, z) on foot or as the pigeon: at once where its square is in, else as soon as it has come (meanwhile one
+// stays where one was; the squares there go first).
+function goTo( x, z, yaw, then = () => {} ) {
+
+	const go = () => {
+
+		if ( holub ) holub.place( x, z, yaw );
+		else walker.teleport( x, z, yaw );
+		then();
+
+	};
+	if ( stream.isIn( x, z ) && stream.isIn( x + 40, z ) && stream.isIn( x - 40, z ) && stream.isIn( x, z + 40 ) && stream.isIn( x, z - 40 ) ) go();
+	else stream.whenLoaded( x, z, 60 ).then( go );
+
+}
+
 await loading.step( 'Kreslím mapu', 0.76, 0.8 );
 
 // Minimap: places to find, and the landmarks.
@@ -826,53 +903,10 @@ for ( const s of places?.signs || [] ) {
 if ( places?.sitkov ) placeMarkers.push( { x: places.sitkov.x, z: places.sitkov.z, icon: 'V', colour: '#4f7a68' } );
 if ( places?.bandstand ) placeMarkers.push( { x: places.bandstand.x, z: places.bandstand.z, icon: '♫', colour: '#26352d' } );
 
-// Bridges for the maps (src/minimap.js): Most Legií along its axis (the tollhouse bays wider, the carriageway between
-// the pavements in road colour), and the generic OSM decks (Karlův most, the footbridges) as their strips, footways
-// and pedestrian decks in pavement colour, the rest in road colour.
-const mapBridges = [];
-if ( places?.legie ) {
-
-	const lg = places.legie, P = lg.pts.map( p => [ p[ 0 ], p[ 1 ] ] );
-	const bay = P.slice( 0, Math.floor( lg.bay.s1 / lg.step ) + 1 );
-	mapBridges.push( [
-		{ pts: bay, w: lg.bay.half * 2, fill: 'pavement' },
-		{ pts: P, w: lg.half * 2, fill: 'pavement' },
-		{ pts: P, w: ( lg.half - lg.rail - lg.walk ) * 2, fill: 'road', inner: true }
-	] );
-
-}
-
-// Karlův most along its axis, paved, to the Old Town tower.
-if ( places?.karluv ) {
-
-	const k = places.karluv, n = Math.floor( k.sTower / k.step ) + 1;
-	mapBridges.push( [ { pts: k.pts.slice( 0, n ).map( p => [ p[ 0 ], p[ 1 ] ] ), w: k.half * 2, fill: 'pavement' } ] );
-
-}
-
-for ( const b of places?.bridges || [] ) mapBridges.push( [ { pts: [ [ b.x0, b.z0 ], [ b.x1, b.z1 ] ], w: b.w, fill: /footway|path|pedestrian|cycleway/.test( b.kind ) ? 'pavement' : 'road' } ] );
-
 const isTouch = matchMedia( '(pointer: coarse)' ).matches || navigator.maxTouchPoints > 0 && ! matchMedia( '(pointer: fine)' ).matches;
-const minimap = createMinimap( {
-	bounds, surface: surfaceBytes, surface2, S, waterLevel: data.waterLevel, markers: placeMarkers, touch: isTouch, bridges: mapBridges,
-	terrainHeight,
-	isHouse: ( x, z ) => {
-
-		const col = Math.floor( ( x - bounds.minX ) / fp.cell ), row = Math.floor( ( z - bounds.minZ ) / fp.cell );
-		if ( col < 0 || row < 0 || col >= fp.width || row >= fp.height ) return false;
-		const i = row * fp.width + col;
-		return ( footprintBits[ i >> 3 ] >> ( i & 7 ) ) & 1;
-
-	}
-} );
-
-// Start on Betlémské náměstí, at the west end of the square by Oliva Nera's terrace, looking at the chapel.
-function startAt() {
-
-	const [ x, z, tx, tz ] = [ - 78, 68, - 42, 52 ];
-	return `${x},${z},${Math.atan2( - ( tx - x ), - ( tz - z ) ).toFixed( 3 )}`;
-
-}
+// The map of the whole city, drawn once at build time (tools/tiles.mjs: houses, streets, pavements, parks, the river,
+// the bridges over it), 1 px a metre.
+const minimap = createMinimap( { bounds, image: await createImageBitmap( mapBlob ), cell: data.map?.cell || 1, markers: placeMarkers, touch: isTouch } );
 
 let walking = false;
 const touch = matchMedia( '(pointer: coarse)' ).matches || navigator.maxTouchPoints > 0 && ! matchMedia( '(pointer: fine)' ).matches;
@@ -902,7 +936,8 @@ function setMode( walk ) {
 		// ?at=x,z,yaw[,y]: y picks the level where one lies over another (the walker starts at street level).
 		const [ x, z, yaw, y ] = walker.placed ? [ walker.pos.x, walker.pos.z, walker.yaw ] : ( params.get( 'at' ) || startAt() ).split( ',' ).map( Number );
 		if ( Number.isFinite( y ) ) walker.y = y;
-		walker.teleport( x, z, yaw );
+		if ( walker.placed && ! stream.isIn( x, z ) ) goTo( x, z, yaw );
+		else walker.teleport( x, z, yaw );
 		walker.placed = true;
 
 	} else if ( wasWalking ) {
@@ -923,8 +958,7 @@ window.addEventListener( 'keydown', e => {
 } );
 // The pigeon (?holub) instead of the walker: by default on Betlémské náměstí by the terrace, facing the chapel
 // (game settings, `pigeon.start`: x, z, heading).
-const holubStart = SETTINGS.pigeon.start;
-const holub = HOLUB ? startHolub( { scene, camera, dom: renderer.domElement, roofGeo: roofTiles.userData.geometry, bounds, groundHeight, waterLevel: data.waterLevel, places, furniture: data.furniture, life, start: holubStart, solids, indoors: ( x, z ) => { const zn = zoneAt( x, z ); return !! zn && zn.y !== undefined && zn.ceil === undefined; } } ) : null;
+const holub = HOLUB ? startHolub( { scene, camera, dom: renderer.domElement, roofAt: ( x, z ) => stream.roof( x, z ), bounds, groundHeight, waterLevel: data.waterLevel, places, furniture: data.furniture, life, start: holubStart, solids, indoors: ( x, z ) => { const zn = zoneAt( x, z ); return !! zn && zn.y !== undefined && zn.ceil === undefined; } } ) : null;
 // The pigeon starts in the city, on the pavement, ready to go; the first day's story (the egg in a nest on a cornice,
 // a short tutorial: src/holub/story.js) only with ?vejce. The clock moves the sun and the light.
 const story = holub && params.has( 'vejce' ) ? startStory( { scene, camera, holub, start: holubStart } ) : null;
@@ -998,9 +1032,7 @@ function openBigMap() {
 		},
 		onPick: ( x, z ) => {
 
-			if ( holub ) holub.place( x, z, holub.heading );
-			else walker.teleport( x, z, walker.yaw );
-			hud.replace();
+			goTo( x, z, holub ? holub.heading : walker.yaw, () => hud.replace() );
 
 		}
 	} );
@@ -1145,6 +1177,14 @@ let shadowAge = 0;
 function stillShadows( dt ) {
 
 	shadowAge += dt;
+	// Squares that came in near: drawn into the shadows at most every 2 s (a redraw costs a frame).
+	if ( shadowsStale && shadowAge > 2 ) {
+
+		shadowsStale = false;
+		sun.shadow.needsUpdate = true;
+
+	}
+
 	sunNow.copy( sun.position ).sub( sun.target.position ).normalize();
 	if ( shadowAge > 1 && sunNow.angleTo( shadowSun ) > 0.008 ) {
 
@@ -1161,8 +1201,11 @@ function stillShadows( dt ) {
 }
 
 let lastFrame = 0, frameNo = 0;
+const lastFocus = new THREE.Vector3( ...[ firstFocus[ 0 ], 0, firstFocus[ 1 ] ] );
 renderer.setAnimationLoop( () => {
 
+	// Nothing to show behind the loading screen (the squares and pipelines are prepared without drawing frames).
+	if ( ! window.__ready ) return;
 	const now = performance.now();
 	if ( now - lastFrame < 1000 / FPS - 2 ) return;
 	lastFrame = now;
@@ -1226,6 +1269,18 @@ renderer.setAnimationLoop( () => {
 	// None of the city's squares is drawn past the fog's far end, where it is all fog anyway (the plain ground
 	// beyond the area still is, so the horizon stays where it was).
 	for ( const { o, sphere } of beyondFog ) o.visible = camera.position.distanceTo( sphere.center ) - sphere.radius < scene.fog.far;
+	// The streamed squares: fetched round where one is (and where one is heading), put in one a frame, let go far
+	// off; drawn within the haze.
+	const speed = v => THREE.MathUtils.clamp( v / Math.max( dt, 1e-3 ), - 60, 60 );
+	stream.update( focus.x, focus.z, speed( focus.x - lastFocus.x ), speed( focus.z - lastFocus.z ) );
+	lastFocus.copy( focus );
+	for ( const g of squareGroups ) {
+
+		const x0 = g.userData.x0, z0 = g.userData.z0;
+		const dx = Math.max( x0 - camera.position.x, 0, camera.position.x - x0 - data.tiles.size ), dz = Math.max( z0 - camera.position.z, 0, camera.position.z - z0 - data.tiles.size );
+		g.visible = Math.hypot( dx, dz ) < scene.fog.far;
+
+	}
 
 	if ( ps1 ) ps1.render(); else renderer.render( scene, camera );
 	// Measuring (tools/perf/): draw calls, triangles and the frame's own time on the main thread.
@@ -1239,41 +1294,74 @@ renderer.setAnimationLoop( () => {
 } );
 
 // Easter eggs (src/eastereggs.js): the black SUV across the garage gate on Náprstkova.
-( await import( './eastereggs.js' ) ).addEasterEggs( scene, groundHeight );
+stream.whenLoaded( - 20, 140, 1 ).then( async () => ( await import( './eastereggs.js' ) ).addEasterEggs( scene, groundHeight ) );
 
-// Every material's GPU pipeline prepared before play, all round the city, so a sign, an awning or a tram that first
-// comes into view doesn't stall a frame while its shader is built (the hitch when turning the camera).
+// Every material's GPU pipeline prepared, so a sign, an awning or a tram that first comes into view doesn't stall a
+// frame while its shader is built (the hitch when turning the camera). Before play, what is within the haze of where
+// one starts and one of each thing the squares bring (the street furniture, the river wall's railing, the garden
+// walls); the rest of the hand-made city right after, in the background (src/main.js, __complete).
+function compileCity( near = null, onProgress = null ) {
+
+	const restore = [];
+	const set = ( o, key, value ) => {
+
+		if ( o[ key ] === value ) return;
+		restore.push( [ o, key, o[ key ] ] );
+		o[ key ] = value;
+
+	};
+	const reach = scene.fog.far + 200;
+	for ( const { o, sphere } of beyondFog ) set( o, 'visible', ! near || Math.hypot( sphere.center.x - near[ 0 ], sphere.center.z - near[ 1 ] ) - sphere.radius < reach );
+	for ( const g of squareGroups ) set( g, 'visible', true );
+	scene.traverseVisible( o => o.frustumCulled && set( o, 'frustumCulled', false ) );
+	const done = renderer.compileAsync( scene, camera, null, onProgress ).catch( e => console.warn( 'compileAsync', e ) );
+	// The list of what to compile is taken at the call: everything goes back as it was at once.
+	for ( const [ o, key, value ] of restore.reverse() ) o[ key ] = value;
+	return done;
+
+}
+
+// One of each thing the squares bring, far under the city, compiled once and dropped.
+const samples = new THREE.Group();
+{
+
+	const at = ( n = 1, stride = 5, tail = [ 0, 1 ] ) => Array.from( { length: n }, () => [ 0, - 500, 0, ...tail ].slice( 0, stride ) ).flat();
+	addFurniture( samples, { lamp: at(), bench: at(), bin: at(), bollard: at(), bikestand: at(), fountain: at(), statue: at(), chimney: at(), tree: at( 1, 5, [ 0, 10 ] ), treeIndex: [ 0 ] } );
+	addEmbankment( samples, { position: new Float32Array( [ 0, - 500, 0, 1, - 500, 0, 0, - 499, 0 ] ), normal: new Float32Array( [ 0, 0, 1, 0, 0, 1, 0, 0, 1 ] ) }, { pillars: [ 0, - 500, 0 ], thin: [ 1, - 500, 0 ], rails: [ 0, - 500, 0, 2, - 500, 0 ] } );
+	addWalls( samples, [ 'wall', 'barred', 'gate' ].map( kind => ( { kind, x0: 0, z0: 0, x1: 2, z1: 0, y: - 500, h: 2, colour: '#e6dcc6', hedge: kind === 'wall' ? 0.5 : 0 } ) ) );
+	graffitiPlace?.material && samples.add( new THREE.Mesh( new THREE.PlaneGeometry( 1, 1 ).translate( 0, - 500, 0 ), graffitiPlace.material ) );
+	scene.add( samples );
+
+}
+
 {
 
 	await loading.step( 'Připravuji obraz', 0.8, 1 );
-	const hidden = [];
-	scene.traverse( o => {
+	if ( params.has( 'clog' ) ) {
 
-		if ( ! o.visible ) return;
-		if ( o.frustumCulled ) {
+		const orig = renderer._nodes.getForRenderAsync.bind( renderer._nodes );
+		let last = performance.now(), prev = null;
+		window.__clog = [];
+		renderer._nodes.getForRenderAsync = async ro => {
 
-			o.frustumCulled = false;
-			hidden.push( o );
+			const t = performance.now();
+			if ( prev ) window.__clog.push( [ + ( t - last ).toFixed( 1 ), ...prev ] );
+			prev = [ ro.object.name, ro.material.name || ro.material.type, ro.object.parent?.name, ro.object.isInstancedMesh ? 1 : 0, ro.passId || '', ro.object.uuid ];
+			last = t;
+			return orig( ro );
 
-		}
-
-	} );
-	try {
-
-		await renderer.compileAsync( scene, camera, null, e => loading.stepProgress( e.loaded / e.total ) );
-
-	} catch ( e ) {
-
-		console.warn( 'compileAsync', e );
+		};
 
 	}
 
-	for ( const o of hidden ) o.frustumCulled = true;
+	const focus = holub ? holub.pos : walking ? walker.pos : orbit.target;
+	await compileCity( [ focus.x, focus.z ], e => loading.stepProgress( e.loaded / e.total ) );
+	scene.remove( samples );
 	loading.done();
 
 }
 
-window.__debug = { setFps: f => FPS = f, graffiti, day, renderer, scene, batched, camera, isBlocked, groundHeight, walker, life, trams, boats, holub, solids, waterLevel: data.waterLevel };
+window.__debug = { setFps: f => FPS = f, stream, squareGroups, graffiti, day, renderer, scene, batched, camera, isBlocked, groundHeight, walker, life, trams, boats, holub, solids, waterLevel: data.waterLevel };
 window.__THREE = THREE;
 window.__ready = true;
 // The courier's first message, on the pager.
@@ -1292,6 +1380,14 @@ load( 'life.json', 'json' ).then( streetLife => Promise.all( [
 
 		trams = window.__debug.trams = t;
 		if ( t.boxes ) solids.add( t.boxes );
+		// The overhead line over the squares already in (the ones to come build theirs).
+		for ( const g of squareGroups ) {
+
+			const before = g.children.length;
+			t.catenary?.( g, g.userData.x0, g.userData.z0, data.tiles.size );
+			for ( const m of g.children.slice( before ) ) hold( m.geometry );
+
+		}
 
 	} ),
 	addBoats( scene, { loadModel, groundHeight, waterLevel: data.waterLevel } ).then( b => boats = window.__debug.boats = b )
@@ -1305,4 +1401,4 @@ load( 'life.json', 'json' ).then( streetLife => Promise.all( [
 
 	}
 
-} ).then( () => renderer.compileAsync( scene, camera ).catch( () => {} ) ).then( () => window.__complete = true ); // the people's, trams' and boats' pipelines too
+} ).then( () => compileCity() ).then( () => window.__complete = true ); // the rest of the city, the people's, trams' and boats' pipelines too

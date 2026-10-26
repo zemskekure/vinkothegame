@@ -86,14 +86,15 @@ export function streetFronts( walls, stride, index ) {
 
 }
 
-export async function addGraffiti( scene, fronts, { streets = [], groundFloors = [], groundHeight = null } = {} ) {
+// What all the fronts share (the atlas, its material, the streets they face), once; then place( scene, fronts,
+// groundHeight ) adds the graffiti of some fronts (a streamed square's: src/main.js) as one mesh.
+export async function prepareGraffiti( { streets = [], groundFloors = [] } = {} ) {
 
-	if ( ! fronts.length ) return { pieces: 0 };
 	const info = await ( await fetch( DIR + 'graffiti-atlas.json' ) ).json();
 	const byKind = {};
 	for ( const it of info.items ) ( byKind[ it.kind ] ||= [] ).push( it );
 	const kinds = Object.keys( KINDS ).filter( k => byKind[ k ] );
-	if ( ! kinds.length ) return { pieces: 0 };
+	if ( ! kinds.length ) return null;
 
 	const texture = new THREE.TextureLoader().load( DIR + 'graffiti-atlas.png' );
 	texture.colorSpace = THREE.SRGBColorSpace;
@@ -140,6 +141,8 @@ export async function addGraffiti( scene, fronts, { streets = [], groundFloors =
 	};
 
 	const weights = kinds.map( k => KINDS[ k ].weight );
+	const place = ( scene, fronts, groundHeight = null ) => {
+
 	const tiles = new Map(), streetsSeen = { heavy: 0, normal: 0, light: 0 };
 	let count = 0;
 	for ( let [ x0, z0, x1, z1, y0, y1, top, u0, u1, nx, nz, row, flagged ] of fronts ) {
@@ -240,5 +243,17 @@ export async function addGraffiti( scene, fronts, { streets = [], groundFloors =
 	}
 
 	return { pieces: count, fronts: fronts.length, metres: streetsSeen };
+
+	};
+	place.material = material;
+	return place;
+
+}
+
+export async function addGraffiti( scene, fronts, { streets = [], groundFloors = [], groundHeight = null } = {} ) {
+
+	if ( ! fronts.length ) return { pieces: 0 };
+	const place = await prepareGraffiti( { streets, groundFloors } );
+	return place ? place( scene, fronts, groundHeight ) : { pieces: 0 };
 
 }

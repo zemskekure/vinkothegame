@@ -192,7 +192,10 @@ export function createGroundMaterial( surfaceTex, surface2Tex, bounds, detailTex
 	if ( wideTex ) {
 
 		const inside = step( D.minX, wx ).mul( step( wx, D.maxX ) ).mul( step( D.minZ, wz ) ).mul( step( wz, D.maxZ ) );
-		detailValue = mix( texture( wideTex, suv ).r, detailValue, inside );
+		// The wide detail comes square by square without mipmaps (src/main.js): it fades to neutral with distance,
+		// as the mipmapped picture's average did, so it doesn't sparkle far off.
+		const wide = mix( texture( wideTex, suv ).r, float( 128 / 255 ), float( 1 ).sub( distFade( 90, 260 ) ) );
+		detailValue = mix( wide, detailValue, inside );
 
 	}
 

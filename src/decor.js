@@ -7,6 +7,7 @@ import * as THREE from 'three/webgpu';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { color, positionWorld, mix, vec2, floor, fract, abs, max, smoothstep } from 'three/tsl';
 import { hash2D } from './shading/common.js';
+import { mergeInstances } from './kit.js';
 
 const iron = new THREE.MeshStandardNodeMaterial( { color: 0x232624, metalness: 0.6, roughness: 0.45 } );
 const glass = new THREE.MeshStandardNodeMaterial( { color: 0xfff2d6, emissive: 0xffd9a0, emissiveIntensity: 0.4, roughness: 0.2 } );
@@ -149,36 +150,22 @@ function railingTexture() {
 
 }
 
-export function addEmbankment( scene, stoneBuf, embankment ) {
+// The river wall's materials and shapes, shared by every square that has a piece of it (src/main.js).
+let EMB = null;
+function embankmentKit() {
 
-	const geometry = new THREE.BufferGeometry();
-	geometry.setAttribute( 'position', new THREE.BufferAttribute( new Float32Array( stoneBuf ), 3 ) );
-	geometry.computeVertexNormals();
+	if ( EMB ) return EMB;
 	const stone = new THREE.MeshStandardNodeMaterial( { roughness: 0.9, side: THREE.DoubleSide } );
 	const course = positionWorld.y.div( 0.45 );
 	const along = positionWorld.x.add( positionWorld.z ).div( 0.9 ).add( floor( course ).mul( 0.5 ) );
 	const joint = max( smoothstep( 0.44, 0.5, abs( fract( course ).sub( 0.5 ) ) ), smoothstep( 0.45, 0.5, abs( fract( along ).sub( 0.5 ) ) ) );
 	const block = mix( color( 0x8f8574 ), color( 0xa59a86 ), hash2D( vec2( floor( along ), floor( course ) ) ) );
 	stone.colorNode = mix( block, color( 0x5f594f ), joint.mul( 0.6 ) );
-	const wall = new THREE.Mesh( geometry, stone );
-	wall.castShadow = wall.receiveShadow = true;
-	scene.add( wall );
 
 	// The Prague embankment railing: dark green cast-iron panels (vertical bars, a band of rings) under a top rail,
 	// between square sandstone pillars every other post (≈ 4 m) and thin iron posts in between.
-	const m = new THREE.Matrix4(), q = new THREE.Quaternion(), p = new THREE.Vector3(), s = new THREE.Vector3( 1, 1, 1 );
-	const posts = embankment.posts, rails = embankment.rails;
 	const green = new THREE.MeshStandardNodeMaterial( { color: 0x2b3a2f, metalness: 0.5, roughness: 0.5 } );
 	const pillarStone = new THREE.MeshStandardNodeMaterial( { color: 0xa79c88, roughness: 0.9 } );
-	const pillars = [], thin = [];
-	for ( let i = 0; i < posts.length; i += 3 ) ( ( i / 3 ) % 2 ? thin : pillars ).push( i );
-	const pillarMesh = new THREE.InstancedMesh( new THREE.BoxGeometry( 0.34, 1.05, 0.34 ).translate( 0, 0.525, 0 ), pillarStone, pillars.length );
-	pillars.forEach( ( i, k ) => pillarMesh.setMatrixAt( k, m.makeTranslation( posts[ i ], posts[ i + 1 ], posts[ i + 2 ] ) ) );
-	const capMesh = new THREE.InstancedMesh( new THREE.BoxGeometry( 0.42, 0.08, 0.42 ).translate( 0, 1.09, 0 ), pillarStone, pillars.length );
-	pillars.forEach( ( i, k ) => capMesh.setMatrixAt( k, m.makeTranslation( posts[ i ], posts[ i + 1 ], posts[ i + 2 ] ) ) );
-	const postMesh = new THREE.InstancedMesh( new THREE.CylinderGeometry( 0.025, 0.03, 0.95, 6 ).translate( 0, 0.475, 0 ), green, thin.length );
-	thin.forEach( ( i, k ) => postMesh.setMatrixAt( k, m.makeTranslation( posts[ i ], posts[ i + 1 ], posts[ i + 2 ] ) ) );
-
 	const canvas = document.createElement( 'canvas' );
 	canvas.width = 256;
 	canvas.height = 128;
@@ -202,27 +189,68 @@ export function addEmbankment( scene, stoneBuf, embankment ) {
 	const pattern = new THREE.CanvasTexture( canvas );
 	pattern.wrapS = THREE.RepeatWrapping;
 	const panel = new THREE.MeshStandardNodeMaterial( { color: 0x2b3a2f, metalness: 0.5, roughness: 0.5, alphaMap: pattern, alphaTest: 0.5, side: THREE.DoubleSide } );
-	const railMesh = new THREE.InstancedMesh( new THREE.BoxGeometry( 1, 0.05, 0.06 ), green, rails.length / 6 );
-	const panelMesh = new THREE.InstancedMesh( new THREE.PlaneGeometry( 1, 0.62 ).translate( 0, - 0.33, 0 ), panel, rails.length / 6 );
+	EMB = {
+		stone, green, pillarStone, panel,
+		pillar: new THREE.BoxGeometry( 0.34, 1.05, 0.34 ).translate( 0, 0.525, 0 ), cap: new THREE.BoxGeometry( 0.42, 0.08, 0.42 ).translate( 0, 1.09, 0 ),
+		post: new THREE.CylinderGeometry( 0.025, 0.03, 0.95, 6 ).translate( 0, 0.475, 0 ), rail: new THREE.BoxGeometry( 1, 0.05, 0.06 ), sheet: new THREE.PlaneGeometry( 1, 0.62 ).translate( 0, - 0.33, 0 )
+	};
+	return EMB;
+
+}
+
+// A piece of the river embankment (one streamed square's: src/main.js): the dressed-stone wall's triangles
+// ({ position, normal }), and its railing: sandstone pillars and iron posts (x y z each), rails (two ends each).
+export function addEmbankment( scene, stoneMesh, { pillars = [], thin = [], rails = [] } ) {
+
+	const K = embankmentKit();
+	if ( stoneMesh?.position?.length ) {
+
+		const geometry = new THREE.BufferGeometry();
+		geometry.setAttribute( 'position', new THREE.BufferAttribute( stoneMesh.position, 3 ) );
+		geometry.setAttribute( 'normal', new THREE.BufferAttribute( stoneMesh.normal, 3 ) );
+		const wall = new THREE.Mesh( geometry, K.stone );
+		wall.castShadow = wall.receiveShadow = true;
+		scene.add( wall );
+
+	}
+
+	const m = new THREE.Matrix4(), q = new THREE.Quaternion(), p = new THREE.Vector3(), s = new THREE.Vector3( 1, 1, 1 );
+	const instanced = ( geometry, material, list, stride, matrixAt ) => {
+
+		const n = list.length / stride;
+		if ( ! n ) return;
+		// Merged into one mesh (src/kit.js mergeInstances: an instanced mesh per square would cost its own node build).
+		const mesh = new THREE.Mesh( mergeInstances( geometry, Array.from( { length: n }, ( _, k ) => matrixAt( k * stride ).clone() ) ), material );
+		mesh.castShadow = true;
+		scene.add( mesh );
+
+	};
+
+	const at = list => i => m.makeTranslation( list[ i ], list[ i + 1 ], list[ i + 2 ] );
+	instanced( K.pillar, K.pillarStone, pillars, 3, at( pillars ) );
+	instanced( K.cap, K.pillarStone, pillars, 3, at( pillars ) );
+	instanced( K.post, K.green, thin, 3, at( thin ) );
 	const a = new THREE.Vector3(), b = new THREE.Vector3(), dir = new THREE.Vector3(), x = new THREE.Vector3( 1, 0, 0 );
 	const flat = new THREE.Vector3();
-	for ( let i = 0; i < rails.length; i += 6 ) {
+	instanced( K.rail, K.green, rails, 6, i => {
 
 		a.fromArray( rails, i );
 		b.fromArray( rails, i + 3 );
 		dir.subVectors( b, a );
 		const len = dir.length();
 		q.setFromUnitVectors( x, dir.normalize() );
-		railMesh.setMatrixAt( i / 6, m.compose( p.addVectors( a, b ).multiplyScalar( 0.5 ), q, s.set( len + 0.02, 1, 1 ) ) );
+		return m.compose( p.addVectors( a, b ).multiplyScalar( 0.5 ), q, s.set( len + 0.02, 1, 1 ) );
+
+	} );
+	instanced( K.sheet, K.panel, rails, 6, i => {
+
+		a.fromArray( rails, i );
+		b.fromArray( rails, i + 3 );
 		// The panel stays upright: turned about the vertical only.
 		flat.set( b.x - a.x, 0, b.z - a.z ).normalize();
 		q.setFromUnitVectors( x, flat );
-		panelMesh.setMatrixAt( i / 6, m.compose( p.addVectors( a, b ).multiplyScalar( 0.5 ), q, s.set( len + 0.02, 1, 1 ) ) );
+		return m.compose( p.addVectors( a, b ).multiplyScalar( 0.5 ), q, s.set( a.distanceTo( b ) + 0.02, 1, 1 ) );
 
-	}
-
-	railMesh.castShadow = panelMesh.castShadow = pillarMesh.castShadow = true;
-	scene.add( railMesh, panelMesh, pillarMesh, capMesh, postMesh );
-
+	} );
 
 }

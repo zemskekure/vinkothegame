@@ -7,9 +7,11 @@
 // tolerance( i, j ) how far (m) the mesh may stray from it there; force( i, j ) true keeps a point whatever the
 // error (wall feet, the edges of holes). cellKind( i, j ) of the cell with corners (i, j)–(i + 1, j + 1): 0 a hole
 // (nothing drawn), 1 drawn by the mesh, 2 drawn by the caller (its triangles are left out, its corners kept), 3 out
-// of sight (inside a house): big triangles may run over it, and its own points don't count.
+// of sight (inside a house): big triangles may run over it, and its own points don't count. maxSize: no triangle
+// spans more than this many cells either way (a power of two): every triangle then lies within one maxSize square
+// of the grid, so the mesh can be cut into those squares (the game's streamed tiles) and stay crack-free.
 
-export function rtin( { n, heightAt, tolerance = () => 0.05, force = () => false, cellKind = () => 1 } ) {
+export function rtin( { n, heightAt, tolerance = () => 0.05, force = () => false, cellKind = () => 1, maxSize = Infinity } ) {
 
 	const size = n - 1;
 	if ( size & ( size - 1 ) ) throw new Error( 'rtin: the grid must be 2^k + 1 points a side' );
@@ -76,7 +78,7 @@ export function rtin( { n, heightAt, tolerance = () => 0.05, force = () => false
 		const x0 = Math.min( ax, bx, cx ), x1 = Math.max( ax, bx, cx ), y0 = Math.min( ay, by, cy ), y1 = Math.max( ay, by, cy );
 		if ( ! anyCell( x0, y0, x1, y1 ) ) return;
 		const mx = ( ax + bx ) / 2, my = ( ay + by ) / 2;
-		if ( ! ( mx % 1 || my % 1 ) && errors[ my * n + mx ] > 1 ) {
+		if ( ! ( mx % 1 || my % 1 ) && ( errors[ my * n + mx ] > 1 || x1 - x0 > maxSize || y1 - y0 > maxSize ) ) {
 
 			emit( cx, cy, ax, ay, mx, my );
 			emit( bx, by, cx, cy, mx, my );

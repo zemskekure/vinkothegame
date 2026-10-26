@@ -15,7 +15,7 @@ import jpeg from 'jpeg-js';
 import { fromFile } from 'geotiff';
 import poly2tri from 'poly2tri';
 import { ShapeUtils, Vector2, Color, SRGBColorSpace } from 'three';
-import { AREA, EAST_AREA, WEST_AREA, FIRST_AREA, ORIGIN } from './area.mjs';
+import { AREA, EAST_AREA, WEST_AREA, FIRST_AREA, ORIGIN, TILE } from './area.mjs';
 import { loadStreets, buildPavementMesh, collectFurniture } from './streets.mjs';
 import { collectPlaces } from './places.mjs';
 import { lonLatToSJTSK, lonLatToSJTSKBeyond, lonLatToSJTSKPreserved, toCadastre } from './geo.mjs';
@@ -29,7 +29,9 @@ import { packColumns } from './pack.mjs';
 import { rtin, rtinSize } from './rtin.mjs';
 
 const RAW = new URL( '../data/raw/', import.meta.url );
-const OUT = new URL( '../public/data/', import.meta.url );
+// The whole scene in one piece (gitignored): tools/tiles.mjs cuts it into the squares the game streams (public/data/).
+const OUT = new URL( '../data/scene/', import.meta.url );
+
 
 const BASE_HEIGHT = 184;
 const ROOF_GRID = 1.0; // spacing of interior roof samples (m)
@@ -1125,6 +1127,7 @@ const wallIdx = [];
 const roofData = [];
 const roofIdx = [];
 const meta = [];
+const wallOwner = [], roofOwner = [];
 let skipped = 0, fallbacks = 0;
 
 function insetHeight( rings, X, Y, nx, ny ) {
@@ -1565,6 +1568,9 @@ for ( const b of buildings ) {
 	b.kept = true;
 	buildingInfo.set( b.code, { ground, floorH, eaveY } );
 	const [ lx, , lz ] = toLocal( ( x0 + x1 ) / 2, ( y0 + y1 ) / 2, 0 );
+	// Which house each wall quad and roof corner belongs to (tools/tiles.mjs streams a house with its square).
+	while ( wallOwner.length < wallData.length / WALL_STRIDE / 4 ) wallOwner.push( meta.length );
+	while ( roofOwner.length < roofData.length / ROOF_STRIDE ) roofOwner.push( meta.length );
 	meta.push( { id: b.id, code: b.code, area: + Math.abs( signedArea( b.poly.outer ) ).toFixed( 0 ), x: + lx.toFixed( 1 ), z: + lz.toFixed( 1 ), eave: + eave.toFixed( 1 ), rise: + roofRise.toFixed( 1 ), floors, name: b.name } );
 
 }
@@ -2023,7 +2029,7 @@ const underHouse = ( X, Y ) => inKeptBuilding( X, Y ) && ! openingBoxes.some( ( 
 	return Math.abs( u ) < ( box.hu ?? 0 ) + 2 && Math.abs( v ) < ( box.hn ?? 0 ) + 2;
 
 } );
-const pavement = buildPavementMesh( streetData, { ...pavementOptions, hidden: underHouse, AREA, STEP: 1 } );
+const pavement = buildPavementMesh( streetData, { ...pavementOptions, hidden: underHouse, AREA, STEP: 1, maxSize: TILE } );
 console.log( `pavements: ${pavement.positions.length / 3} vertices, ${( pavement.kerbLength / 1000 ).toFixed( 1 )} km of kerb` );
 
 const furniture = collectFurniture( streetData, {
@@ -2147,7 +2153,8 @@ const mm = v => Math.round( v * 1000 );
 
 	}
 
-	await writePacked( 'walls.bin', cols, [ 1, 0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 0 ] );
+	cols.push( Int32Array.from( { length: quads }, ( _, q ) => wallOwner[ q ] ?? - 1 ) );
+	await writePacked( 'walls.bin', cols, [ 1, 0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 0, 1 ] );
 	await writeFile( new URL( 'walls-table.bin', OUT ), new Float32Array( rows.flat() ) );
 	console.log( `walls: ${quads} quads, ${rows.length} stretches of wall` );
 
@@ -2175,7 +2182,7 @@ const mm = v => Math.round( v * 1000 );
 
 	}
 
-	await writePacked( 'roofs.bin', [ xs, ys, zs, ids, Int32Array.from( roofIdx ) ], [ 1, 1, 1, 1, 1 ] );
+	await writePacked( 'roofs.bin', [ xs, ys, zs, ids, Int32Array.from( roofIdx ), Int32Array.from( { length: n }, ( _, i ) => roofOwner[ i ] ?? - 1 ) ], [ 1, 1, 1, 1, 1, 1 ] );
 	await writeFile( new URL( 'roofs-table.bin', OUT ), new Float32Array( rows.flat() ) );
 
 }
@@ -2207,6 +2214,7 @@ const terrainMin = terrain.reduce( ( m, v ) => Math.min( m, v ), Infinity );
 
 	const n = rtinSize( Math.max( tw, th ) );
 	const mesh = rtin( {
+		maxSize: TILE / TERRAIN_CELL,
 		n,
 		heightAt: ( c, r ) => terrain[ Math.min( r, th - 1 ) * tw + Math.min( c, tw - 1 ) ],
 		tolerance: ( c, r ) => inFirstArea( AREA.xmin + c * TERRAIN_CELL, AREA.ymax - r * TERRAIN_CELL ) ? 0.05 : 0.1,
@@ -2309,4 +2317,4 @@ await writeFile( new URL( 'scene.json', OUT ), JSON.stringify( {
 	streets
 } ) );
 
-console.log( 'written to public/data/' );
+console.log( 'written to data/scene/; node tools/tiles.mjs cuts it into public/data/' );

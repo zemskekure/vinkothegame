@@ -328,7 +328,7 @@ export async function loadStreets( { AREA, FIRST_AREA, buildingDist, westBuildin
  * (Fk = 0, found by interpolating the field along cell edges), with a vertical kerb face along that line.
  * heightAt( X, Y ) returns the street-level ground height in the scene frame.
  */
-export function buildPavementMesh( streets, { AREA, toLocal, heightAt, inBuilding, hidden, cut, STEP = 0.5, skip } ) {
+export function buildPavementMesh( streets, { AREA, toLocal, heightAt, inBuilding, hidden, cut, STEP = 0.5, skip, maxSize = Infinity } ) {
 
 	const OFFSET = 0.03; // above the terrain mesh, so the two never fight
 	const KERB_FOOT = - 0.2;
@@ -397,6 +397,7 @@ export function buildPavementMesh( streets, { AREA, toLocal, heightAt, inBuildin
 	// The whole cells: one irregular triangulation (tools/rtin.mjs), within 4 cm of the pavement's surface.
 	const n = rtinSize( Math.max( W, H ) + 1 );
 	const surface = rtin( {
+		maxSize,
 		n,
 		// Out of sight, a point stands at the height of a pavement there, so the triangles over it stay level.
 		heightAt: ( a, b, unseen ) => a <= W && b <= H ? heightAt( AREA.xmin + a * STEP, AREA.ymax - b * STEP ) + ( unseen ? streets.KERB_HEIGHT : streets.raise( field[ b * ( W + 1 ) + a ] ) ) : 0,

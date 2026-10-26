@@ -191,7 +191,7 @@ if ( ! existsSync( new URL( 'building-mask-east.bin', OUT ) ) ) {
 	if ( built && built.bounds.minX === EAST_AREA.xmin - ORIGIN.x && built.bounds.maxX === EAST_AREA.xmax - ORIGIN.x &&
 		built.bounds.minZ === ORIGIN.y - EAST_AREA.ymax && built.bounds.maxZ === ORIGIN.y - EAST_AREA.ymin ) {
 
-		await copyFile( new URL( '../public/data/footprints.bin', import.meta.url ), new URL( 'building-mask-east.bin', OUT ) );
+		await copyFile( new URL( '../data/scene/footprints.bin', import.meta.url ), new URL( 'building-mask-east.bin', OUT ) );
 		console.log( 'kept the earlier building mask for street measurements' );
 
 	}

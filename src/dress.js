@@ -446,11 +446,14 @@ function addPlates( scene, plates ) {
 
 // Garden walls (tools/walls.mjs): plastered, with a thin tiled coping; barred gates with iron bars between stone
 // jambs; open gateways leave a gap with an arch-less lintel.
-function addWalls( scene, walls ) {
+// Garden and retaining walls (a streamed square's: src/main.js), their materials shared by all the squares.
+const wallMats = new Map();
+let wallCoping = null;
+export function addWalls( scene, walls ) {
 
-	const kit = new Kit(), mats = new Map();
+	const kit = new Kit(), mats = wallMats;
 	const mat = c => mats.get( c ) || mats.set( c, plain( c, { roughness: 0.95 } ) ).get( c );
-	const coping = plain( 0x8d4a35, { roughness: 0.8 } );
+	const coping = wallCoping ||= plain( 0x8d4a35, { roughness: 0.8 } );
 	for ( const w of walls ) {
 
 		const len = Math.hypot( w.x1 - w.x0, w.z1 - w.z0 ), rot = Math.atan2( w.x1 - w.x0, w.z1 - w.z0 );
@@ -1002,6 +1005,6 @@ export function addDress( scene, places ) {
 
 	for ( const s of places.dress || [] ) ADD[ s.kind ]?.( scene, s );
 	addPlates( scene, places.plates || [] );
-	addWalls( scene, places.walls || [] );
+	if ( places.walls?.length ) addWalls( scene, places.walls );
 
 }

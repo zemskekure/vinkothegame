@@ -238,11 +238,19 @@ function at( path, s ) {
 }
 
 // The overhead line: a contact wire over each track (shared stretches drawn once), poles at the roadside every
-// ~30 m with a span arm out to the wire.
-function addCatenary( scene, paths, groundHeight, isBlocked ) {
+// ~30 m with a span arm out to the wire. Planned once for the whole network; built square by square as the city's
+// squares come in (src/main.js), with their ground and houses: a pole that would stand in a house is left out.
+function planCatenary( paths ) {
 
-	const wires = [], poles = [], seen = new Set(), poleAt = [];
-	const iron = mat( 0x2b2e30, { metalness: 0.5, roughness: 0.5 } );
+	const wires = [], poles = [], seen = new Set(), near = new Map();
+	const cell = ( x, z ) => `${Math.floor( x / 12 )},${Math.floor( z / 12 )}`;
+	const crowded = ( x, z ) => {
+
+		const i = Math.floor( x / 12 ), j = Math.floor( z / 12 );
+		for ( let di = - 1; di <= 1; di ++ ) for ( let dj = - 1; dj <= 1; dj ++ ) for ( const [ qx, qz ] of near.get( `${i + di},${j + dj}` ) || [] ) if ( Math.hypot( qx - x, qz - z ) < 12 ) return true;
+		return false;
+
+	};
 	for ( const path of paths ) {
 
 		let lastPole = - 1e9;
@@ -253,8 +261,7 @@ function addCatenary( scene, paths, groundHeight, isBlocked ) {
 			if ( ! seen.has( key ) ) {
 
 				seen.add( key );
-				const ya = groundHeight( ax, az ) + WIRE_H, yb = groundHeight( bx, bz ) + WIRE_H;
-				wires.push( bar( ax, ya, az, bx, yb, bz, 0.012 ) );
+				wires.push( [ ax, az, bx, bz ] );
 
 			}
 
@@ -262,18 +269,37 @@ function addCatenary( scene, paths, groundHeight, isBlocked ) {
 			// A pole 3.2 m out to the right of this track (the track's own side of the street).
 			const l = Math.hypot( bx - ax, bz - az ) || 1, rx = - ( bz - az ) / l, rz = ( bx - ax ) / l;
 			const px = ax + rx * 3.4, pz = az + rz * 3.4;
-			if ( isBlocked( px, pz ) || poleAt.some( ( [ x, z ] ) => Math.hypot( x - px, z - pz ) < 12 ) ) continue;
+			if ( crowded( px, pz ) ) continue;
 			lastPole = s;
-			poleAt.push( [ px, pz ] );
-			const gy = groundHeight( px, pz );
-			poles.push( new THREE.CylinderGeometry( 0.1, 0.14, 7.2, 8 ).translate( px, gy + 3.6, pz ) );
-			poles.push( bar( px, gy + WIRE_H + 0.35, pz, ax, groundHeight( ax, az ) + WIRE_H + 0.05, az, 0.03 ) );
-			poles.push( bar( px, gy + 6.6, pz, ax + ( px - ax ) * 0.35, gy + WIRE_H + 0.4, az + ( pz - az ) * 0.35, 0.015 ) );
+			if ( ! near.has( cell( px, pz ) ) ) near.set( cell( px, pz ), [] );
+			near.get( cell( px, pz ) ).push( [ px, pz ] );
+			poles.push( [ px, pz, ax, az ] );
 
 		}
 
 	}
 
+	return { wires, poles };
+
+}
+
+let ironMaterial = null;
+function buildCatenary( group, plan, x0, z0, size, groundHeight, isBlocked ) {
+
+	const inside = ( x, z ) => x >= x0 && x < x0 + size && z >= z0 && z < z0 + size;
+	const wires = [], poles = [];
+	for ( const [ ax, az, bx, bz ] of plan.wires ) if ( inside( ( ax + bx ) / 2, ( az + bz ) / 2 ) ) wires.push( bar( ax, groundHeight( ax, az ) + WIRE_H, az, bx, groundHeight( bx, bz ) + WIRE_H, bz, 0.012 ) );
+	for ( const [ px, pz, ax, az ] of plan.poles ) {
+
+		if ( ! inside( px, pz ) || isBlocked( px, pz ) ) continue;
+		const gy = groundHeight( px, pz );
+		poles.push( new THREE.CylinderGeometry( 0.1, 0.14, 7.2, 8 ).translate( px, gy + 3.6, pz ) );
+		poles.push( bar( px, gy + WIRE_H + 0.35, pz, ax, groundHeight( ax, az ) + WIRE_H + 0.05, az, 0.03 ) );
+		poles.push( bar( px, gy + 6.6, pz, ax + ( px - ax ) * 0.35, gy + WIRE_H + 0.4, az + ( pz - az ) * 0.35, 0.015 ) );
+
+	}
+
+	const iron = ironMaterial ||= mat( 0x2b2e30, { metalness: 0.5, roughness: 0.5 } );
 	const clean = list => list.map( g => {
 
 		const n = g.index ? g.toNonIndexed() : g;
@@ -281,12 +307,12 @@ function addCatenary( scene, paths, groundHeight, isBlocked ) {
 		return n;
 
 	} );
-	if ( wires.length ) scene.add( new THREE.Mesh( mergeGeometries( clean( wires ) ), iron ) );
+	if ( wires.length ) group.add( new THREE.Mesh( mergeGeometries( clean( wires ) ), iron ) );
 	if ( poles.length ) {
 
 		const m = new THREE.Mesh( mergeGeometries( clean( poles ) ), iron );
 		m.castShadow = true;
-		scene.add( m );
+		group.add( m );
 
 	}
 
@@ -355,7 +381,8 @@ export async function addTrams( scene, routes, groundHeight, isBlocked = () => f
 
 	if ( ! routes?.length ) return { update() {} };
 	const paths = routes.map( r => makePath( r.pts ) );
-	addCatenary( scene, paths, groundHeight, isBlocked );
+	const plan = planCatenary( paths );
+	const catenary = ( group, x0, z0, size ) => buildCatenary( group, plan, x0, z0, size, groundHeight, isBlocked );
 
 	const info = await ( await fetch( DIR + 'tram-atlas.json' ) ).json();
 	const material = new THREE.MeshStandardNodeMaterial( { map: crispTexture( 'tram-atlas.png' ), alphaTest: 0.5, roughness: 0.55, side: THREE.FrontSide } );
@@ -514,6 +541,6 @@ export async function addTrams( scene, routes, groundHeight, isBlocked = () => f
 
 	}
 
-	return { update, trams, boxes, place, nextStop, onArrive: f => arrivals.push( f ) };
+	return { update, trams, boxes, place, nextStop, catenary, onArrive: f => arrivals.push( f ) };
 
 }

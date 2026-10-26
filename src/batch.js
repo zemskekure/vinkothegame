@@ -82,7 +82,7 @@ export function batchStatic( root, { tile = 150, maxVertices = 200000 } = {} ) {
 	const groups = new Map(), centre = new THREE.Vector3();
 	const visit = ( o ) => {
 
-		if ( o.userData.dynamic || ! o.visible ) return;
+		if ( o.userData.dynamic || o.userData.square || ! o.visible ) return;
 		if ( o.isMesh && ! o.isInstancedMesh && ! o.isSkinnedMesh && ! o.isBatchedMesh && ! Array.isArray( o.material ) && ! o.morphTargetInfluences ) {
 
 			const g = o.geometry;
