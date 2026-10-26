@@ -4,7 +4,7 @@ The one place for what the game is, what's in it and what's next. Read it before
 date when something lands (move items between the status columns, add new ideas at the bottom of their section).
 The city it is played in, the Prague model, is a separate thing: see `docs/README.md` for the split.
 
-Last update: 2026-10-26 (pigeon flight).
+Last update: 2026-10-26 (pigeon flight; the owner's textures on cars, boats, furniture, trees, graffiti, sky).
 
 ## 1. Vision
 
@@ -80,16 +80,41 @@ commit, injected by `vite.config.js`) shows in a corner and in the pause menu. T
 - Planned: Locals vs tourists mix (faces need tagging). NPC reactions to the pigeon (shoo, feed). Short deadpan lines
   from strangers when you pass.
 
-## 5. Vehicles
+## 5. Vehicles and the street's things
+
+Everything here is made from the owner's generated pictures (`~/Documents/ChatGPT/PRAGA/textures`), cut out, shrunk to
+console size and packed into small atlases by the scripts in `tools/textures/` (see its README; rerun them when new
+pictures land). One material per atlas, instanced or merged.
 
 - **Trams**: real Prague types as textured boxes from the owner's pictures: Tatra T3 (often in pairs), historic T3,
   KT8D5, 14T, 15T, 52T; on the real tram lines, stops with names.
-- **Cars** (`?cars`): only Czech cars: Škoda Octavia (1st gen), Favorit, Trabant (models CC BY, see
-  `public/models/vehicles/CREDITS.md`). No brand badges in textures or UI.
-- **Boats**: swan pedal boats and rowing boats by Slovanský ostrov, a steamer moored on Smetanovo nábřeží.
+- **Cars** (on by default, `?nocars` hides them; `src/cars.js`, `car-atlas.png` 512 px): eight Czech street cars,
+  Škoda Octavia, Favorit, Fabia, Trabant, a yellow taxi, a white van, a police estate and the red open tourer that
+  drives tourists round. Each is its side outline (traced from the side picture) pushed out across the car, the
+  glasshouse leaning in above the sills, with the side, top, front and rear pictures projected on (~150 triangles).
+  Only the parked cars in view and nearer than the haze are drawn. `?cars=models` brings back the downloaded Octavia,
+  Favorit and Trabant models (CC BY, `public/models/vehicles/CREDITS.md`); the picture cars were kept for all eight
+  because they read as sharper and more Prague than the models, and all share one look. No brand badges in UI.
+- **Boats** (`src/boats.js`, `boat-atlas.png`): swan pedal boats, pedal boats and rowing boats by Slovanský ostrov,
+  the paddle steamer and a glass-roofed sightseeing boat moored on Smetanovo nábřeží; made like the cars, with the
+  width along the boat from the top picture and cabins, seats and the swan's neck narrower above the gunwale.
+- **Street furniture** (`src/furniture.js`, `furniture-atlas.png` 256 px): historic lamp posts, cast-iron bins and
+  bollards turned on a lathe from their pictures' outlines, bench planks wearing the owner's slats.
+- **Trees**: crowns wear linden, horse chestnut or plane leaves (planes and chestnuts by the river and on the
+  islands, lindens in the streets), trunks the matching bark (`tree-atlas.png`).
+- **Graffiti** (`src/graffiti.js`, `graffiti-atlas.png`): tags, throw-ups, pieces, stickers, paste-ups, painted
+  shutters and torn posters on the ground floors up to 2.5 m: heavy in the lanes and passages (Na Perštýně,
+  Betlémská, Konviktská…), light on Národní and the squares, none on landmarks; described windows stay clean.
+  Seeded per wall, so a house keeps its graffiti. `tools/textures/graffiti.py` packs whatever is in the owner's
+  `textures/graffiti/` folder (kind from the file name: tag, throwup, sticker, pasteup, piece, shutter).
+- **Sky** (`src/sky.js`): the owner's panoramas on a dome: sunrise haze, blue noon, golden evening, the full moon,
+  following the pigeon's clock (afternoon on foot); `?weather=overcast|storm` (or `look.weather`) for the grey ones.
 - The courier's scooter with a turquoise delivery box (no brand yet: our own made-up delivery company later).
-- Planned: car paint variety, a proper Vltava steamer, more scooter textures (prompts in
-  `~/Documents/ChatGPT/PRAGA/texture-prompts-vehicles.md`).
+- Not used yet: the kiosk and tram-shelter pictures (no places for them in the data), hedge and ivy textures, the
+  animal and food pictures beyond the pigeon's (pigeons on squares, ducks and swans on the river, a rat, a cat; a
+  rohlík or trdelník as pigeon food), the black SUV easter egg's own pictures (`car_suv_*`, not drawn yet).
+- Planned: more scooter textures (prompts in `~/Documents/ChatGPT/PRAGA/texture-prompts-vehicles.md`), weather
+  that also changes the light.
 
 ## 6. Places, interiors and sponsors
 

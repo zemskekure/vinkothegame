@@ -88,13 +88,33 @@ them (an empty array of the same kind stays for the layout three reads when it b
 
 **CPU.** Walk zones (404 of them, asked by every person, tram and step) are found in an 8 m grid instead of a scan.
 
+## The owner's textures (branch `look/textures`, October 2026)
+
+Cars, boats, street furniture, trees, graffiti and the sky made from the owner's pictures (`docs/game.md` section 5,
+`tools/textures/`). Measured against `integrate/all` the same way (`measure.mjs`, views only; cars on by default in
+both):
+
+| view | before avg / p95 / max ms | after avg / p95 / max ms | draw calls | triangles |
+|---|---|---|---|---|
+| Národní | 4.3 / 6.0 / 59.9 | 3.8 / 5.1 / 10.3 | 430 → 465 | 3.4 M → 1.4 M |
+| Betlémské náměstí | 5.6 / 9.0 / 30.5 | 5.7 / 7.3 / 13.4 | 747 → 787 | 3.8 M → 1.8 M |
+| pigeon on the nest | 5.6 / 6.9 / 76.2 | 4.5 / 6.1 / 13.2 | 339 → 374 | 3.2 M → 1.2 M |
+| pigeon over the river | 4.5 / 7.1 / 34.6 | 4.6 / 6.6 / 19.1 | 316 → 335 | 3.4 M → 1.3 M |
+
+The triangles halve because the ~2400 parked cars were all drawn every frame as downloaded models; now they are
+~150-triangle picture cars and only those in view and nearer than the haze are drawn. The extra draw calls are the
+graffiti (one per 150 m square), the sky dome and the atlases' materials. Download: +0.63 MB of atlases (cars 0.13,
+boats 0.16, graffiti 0.15, trees 0.08, sky 0.08, furniture 0.04), −0.98 MB of car and boat models no longer fetched:
+0.35 MB less in all. No `Render pipeline creation failed`.
+
 ## Files the game fetches at startup
 
 Before `__ready`: `data/scene.json`, `data/walls.bin`, `data/walls-table.bin`, `data/roofs.bin`,
 `data/roofs-table.bin`, `data/terrain.bin`, `data/surfaces.bin`, `data/pavement.bin`, `data/footprints.bin`,
 `data/embankment.bin`, `data/ground-detail.jpg`, `data/ground-detail-wide.jpg`, the drawn fronts (bundled assets),
-`models/vehicles/scooter.glb` (the walker's ride, in the background). After: `data/life.json`, the people
-(`models/people/…`), `models/vehicles/tram-atlas.json` + `.png`, the boats.
+`models/vehicles/scooter.glb` (the walker's ride, in the background). Also before: `textures/graffiti-atlas.json` + `.png`, `textures/furniture-atlas.png`, `textures/tree-atlas.png`,
+`textures/sky/*.jpg`. After: `data/life.json`, the people (`models/people/…`), `models/vehicles/tram-atlas.json` +
+`.png`, `car-atlas.json` + `.png`, `boat-atlas.json` + `.png`.
 
 ## Scaling with the area
 
