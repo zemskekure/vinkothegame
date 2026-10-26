@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 450 420">
+<rect x="0" y="0" width="450" height="420" fill="#ebeae4"/>
+<path d="M20 90l4 3M60 130l3 4M110 360l4 2M180 70l3 3M230 380l4 2M300 360l3 3M350 60l4 2M410 370l3 3M30 250l4 3M425 240l3 4M215 220l4 2M195 330l3 3" stroke="#cfcdc5" stroke-width="5"/>
+<rect x="0" y="0" width="450" height="22" fill="#e2ddd0"/>
+<rect x="0" y="22" width="450" height="26" fill="#b4563b"/>
+<path d="M0 48Q11 60 22 48Q33 60 44 48Q55 60 66 48Q77 60 88 48Q99 60 110 48Q121 60 132 48Q143 60 154 48Q165 60 176 48Q187 60 198 48Q209 60 220 48Q231 60 242 48Q253 60 264 48Q275 60 286 48Q297 60 308 48Q319 60 330 48Q341 60 352 48Q363 60 374 48Q385 60 396 48Q407 60 418 48Q429 60 440 48Q451 60 462 48Z" fill="#a24a32"/>
+<path d="M0 30H450" stroke="#c96a4c" stroke-width="3"/>
+<rect x="66" y="96" width="140" height="232" fill="#f6f5f0"/>
+<rect x="80" y="110" width="112" height="204" fill="#3e4548"/>
+<path d="M136 110V314M80 162H192" stroke="#f4f3ee" stroke-width="9"/>
+<rect x="60" y="328" width="152" height="12" fill="#dedbd2"/>
+<rect x="276" y="96" width="140" height="232" fill="#f6f5f0"/>
+<rect x="290" y="110" width="112" height="204" fill="#3e4548"/>
+<path d="M346 110V314M290 162H402" stroke="#f4f3ee" stroke-width="9"/>
+<rect x="270" y="328" width="152" height="12" fill="#dedbd2"/>
+<rect x="18" y="360" width="20" height="26" fill="#f2f0ea" stroke="#9b9a94" stroke-width="2"/>
+<rect x="0" y="404" width="450" height="16" fill="#d3d0c6"/>
+</svg>

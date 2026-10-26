@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 420">
+<rect x="0" y="0" width="140" height="420" fill="#ede9df"/>
+<path d="M0 40H140M0 80H140M0 120H140M0 160H140M0 200H140M0 240H140M0 280H140M0 320H140M0 360H140" stroke="#d6cfbf" stroke-width="5"/>
+<rect x="140" y="0" width="420" height="420" fill="#e8d7a6"/>
+<path d="M140 40H560M140 80H560M140 120H560M140 160H560M140 200H560M140 240H560M140 280H560M140 320H560M140 360H560" stroke="#cdb780" stroke-width="5"/>
+<rect x="136" y="0" width="8" height="420" fill="#c9b994"/>
+<rect x="196" y="24" width="188" height="396" fill="#f0e3bd"/>
+<rect x="208" y="36" width="164" height="166" fill="#333a3e"/>
+<path d="M208 70H372M208 105H372M208 140H372M235 36V202M262 36V202M290 36V202M318 36V202M345 36V202" stroke="#1c1c1c" stroke-width="4"/>
+<rect x="208" y="166" width="164" height="36" fill="#4a3a2c"/>
+<rect x="208" y="208" width="164" height="212" fill="#5b3a26"/>
+<path d="M290 208V420" stroke="#3b2618" stroke-width="6"/>
+<rect x="222" y="226" width="54" height="80" fill="#6c4630" stroke="#3b2618" stroke-width="4"/>
+<rect x="304" y="226" width="54" height="80" fill="#6c4630" stroke="#3b2618" stroke-width="4"/>
+<rect x="222" y="322" width="54" height="84" fill="#6c4630" stroke="#3b2618" stroke-width="4"/>
+<rect x="304" y="322" width="54" height="84" fill="#6c4630" stroke="#3b2618" stroke-width="4"/>
+<rect x="392" y="214" width="38" height="24" fill="#b3312b" stroke="#f1ece0" stroke-width="3"/>
+<text x="411" y="231" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#f4f0e6">262</text>
+<rect x="426" y="30" width="124" height="282" fill="#f0e3bd"/>
+<rect x="436" y="40" width="104" height="262" fill="#363d40"/>
+<path d="M488 40V302M436 120H540" stroke="#e9e5da" stroke-width="7"/>
+<path d="M452 40V302M470 40V302M506 40V302M524 40V302M436 80H540M436 170H540M436 220H540M436 265H540" stroke="#1c1c1c" stroke-width="4"/>
+<rect x="420" y="312" width="136" height="14" fill="#dcc890"/>
+<rect x="0" y="392" width="560" height="28" fill="#cbbd98"/>
+</svg>
