@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 570 450">
+  <rect width="570" height="450" fill="#ebe9e3"/>
+  <rect y="0" width="570" height="18" fill="#dedbd2"/>
+  <path d="M170 92H440L456 70H154Z" fill="#7d7a73"/>
+  <rect x="166" y="92" width="278" height="20" fill="#cbbf9f"/>
+  <rect x="170" y="112" width="270" height="300" fill="#cdbf9d"/>
+  <rect x="196" y="136" width="218" height="252" fill="#3a3a36"/>
+  <path d="M196 230H414M305 136V388" stroke="#6a4a32" stroke-width="7"/>
+  <g stroke="#7d7a70" stroke-width="2">
+    <path d="M196 156L216 136M196 186L246 136M196 216L276 136M196 246L306 136M196 276L336 136M196 306L366 136M196 336L396 136M196 366L414 148M206 388L414 180M236 388L414 210M266 388L414 240M296 388L414 270M326 388L414 300M356 388L414 330M386 388L414 360"/>
+    <path d="M414 156L394 136M414 186L364 136M414 216L334 136M414 246L304 136M414 276L274 136M414 306L244 136M414 336L214 136M414 366L196 148M404 388L196 180M374 388L196 210M344 388L196 240M314 388L196 270M284 388L196 300M254 388L196 330M224 388L196 360"/>
+  </g>
+  <rect x="160" y="412" width="290" height="16" fill="#c4b795"/>
+  <rect y="436" width="570" height="14" fill="#a39b94"/>
+</svg>

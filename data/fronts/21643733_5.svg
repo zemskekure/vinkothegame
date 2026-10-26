@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2710 420">
+  <rect width="2710" height="420" fill="#ece1cb"/>
+  <path d="M0 48H2710M0 96H2710M0 144H2710M0 192H2710M0 240H2710M0 288H2710M0 336H2710M0 384H2710" stroke="#d8cbb0" stroke-width="6"/>
+  <rect y="0" width="2710" height="24" fill="#e4d6bb"/>
+  <rect x="330" y="40" width="880" height="70" fill="#34776c"/>
+  <rect x="330" y="40" width="880" height="70" fill="none" stroke="#e9dfc6" stroke-width="5"/>
+  <text x="770" y="92" text-anchor="middle" font-family="Georgia, Times New Roman, serif" font-size="50" font-weight="bold" letter-spacing="8" fill="#efe6c8">ART MASTER GALLERY</text>
+  <rect x="380" y="120" width="230" height="300" fill="#efe7d4"/>
+  <rect x="398" y="136" width="96" height="284" fill="#5a3a2a"/>
+  <rect x="498" y="136" width="96" height="284" fill="#5a3a2a"/>
+  <g fill="none" stroke="#462c1f" stroke-width="5">
+    <rect x="410" y="150" width="72" height="120"/>
+    <rect x="510" y="150" width="72" height="120"/>
+    <rect x="410" y="284" width="72" height="120"/>
+    <rect x="510" y="284" width="72" height="120"/>
+  </g>
+  <g font-family="Georgia, Times New Roman, serif" font-size="30" fill="#efe6c8" text-anchor="middle">
+    <text x="446" y="185">A</text><text x="446" y="220">R</text><text x="446" y="255">T</text>
+    <text x="446" y="315">G</text><text x="446" y="350">A</text><text x="446" y="385">L</text>
+    <text x="546" y="185">A</text><text x="546" y="220">R</text><text x="546" y="255">T</text>
+    <text x="546" y="315">G</text><text x="546" y="350">A</text><text x="546" y="385">L</text>
+  </g>
+  <rect x="820" y="120" width="340" height="270" fill="#f5f2ea"/>
+  <rect x="838" y="138" width="304" height="234" fill="#3b4044"/>
+  <rect x="880" y="160" width="170" height="130" fill="#d9a77e"/>
+  <path d="M900 280C930 210 990 190 1030 230" fill="none" stroke="#8b5a44" stroke-width="10"/>
+  <circle cx="985" cy="205" r="22" fill="#f0c9a6"/>
+  <path d="M838 220H1142M914 138V372M990 138V372M1066 138V372" stroke="#f5f2ea" stroke-width="5"/>
+  <g fill="#f5f2ea" stroke="#d6cab0" stroke-width="5">
+    <rect x="1240" y="130" width="160" height="230"/>
+    <rect x="1520" y="130" width="160" height="230"/>
+    <rect x="2140" y="110" width="260" height="270"/>
+    <rect x="2500" y="130" width="160" height="230"/>
+  </g>
+  <g fill="#3b4044">
+    <rect x="1256" y="146" width="128" height="198"/>
+    <rect x="1536" y="146" width="128" height="198"/>
+    <rect x="2158" y="128" width="224" height="234"/>
+    <rect x="2516" y="146" width="128" height="198"/>
+  </g>
+  <path d="M1272 146V344M1304 146V344M1336 146V344M1368 146V344M1256 210H1384M1256 280H1384M1552 146V344M1584 146V344M1616 146V344M1648 146V344M1536 210H1664M1536 280H1664M2180 128V362M2214 128V362M2248 128V362M2282 128V362M2316 128V362M2350 128V362M2158 200H2382M2158 280H2382M2532 146V344M2564 146V344M2596 146V344M2628 146V344M2516 210H2644M2516 280H2644" stroke="#e9e6df" stroke-width="5"/>
+  <rect x="1770" y="90" width="240" height="330" fill="#d8ccb2"/>
+  <rect x="1790" y="110" width="200" height="70" fill="#2c2621"/>
+  <path d="M1840 110V180M1890 110V180M1940 110V180" stroke="#5a4535" stroke-width="5"/>
+  <rect x="1790" y="184" width="98" height="236" fill="#4b3324"/>
+  <rect x="1892" y="184" width="98" height="236" fill="#4b3324"/>
+  <g fill="none" stroke="#38251a" stroke-width="5">
+    <rect x="1804" y="200" width="70" height="90"/>
+    <rect x="1906" y="200" width="70" height="90"/>
+    <rect x="1804" y="306" width="70" height="98"/>
+    <rect x="1906" y="306" width="70" height="98"/>
+  </g>
+  <rect x="1872" y="62" width="36" height="22" fill="#c23a2c"/>
+  <rect y="406" width="2710" height="14" fill="#a39b94"/>
+</svg>
