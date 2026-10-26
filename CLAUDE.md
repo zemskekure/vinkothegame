@@ -5,6 +5,10 @@ Spálená and Žofín), played as a third-person game with a minimap. three.js r
 materials, WebGL 2 fallback), Vite. All of it was built by Claude Code sessions; this file is what a new session
 needs to know. The current task built on top of it, the grid app, is specified in `docs/grid-app.md`.
 
+The repo holds two things: **the Prague model** (the city: `tools/`, `data/`, `public/data/`) and **the game** played
+in it (`src/`): `docs/README.md` says which docs belong to which. For anything about gameplay (modes, story, NPCs,
+vehicles, easter eggs, status) read **`docs/game.md`** first and keep it up to date.
+
 For the current tile work, read `docs/claude-code-next.md` after this file. It records the latest art direction,
 the two proof tiles, exact commands, and open visual issues. Earlier suggestions in `docs/handoff.md` about
 putting photo crops on facades have been superseded by the owner's drawn-style direction.
