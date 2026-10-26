@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1800 420">
+  <rect width="1800" height="420" fill="#e3d9c3"/>
+  <path d="M0 75H1260M0 115H1260M0 155H1260M0 190H1260" stroke="#c4b89e" stroke-width="4"/>
+  <path d="M120 75V115M330 75V115M560 75V115M790 75V115M1020 75V115M1200 75V115M220 115V155M450 115V155M680 115V155M900 115V155M1120 115V155M110 155V190M330 155V190M590 155V190M800 155V190M1060 155V190" stroke="#c4b89e" stroke-width="3"/>
+  <rect x="0" y="64" width="90" height="10" fill="#d4c9b1"/>
+  <rect x="410" y="64" width="220" height="10" fill="#d4c9b1"/>
+  <rect x="830" y="64" width="200" height="10" fill="#d4c9b1"/>
+  <rect x="740" y="250" width="520" height="170" fill="#b9ae96"/>
+  <path d="M740 300H1260M740 350H1260M820 250V300M920 250V300M1180 250V300M780 300V350M880 300V350M1140 300V350M830 350V420M1160 350V420" stroke="#9c927c" stroke-width="3"/>
+  <rect y="400" width="1800" height="20" fill="#b3a88f"/>
+  <rect x="230" y="190" width="310" height="230" fill="#1f1d1b" stroke="#8c8273" stroke-width="6"/>
+  <rect x="950" y="200" width="150" height="220" fill="#9a9282" stroke="#7d7566" stroke-width="5"/>
+  <path d="M950 255H1100M950 310H1100M950 365H1100M1010 200V255M1040 255V310M990 310V365M1060 365V420" stroke="#7d7566" stroke-width="3"/>
+  <rect x="1140" y="330" width="45" height="70" fill="#e8e6e0" stroke="#9a9890" stroke-width="2"/>
+  <path d="M1260 420V130A210 115 0 0 1 1680 130V420" fill="none" stroke="#d6ccb5" stroke-width="34"/>
+  <path d="M1260 420V130A210 115 0 0 1 1680 130V420Z" fill="#4d3424"/>
+  <path d="M1470 18V420" stroke="#2f2016" stroke-width="6"/>
+  <path d="M1290 160H1440V280H1290ZM1500 160H1650V280H1500ZM1290 300H1440V400H1290ZM1500 300H1650V400H1500Z" fill="none" stroke="#2f2016" stroke-width="5"/>
+  <path d="M10 140C40 120 60 150 90 128S140 118 160 140M180 132L215 118L240 146L270 122M300 140C330 115 360 150 400 125M430 145L470 120L500 140L530 118M600 135C630 118 650 150 690 126" fill="none" stroke="#b8333d" stroke-width="5"/>
+  <text x="380" y="176" text-anchor="middle" font-family="sans-serif" font-weight="bold" font-size="40" fill="#222222">YANGO</text>
+  <path d="M590 175C610 150 650 160 640 200S600 250 630 290C660 330 700 300 690 360S640 410 680 410M650 180L700 170M610 240C640 230 670 240 690 220" fill="none" stroke="#2c4fb0" stroke-width="9"/>
+</svg>
