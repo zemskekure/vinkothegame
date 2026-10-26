@@ -3,9 +3,11 @@
 //
 // All coordinates are S-JTSK / Krovak East North (EPSG:5514), metres.
 
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, writeFile, copyFile } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import jpeg from 'jpeg-js';
-import { AREA, FIRST_AREA, HI_TILES, ORTHO_TILES } from './area.mjs';
+import { fromFile } from 'geotiff';
+import { AREA, WEST_AREA, FIRST_AREA, HI_TILES, WEST_HI_TILES, ORTHO_TILES } from './area.mjs';
 
 const OUT = new URL( '../data/raw/', import.meta.url );
 const AGS = 'https://ags.cuzk.cz/arcgis/rest/services';
@@ -23,13 +25,14 @@ async function get( url, params ) {
 
 		try {
 
-			const res = await fetch( u );
+			const res = await fetch( u, { signal: AbortSignal.timeout( 600000 ) } );
 			if ( ! res.ok ) throw new Error( `${res.status} ${res.statusText}` );
 			return Buffer.from( await res.arrayBuffer() );
 
 		} catch ( e ) {
 
 			if ( attempt >= 3 ) throw new Error( `${u}: ${e.message}` );
+			console.warn( `${url}: ${e.message}; retrying` );
 			await new Promise( r => setTimeout( r, 2000 * 2 ** attempt ) );
 
 		}
@@ -119,6 +122,13 @@ async function orthoTiles( cellSize, nx, ny, area = AREA ) {
 // stay exactly what they were before the area grew.
 async function exportOrtho( cellSize, name, [ nx, ny ], area ) {
 
+	if ( name !== 'ortho' && existsSync( new URL( `${name}.jpg`, OUT ) ) ) {
+
+		console.log( `${name}: kept the existing fixed-area photo` );
+		return;
+
+	}
+
 	const tiles = await orthoTiles( cellSize, nx, ny, area );
 	const imgs = tiles.map( t => ( { ...t, img: jpeg.decode( t.buf, { useTArray: true, maxMemoryUsageInMB: 2048 } ) } ) );
 	const tw = imgs[ 0 ].img.width, th = imgs[ 0 ].img.height, W = tw * nx, H = th * ny;
@@ -131,18 +141,49 @@ async function exportOrtho( cellSize, name, [ nx, ny ], area ) {
 }
 
 // High-resolution orthophoto (12.5 cm) for ground detail, as ortho-hi-<i>-<j>.jpg tiles (read by tools/kerbs.mjs).
-async function exportOrthoTiles( cellSize ) {
+async function exportOrthoTiles( cellSize, tiles = HI_TILES, area = AREA, prefix = 'ortho-hi' ) {
 
-	for ( const { i, j, buf } of await orthoTiles( cellSize, ...HI_TILES ) ) {
+	const cached = [];
+	for ( let i = 0; i < tiles[ 0 ]; i ++ ) for ( let j = 0; j < tiles[ 1 ]; j ++ ) cached.push( existsSync( new URL( `${prefix}-${i}-${j}.jpg`, OUT ) ) );
+	if ( prefix !== 'ortho-hi' && cached.every( Boolean ) ) {
 
-		await writeFile( new URL( `ortho-hi-${i}-${j}.jpg`, OUT ), buf );
-		console.log( `ortho tile ${i},${j}: ${( buf.length / 1e6 ).toFixed( 1 )} MB` );
+		console.log( `${prefix}: kept the existing fixed-area tiles` );
+		return;
+
+	}
+
+	for ( const { i, j, buf } of await orthoTiles( cellSize, ...tiles, area ) ) {
+
+		await writeFile( new URL( `${prefix}-${i}-${j}.jpg`, OUT ), buf );
+		console.log( `${prefix} tile ${i},${j}: ${( buf.length / 1e6 ).toFixed( 1 )} MB` );
 
 	}
 
 }
 
 await mkdir( OUT, { recursive: true } );
+
+// On an existing west-area cache, save its exact JPEGs before the larger exports replace them. A clean cache
+// downloads the same fixed cuts below. The TIFF extent distinguishes the earlier cache from an expanded one.
+if ( existsSync( new URL( 'dtm.tif', OUT ) ) && ! existsSync( new URL( 'ortho-west.jpg', OUT ) ) ) {
+
+	const tiff = await fromFile( new URL( 'dtm.tif', OUT ).pathname );
+	const box = ( await tiff.getImage() ).getBoundingBox();
+	await tiff.close();
+	if ( [ WEST_AREA.xmin, WEST_AREA.ymin, WEST_AREA.xmax, WEST_AREA.ymax ].every( ( v, i ) => Math.abs( v - box[ i ] ) < 0.01 ) ) {
+
+		await copyFile( new URL( 'ortho.jpg', OUT ), new URL( 'ortho-west.jpg', OUT ) );
+		for ( let i = 0; i < WEST_HI_TILES[ 0 ]; i ++ ) for ( let j = 0; j < WEST_HI_TILES[ 1 ]; j ++ ) {
+
+			await copyFile( new URL( `ortho-hi-${i}-${j}.jpg`, OUT ), new URL( `ortho-west-hi-${i}-${j}.jpg`, OUT ) );
+
+		}
+
+		console.log( 'kept the west-area photo cuts before extending the cache' );
+
+	}
+
+}
 
 await Promise.all( [
 	queryLayer( 'RUIAN', 3, 'buildings' ),
@@ -159,6 +200,8 @@ await Promise.all( [
 	exportRaster( '3D/dmp', 'dsm', 0.5 ),
 	exportRaster( '3D/dmr5g', 'dtm', 1 ),
 	exportOrtho( 0.25, 'ortho', ORTHO_TILES, AREA ),
+	exportOrtho( 0.25, 'ortho-west', [ 4, 2 ], WEST_AREA ),
 	exportOrtho( 0.25, 'ortho-first', [ 1, 2 ], FIRST_AREA ),
-	exportOrthoTiles( 0.125 )
+	exportOrthoTiles( 0.125 ),
+	exportOrthoTiles( 0.125, WEST_HI_TILES, WEST_AREA, 'ortho-west-hi' )
 ] );
