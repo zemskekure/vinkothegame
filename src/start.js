@@ -375,6 +375,6 @@ async function pause( choice ) {
 	} catch { /* the menu instead */ }
 
 	const keep = [ ...params ].filter( ( [ k ] ) => NEUTRAL.has( k ) && k !== 'start' );
-	location.href = location.pathname + ( keep.length ? '?' + new URLSearchParams( keep ) : '' );
+	location.href = location.pathname + ( keep.length ? '?' + keep.map( ( [ k, v ] ) => v ? `${k}=${encodeURIComponent( v )}` : k ).join( '&' ) : '' );
 
 }
