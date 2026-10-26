@@ -807,9 +807,27 @@ for ( const s of places?.signs || [] ) {
 if ( places?.sitkov ) placeMarkers.push( { x: places.sitkov.x, z: places.sitkov.z, icon: 'V', colour: '#4f7a68' } );
 if ( places?.bandstand ) placeMarkers.push( { x: places.bandstand.x, z: places.bandstand.z, icon: '♫', colour: '#26352d' } );
 
+// Bridges for the maps (src/minimap.js): Most Legií along its axis (the tollhouse bays wider, the carriageway between
+// the pavements in road colour), and the generic OSM decks (Karlův most, the footbridges) as their strips, footways
+// and pedestrian decks in pavement colour, the rest in road colour.
+const mapBridges = [];
+if ( places?.legie ) {
+
+	const lg = places.legie, P = lg.pts.map( p => [ p[ 0 ], p[ 1 ] ] );
+	const bay = P.slice( 0, Math.floor( lg.bay.s1 / lg.step ) + 1 );
+	mapBridges.push( [
+		{ pts: bay, w: lg.bay.half * 2, fill: 'pavement' },
+		{ pts: P, w: lg.half * 2, fill: 'pavement' },
+		{ pts: P, w: ( lg.half - lg.rail - lg.walk ) * 2, fill: 'road', inner: true }
+	] );
+
+}
+
+for ( const b of places?.bridges || [] ) mapBridges.push( [ { pts: [ [ b.x0, b.z0 ], [ b.x1, b.z1 ] ], w: b.w, fill: /footway|path|pedestrian|cycleway/.test( b.kind ) ? 'pavement' : 'road' } ] );
+
 const isTouch = matchMedia( '(pointer: coarse)' ).matches || navigator.maxTouchPoints > 0 && ! matchMedia( '(pointer: fine)' ).matches;
 const minimap = createMinimap( {
-	bounds, surface: surfaceBytes, surface2, S, waterLevel: data.waterLevel, markers: placeMarkers, touch: isTouch,
+	bounds, surface: surfaceBytes, surface2, S, waterLevel: data.waterLevel, markers: placeMarkers, touch: isTouch, bridges: mapBridges,
 	terrainHeight,
 	isHouse: ( x, z ) => {
 

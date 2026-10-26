@@ -14,7 +14,7 @@ const COLOURS = {
 	ground: [ 160, 156, 148 ]
 };
 
-export function createMinimap( { bounds, surface, surface2, S, isHouse, terrainHeight, waterLevel, markers, touch } ) {
+export function createMinimap( { bounds, surface, surface2, S, isHouse, terrainHeight, waterLevel, markers, touch, bridges = [] } ) {
 
 	const W = S.width, H = S.height;
 	const map = document.createElement( 'canvas' );
@@ -46,6 +46,29 @@ export function createMinimap( { bounds, surface, surface2, S, isHouse, terrainH
 	for ( let r = 1; r < H - 1; r ++ ) for ( let c = 1; c < W - 1; c ++ ) if ( house( c, r ) && ( ! house( c - 1, r ) || ! house( c + 1, r ) || ! house( c, r - 1 ) || ! house( c, r + 1 ) ) ) edge[ r * W + c ] = 1;
 	for ( let i = 0; i < W * H; i ++ ) if ( edge[ i ] ) d.data.set( [ 150, 138, 122 ], i * 4 );
 	ctx.putImageData( d, 0, 0 );
+
+	// Bridges: the decks over the river would be drawn as water (the terrain under them), so they are drawn over it.
+	// A bridge is a list of strips { pts: [ [ x, z ], … ], w, fill, inner } in the scene frame, metres: each a band of
+	// its width along its line, pavement or road coloured; first a darker parapet edge round all but the inner strips
+	// (Most Legií's carriageway between its pavements).
+	ctx.save();
+	ctx.scale( 1 / S.cell, 1 / S.cell );
+	ctx.translate( - bounds.minX, - bounds.minZ );
+	ctx.lineJoin = 'round';
+	ctx.lineCap = 'butt';
+	const band = ( s, w, colour ) => {
+
+		ctx.beginPath();
+		s.pts.forEach( ( [ x, z ], i ) => i ? ctx.lineTo( x, z ) : ctx.moveTo( x, z ) );
+		ctx.lineWidth = w;
+		ctx.strokeStyle = `rgb(${colour.join( ',' )})`;
+		ctx.stroke();
+
+	};
+
+	for ( const s of bridges.flat() ) if ( ! s.inner ) band( s, s.w + 2 * S.cell, [ 70, 72, 76 ] );
+	for ( const s of bridges.flat() ) band( s, s.w, COLOURS[ s.fill ] );
+	ctx.restore();
 
 	// The on-screen dial.
 	const size = touch ? 128 : 190;
