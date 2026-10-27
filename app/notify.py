@@ -18,5 +18,6 @@ message[ 'To' ] = env[ 'NOTIFY_EMAIL' ]
 message.set_content( sys.stdin.read() )
 with smtplib.SMTP( env[ 'SMTP_HOST' ], int( env.get( 'SMTP_PORT', '587' ) ), timeout = 20 ) as smtp:
 	smtp.starttls()
-	smtp.login( env[ 'SMTP_USER' ], env[ 'SMTP_PASSWORD' ] )
+	# App passwords are often copied with (non-breaking) spaces; Gmail ignores them.
+	smtp.login( env[ 'SMTP_USER' ], env[ 'SMTP_PASSWORD' ].replace( '\xa0', '' ).replace( ' ', '' ) )
 	smtp.send_message( message )
