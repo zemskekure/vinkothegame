@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Žádosti o model</title>
+<link rel="stylesheet" href="/ui/style.css">
+<style>
+	main { max-width: 860px; margin: 0 auto; padding: 24px 16px; }
+	table { width: 100%; border-collapse: collapse; }
+	td, th { text-align: left; vertical-align: top; padding: 8px 6px; border-bottom: 1px solid #8884; }
+	td.when { white-space: nowrap; opacity: 0.7; }
+	td.purpose { white-space: pre-wrap; }
+</style>
+</head>
+<body>
+<main>
+	<h1>Žádosti o 3D model Prahy</h1>
+	<p id="count">Načítám…</p>
+	<table><thead><tr><th>Kdy</th><th>Kdo</th><th>K čemu</th></tr></thead><tbody id="rows"></tbody></table>
+</main>
+<script>
+const esc = s => String( s ).replace( /[&<>"]/g, c => ( { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' } )[ c ] );
+fetch( '/api/model-requests' ).then( r => r.json() ).then( list => {
+
+	document.getElementById( 'count' ).textContent = list.length ? `${list.length} žádostí` : 'Zatím žádné žádosti.';
+	document.getElementById( 'rows' ).innerHTML = list.map( r => `<tr><td class="when">${esc( new Date( r.time ).toLocaleString( 'cs-CZ' ) )}</td><td>${esc( r.name )}<br><a href="mailto:${esc( r.email )}">${esc( r.email )}</a></td><td class="purpose">${esc( r.purpose )}</td></tr>` ).join( '' );
+
+} );
+</script>
+</body>
+</html>

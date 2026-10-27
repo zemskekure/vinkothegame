@@ -19,12 +19,12 @@
 //   SQUARE_WORKTREES         where they go, default ../work next to this checkout
 
 import { createServer } from 'node:http';
-import { createReadStream, existsSync, mkdirSync, statSync, readFileSync, readdirSync } from 'node:fs';
+import { createReadStream, existsSync, mkdirSync, statSync, readFileSync, readdirSync, appendFileSync } from 'node:fs';
 import { writeFile, rm, rename } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { join, normalize, extname, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawn } from 'node:child_process';
 import { gzip } from 'node:zlib';
 import { promisify } from 'node:util';
 import { randomUUID, timingSafeEqual } from 'node:crypto';
@@ -362,9 +362,12 @@ function authorised( req ) {
 const forPlayers = req => {
 
 	const p = new URL( req.url, 'http://local' ).pathname;
-	return req.method === 'GET' && ( p === '/game' || p.startsWith( '/game/' ) || p === '/api/game-settings' );
+	return ( req.method === 'GET' && ( p === '/game' || p.startsWith( '/game/' ) || p === '/api/game-settings' ) ) ||
+		( req.method === 'POST' && p === '/api/model-request' );
 
 };
+
+const recentRequests = new Map();
 
 function needJobs() {
 
@@ -440,6 +443,44 @@ async function route( req, res ) {
 	if ( m === 'GET' && p.startsWith( '/files/refs/' ) ) return serveFile( req, res, REFS, p.slice( 12 ) );
 	if ( m === 'GET' && p.startsWith( '/files/shots/' ) ) return serveFile( req, res, SHOTS, p.slice( 13 ) );
 	if ( m === 'GET' && p === '/codex' ) return serveFile( req, res, UI, 'codex.html' );
+
+	// Requests for the 3D model from the game's menu: an email and what it's for, kept in one JSON-lines file; the
+	// owner gets an email for each and answers himself. Players may only add; the list is the owner's.
+	if ( m === 'POST' && p === '/api/model-request' ) {
+
+		let r;
+		try {
+
+			r = JSON.parse( ( await body( req, 8e3 ) ).toString( 'utf8' ) );
+
+		} catch {
+
+			return send( res, 400, { error: 'bad request' } );
+
+		}
+		const email = String( r.email || '' ).trim().slice( 0, 200 ), purpose = String( r.purpose || '' ).trim().slice( 0, 2000 ), name = String( r.name || '' ).trim().slice( 0, 120 );
+		if ( ! /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test( email ) ) return send( res, 400, { error: 'email' } );
+		const ip = String( req.headers[ 'cf-connecting-ip' ] || req.socket.remoteAddress || '' );
+		const now = Date.now();
+		recentRequests.set( ip, ( recentRequests.get( ip ) || [] ).filter( t => now - t < 3600e3 ) );
+		if ( recentRequests.get( ip ).length >= 5 ) return send( res, 429, { error: 'too many' } );
+		recentRequests.get( ip ).push( now );
+		const entry = { time: new Date( now ).toISOString(), email, name, purpose, ip, agent: String( req.headers[ 'user-agent' ] || '' ).slice( 0, 200 ) };
+		appendFileSync( join( DATA, 'model-requests.jsonl' ), JSON.stringify( entry ) + '\n' );
+		const mail = spawn( 'python3', [ join( REPO, 'app/notify.py' ), join( DATA, '.env' ), `Praha 3D model: žádost od ${email}` ], { stdio: [ 'pipe', 'ignore', 'ignore' ] } );
+		mail.on( 'error', () => {} );
+		mail.stdin.end( `${name ? name + '\n' : ''}${email}\n\n${purpose || '(bez popisu)'}\n\nVšechny žádosti: https://mrizka.kedlubna.com/zadosti\n` );
+		return send( res, 200, { ok: true } );
+
+	}
+	if ( m === 'GET' && p === '/api/model-requests' ) {
+
+		const file = join( DATA, 'model-requests.jsonl' );
+		const list = existsSync( file ) ? readFileSync( file, 'utf8' ).split( '\n' ).filter( Boolean ).map( l => JSON.parse( l ) ) : [];
+		return send( res, 200, list.reverse() );
+
+	}
+	if ( m === 'GET' && p === '/zadosti' ) return serveFile( req, res, UI, 'requests.html' );
 	if ( m === 'GET' && p === '/api/codex' ) return send( res, 200, codexJobs() );
 	if ( m === 'GET' && /^\/files\/codex\/codex-[\w-]+\/shots\/[^/]+$/.test( p ) ) return serveFile( req, res, DATA, decodeURIComponent( p.slice( 13 ) ) );
 
