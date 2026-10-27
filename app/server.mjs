@@ -754,7 +754,28 @@ async function route( req, res ) {
 
 createServer( async ( req, res ) => {
 
-	const who = authorised( req );
+	// The public game (golemexpres.cz) may send model requests without a password, from its own origin.
+	const publicRequest = new URL( req.url, 'http://local' ).pathname === '/api/model-request' && [ 'POST', 'OPTIONS' ].includes( req.method );
+	if ( publicRequest ) {
+
+		const origin = String( req.headers.origin || '' );
+		if ( /^https:\/\/(www\.)?golemexpres\.cz$|^https:\/\/[a-z0-9-]+\.golem-expres\.pages\.dev$|^https:\/\/golem-expres\.pages\.dev$/.test( origin ) ) {
+
+			res.setHeader( 'access-control-allow-origin', origin );
+			res.setHeader( 'access-control-allow-methods', 'POST' );
+			res.setHeader( 'access-control-allow-headers', 'content-type' );
+			res.setHeader( 'vary', 'origin' );
+
+		}
+		if ( req.method === 'OPTIONS' ) {
+
+			res.writeHead( 204 );
+			return res.end();
+
+		}
+
+	}
+	const who = publicRequest ? 'game' : authorised( req );
 	if ( ! who || ( who === 'game' && ! forPlayers( req ) ) ) {
 
 		res.writeHead( 401, { 'www-authenticate': 'Basic realm="vinko grid"' } );
