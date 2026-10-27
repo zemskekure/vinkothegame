@@ -363,11 +363,11 @@ const forPlayers = req => {
 
 	const p = new URL( req.url, 'http://local' ).pathname;
 	return ( req.method === 'GET' && ( p === '/game' || p.startsWith( '/game/' ) || p === '/api/game-settings' ) ) ||
-		( req.method === 'POST' && p === '/api/model-request' );
+		( req.method === 'POST' && ( p === '/api/model-request' || p === '/api/game-error' ) );
 
 };
 
-const recentRequests = new Map();
+const recentRequests = new Map(), recentErrors = new Map();
 
 function needJobs() {
 
@@ -471,6 +471,22 @@ async function route( req, res ) {
 		mail.on( 'error', () => {} );
 		mail.stdin.end( `${name ? name + '\n' : ''}${email}\n\n${purpose || '(bez popisu)'}\n\nVšechny žádosti: https://mrizka.kedlubna.com/zadosti\n` );
 		return send( res, 200, { ok: true } );
+
+	}
+	// Errors from players' browsers (src/main.js): one line each in game-errors.log, capped per address.
+	if ( m === 'POST' && p === '/api/game-error' ) {
+
+		const text = ( await body( req, 6e3 ) ).toString( 'utf8' ).replace( /\s+/g, ' ' ).slice( 0, 3000 );
+		const ip = String( req.headers[ 'cf-connecting-ip' ] || req.socket.remoteAddress || '' ), now = Date.now();
+		recentErrors.set( ip, ( recentErrors.get( ip ) || [] ).filter( t => now - t < 3600e3 ) );
+		if ( recentErrors.get( ip ).length < 30 ) {
+
+			recentErrors.get( ip ).push( now );
+			appendFileSync( join( DATA, 'game-errors.log' ), `${new Date( now ).toISOString()} ${ip.slice( 0, 40 )} ${String( req.headers.origin || '' )} ${text}\n` );
+
+		}
+		res.writeHead( 204 );
+		return res.end();
 
 	}
 	if ( m === 'GET' && p === '/api/model-requests' ) {
@@ -755,7 +771,7 @@ async function route( req, res ) {
 createServer( async ( req, res ) => {
 
 	// The public game (golemexpres.cz) may send model requests without a password, from its own origin.
-	const publicRequest = new URL( req.url, 'http://local' ).pathname === '/api/model-request' && [ 'POST', 'OPTIONS' ].includes( req.method );
+	const publicRequest = [ '/api/model-request', '/api/game-error' ].includes( new URL( req.url, 'http://local' ).pathname ) && [ 'POST', 'OPTIONS' ].includes( req.method );
 	if ( publicRequest ) {
 
 		const origin = String( req.headers.origin || '' );
