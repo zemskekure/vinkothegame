@@ -19,7 +19,7 @@
 //   SQUARE_WORKTREES         where they go, default ../work next to this checkout
 
 import { createServer } from 'node:http';
-import { createReadStream, existsSync, mkdirSync, statSync, readFileSync, readdirSync, appendFileSync } from 'node:fs';
+import { createReadStream, existsSync, mkdirSync, statSync, readFileSync, readdirSync, appendFileSync, writeFileSync } from 'node:fs';
 import { writeFile, rm, rename } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { join, normalize, extname, sep } from 'node:path';
@@ -27,7 +27,7 @@ import { fileURLToPath } from 'node:url';
 import { execFileSync, spawn } from 'node:child_process';
 import { gzip } from 'node:zlib';
 import { promisify } from 'node:util';
-import { randomUUID, timingSafeEqual } from 'node:crypto';
+import { randomUUID, timingSafeEqual, createHash } from 'node:crypto';
 import { loadGrid, viewsOf, describe } from './grid.mjs';
 import { openDB, getSettings, setSetting } from './db.mjs';
 import { summary, costSince, weeklyBudget } from './stats.mjs';
@@ -363,11 +363,19 @@ const forPlayers = req => {
 
 	const p = new URL( req.url, 'http://local' ).pathname;
 	return ( req.method === 'GET' && ( p === '/game' || p.startsWith( '/game/' ) || p === '/api/game-settings' ) ) ||
-		( req.method === 'POST' && ( p === '/api/model-request' || p === '/api/game-error' ) );
+		( req.method === 'POST' && ( p === '/api/model-request' || p === '/api/game-error' || p === '/api/play' ) );
 
 };
 
 const recentRequests = new Map(), recentErrors = new Map();
+// A secret for the visitors' daily hashes, made once and kept in the data directory.
+const PLAY_SALT = ( () => {
+
+	const file = join( DATA, 'play-salt' );
+	if ( ! existsSync( file ) ) writeFileSync( file, randomUUID() );
+	return readFileSync( file, 'utf8' ).trim();
+
+} )();
 
 function needJobs() {
 
@@ -489,6 +497,64 @@ async function route( req, res ) {
 		return res.end();
 
 	}
+	// How many people play (src/entry.js): a page load, the mode chosen, a beat each minute while the tab is open.
+	// No cookies and no addresses are kept: a visitor is a hash of the address, the browser and the day, so the same
+	// person counts once a day and can't be followed from one day to the next.
+	if ( m === 'POST' && p === '/api/play' ) {
+
+		let e;
+		try {
+
+			e = JSON.parse( ( await body( req, 2e3 ) ).toString( 'utf8' ) );
+
+		} catch {
+
+			return send( res, 400, { error: 'bad request' } );
+
+		}
+		const day = new Date().toISOString().slice( 0, 10 );
+		const ip = String( req.headers[ 'cf-connecting-ip' ] || req.socket.remoteAddress || '' );
+		const visitor = createHash( 'sha256' ).update( `${PLAY_SALT}|${day}|${ip}|${req.headers[ 'user-agent' ] || ''}` ).digest( 'hex' ).slice( 0, 16 );
+		const row = { t: Date.now(), day, v: visitor, s: String( e.session || '' ).slice( 0, 24 ), e: [ 'load', 'start', 'beat' ].includes( e.event ) ? e.event : 'load',
+			mode: String( e.mode || '' ).slice( 0, 12 ), site: String( req.headers.origin || '' ).replace( /^https?:\/\//, '' ).slice( 0, 40 ) || 'mrizka',
+			country: String( req.headers[ 'cf-ipcountry' ] || '' ).slice( 0, 2 ), mobile: /Mobi|Android|iPhone|iPad/.test( req.headers[ 'user-agent' ] || '' ) };
+		appendFileSync( join( DATA, 'plays.jsonl' ), JSON.stringify( row ) + '\n' );
+		res.writeHead( 204 );
+		return res.end();
+
+	}
+	if ( m === 'GET' && p === '/api/plays' ) {
+
+		const file = join( DATA, 'plays.jsonl' );
+		const rows = existsSync( file ) ? readFileSync( file, 'utf8' ).split( '\n' ).filter( Boolean ).map( l => JSON.parse( l ) ) : [];
+		const days = {}, sessions = {};
+		for ( const r of rows ) {
+
+			const d = days[ r.day ] ??= { visitors: new Set(), players: new Set(), modes: {}, mobile: new Set(), countries: {} };
+			d.visitors.add( r.v );
+			if ( r.mobile ) d.mobile.add( r.v );
+			if ( r.country ) d.countries[ r.country ] = ( d.countries[ r.country ] || 0 ) + ( r.e === 'load' ? 1 : 0 );
+			if ( r.e === 'start' ) {
+
+				d.players.add( r.v );
+				d.modes[ r.mode || '?' ] = ( d.modes[ r.mode || '?' ] || 0 ) + 1;
+
+			}
+			const s = sessions[ r.s ] ??= { day: r.day, first: r.t, last: r.t, played: false };
+			s.last = Math.max( s.last, r.t );
+			if ( r.e !== 'load' ) s.played = true;
+
+		}
+		const minutes = {};
+		for ( const s of Object.values( sessions ) ) if ( s.played ) ( minutes[ s.day ] ??= [] ).push( ( s.last - s.first ) / 60e3 );
+		const out = Object.entries( days ).sort( ( a, b ) => b[ 0 ].localeCompare( a[ 0 ] ) ).map( ( [ day, d ] ) => ( {
+			day, visitors: d.visitors.size, players: d.players.size, mobile: d.mobile.size, modes: d.modes, countries: d.countries,
+			minutes: minutes[ day ] ? Math.round( minutes[ day ].reduce( ( a, b ) => a + b, 0 ) / minutes[ day ].length * 10 ) / 10 : 0
+		} ) );
+		return send( res, 200, out );
+
+	}
+	if ( m === 'GET' && p === '/hraci' ) return serveFile( req, res, UI, 'plays.html' );
 	if ( m === 'GET' && p === '/api/model-requests' ) {
 
 		const file = join( DATA, 'model-requests.jsonl' );
@@ -771,7 +837,7 @@ async function route( req, res ) {
 createServer( async ( req, res ) => {
 
 	// The public game (golemexpres.cz) may send model requests without a password, from its own origin.
-	const publicRequest = [ '/api/model-request', '/api/game-error' ].includes( new URL( req.url, 'http://local' ).pathname ) && [ 'POST', 'OPTIONS' ].includes( req.method );
+	const publicRequest = [ '/api/model-request', '/api/game-error', '/api/play' ].includes( new URL( req.url, 'http://local' ).pathname ) && [ 'POST', 'OPTIONS' ].includes( req.method );
 	if ( publicRequest ) {
 
 		const origin = String( req.headers.origin || '' );

@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hráči Golem Expres</title>
+<link rel="stylesheet" href="/ui/style.css">
+<style>
+	main { max-width: 900px; margin: 0 auto; padding: 24px 16px; }
+	.totals { display: flex; gap: 24px; flex-wrap: wrap; margin: 12px 0 24px; }
+	.totals div { min-width: 140px; }
+	.totals b { display: block; font-size: 32px; }
+	table { width: 100%; border-collapse: collapse; }
+	td, th { text-align: left; padding: 6px; border-bottom: 1px solid #8884; vertical-align: top; }
+	td.n { text-align: right; font-variant-numeric: tabular-nums; }
+	.bar { height: 8px; background: currentColor; opacity: 0.5; }
+</style>
+</head>
+<body>
+<main>
+	<h1>Kolik lidí hraje Golem Expres</h1>
+	<p>Návštěvník = jeden prohlížeč za den (bez cookies). Hráč = vybral holuba, kurýra nebo procházku.</p>
+	<div class="totals" id="totals"></div>
+	<table><thead><tr><th>Den</th><th>Návštěvníci</th><th>Hráči</th><th>Mobil</th><th>Průměr minut</th><th>Režimy</th><th></th></tr></thead><tbody id="rows"></tbody></table>
+</main>
+<script>
+const esc = s => String( s ).replace( /[&<>"]/g, c => ( { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' } )[ c ] );
+const MODES = { courier: 'kurýr', holub: 'holub', walk: 'procházka' };
+fetch( '/api/plays' ).then( r => r.json() ).then( days => {
+
+	const sum = k => days.reduce( ( a, d ) => a + d[ k ], 0 );
+	const week = days.slice( 0, 7 );
+	document.getElementById( 'totals' ).innerHTML = [
+		[ 'Dnes návštěvníků', days[ 0 ]?.visitors || 0 ], [ 'Dnes hráčů', days[ 0 ]?.players || 0 ],
+		[ '7 dní návštěvníků', week.reduce( ( a, d ) => a + d.visitors, 0 ) ], [ 'Celkem hráčů', sum( 'players' ) ]
+	].map( ( [ l, n ] ) => `<div>${l}<b>${n}</b></div>` ).join( '' );
+	const max = Math.max( 1, ...days.map( d => d.visitors ) );
+	document.getElementById( 'rows' ).innerHTML = days.map( d => `<tr><td>${esc( d.day )}</td><td class="n">${d.visitors}</td><td class="n">${d.players}</td><td class="n">${d.mobile}</td><td class="n">${d.minutes}</td>
+		<td>${Object.entries( d.modes ).map( ( [ m, n ] ) => `${esc( MODES[ m ] || m )} ${n}` ).join( ', ' )}</td><td style="width:30%"><div class="bar" style="width:${d.visitors / max * 100}%"></div></td></tr>` ).join( '' ) || '<tr><td colspan="7">Zatím nikdo.</td></tr>';
+
+} );
+</script>
+</body>
+</html>
